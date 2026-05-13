@@ -13,5 +13,11 @@
   "devDependencies": {
     "eslint": "^9.39.1",
     "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "@ai-sdk/anthropic": "^3.0.77",
+    "@ai-sdk/openai": "^3.0.63",
+    "@mastra/core": "^1.33.0",
+    "zod": "3.25.76"
   }
 }

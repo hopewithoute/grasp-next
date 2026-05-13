@@ -11,7 +11,12 @@
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
+    "drizzle-kit": "^0.31.10",
     "eslint": "^9.39.1",
     "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.45.2",
+    "postgres": "^3.4.9"
   }
 }
