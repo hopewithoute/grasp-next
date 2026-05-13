@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import type { DbClient } from "./client";
 import { projects, type NewProject } from "./schema";
 
@@ -33,6 +33,14 @@ export function createProjectRepository(db: DbClient) {
         .limit(1);
 
       return project ?? null;
+    },
+
+    async listByOwner(ownerId: string) {
+      return db
+        .select()
+        .from(projects)
+        .where(eq(projects.ownerId, ownerId))
+        .orderBy(desc(projects.createdAt));
     },
 
     async updateSourceMaterial(projectId: string, sourceMaterial: string) {

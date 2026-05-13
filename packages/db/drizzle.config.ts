@@ -1,4 +1,17 @@
 import { defineConfig } from "drizzle-kit";
+import { join } from "node:path";
+import { cwd, loadEnvFile } from "node:process";
+
+for (const envFile of [join(cwd(), ".env"), join(cwd(), "..", "..", ".env")]) {
+  try {
+    loadEnvFile(envFile);
+    break;
+  } catch (error) {
+    if (!isMissingFileError(error)) {
+      throw error;
+    }
+  }
+}
 
 const databaseUrl = process.env.DATABASE_URL;
 
@@ -14,3 +27,12 @@ export default defineConfig({
     url: databaseUrl,
   },
 });
+
+function isMissingFileError(error: unknown) {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    error.code === "ENOENT"
+  );
+}
