@@ -2,6 +2,7 @@ export type ProjectStatus = "draft" | "processing" | "processed" | "failed";
 
 export type ProjectRecord = {
   id: string;
+  ownerId: string;
   title: string;
   description: string | null;
   sourceMaterial: string | null;
@@ -12,6 +13,7 @@ export type ProjectRecord = {
 
 export type ProjectRepository = {
   create(input: {
+    ownerId: string;
     title: string;
     description?: string;
     sourceMaterial?: string;
@@ -19,6 +21,11 @@ export type ProjectRepository = {
   findById(projectId: string): Promise<ProjectRecord | null>;
   updateSourceMaterial(
     projectId: string,
+    sourceMaterial: string
+  ): Promise<ProjectRecord | null>;
+  updateSourceMaterialForOwner(
+    projectId: string,
+    ownerId: string,
     sourceMaterial: string
   ): Promise<ProjectRecord | null>;
 };

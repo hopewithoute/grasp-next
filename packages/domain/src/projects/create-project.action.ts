@@ -13,11 +13,12 @@ export type CreateProjectDeps = {
 export async function createProject(
   input: CreateProjectDto,
   deps: CreateProjectDeps,
-  actorId?: string
+  actorId: string
 ): Promise<ProjectRecord> {
   const dto = createProjectDto.parse(input);
 
   const project = await deps.projectRepository.create({
+    ownerId: actorId,
     title: dto.title,
     description: dto.description,
     sourceMaterial: dto.sourceMaterial,

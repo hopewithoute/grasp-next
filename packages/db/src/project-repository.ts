@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import type { DbClient } from "./client";
 import { projects, type NewProject } from "./schema";
 
@@ -6,10 +6,16 @@ export type ProjectRepository = ReturnType<typeof createProjectRepository>;
 
 export function createProjectRepository(db: DbClient) {
   return {
-    async create(input: Pick<NewProject, "title" | "description" | "sourceMaterial">) {
+    async create(
+      input: Pick<
+        NewProject,
+        "description" | "ownerId" | "sourceMaterial" | "title"
+      >
+    ) {
       const [project] = await db
         .insert(projects)
         .values({
+          ownerId: input.ownerId,
           title: input.title,
           description: input.description,
           sourceMaterial: input.sourceMaterial,
@@ -38,6 +44,24 @@ export function createProjectRepository(db: DbClient) {
           updatedAt: new Date(),
         })
         .where(eq(projects.id, projectId))
+        .returning();
+
+      return project ?? null;
+    },
+
+    async updateSourceMaterialForOwner(
+      projectId: string,
+      ownerId: string,
+      sourceMaterial: string
+    ) {
+      const [project] = await db
+        .update(projects)
+        .set({
+          sourceMaterial,
+          status: "processing",
+          updatedAt: new Date(),
+        })
+        .where(and(eq(projects.id, projectId), eq(projects.ownerId, ownerId)))
         .returning();
 
       return project ?? null;

@@ -15,6 +15,20 @@
       "when": 1778690678363,
       "tag": "0001_free_falcon",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1778698735358,
+      "tag": "0002_public_hercules",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1778699239941,
+      "tag": "0003_uneven_carnage",
+      "breakpoints": true
     }
   ]
 }

@@ -3,10 +3,12 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
+      "env": ["BETTER_AUTH_SECRET", "BETTER_AUTH_URL", "DATABASE_URL"],
       "outputs": []
     },
     "@grasp/web#build": {
       "dependsOn": ["^build"],
+      "env": ["BETTER_AUTH_SECRET", "BETTER_AUTH_URL", "DATABASE_URL"],
       "outputs": [".next/**", "!.next/cache/**"]
     },
     "dev": {
