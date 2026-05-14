@@ -95,6 +95,13 @@ export const artifactStatus = pgEnum("artifact_status", [
   "failed",
 ]);
 
+export const artifactReviewRunStatus = pgEnum("artifact_review_run_status", [
+  "suspended",
+  "resumed",
+  "completed",
+  "failed",
+]);
+
 export const projects = pgTable("projects", {
   id: uuid("id").primaryKey().defaultRandom(),
   ownerId: text("owner_id")
@@ -175,6 +182,32 @@ export const artifactVersions = pgTable(
   ]
 );
 
+export const artifactReviewRuns = pgTable(
+  "artifact_review_runs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    artifactId: uuid("artifact_id")
+      .notNull()
+      .references(() => artifacts.id, { onDelete: "cascade" }),
+    artifactVersionId: uuid("artifact_version_id")
+      .notNull()
+      .references(() => artifactVersions.id, { onDelete: "cascade" }),
+    workflowId: text("workflow_id").notNull(),
+    workflowRunId: text("workflow_run_id").notNull(),
+    resumeLabel: text("resume_label").notNull(),
+    suspendedSteps: jsonb("suspended_steps").notNull(),
+    resumeLabels: jsonb("resume_labels"),
+    status: artifactReviewRunStatus("status").notNull().default("suspended"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("artifact_review_runs_artifact_version_unique").on(
+      table.artifactVersionId
+    ),
+  ]
+);
+
 export const auditLogs = pgTable("audit_logs", {
   id: uuid("id").primaryKey().defaultRandom(),
   actorId: text("actor_id"),
@@ -188,6 +221,7 @@ export const auditLogs = pgTable("audit_logs", {
 export const schema = {
   account,
   artifactVersions,
+  artifactReviewRuns,
   artifacts,
   auditLogs,
   conceptRelationships,
@@ -201,8 +235,10 @@ export const schema = {
 export type AuditLog = typeof auditLogs.$inferSelect;
 export type NewAuditLog = typeof auditLogs.$inferInsert;
 export type Artifact = typeof artifacts.$inferSelect;
+export type ArtifactReviewRun = typeof artifactReviewRuns.$inferSelect;
 export type ArtifactVersion = typeof artifactVersions.$inferSelect;
 export type NewArtifact = typeof artifacts.$inferInsert;
+export type NewArtifactReviewRun = typeof artifactReviewRuns.$inferInsert;
 export type NewArtifactVersion = typeof artifactVersions.$inferInsert;
 export type Concept = typeof concepts.$inferSelect;
 export type ConceptRelationship = typeof conceptRelationships.$inferSelect;

@@ -1,7 +1,11 @@
 import "./load-env.js";
 
-import { extractConceptGraph } from "@grasp/ai";
 import {
+  mastra,
+  type ReviewConceptsSuspendDto,
+} from "@grasp/ai";
+import {
+  createArtifactReviewRunRepository,
   createArtifactRepository,
   createAuditLogRepository,
   createConceptRepository,
@@ -21,6 +25,7 @@ if (!databaseUrl) {
 const queueConfig = createQueueConfig(process.env);
 const db = createDbClient(databaseUrl);
 const artifactRepository = createArtifactRepository(db);
+const artifactReviewRunRepository = createArtifactReviewRunRepository(db);
 const auditLogRepository = createAuditLogRepository(db);
 const conceptRepository = createConceptRepository(db);
 const projectRepository = createProjectRepository(db);
@@ -39,9 +44,29 @@ const worker = new Worker<ConceptExtractionJob>(
         throw new Error("missing_source_material");
       }
 
-      const extractedGraph = await extractConceptGraph({
-        sourceMaterial: project.sourceMaterial,
+      const extractWorkflow = mastra.getWorkflow("extractConceptsWorkflow");
+      const workflowRun = await extractWorkflow.createRun({
+        resourceId: project.id,
       });
+      const workflowResult = await workflowRun.start({
+        inputData: {
+          sourceMaterial: buildExtractionSourceMaterial(
+            project.sourceMaterial,
+            job.data.revisionFeedback
+          ),
+        },
+      });
+
+      if (workflowResult.status !== "suspended") {
+        throw new Error(
+          `concept_extraction_workflow_unexpected_status:${workflowResult.status}`
+        );
+      }
+
+      const suspendPayload = parseReviewConceptsSuspendPayload(
+        workflowResult.suspendPayload
+      );
+      const extractedGraph = suspendPayload.conceptGraph;
       const artifact = await artifactRepository.findOrCreateForProject({
         projectId: project.id,
         status: "generating",
@@ -50,7 +75,16 @@ const worker = new Worker<ConceptExtractionJob>(
       const artifactVersion = await artifactRepository.createVersion({
         artifactId: artifact.id,
         content: extractedGraph,
-        revisionFeedback: null,
+        revisionFeedback: job.data.revisionFeedback ?? null,
+      });
+      const reviewRun = await artifactReviewRunRepository.createSuspended({
+        artifactId: artifact.id,
+        artifactVersionId: artifactVersion.id,
+        resumeLabel: "review_concepts",
+        resumeLabels: workflowResult.resumeLabels ?? null,
+        suspendedSteps: workflowResult.suspended,
+        workflowId: "extract-concepts",
+        workflowRunId: workflowRun.runId,
       });
 
       await conceptRepository.replaceForProject(project.id, {
@@ -71,8 +105,15 @@ const worker = new Worker<ConceptExtractionJob>(
         metadata: {
           artifactId: artifact.id,
           artifactVersionId: artifactVersion.id,
+          artifactReviewRunId: reviewRun.id,
           conceptCount: extractedGraph.concepts.length,
           relationshipCount: extractedGraph.relationships.length,
+          revisionFeedback: job.data.revisionFeedback ?? null,
+          workflowRunId: workflowRun.runId,
+          workflowStatus: workflowResult.status,
+          suspended: workflowResult.suspended,
+          resumeLabels: workflowResult.resumeLabels ?? null,
+          reviewReason: suspendPayload.reason,
           status: updatedProject?.status ?? "reviewing",
         },
       });
@@ -115,4 +156,58 @@ function getErrorMessage(error: unknown) {
   }
 
   return "unknown_error";
+}
+
+function buildExtractionSourceMaterial(
+  sourceMaterial: string,
+  revisionFeedback: string | null | undefined
+) {
+  const feedback = revisionFeedback?.trim();
+
+  if (!feedback) {
+    return sourceMaterial;
+  }
+
+  return [
+    sourceMaterial,
+    "",
+    "Revision instructions from the creator:",
+    feedback,
+  ].join("\n");
+}
+
+function parseReviewConceptsSuspendPayload(
+  payload: unknown
+): ReviewConceptsSuspendDto {
+  const reviewPayload = getReviewConceptsSuspendPayload(payload);
+
+  if (reviewPayload) {
+    return reviewPayload;
+  }
+
+  throw new Error("concept_extraction_workflow_missing_review_payload");
+}
+
+function getReviewConceptsSuspendPayload(
+  payload: unknown
+): ReviewConceptsSuspendDto | null {
+  if (
+    typeof payload === "object" &&
+    payload !== null &&
+    "conceptGraph" in payload &&
+    "reason" in payload &&
+    payload.reason === "review_concepts"
+  ) {
+    return payload as ReviewConceptsSuspendDto;
+  }
+
+  if (
+    typeof payload === "object" &&
+    payload !== null &&
+    "extract-concepts" in payload
+  ) {
+    return getReviewConceptsSuspendPayload(payload["extract-concepts"]);
+  }
+
+  return null;
 }

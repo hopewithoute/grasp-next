@@ -30,6 +30,10 @@
     "lint": {
       "dependsOn": ["^lint"]
     },
+    "test": {
+      "dependsOn": ["^test"],
+      "env": ["DATABASE_URL"]
+    },
     "typecheck": {
       "dependsOn": ["^typecheck"]
     }

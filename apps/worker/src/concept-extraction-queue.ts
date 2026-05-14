@@ -3,6 +3,7 @@ import type { QueueConfig } from "./queue-config.js";
 
 export type ConceptExtractionJob = {
   projectId: string;
+  revisionFeedback?: string | null;
 };
 
 export function parseRedisConnection(redisUrl: string): ConnectionOptions {

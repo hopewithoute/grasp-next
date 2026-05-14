@@ -9,6 +9,7 @@ type QueueConfig = {
 
 type ConceptExtractionJob = {
   projectId: string;
+  revisionFeedback?: string | null;
 };
 
 function parseRedisConnection(redisUrl: string): ConnectionOptions {

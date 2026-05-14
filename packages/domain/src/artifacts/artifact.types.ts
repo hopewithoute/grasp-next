@@ -32,6 +32,26 @@ export type ArtifactVersionRecord = {
   createdAt: Date;
 };
 
+export type ArtifactReviewRunStatus =
+  | "suspended"
+  | "resumed"
+  | "completed"
+  | "failed";
+
+export type ArtifactReviewRunRecord = {
+  id: string;
+  artifactId: string;
+  artifactVersionId: string;
+  workflowId: string;
+  workflowRunId: string;
+  resumeLabel: string;
+  suspendedSteps: unknown;
+  resumeLabels: unknown;
+  status: ArtifactReviewRunStatus;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
 export type ArtifactRepository = {
   create(input: {
     projectId: string;
@@ -58,4 +78,23 @@ export type ArtifactRepository = {
     revisionFeedback?: string | null;
   }): Promise<ArtifactVersionRecord>;
   listVersions(artifactId: string): Promise<ArtifactVersionRecord[]>;
+};
+
+export type ArtifactReviewRunRepository = {
+  createSuspended(input: {
+    artifactId: string;
+    artifactVersionId: string;
+    workflowId: string;
+    workflowRunId: string;
+    resumeLabel: string;
+    suspendedSteps: unknown;
+    resumeLabels?: unknown;
+  }): Promise<ArtifactReviewRunRecord>;
+  findByArtifactVersionId(
+    artifactVersionId: string
+  ): Promise<ArtifactReviewRunRecord | null>;
+  updateStatus(
+    reviewRunId: string,
+    status: ArtifactReviewRunStatus
+  ): Promise<ArtifactReviewRunRecord | null>;
 };

@@ -38,6 +38,10 @@ export type ProjectRepository = {
     ownerId: string,
     sourceMaterial: string
   ): Promise<ProjectRecord | null>;
+  updateStatus(
+    projectId: string,
+    status: ProjectStatus
+  ): Promise<ProjectRecord | null>;
 };
 
 export type AuditLogRepository = {
@@ -51,5 +55,8 @@ export type AuditLogRepository = {
 };
 
 export type ConceptExtractionQueue = {
-  enqueueConceptExtraction(input: { projectId: string }): Promise<void>;
+  enqueueConceptExtraction(input: {
+    projectId: string;
+    revisionFeedback?: string | null;
+  }): Promise<void>;
 };
