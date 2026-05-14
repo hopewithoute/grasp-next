@@ -69,6 +69,12 @@ export const projectStatus = pgEnum("project_status", [
   "failed",
 ]);
 
+export const conceptDifficulty = pgEnum("concept_difficulty", [
+  "beginner",
+  "intermediate",
+  "advanced",
+]);
+
 export const projects = pgTable("projects", {
   id: uuid("id").primaryKey().defaultRandom(),
   ownerId: text("owner_id")
@@ -80,6 +86,35 @@ export const projects = pgTable("projects", {
   status: projectStatus("status").notNull().default("draft"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const concepts = pgTable("concepts", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  projectId: uuid("project_id")
+    .notNull()
+    .references(() => projects.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  definition: text("definition").notNull(),
+  difficulty: conceptDifficulty("difficulty").notNull(),
+  confidence: text("confidence").notNull(),
+  sourceEvidence: jsonb("source_evidence").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const conceptRelationships = pgTable("concept_relationships", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  projectId: uuid("project_id")
+    .notNull()
+    .references(() => projects.id, { onDelete: "cascade" }),
+  sourceConceptId: uuid("source_concept_id")
+    .notNull()
+    .references(() => concepts.id, { onDelete: "cascade" }),
+  targetConceptId: uuid("target_concept_id")
+    .notNull()
+    .references(() => concepts.id, { onDelete: "cascade" }),
+  relationshipType: text("relationship_type").notNull().default("prerequisite"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 export const auditLogs = pgTable("audit_logs", {
@@ -95,6 +130,8 @@ export const auditLogs = pgTable("audit_logs", {
 export const schema = {
   account,
   auditLogs,
+  conceptRelationships,
+  concepts,
   projects,
   session,
   user,
@@ -103,5 +140,9 @@ export const schema = {
 
 export type AuditLog = typeof auditLogs.$inferSelect;
 export type NewAuditLog = typeof auditLogs.$inferInsert;
+export type Concept = typeof concepts.$inferSelect;
+export type ConceptRelationship = typeof conceptRelationships.$inferSelect;
+export type NewConcept = typeof concepts.$inferInsert;
+export type NewConceptRelationship = typeof conceptRelationships.$inferInsert;
 export type Project = typeof projects.$inferSelect;
 export type NewProject = typeof projects.$inferInsert;
