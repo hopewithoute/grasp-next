@@ -4,6 +4,7 @@ node_modules
 .turbo
 dist
 coverage
+.mastra
 
 *.tsbuildinfo
 

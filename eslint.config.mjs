@@ -3,7 +3,7 @@ import tseslint from "typescript-eslint";
 
 export default [
   {
-    ignores: ["**/.next/**", "**/node_modules/**", "**/dist/**"],
+    ignores: ["**/.mastra/**", "**/.next/**", "**/node_modules/**", "**/dist/**"],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,
