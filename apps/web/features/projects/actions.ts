@@ -6,6 +6,7 @@ import {
   createProject,
   createProjectDto,
   submitSourceMaterial,
+  updateSourceMaterialDto,
   type CreateProjectDto,
   type UpdateSourceMaterialDto,
 } from "@grasp/domain";
@@ -14,6 +15,11 @@ import { createProjectDeps } from "@/server/project-deps";
 
 export type CreateProjectFormState = {
   error: string | null;
+};
+
+export type SourceMaterialFormState = {
+  error: string | null;
+  success: boolean;
 };
 
 export async function createProjectAction(input: CreateProjectDto) {
@@ -69,4 +75,42 @@ export async function submitSourceMaterialAction(input: UpdateSourceMaterialDto)
   revalidatePath(`/dashboard/projects/${project.id}`);
 
   return project;
+}
+
+export async function submitSourceMaterialFormAction(
+  _state: SourceMaterialFormState,
+  formData: FormData
+): Promise<SourceMaterialFormState> {
+  const actor = await getActor();
+
+  if (!actor) {
+    return { error: "Unauthorized.", success: false };
+  }
+
+  const parsed = updateSourceMaterialDto.safeParse({
+    projectId: formData.get("projectId")?.toString() ?? "",
+    sourceMaterial: formData.get("sourceMaterial")?.toString() ?? "",
+  });
+
+  if (!parsed.success) {
+    return { error: "Source material is required.", success: false };
+  }
+
+  try {
+    const project = await submitSourceMaterial(
+      parsed.data,
+      createProjectDeps(),
+      actor
+    );
+
+    revalidatePath("/dashboard/projects");
+    revalidatePath(`/dashboard/projects/${project.id}`);
+
+    return { error: null, success: true };
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : "Source material failed.",
+      success: false,
+    };
+  }
 }

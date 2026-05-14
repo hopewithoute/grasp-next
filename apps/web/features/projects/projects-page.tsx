@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { Badge } from "@/components/ui/badge";
+import Link from "next/link";
 import {
   Card,
   CardAction,
@@ -10,6 +10,7 @@ import {
 import { getActor } from "@/server/actor";
 import { createProjectDeps } from "@/server/project-deps";
 import { CreateProjectForm } from "./create-project-form";
+import { ProjectStatusBadge } from "./project-status-badge";
 
 export async function ProjectsPage() {
   const actor = await getActor();
@@ -41,7 +42,14 @@ export async function ProjectsPage() {
                   key={project.id}
                 >
                   <CardHeader>
-                    <CardTitle>{project.title}</CardTitle>
+                    <CardTitle>
+                      <Link
+                        className="hover:text-[#4f5a45]"
+                        href={`/dashboard/projects/${project.id}`}
+                      >
+                        {project.title}
+                      </Link>
+                    </CardTitle>
                     <CardAction>
                       <ProjectStatusBadge status={project.status} />
                     </CardAction>
@@ -82,25 +90,6 @@ export async function ProjectsPage() {
         </section>
       </div>
     </main>
-  );
-}
-
-function ProjectStatusBadge({
-  status,
-}: {
-  status: "draft" | "failed" | "processed" | "processing";
-}) {
-  const classNameByStatus = {
-    draft: "bg-[#ecefe5] text-[#4f5a45]",
-    failed: "bg-red-50 text-red-700",
-    processed: "bg-green-50 text-green-700",
-    processing: "bg-amber-50 text-amber-700",
-  };
-
-  return (
-    <Badge className={classNameByStatus[status]} variant="secondary">
-      {status}
-    </Badge>
   );
 }
 

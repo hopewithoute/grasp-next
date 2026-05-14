@@ -19,6 +19,10 @@ export type ProjectRepository = {
     sourceMaterial?: string;
   }): Promise<ProjectRecord>;
   findById(projectId: string): Promise<ProjectRecord | null>;
+  findByIdForOwner(
+    projectId: string,
+    ownerId: string
+  ): Promise<ProjectRecord | null>;
   listByOwner(ownerId: string): Promise<ProjectRecord[]>;
   updateSourceMaterial(
     projectId: string,

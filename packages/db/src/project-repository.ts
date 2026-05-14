@@ -35,6 +35,16 @@ export function createProjectRepository(db: DbClient) {
       return project ?? null;
     },
 
+    async findByIdForOwner(projectId: string, ownerId: string) {
+      const [project] = await db
+        .select()
+        .from(projects)
+        .where(and(eq(projects.id, projectId), eq(projects.ownerId, ownerId)))
+        .limit(1);
+
+      return project ?? null;
+    },
+
     async listByOwner(ownerId: string) {
       return db
         .select()
