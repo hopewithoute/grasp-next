@@ -43,6 +43,11 @@ export type ArtifactRepository = {
     projectId: string,
     type: ArtifactType
   ): Promise<ArtifactRecord | null>;
+  findOrCreateForProject(input: {
+    projectId: string;
+    status: ArtifactStatus;
+    type: ArtifactType;
+  }): Promise<ArtifactRecord>;
   updateStatus(
     artifactId: string,
     status: ArtifactStatus

@@ -2,6 +2,7 @@ import "./load-env.js";
 
 import { extractConceptGraph } from "@grasp/ai";
 import {
+  createArtifactRepository,
   createAuditLogRepository,
   createConceptRepository,
   createDbClient,
@@ -19,6 +20,7 @@ if (!databaseUrl) {
 
 const queueConfig = createQueueConfig(process.env);
 const db = createDbClient(databaseUrl);
+const artifactRepository = createArtifactRepository(db);
 const auditLogRepository = createAuditLogRepository(db);
 const conceptRepository = createConceptRepository(db);
 const projectRepository = createProjectRepository(db);
@@ -40,6 +42,16 @@ const worker = new Worker<ConceptExtractionJob>(
       const extractedGraph = await extractConceptGraph({
         sourceMaterial: project.sourceMaterial,
       });
+      const artifact = await artifactRepository.findOrCreateForProject({
+        projectId: project.id,
+        status: "generating",
+        type: "concept_graph",
+      });
+      const artifactVersion = await artifactRepository.createVersion({
+        artifactId: artifact.id,
+        content: extractedGraph,
+        revisionFeedback: null,
+      });
 
       await conceptRepository.replaceForProject(project.id, {
         concepts: extractedGraph.concepts.map((concept) => ({
@@ -48,6 +60,7 @@ const worker = new Worker<ConceptExtractionJob>(
         })),
         relationships: extractedGraph.relationships,
       });
+      await artifactRepository.updateStatus(artifact.id, "generated");
       const updatedProject = await projectRepository.updateStatus(project.id, "processed");
 
       await auditLogRepository.write({
@@ -56,6 +69,8 @@ const worker = new Worker<ConceptExtractionJob>(
         entityType: "project",
         entityId: project.id,
         metadata: {
+          artifactId: artifact.id,
+          artifactVersionId: artifactVersion.id,
           conceptCount: extractedGraph.concepts.length,
           relationshipCount: extractedGraph.relationships.length,
           status: updatedProject?.status ?? "processed",

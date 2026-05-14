@@ -43,6 +43,21 @@ export function createArtifactRepository(db: DbClient) {
       return artifact ?? null;
     },
 
+    async findOrCreateForProject(
+      input: Pick<NewArtifact, "projectId" | "status" | "type">
+    ) {
+      const existingArtifact = await this.findByProjectAndType(
+        input.projectId,
+        input.type
+      );
+
+      if (existingArtifact) {
+        return existingArtifact;
+      }
+
+      return this.create(input);
+    },
+
     async updateStatus(artifactId: string, status: Artifact["status"]) {
       const [artifact] = await db
         .update(artifacts)
