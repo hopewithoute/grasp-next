@@ -1,3 +1,7 @@
+export {
+  createArtifactRepository,
+  type ArtifactRepository,
+} from "./artifact-repository";
 export { createAuditLogRepository, type AuditLogRepository } from "./audit-log-repository";
 export {
   createConceptRepository,

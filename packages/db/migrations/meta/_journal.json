@@ -36,6 +36,13 @@
       "when": 1778756302650,
       "tag": "0004_careless_retro_girl",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1778779935199,
+      "tag": "0005_lowly_chat",
+      "breakpoints": true
     }
   ]
 }

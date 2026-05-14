@@ -1,10 +1,12 @@
 import {
   boolean,
+  integer,
   jsonb,
   pgEnum,
   pgTable,
   text,
   timestamp,
+  uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
 
@@ -75,6 +77,23 @@ export const conceptDifficulty = pgEnum("concept_difficulty", [
   "advanced",
 ]);
 
+export const artifactType = pgEnum("artifact_type", [
+  "concept_graph",
+  "learning_objectives",
+  "lesson_draft",
+]);
+
+export const artifactStatus = pgEnum("artifact_status", [
+  "pending",
+  "generating",
+  "generated",
+  "needs_revision",
+  "approved",
+  "published",
+  "rejected",
+  "failed",
+]);
+
 export const projects = pgTable("projects", {
   id: uuid("id").primaryKey().defaultRandom(),
   ownerId: text("owner_id")
@@ -117,6 +136,44 @@ export const conceptRelationships = pgTable("concept_relationships", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+export const artifacts = pgTable(
+  "artifacts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    projectId: uuid("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    type: artifactType("type").notNull(),
+    status: artifactStatus("status").notNull().default("pending"),
+    currentVersionId: uuid("current_version_id"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("artifacts_project_type_unique").on(table.projectId, table.type),
+  ]
+);
+
+export const artifactVersions = pgTable(
+  "artifact_versions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    artifactId: uuid("artifact_id")
+      .notNull()
+      .references(() => artifacts.id, { onDelete: "cascade" }),
+    versionNumber: integer("version_number").notNull(),
+    content: jsonb("content").notNull(),
+    revisionFeedback: text("revision_feedback"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("artifact_versions_artifact_version_unique").on(
+      table.artifactId,
+      table.versionNumber
+    ),
+  ]
+);
+
 export const auditLogs = pgTable("audit_logs", {
   id: uuid("id").primaryKey().defaultRandom(),
   actorId: text("actor_id"),
@@ -129,6 +186,8 @@ export const auditLogs = pgTable("audit_logs", {
 
 export const schema = {
   account,
+  artifactVersions,
+  artifacts,
   auditLogs,
   conceptRelationships,
   concepts,
@@ -140,6 +199,10 @@ export const schema = {
 
 export type AuditLog = typeof auditLogs.$inferSelect;
 export type NewAuditLog = typeof auditLogs.$inferInsert;
+export type Artifact = typeof artifacts.$inferSelect;
+export type ArtifactVersion = typeof artifactVersions.$inferSelect;
+export type NewArtifact = typeof artifacts.$inferInsert;
+export type NewArtifactVersion = typeof artifactVersions.$inferInsert;
 export type Concept = typeof concepts.$inferSelect;
 export type ConceptRelationship = typeof conceptRelationships.$inferSelect;
 export type NewConcept = typeof concepts.$inferInsert;
