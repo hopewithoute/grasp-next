@@ -67,6 +67,7 @@ export const verification = pgTable("verification", {
 export const projectStatus = pgEnum("project_status", [
   "draft",
   "processing",
+  "reviewing",
   "processed",
   "failed",
 ]);

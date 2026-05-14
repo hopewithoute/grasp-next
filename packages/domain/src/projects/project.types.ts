@@ -1,4 +1,9 @@
-export type ProjectStatus = "draft" | "processing" | "processed" | "failed";
+export type ProjectStatus =
+  | "draft"
+  | "processing"
+  | "reviewing"
+  | "processed"
+  | "failed";
 
 export type ProjectRecord = {
   id: string;

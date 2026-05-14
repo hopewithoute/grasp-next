@@ -43,6 +43,13 @@
       "when": 1778779935199,
       "tag": "0005_lowly_chat",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1778781648703,
+      "tag": "0006_slippery_firebrand",
+      "breakpoints": true
     }
   ]
 }

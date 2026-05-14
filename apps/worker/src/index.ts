@@ -61,7 +61,7 @@ const worker = new Worker<ConceptExtractionJob>(
         relationships: extractedGraph.relationships,
       });
       await artifactRepository.updateStatus(artifact.id, "generated");
-      const updatedProject = await projectRepository.updateStatus(project.id, "processed");
+      const updatedProject = await projectRepository.updateStatus(project.id, "reviewing");
 
       await auditLogRepository.write({
         actorId: project.ownerId,
@@ -73,7 +73,7 @@ const worker = new Worker<ConceptExtractionJob>(
           artifactVersionId: artifactVersion.id,
           conceptCount: extractedGraph.concepts.length,
           relationshipCount: extractedGraph.relationships.length,
-          status: updatedProject?.status ?? "processed",
+          status: updatedProject?.status ?? "reviewing",
         },
       });
     } catch (error) {

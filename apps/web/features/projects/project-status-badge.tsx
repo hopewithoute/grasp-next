@@ -1,6 +1,11 @@
 import { Badge } from "@/components/ui/badge";
 
-type ProjectStatus = "draft" | "failed" | "processed" | "processing";
+type ProjectStatus =
+  | "draft"
+  | "failed"
+  | "processed"
+  | "processing"
+  | "reviewing";
 
 export function ProjectStatusBadge({ status }: { status: ProjectStatus }) {
   const classNameByStatus = {
@@ -8,6 +13,7 @@ export function ProjectStatusBadge({ status }: { status: ProjectStatus }) {
     failed: "bg-red-50 text-red-700",
     processed: "bg-green-50 text-green-700",
     processing: "bg-amber-50 text-amber-700",
+    reviewing: "bg-blue-50 text-blue-700",
   };
 
   const labelByStatus = {
@@ -15,6 +21,7 @@ export function ProjectStatusBadge({ status }: { status: ProjectStatus }) {
     failed: "Failed",
     processed: "Processed",
     processing: "Processing",
+    reviewing: "Reviewing",
   };
 
   return (
