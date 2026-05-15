@@ -19,6 +19,8 @@ export const serverEnvSchema = z.object({
   MASTRA_STORAGE_URL: z.string().url(),
   QUEUE_REDIS_URL: z.string().url(),
   QUEUE_PREFIX: z.string().min(1).default("grasp"),
+  GOOGLE_CLIENT_ID: z.string().min(1),
+  GOOGLE_CLIENT_SECRET: z.string().min(1),
 });
 
 export type ServerEnv = z.infer<typeof serverEnvSchema>;

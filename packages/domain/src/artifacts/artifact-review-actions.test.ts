@@ -186,6 +186,7 @@ function createTestState(): TestState {
     content: { concepts: [] },
     createdAt: now,
     id: "22222222-2222-4222-8222-222222222222",
+    extractionMode: "llm_strict",
     revisionFeedback: null,
     versionNumber: 1,
   };
@@ -353,6 +354,9 @@ function createProjectRepository(state: TestState): ProjectRepository {
     async listByOwner(ownerId) {
       return ownerId === state.project.ownerId ? [state.project] : [];
     },
+    async updateDetailsForOwner() {
+      throw new Error("Not needed for this test.");
+    },
     async updateSourceMaterial() {
       throw new Error("Not needed for this test.");
     },
@@ -370,6 +374,9 @@ function createProjectRepository(state: TestState): ProjectRepository {
       };
 
       return state.project;
+    },
+    async deleteForOwner() {
+      throw new Error("Not needed for this test.");
     },
   };
 }

@@ -29,6 +29,7 @@ export type ArtifactVersionRecord = {
   versionNumber: number;
   content: unknown;
   revisionFeedback: string | null;
+  extractionMode: "llm_strict" | "llm_json" | "deterministic";
   createdAt: Date;
 };
 
@@ -76,6 +77,7 @@ export type ArtifactRepository = {
     artifactId: string;
     content: unknown;
     revisionFeedback?: string | null;
+    extractionMode?: "llm_strict" | "llm_json" | "deterministic";
   }): Promise<ArtifactVersionRecord>;
   listVersions(artifactId: string): Promise<ArtifactVersionRecord[]>;
 };
