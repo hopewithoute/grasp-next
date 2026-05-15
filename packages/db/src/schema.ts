@@ -172,6 +172,7 @@ export const artifactVersions = pgTable(
     versionNumber: integer("version_number").notNull(),
     content: jsonb("content").notNull(),
     revisionFeedback: text("revision_feedback"),
+    extractionMode: text("extraction_mode").notNull().default("deterministic"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [

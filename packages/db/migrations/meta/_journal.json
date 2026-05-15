@@ -57,6 +57,13 @@
       "when": 1778784328761,
       "tag": "0007_brave_thor_girl",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1778811000000,
+      "tag": "0008_add_artifact_version_extraction_mode",
+      "breakpoints": true
     }
   ]
 }
