@@ -29,6 +29,14 @@ export type ProjectRepository = {
     ownerId: string
   ): Promise<ProjectRecord | null>;
   listByOwner(ownerId: string): Promise<ProjectRecord[]>;
+  updateDetailsForOwner(
+    projectId: string,
+    ownerId: string,
+    input: {
+      description?: string | null;
+      title: string;
+    }
+  ): Promise<ProjectRecord | null>;
   updateSourceMaterial(
     projectId: string,
     sourceMaterial: string
@@ -42,6 +50,7 @@ export type ProjectRepository = {
     projectId: string,
     status: ProjectStatus
   ): Promise<ProjectRecord | null>;
+  deleteForOwner(projectId: string, ownerId: string): Promise<ProjectRecord | null>;
 };
 
 export type AuditLogRepository = {

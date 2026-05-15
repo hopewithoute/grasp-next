@@ -1,7 +1,11 @@
 export {
   createProjectDto,
+  deleteProjectDto,
+  updateProjectDetailsDto,
   updateSourceMaterialDto,
   type CreateProjectDto,
+  type DeleteProjectDto,
+  type UpdateProjectDetailsDto,
   type UpdateSourceMaterialDto,
 } from "./project.dto";
 export {
@@ -20,6 +24,15 @@ export {
   submitSourceMaterial,
   type SubmitSourceMaterialDeps,
 } from "./submit-source-material.action";
+export {
+  updateProjectDetails,
+  type UpdateProjectDetailsDeps,
+} from "./update-project-details.action";
+export {
+  deleteProject,
+  ProjectDeleteBlockedError,
+  type DeleteProjectDeps,
+} from "./delete-project.action";
 export type {
   AuditLogRepository,
   ConceptExtractionQueue,
