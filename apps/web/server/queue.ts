@@ -1,11 +1,7 @@
 import "server-only";
 
 import { Queue, type ConnectionOptions } from "bullmq";
-
-type QueueConfig = {
-  prefix: string;
-  redisUrl: string;
-};
+import { serverEnv } from "./env";
 
 type ConceptExtractionJob = {
   projectId: string;
@@ -30,18 +26,10 @@ function parseRedisConnection(redisUrl: string): ConnectionOptions {
   };
 }
 
-function getQueueConfig(): QueueConfig {
-  return {
-    prefix: process.env.QUEUE_PREFIX ?? "grasp",
-    redisUrl: process.env.QUEUE_REDIS_URL ?? "redis://localhost:6379",
-  };
-}
-
 export function createConceptExtractionQueue() {
-  const config = getQueueConfig();
   const queue = new Queue<ConceptExtractionJob>("concept-extraction", {
-    connection: parseRedisConnection(config.redisUrl),
-    prefix: config.prefix,
+    connection: parseRedisConnection(serverEnv.QUEUE_REDIS_URL),
+    prefix: serverEnv.QUEUE_PREFIX,
   });
 
   return {

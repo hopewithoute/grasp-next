@@ -10,15 +10,20 @@ import {
 } from "@grasp/db";
 import { resumeArtifactReview } from "@grasp/ai";
 import { createConceptExtractionQueue } from "./queue";
+import { serverEnv } from "./env";
 
 export function createProjectDeps() {
-  const databaseUrl = process.env.DATABASE_URL;
-
-  if (!databaseUrl) {
-    throw new Error("DATABASE_URL is required.");
+  if (globalForProjectDeps.graspProjectDeps) {
+    return globalForProjectDeps.graspProjectDeps;
   }
 
-  const db = createDbClient(databaseUrl);
+  globalForProjectDeps.graspProjectDeps = buildProjectDeps();
+
+  return globalForProjectDeps.graspProjectDeps;
+}
+
+function buildProjectDeps() {
+  const db = createDbClient(serverEnv.DATABASE_URL);
 
   return {
     artifactRepository: createArtifactRepository(db),
@@ -32,3 +37,9 @@ export function createProjectDeps() {
     },
   };
 }
+
+type ProjectDeps = ReturnType<typeof buildProjectDeps>;
+
+const globalForProjectDeps = globalThis as typeof globalThis & {
+  graspProjectDeps?: ProjectDeps;
+};
