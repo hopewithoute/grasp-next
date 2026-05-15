@@ -1,15 +1,20 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import {
   approveArtifact,
   approveArtifactDto,
   canCreateProject,
   createProject,
   createProjectDto,
+  deleteProject,
+  deleteProjectDto,
   requestConceptRevision,
   requestConceptRevisionDto,
   submitSourceMaterial,
+  updateProjectDetails,
+  updateProjectDetailsDto,
   updateSourceMaterialDto,
   type CreateProjectDto,
   type UpdateSourceMaterialDto,
@@ -34,6 +39,15 @@ export type ApproveArtifactFormState = {
 export type RequestConceptRevisionFormState = {
   error: string | null;
   success: boolean;
+};
+
+export type UpdateProjectDetailsFormState = {
+  error: string | null;
+  success: boolean;
+};
+
+export type DeleteProjectFormState = {
+  error: string | null;
 };
 
 export async function createProjectAction(input: CreateProjectDto) {
@@ -127,6 +141,76 @@ export async function submitSourceMaterialFormAction(
       success: false,
     };
   }
+}
+
+export async function updateProjectDetailsFormAction(
+  _state: UpdateProjectDetailsFormState,
+  formData: FormData
+): Promise<UpdateProjectDetailsFormState> {
+  const actor = await getActor();
+
+  if (!actor) {
+    return { error: "Unauthorized.", success: false };
+  }
+
+  const parsed = updateProjectDetailsDto.safeParse({
+    description: formData.get("description")?.toString().trim() || undefined,
+    projectId: formData.get("projectId")?.toString() ?? "",
+    title: formData.get("title")?.toString() ?? "",
+  });
+
+  if (!parsed.success) {
+    return { error: "Please check the project details.", success: false };
+  }
+
+  try {
+    const project = await updateProjectDetails(
+      parsed.data,
+      createProjectDeps(),
+      actor
+    );
+
+    revalidatePath("/dashboard/projects");
+    revalidatePath(`/dashboard/projects/${project.id}`);
+
+    return { error: null, success: true };
+  } catch (error) {
+    return {
+      error:
+        error instanceof Error ? error.message : "Project details update failed.",
+      success: false,
+    };
+  }
+}
+
+export async function deleteProjectFormAction(
+  _state: DeleteProjectFormState,
+  formData: FormData
+): Promise<DeleteProjectFormState> {
+  const actor = await getActor();
+
+  if (!actor) {
+    return { error: "Unauthorized." };
+  }
+
+  const parsed = deleteProjectDto.safeParse({
+    projectId: formData.get("projectId")?.toString() ?? "",
+  });
+
+  if (!parsed.success) {
+    return { error: "Project is required." };
+  }
+
+  try {
+    await deleteProject(parsed.data, createProjectDeps(), actor);
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : "Project deletion failed.",
+    };
+  }
+
+  revalidatePath("/dashboard/projects");
+  redirect("/dashboard/projects");
 }
 
 export async function approveArtifactAction(input: { artifactId: string }) {
