@@ -5,16 +5,16 @@ import {
   createConceptRepository,
   createDbClient,
   createProjectRepository,
-} from "@grasp/db";
-import { Worker } from "bullmq";
-import { processConceptExtractionJob } from "./concept-extraction/job-handler.js";
-import { parseRedisConnection, type ConceptExtractionJob } from "./concept-extraction-queue.js";
-import { serverEnv } from "./env.js";
+} from '@grasp/db';
+import { Worker } from 'bullmq';
+import { processConceptExtractionJob } from './concept-extraction/job-handler.js';
+import { parseRedisConnection, type ConceptExtractionJob } from './concept-extraction-queue.js';
+import { serverEnv } from './env.js';
 
 const db = createDbClient(serverEnv.DATABASE_URL);
 
 const worker = new Worker<ConceptExtractionJob>(
-  "concept-extraction",
+  'concept-extraction',
   async (job) => {
     await processConceptExtractionJob(job.data, {
       artifactRepository: createArtifactRepository(db),
@@ -30,8 +30,8 @@ const worker = new Worker<ConceptExtractionJob>(
   }
 );
 
-worker.on("failed", async (job, error) => {
-  console.error("Concept extraction job failed.", {
+worker.on('failed', async (job, error) => {
+  console.error('Concept extraction job failed.', {
     error,
     jobId: job?.id,
     projectId: job?.data.projectId,

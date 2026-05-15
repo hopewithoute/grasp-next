@@ -9,9 +9,5 @@ export {
   type ExtractedConceptGraphDto,
   type ExtractedConceptRelationshipDto,
   type SourceEvidenceDto,
-} from "./concept.dto";
-export type {
-  ConceptRecord,
-  ConceptRelationshipRecord,
-  ConceptRepository,
-} from "./concept.types";
+} from './concept.dto';
+export type { ConceptRecord, ConceptRelationshipRecord, ConceptRepository } from './concept.types';

@@ -1,8 +1,8 @@
-import { defineConfig } from "drizzle-kit";
-import { join } from "node:path";
-import { cwd, loadEnvFile } from "node:process";
+import { defineConfig } from 'drizzle-kit';
+import { join } from 'node:path';
+import { cwd, loadEnvFile } from 'node:process';
 
-for (const envFile of [join(cwd(), ".env"), join(cwd(), "..", "..", ".env")]) {
+for (const envFile of [join(cwd(), '.env'), join(cwd(), '..', '..', '.env')]) {
   try {
     loadEnvFile(envFile);
     break;
@@ -16,23 +16,18 @@ for (const envFile of [join(cwd(), ".env"), join(cwd(), "..", "..", ".env")]) {
 const databaseUrl = process.env.DATABASE_URL;
 
 if (!databaseUrl) {
-  throw new Error("DATABASE_URL is required for Drizzle commands.");
+  throw new Error('DATABASE_URL is required for Drizzle commands.');
 }
 
 export default defineConfig({
-  schema: "./src/schema.ts",
-  out: "./migrations",
-  dialect: "postgresql",
+  schema: './src/schema.ts',
+  out: './migrations',
+  dialect: 'postgresql',
   dbCredentials: {
     url: databaseUrl,
   },
 });
 
 function isMissingFileError(error: unknown) {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    error.code === "ENOENT"
-  );
+  return typeof error === 'object' && error !== null && 'code' in error && error.code === 'ENOENT';
 }

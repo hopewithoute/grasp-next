@@ -1,27 +1,19 @@
-import { redirect } from "next/navigation";
-import Link from "next/link";
-import {
-  Card,
-  CardAction,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { getActor } from "@/server/actor";
-import { createProjectDeps } from "@/server/project-deps";
-import { CreateProjectForm } from "./create-project-form";
-import { ProjectStatusBadge } from "./project-status-badge";
+import { redirect } from 'next/navigation';
+import Link from 'next/link';
+import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { getActor } from '@/server/actor';
+import { createProjectDeps } from '@/server/project-deps';
+import { CreateProjectForm } from './create-project-form';
+import { ProjectStatusBadge } from './project-status-badge';
 
 export async function ProjectsPage() {
   const actor = await getActor();
 
   if (!actor) {
-    redirect("/sign-in");
+    redirect('/sign-in');
   }
 
-  const projects = await createProjectDeps().projectRepository.listByOwner(
-    actor.id
-  );
+  const projects = await createProjectDeps().projectRepository.listByOwner(actor.id);
 
   return (
     <main className="min-h-screen bg-[#f7f8f4] px-6 py-8 text-[#171916]">
@@ -65,13 +57,10 @@ export async function ProjectsPage() {
             ) : (
               <section className="border border-dashed border-[#171916]/25 bg-white px-6 py-10">
                 <div className="max-w-xl space-y-3">
-                  <h2 className="text-xl font-semibold">
-                    Start with one source.
-                  </h2>
+                  <h2 className="text-xl font-semibold">Start with one source.</h2>
                   <p className="text-sm leading-6 text-[#5c634f]">
-                    Create a project from raw notes or markdown. The next steps
-                    will extract concepts, objectives, and lesson blocks from
-                    that source.
+                    Create a project from raw notes or markdown. The next steps will extract
+                    concepts, objectives, and lesson blocks from that source.
                   </p>
                 </div>
               </section>
@@ -94,7 +83,7 @@ export async function ProjectsPage() {
 }
 
 function formatDate(date: Date) {
-  return new Intl.DateTimeFormat("en", {
-    dateStyle: "medium",
+  return new Intl.DateTimeFormat('en', {
+    dateStyle: 'medium',
   }).format(date);
 }

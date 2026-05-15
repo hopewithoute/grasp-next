@@ -1,34 +1,28 @@
-import { eq } from "drizzle-orm";
-import type { DbClient } from "./client";
-import {
-  artifactReviewRuns,
-  type ArtifactReviewRun,
-  type NewArtifactReviewRun,
-} from "./schema";
+import { eq } from 'drizzle-orm';
+import type { DbClient } from './client';
+import { artifactReviewRuns, type ArtifactReviewRun, type NewArtifactReviewRun } from './schema';
 
-export type ArtifactReviewRunRepository = ReturnType<
-  typeof createArtifactReviewRunRepository
->;
+export type ArtifactReviewRunRepository = ReturnType<typeof createArtifactReviewRunRepository>;
 
 export function createArtifactReviewRunRepository(db: DbClient) {
   return {
     async createSuspended(
       input: Pick<
         NewArtifactReviewRun,
-        | "artifactId"
-        | "artifactVersionId"
-        | "resumeLabel"
-        | "resumeLabels"
-        | "suspendedSteps"
-        | "workflowId"
-        | "workflowRunId"
+        | 'artifactId'
+        | 'artifactVersionId'
+        | 'resumeLabel'
+        | 'resumeLabels'
+        | 'suspendedSteps'
+        | 'workflowId'
+        | 'workflowRunId'
       >
     ) {
       const [reviewRun] = await db
         .insert(artifactReviewRuns)
         .values({
           ...input,
-          status: "suspended",
+          status: 'suspended',
         })
         .returning();
 
@@ -45,10 +39,7 @@ export function createArtifactReviewRunRepository(db: DbClient) {
       return reviewRun ?? null;
     },
 
-    async updateStatus(
-      reviewRunId: string,
-      status: ArtifactReviewRun["status"]
-    ) {
+    async updateStatus(reviewRunId: string, status: ArtifactReviewRun['status']) {
       const [reviewRun] = await db
         .update(artifactReviewRuns)
         .set({

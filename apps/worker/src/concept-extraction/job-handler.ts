@@ -1,17 +1,14 @@
-import { mastra } from "@grasp/ai";
-import {
-  processConceptExtraction,
-  type ConceptExtractionWorkflow,
-} from "@grasp/domain";
+import { mastra } from '@grasp/ai';
+import { processConceptExtraction, type ConceptExtractionWorkflow } from '@grasp/domain';
 import type {
   createArtifactRepository,
   createArtifactReviewRunRepository,
   createAuditLogRepository,
   createConceptRepository,
   createProjectRepository,
-} from "@grasp/db";
-import { parseReviewConceptsSuspendPayload } from "./suspend-payload.js";
-import type { ConceptExtractionJob } from "../concept-extraction-queue.js";
+} from '@grasp/db';
+import { parseReviewConceptsSuspendPayload } from './suspend-payload.js';
+import type { ConceptExtractionJob } from '../concept-extraction-queue.js';
 
 export type ProcessConceptExtractionJobDeps = {
   artifactRepository: ReturnType<typeof createArtifactRepository>;
@@ -33,7 +30,7 @@ export async function processConceptExtractionJob(
 
   const workflowAdapter: ConceptExtractionWorkflow = {
     runAndSuspend: async ({ sourceMaterial }) => {
-      const extractWorkflow = mastra.getWorkflow("extractConceptsWorkflow");
+      const extractWorkflow = mastra.getWorkflow('extractConceptsWorkflow');
       const workflowRun = await extractWorkflow.createRun({
         resourceId: project.id,
       });
@@ -41,15 +38,11 @@ export async function processConceptExtractionJob(
         inputData: { sourceMaterial },
       });
 
-      if (workflowResult.status !== "suspended") {
-        throw new Error(
-          `concept_extraction_workflow_unexpected_status:${workflowResult.status}`
-        );
+      if (workflowResult.status !== 'suspended') {
+        throw new Error(`concept_extraction_workflow_unexpected_status:${workflowResult.status}`);
       }
 
-      const suspendPayload = parseReviewConceptsSuspendPayload(
-        workflowResult.suspendPayload
-      );
+      const suspendPayload = parseReviewConceptsSuspendPayload(workflowResult.suspendPayload);
 
       return {
         conceptGraph: suspendPayload.conceptGraph,
@@ -64,7 +57,7 @@ export async function processConceptExtractionJob(
   await processConceptExtraction(
     {
       projectId: project.id,
-      sourceMaterial: project.sourceMaterial ?? "",
+      sourceMaterial: project.sourceMaterial ?? '',
       ownerId: project.ownerId,
       revisionFeedback: job.revisionFeedback,
     },

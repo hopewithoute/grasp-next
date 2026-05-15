@@ -1,21 +1,19 @@
-import { and, desc, eq, max } from "drizzle-orm";
-import type { DbClient } from "./client";
+import { and, desc, eq, max } from 'drizzle-orm';
+import type { DbClient } from './client';
 import {
   artifacts,
   artifactVersions,
   type Artifact,
   type NewArtifact,
   type NewArtifactVersion,
-} from "./schema";
+} from './schema';
 
 export type ArtifactRepository = ReturnType<typeof createArtifactRepository>;
-type ExtractionMode = "llm_strict" | "llm_json" | "deterministic";
+type ExtractionMode = 'llm_strict' | 'llm_json' | 'deterministic';
 
 export function createArtifactRepository(db: DbClient) {
   return {
-    async create(
-      input: Pick<NewArtifact, "projectId" | "status" | "type">
-    ) {
+    async create(input: Pick<NewArtifact, 'projectId' | 'status' | 'type'>) {
       const [artifact] = await db.insert(artifacts).values(input).returning();
 
       return artifact;
@@ -31,10 +29,7 @@ export function createArtifactRepository(db: DbClient) {
       return artifact ?? null;
     },
 
-    async findByProjectAndType(
-      projectId: string,
-      type: Artifact["type"]
-    ) {
+    async findByProjectAndType(projectId: string, type: Artifact['type']) {
       const [artifact] = await db
         .select()
         .from(artifacts)
@@ -44,13 +39,8 @@ export function createArtifactRepository(db: DbClient) {
       return artifact ?? null;
     },
 
-    async findOrCreateForProject(
-      input: Pick<NewArtifact, "projectId" | "status" | "type">
-    ) {
-      const existingArtifact = await this.findByProjectAndType(
-        input.projectId,
-        input.type
-      );
+    async findOrCreateForProject(input: Pick<NewArtifact, 'projectId' | 'status' | 'type'>) {
+      const existingArtifact = await this.findByProjectAndType(input.projectId, input.type);
 
       if (existingArtifact) {
         return existingArtifact;
@@ -59,7 +49,7 @@ export function createArtifactRepository(db: DbClient) {
       return this.create(input);
     },
 
-    async updateStatus(artifactId: string, status: Artifact["status"]) {
+    async updateStatus(artifactId: string, status: Artifact['status']) {
       const [artifact] = await db
         .update(artifacts)
         .set({
@@ -75,7 +65,7 @@ export function createArtifactRepository(db: DbClient) {
     async createVersion(
       input: Pick<
         NewArtifactVersion,
-        "artifactId" | "content" | "extractionMode" | "revisionFeedback"
+        'artifactId' | 'content' | 'extractionMode' | 'revisionFeedback'
       >
     ) {
       return db.transaction(async (tx) => {
@@ -91,7 +81,7 @@ export function createArtifactRepository(db: DbClient) {
           .values({
             artifactId: input.artifactId,
             content: input.content,
-            extractionMode: input.extractionMode ?? "deterministic",
+            extractionMode: input.extractionMode ?? 'deterministic',
             revisionFeedback: input.revisionFeedback,
             versionNumber: (nextVersionNumber ?? 0) + 1,
           })
@@ -121,9 +111,7 @@ export function createArtifactRepository(db: DbClient) {
   };
 }
 
-function toArtifactVersionRecord(
-  version: typeof artifactVersions.$inferSelect
-) {
+function toArtifactVersionRecord(version: typeof artifactVersions.$inferSelect) {
   return {
     ...version,
     extractionMode: toExtractionMode(version.extractionMode),
@@ -131,9 +119,9 @@ function toArtifactVersionRecord(
 }
 
 function toExtractionMode(value: string): ExtractionMode {
-  if (value === "llm_strict" || value === "llm_json") {
+  if (value === 'llm_strict' || value === 'llm_json') {
     return value;
   }
 
-  return "deterministic";
+  return 'deterministic';
 }

@@ -1,87 +1,77 @@
-import type { JSONSchema7 } from "json-schema";
+import type { JSONSchema7 } from 'json-schema';
 
 export const conceptGraphJsonSchema: JSONSchema7 = {
-  type: "object",
+  type: 'object',
   properties: {
     concepts: {
-      type: "array",
+      type: 'array',
       minItems: 1,
       items: {
-        type: "object",
+        type: 'object',
         properties: {
           confidence: {
-            type: "number",
+            type: 'number',
             minimum: 0,
             maximum: 1,
           },
           definition: {
-            type: "string",
+            type: 'string',
             minLength: 1,
           },
           difficulty: {
-            type: "string",
-            enum: ["beginner", "intermediate", "advanced"],
+            type: 'string',
+            enum: ['beginner', 'intermediate', 'advanced'],
           },
           name: {
-            type: "string",
+            type: 'string',
             minLength: 1,
           },
           sourceEvidence: {
-            type: "array",
+            type: 'array',
             minItems: 1,
             items: {
-              type: "object",
+              type: 'object',
               properties: {
                 excerpt: {
-                  type: "string",
+                  type: 'string',
                   minLength: 1,
                 },
                 location: {
-                  type: "string",
+                  type: 'string',
                 },
               },
-              required: ["excerpt"],
+              required: ['excerpt'],
               additionalProperties: false,
             },
           },
         },
-        required: [
-          "confidence",
-          "definition",
-          "difficulty",
-          "name",
-          "sourceEvidence",
-        ],
+        required: ['confidence', 'definition', 'difficulty', 'name', 'sourceEvidence'],
         additionalProperties: false,
       },
     },
     relationships: {
-      type: "array",
+      type: 'array',
       items: {
-        type: "object",
+        type: 'object',
         properties: {
           relationshipType: {
-            type: "string",
-            const: "prerequisite",
+            type: 'string',
+            const: 'prerequisite',
           },
           sourceConceptName: {
-            type: "string",
+            type: 'string',
             minLength: 1,
           },
           targetConceptName: {
-            type: "string",
+            type: 'string',
             minLength: 1,
           },
         },
-        required: [
-          "relationshipType",
-          "sourceConceptName",
-          "targetConceptName",
-        ],
+        required: ['relationshipType', 'sourceConceptName', 'targetConceptName'],
         additionalProperties: false,
       },
     },
   },
-  required: ["concepts", "relationships"],
+  required: ['concepts', 'relationships'],
   additionalProperties: false,
 };

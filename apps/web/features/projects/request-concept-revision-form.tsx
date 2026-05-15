@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { RotateCcw } from "lucide-react";
-import { useActionState } from "react";
-import { Button } from "@/components/ui/button";
-import { requestConceptRevisionFormAction } from "./actions";
+import { RotateCcw } from 'lucide-react';
+import { useActionState } from 'react';
+import { Button } from '@/components/ui/button';
+import { requestConceptRevisionFormAction } from './actions';
 
 type RequestConceptRevisionFormProps = {
   artifactId: string;
@@ -14,10 +14,10 @@ export function RequestConceptRevisionForm({
   artifactId,
   disabled = false,
 }: RequestConceptRevisionFormProps) {
-  const [state, formAction, isPending] = useActionState(
-    requestConceptRevisionFormAction,
-    { error: null, success: false }
-  );
+  const [state, formAction, isPending] = useActionState(requestConceptRevisionFormAction, {
+    error: null,
+    success: false,
+  });
 
   return (
     <form action={formAction} className="w-full space-y-2">
@@ -30,23 +30,14 @@ export function RequestConceptRevisionForm({
         placeholder="What should change in this concept graph?"
         required
       />
-      <Button
-        disabled={disabled || isPending}
-        size="lg"
-        type="submit"
-        variant="outline"
-      >
+      <Button disabled={disabled || isPending} size="lg" type="submit" variant="outline">
         <RotateCcw />
-        {isPending ? "Requesting..." : "Request revision"}
+        {isPending ? 'Requesting...' : 'Request revision'}
       </Button>
 
-      {state.error ? (
-        <p className="text-sm text-red-700">{state.error}</p>
-      ) : null}
+      {state.error ? <p className="text-sm text-red-700">{state.error}</p> : null}
 
-      {state.success ? (
-        <p className="text-sm text-green-700">Revision requested.</p>
-      ) : null}
+      {state.success ? <p className="text-sm text-green-700">Revision requested.</p> : null}
     </form>
   );
 }

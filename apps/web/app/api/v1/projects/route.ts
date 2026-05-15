@@ -1,18 +1,14 @@
-import { NextResponse } from "next/server";
-import {
-  canCreateProject,
-  createProject,
-  createProjectDto,
-} from "@grasp/domain";
-import { getActor } from "@/server/actor";
-import { createProjectDeps } from "@/server/project-deps";
-import { parseJsonRequest, validationErrorResponse } from "../http";
+import { NextResponse } from 'next/server';
+import { canCreateProject, createProject, createProjectDto } from '@grasp/domain';
+import { getActor } from '@/server/actor';
+import { createProjectDeps } from '@/server/project-deps';
+import { parseJsonRequest, validationErrorResponse } from '../http';
 
 export async function POST(request: Request) {
   const actor = await getActor();
 
   if (!canCreateProject(actor)) {
-    return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+    return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
   }
 
   const body = await parseJsonRequest(request);

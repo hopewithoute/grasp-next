@@ -1,5 +1,5 @@
-import { extractConceptsWorkflow } from "./extract-concepts-workflow";
-import { mastra } from "../index";
+import { extractConceptsWorkflow } from './extract-concepts-workflow';
+import { mastra } from '../index';
 
 export type ResumeArtifactReviewInput = {
   resumeLabel: string;
@@ -8,7 +8,7 @@ export type ResumeArtifactReviewInput = {
 };
 
 export type ResumeArtifactReviewResult = {
-  status: "success" | "suspended" | "failed" | "unknown";
+  status: 'success' | 'suspended' | 'failed' | 'unknown';
 };
 
 export async function resumeArtifactReview(
@@ -18,7 +18,7 @@ export async function resumeArtifactReview(
     throw new Error(`Unsupported artifact review workflow: ${input.workflowId}`);
   }
 
-  const workflow = mastra.getWorkflow("extractConceptsWorkflow");
+  const workflow = mastra.getWorkflow('extractConceptsWorkflow');
   const run = await workflow.createRun({
     runId: input.workflowRunId,
   });
@@ -29,17 +29,13 @@ export async function resumeArtifactReview(
     },
   });
 
-  if (
-    result.status === "success" ||
-    result.status === "suspended" ||
-    result.status === "failed"
-  ) {
+  if (result.status === 'success' || result.status === 'suspended' || result.status === 'failed') {
     return {
       status: result.status,
     };
   }
 
   return {
-    status: "unknown",
+    status: 'unknown',
   };
 }

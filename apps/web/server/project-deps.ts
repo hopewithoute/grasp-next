@@ -1,4 +1,4 @@
-import "server-only";
+import 'server-only';
 
 import {
   createArtifactRepository,
@@ -7,10 +7,10 @@ import {
   createConceptRepository,
   createDbClient,
   createProjectRepository,
-} from "@grasp/db";
-import { resumeArtifactReview } from "@grasp/ai";
-import { createConceptExtractionQueue } from "./queue";
-import { serverEnv } from "./env";
+} from '@grasp/db';
+import { resumeArtifactReview } from '@grasp/ai';
+import { createConceptExtractionQueue } from './queue';
+import { serverEnv } from './env';
 
 export function createProjectDeps() {
   if (globalForProjectDeps.graspProjectDeps) {

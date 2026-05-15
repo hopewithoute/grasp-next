@@ -1,9 +1,9 @@
-import { Agent } from "@mastra/core/agent";
-import { resolveAgentModel } from "../../model-resolver";
+import { Agent } from '@mastra/core/agent';
+import { resolveAgentModel } from '../../model-resolver';
 
 export const conceptExtractorAgent = new Agent({
-  id: "concept-extractor-agent",
-  name: "Concept Extractor Agent",
+  id: 'concept-extractor-agent',
+  name: 'Concept Extractor Agent',
   instructions: `
   You extract learning concept graphs from raw educational source material.
 
@@ -15,5 +15,5 @@ export const conceptExtractorAgent = new Agent({
   - Add prerequisite relationships only when the source material supports the ordering.
   - Never invent facts or cite evidence that is not present in the source material.
   `,
-  model: resolveAgentModel("conceptExtractor"),
+  model: resolveAgentModel('conceptExtractor', process.env),
 });

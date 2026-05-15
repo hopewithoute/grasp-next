@@ -1,8 +1,8 @@
-import "server-only";
+import 'server-only';
 
-import type { Actor } from "@grasp/domain";
-import { headers } from "next/headers";
-import { auth } from "./auth";
+import type { Actor } from '@grasp/domain';
+import { headers } from 'next/headers';
+import { auth } from './auth';
 
 export async function getActor(): Promise<Actor | null> {
   const session = await auth.api.getSession({

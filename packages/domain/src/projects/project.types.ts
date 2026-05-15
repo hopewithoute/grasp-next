@@ -1,9 +1,4 @@
-export type ProjectStatus =
-  | "draft"
-  | "processing"
-  | "reviewing"
-  | "processed"
-  | "failed";
+export type ProjectStatus = 'draft' | 'processing' | 'reviewing' | 'processed' | 'failed';
 
 export type ProjectRecord = {
   id: string;
@@ -24,10 +19,7 @@ export type ProjectRepository = {
     sourceMaterial?: string;
   }): Promise<ProjectRecord>;
   findById(projectId: string): Promise<ProjectRecord | null>;
-  findByIdForOwner(
-    projectId: string,
-    ownerId: string
-  ): Promise<ProjectRecord | null>;
+  findByIdForOwner(projectId: string, ownerId: string): Promise<ProjectRecord | null>;
   listByOwner(ownerId: string): Promise<ProjectRecord[]>;
   updateDetailsForOwner(
     projectId: string,
@@ -37,19 +29,13 @@ export type ProjectRepository = {
       title: string;
     }
   ): Promise<ProjectRecord | null>;
-  updateSourceMaterial(
-    projectId: string,
-    sourceMaterial: string
-  ): Promise<ProjectRecord | null>;
+  updateSourceMaterial(projectId: string, sourceMaterial: string): Promise<ProjectRecord | null>;
   updateSourceMaterialForOwner(
     projectId: string,
     ownerId: string,
     sourceMaterial: string
   ): Promise<ProjectRecord | null>;
-  updateStatus(
-    projectId: string,
-    status: ProjectStatus
-  ): Promise<ProjectRecord | null>;
+  updateStatus(projectId: string, status: ProjectStatus): Promise<ProjectRecord | null>;
   deleteForOwner(projectId: string, ownerId: string): Promise<ProjectRecord | null>;
 };
 

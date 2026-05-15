@@ -1,4 +1,4 @@
-import type { ConceptDifficultyDto } from "./concept.dto";
+import type { ConceptDifficultyDto } from './concept.dto';
 
 export type ConceptRecord = {
   id: string;
@@ -37,7 +37,7 @@ export type ConceptRepository = {
         sourceEvidence: unknown;
       }>;
       relationships: Array<{
-        relationshipType: "prerequisite";
+        relationshipType: 'prerequisite';
         sourceConceptName: string;
         targetConceptName: string;
       }>;

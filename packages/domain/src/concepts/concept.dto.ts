@@ -1,10 +1,6 @@
-import { z } from "zod";
+import { z } from 'zod';
 
-export const conceptDifficultyDto = z.enum([
-  "beginner",
-  "intermediate",
-  "advanced",
-]);
+export const conceptDifficultyDto = z.enum(['beginner', 'intermediate', 'advanced']);
 
 export const sourceEvidenceDto = z.object({
   excerpt: z.string().trim().min(1),
@@ -20,7 +16,7 @@ export const extractedConceptDto = z.object({
 });
 
 export const extractedConceptRelationshipDto = z.object({
-  relationshipType: z.literal("prerequisite").default("prerequisite"),
+  relationshipType: z.literal('prerequisite').default('prerequisite'),
   sourceConceptName: z.string().trim().min(1),
   targetConceptName: z.string().trim().min(1),
 });
@@ -33,7 +29,5 @@ export const extractedConceptGraphDto = z.object({
 export type ConceptDifficultyDto = z.infer<typeof conceptDifficultyDto>;
 export type ExtractedConceptDto = z.infer<typeof extractedConceptDto>;
 export type ExtractedConceptGraphDto = z.infer<typeof extractedConceptGraphDto>;
-export type ExtractedConceptRelationshipDto = z.infer<
-  typeof extractedConceptRelationshipDto
->;
+export type ExtractedConceptRelationshipDto = z.infer<typeof extractedConceptRelationshipDto>;
 export type SourceEvidenceDto = z.infer<typeof sourceEvidenceDto>;

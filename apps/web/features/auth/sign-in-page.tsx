@@ -1,7 +1,7 @@
-import { redirect } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { getActor } from "@/server/actor";
-import { signInWithGoogle } from "./actions";
+import { redirect } from 'next/navigation';
+import { Button } from '@/components/ui/button';
+import { getActor } from '@/server/actor';
+import { signInWithGoogle } from './actions';
 
 type SignInPageProps = {
   searchParams: Promise<{
@@ -13,7 +13,7 @@ export async function SignInPage({ searchParams }: SignInPageProps) {
   const actor = await getActor();
 
   if (actor) {
-    redirect("/dashboard/projects");
+    redirect('/dashboard/projects');
   }
 
   const params = await searchParams;
@@ -31,9 +31,8 @@ export async function SignInPage({ searchParams }: SignInPageProps) {
                 Turn raw teaching material into a reviewable AI lesson.
               </h1>
               <p className="max-w-xl text-base leading-7 text-[#5c634f] md:text-lg">
-                Sign in with Google to start a creator workspace, keep projects
-                tied to your account, and review every generated artifact before
-                publishing.
+                Sign in with Google to start a creator workspace, keep projects tied to your
+                account, and review every generated artifact before publishing.
               </p>
             </div>
           </div>
@@ -43,8 +42,7 @@ export async function SignInPage({ searchParams }: SignInPageProps) {
               <div>
                 <h2 className="text-lg font-semibold">Creator access</h2>
                 <p className="mt-1 text-sm leading-6 text-[#5c634f]">
-                  One Google flow handles both first-time registration and
-                  returning sign-in.
+                  One Google flow handles both first-time registration and returning sign-in.
                 </p>
               </div>
 

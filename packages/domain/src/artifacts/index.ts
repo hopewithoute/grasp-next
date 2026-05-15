@@ -7,7 +7,7 @@ export type {
   ArtifactStatus,
   ArtifactType,
   ArtifactVersionRecord,
-} from "./artifact.types";
+} from './artifact.types';
 export {
   approveArtifact,
   ArtifactApprovalForbiddenError,
@@ -15,12 +15,13 @@ export {
   ArtifactApprovalReviewRunNotFoundError,
   ArtifactNotFoundError,
   type ApproveArtifactDeps,
-  type ApproveArtifactInput,
-  approveArtifactDto,
-} from "./approve-artifact.action";
+} from './approve-artifact.action';
+export { approveArtifactDto, type ApproveArtifactInput } from './approve-artifact.dto';
 export {
   requestConceptRevision,
   type RequestConceptRevisionDeps,
-  type RequestConceptRevisionInput,
+} from './request-concept-revision.action';
+export {
   requestConceptRevisionDto,
-} from "./request-concept-revision.action";
+  type RequestConceptRevisionInput,
+} from './request-concept-revision.dto';

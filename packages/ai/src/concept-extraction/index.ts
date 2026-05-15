@@ -1,4 +1,1 @@
-export {
-  extractConceptGraph,
-  type ExtractConceptGraphInput,
-} from "./extract-concept-graph";
+export { extractConceptGraph, type ExtractConceptGraphInput } from './extract-concept-graph';

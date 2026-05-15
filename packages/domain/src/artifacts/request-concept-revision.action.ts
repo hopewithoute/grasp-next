@@ -1,30 +1,24 @@
-import { z } from "zod";
-import { canEditOwnedProject, type Actor } from "../projects/project.policy";
+import { canEditOwnedProject, type Actor } from '../projects/project.policy';
 import type {
   AuditLogRepository,
   ConceptExtractionQueue,
   ProjectRepository,
-} from "../projects/project.types";
+} from '../projects/project.types';
 import type {
   ArtifactRecord,
   ArtifactRepository,
   ArtifactReviewRunRepository,
-} from "./artifact.types";
+} from './artifact.types';
 import {
   ArtifactApprovalForbiddenError,
   ArtifactApprovalInvalidStateError,
   ArtifactApprovalReviewRunNotFoundError,
   ArtifactNotFoundError,
-} from "./approve-artifact.action";
-
-export const requestConceptRevisionDto = z.object({
-  artifactId: z.string().uuid(),
-  revisionFeedback: z.string().trim().min(1).max(4000),
-});
-
-export type RequestConceptRevisionInput = z.infer<
-  typeof requestConceptRevisionDto
->;
+} from './approve-artifact.action';
+import {
+  requestConceptRevisionDto,
+  type RequestConceptRevisionInput,
+} from './request-concept-revision.dto';
 
 export type RequestConceptRevisionDeps = {
   artifactRepository: ArtifactRepository;
@@ -56,20 +50,18 @@ export async function requestConceptRevision(
     throw new ArtifactApprovalForbiddenError();
   }
 
-  if (artifact.type !== "concept_graph") {
+  if (artifact.type !== 'concept_graph') {
     throw new ArtifactApprovalInvalidStateError(
-      "Only concept graph artifacts can request concept revision."
+      'Only concept graph artifacts can request concept revision.'
     );
   }
 
-  if (artifact.status !== "generated" && artifact.status !== "needs_revision") {
+  if (artifact.status !== 'generated' && artifact.status !== 'needs_revision') {
     throw new ArtifactApprovalInvalidStateError();
   }
 
   if (!artifact.currentVersionId) {
-    throw new ArtifactApprovalInvalidStateError(
-      "Artifact has no current version to revise."
-    );
+    throw new ArtifactApprovalInvalidStateError('Artifact has no current version to revise.');
   }
 
   const reviewRun = await deps.artifactReviewRunRepository.findByArtifactVersionId(
@@ -80,29 +72,24 @@ export async function requestConceptRevision(
     throw new ArtifactApprovalReviewRunNotFoundError();
   }
 
-  if (reviewRun.status !== "suspended") {
-    throw new ArtifactApprovalInvalidStateError(
-      "Artifact review run is not suspended."
-    );
+  if (reviewRun.status !== 'suspended') {
+    throw new ArtifactApprovalInvalidStateError('Artifact review run is not suspended.');
   }
 
-  await deps.artifactReviewRunRepository.updateStatus(reviewRun.id, "resumed");
+  await deps.artifactReviewRunRepository.updateStatus(reviewRun.id, 'resumed');
 
-  const revisedArtifact = await deps.artifactRepository.updateStatus(
-    artifact.id,
-    "needs_revision"
-  );
+  const revisedArtifact = await deps.artifactRepository.updateStatus(artifact.id, 'needs_revision');
 
   if (!revisedArtifact) {
     throw new ArtifactNotFoundError();
   }
 
-  await deps.projectRepository.updateStatus(project.id, "processing");
+  await deps.projectRepository.updateStatus(project.id, 'processing');
 
   await deps.auditLogRepository.write({
     actorId: actor.id,
-    action: "artifact.revision_requested",
-    entityType: "artifact",
+    action: 'artifact.revision_requested',
+    entityType: 'artifact',
     entityId: revisedArtifact.id,
     metadata: {
       artifactVersionId: artifact.currentVersionId,

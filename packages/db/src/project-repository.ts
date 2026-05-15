@@ -1,17 +1,12 @@
-import { and, desc, eq } from "drizzle-orm";
-import type { DbClient } from "./client";
-import { projects, type NewProject, type Project } from "./schema";
+import { and, desc, eq } from 'drizzle-orm';
+import type { DbClient } from './client';
+import { projects, type NewProject, type Project } from './schema';
 
 export type ProjectRepository = ReturnType<typeof createProjectRepository>;
 
 export function createProjectRepository(db: DbClient) {
   return {
-    async create(
-      input: Pick<
-        NewProject,
-        "description" | "ownerId" | "sourceMaterial" | "title"
-      >
-    ) {
+    async create(input: Pick<NewProject, 'description' | 'ownerId' | 'sourceMaterial' | 'title'>) {
       const [project] = await db
         .insert(projects)
         .values({
@@ -26,11 +21,7 @@ export function createProjectRepository(db: DbClient) {
     },
 
     async findById(projectId: string) {
-      const [project] = await db
-        .select()
-        .from(projects)
-        .where(eq(projects.id, projectId))
-        .limit(1);
+      const [project] = await db.select().from(projects).where(eq(projects.id, projectId)).limit(1);
 
       return project ?? null;
     },
@@ -79,7 +70,7 @@ export function createProjectRepository(db: DbClient) {
         .update(projects)
         .set({
           sourceMaterial,
-          status: "processing",
+          status: 'processing',
           updatedAt: new Date(),
         })
         .where(eq(projects.id, projectId))
@@ -88,16 +79,12 @@ export function createProjectRepository(db: DbClient) {
       return project ?? null;
     },
 
-    async updateSourceMaterialForOwner(
-      projectId: string,
-      ownerId: string,
-      sourceMaterial: string
-    ) {
+    async updateSourceMaterialForOwner(projectId: string, ownerId: string, sourceMaterial: string) {
       const [project] = await db
         .update(projects)
         .set({
           sourceMaterial,
-          status: "processing",
+          status: 'processing',
           updatedAt: new Date(),
         })
         .where(and(eq(projects.id, projectId), eq(projects.ownerId, ownerId)))
@@ -106,7 +93,7 @@ export function createProjectRepository(db: DbClient) {
       return project ?? null;
     },
 
-    async updateStatus(projectId: string, status: Project["status"]) {
+    async updateStatus(projectId: string, status: Project['status']) {
       const [project] = await db
         .update(projects)
         .set({

@@ -1,21 +1,15 @@
-import {
-  extractedConceptGraphDto,
-  type ExtractedConceptGraphDto,
-} from "@grasp/domain";
-import { conceptExtractorAgent } from "../mastra/agents/concept-extractor-agent";
-import { canUseAgentModel } from "../model-resolver";
-import { conceptGraphJsonSchema } from "./concept-graph-json-schema";
-import { extractConceptsDeterministically } from "./deterministic-concept-extractor";
-import {
-  buildConceptExtractionPrompt,
-  buildLooserConceptExtractionPrompt,
-} from "./prompts";
+import { extractedConceptGraphDto, type ExtractedConceptGraphDto } from '@grasp/domain';
+import { conceptExtractorAgent } from '../mastra/agents/concept-extractor-agent';
+import { canUseAgentModel } from '../model-resolver';
+import { conceptGraphJsonSchema } from './concept-graph-json-schema';
+import { extractConceptsDeterministically } from './deterministic-concept-extractor';
+import { buildConceptExtractionPrompt, buildLooserConceptExtractionPrompt } from './prompts';
 import {
   getGeneratedText,
   normalizeLooseJsonResponse,
   parseLooseJsonResponse,
-} from "./response-helpers";
-import { isUnsupportedStructuredOutputError } from "./error-utils";
+} from './response-helpers';
+import { isUnsupportedStructuredOutputError } from './error-utils';
 
 export type ExtractConceptGraphInput = {
   sourceMaterial: string;
@@ -23,7 +17,7 @@ export type ExtractConceptGraphInput = {
 
 export type ExtractConceptGraphResult = {
   graph: ExtractedConceptGraphDto;
-  extractionMode: "llm_strict" | "llm_json" | "deterministic";
+  extractionMode: 'llm_strict' | 'llm_json' | 'deterministic';
 };
 
 type ConceptExtractorAgent = {
@@ -54,7 +48,7 @@ export async function extractConceptGraph(
   if (!dependencies.hasConfiguredLlmProvider()) {
     return {
       graph: extractConceptsDeterministically(input.sourceMaterial),
-      extractionMode: "deterministic",
+      extractionMode: 'deterministic',
     };
   }
 
@@ -70,7 +64,7 @@ export async function extractConceptGraph(
 
     return {
       graph: extractedConceptGraphDto.parse(response.object),
-      extractionMode: "llm_strict",
+      extractionMode: 'llm_strict',
     };
   } catch (error) {
     if (!isUnsupportedStructuredOutputError(error)) {
@@ -86,11 +80,11 @@ export async function extractConceptGraph(
 
     return {
       graph: parsed,
-      extractionMode: "llm_json",
+      extractionMode: 'llm_json',
     };
   }
 }
 
 function hasConfiguredLlmProvider() {
-  return canUseAgentModel("conceptExtractor");
+  return canUseAgentModel('conceptExtractor', process.env);
 }

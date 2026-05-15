@@ -1,5 +1,5 @@
-import "./load-env.js";
+import './load-env.js';
 
-import { parseServerEnv } from "@grasp/domain";
+import { parseServerEnv } from '@grasp/domain';
 
 export const serverEnv = parseServerEnv(process.env);

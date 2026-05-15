@@ -1,130 +1,126 @@
-import assert from "node:assert/strict";
-import { beforeEach, describe, it } from "node:test";
+import assert from 'node:assert/strict';
+import { beforeEach, describe, it } from 'node:test';
 import {
   approveArtifact,
   ArtifactApprovalForbiddenError,
   ArtifactApprovalInvalidStateError,
-} from "./approve-artifact.action";
-import { requestConceptRevision } from "./request-concept-revision.action";
+} from './approve-artifact.action';
+import { requestConceptRevision } from './request-concept-revision.action';
 import type {
   ArtifactRecord,
   ArtifactRepository,
   ArtifactReviewRunRecord,
   ArtifactReviewRunRepository,
   ArtifactVersionRecord,
-} from "./artifact.types";
+} from './artifact.types';
 import type {
   AuditLogRepository,
   ConceptExtractionQueue,
   ProjectRecord,
   ProjectRepository,
   ProjectStatus,
-} from "../projects/project.types";
+} from '../projects/project.types';
 
-const actor = { id: "owner-1" };
+const actor = { id: 'owner-1' };
 
-describe("approveArtifact", () => {
+describe('approveArtifact', () => {
   let state: TestState;
 
   beforeEach(() => {
     state = createTestState();
   });
 
-  it("resumes the stored review run, completes it, approves the artifact, and writes an audit log", async () => {
+  it('resumes the stored review run, completes it, approves the artifact, and writes an audit log', async () => {
     const artifact = await approveArtifact(
       { artifactId: state.artifact.id },
       createDeps(state, {
-        reviewStatus: "success",
+        reviewStatus: 'success',
       }),
       actor
     );
 
-    assert.equal(artifact.status, "approved");
-    assert.equal(state.reviewRun.status, "completed");
+    assert.equal(artifact.status, 'approved');
+    assert.equal(state.reviewRun.status, 'completed');
     assert.deepEqual(state.resumeCalls, [
       {
-        resumeLabel: "review_concepts",
-        workflowId: "extract-concepts",
-        workflowRunId: "workflow-run-1",
+        resumeLabel: 'review_concepts',
+        workflowId: 'extract-concepts',
+        workflowRunId: 'workflow-run-1',
       },
     ]);
     assert.equal(state.auditLogs.length, 1);
-    assert.equal(state.auditLogs[0]?.action, "artifact.approved");
+    assert.equal(state.auditLogs[0]?.action, 'artifact.approved');
   });
 
-  it("rejects actors that do not own the artifact project", async () => {
+  it('rejects actors that do not own the artifact project', async () => {
     await assert.rejects(
-      approveArtifact(
-        { artifactId: state.artifact.id },
-        createDeps(state),
-        { id: "other-user" }
-      ),
+      approveArtifact({ artifactId: state.artifact.id }, createDeps(state), { id: 'other-user' }),
       ArtifactApprovalForbiddenError
     );
 
     assert.equal(state.resumeCalls.length, 0);
-    assert.equal(state.artifact.status, "generated");
+    assert.equal(state.artifact.status, 'generated');
   });
 
-  it("marks the review run failed when workflow resume does not complete", async () => {
+  it('marks the review run failed when workflow resume does not complete', async () => {
     await assert.rejects(
       approveArtifact(
         { artifactId: state.artifact.id },
         createDeps(state, {
-          reviewStatus: "failed",
+          reviewStatus: 'failed',
         }),
         actor
       ),
       ArtifactApprovalInvalidStateError
     );
 
-    assert.equal(state.reviewRun.status, "failed");
-    assert.equal(state.artifact.status, "generated");
+    assert.equal(state.reviewRun.status, 'failed');
+    assert.equal(state.artifact.status, 'generated');
   });
 });
 
-describe("requestConceptRevision", () => {
+describe('requestConceptRevision', () => {
   let state: TestState;
 
   beforeEach(() => {
     state = createTestState();
   });
 
-  it("marks the current review run resumed, sets revision state, queues re-extraction, and logs feedback", async () => {
+  it('marks the current review run resumed, sets revision state, queues re-extraction, and logs feedback', async () => {
     const artifact = await requestConceptRevision(
       {
         artifactId: state.artifact.id,
-        revisionFeedback: "Split atom and molecule concepts more clearly.",
+        revisionFeedback: 'Split atom and molecule concepts more clearly.',
       },
       createDeps(state),
       actor
     );
 
-    assert.equal(artifact.status, "needs_revision");
-    assert.equal(state.reviewRun.status, "resumed");
-    assert.equal(state.project.status, "processing");
+    assert.equal(artifact.status, 'needs_revision');
+    assert.equal(state.reviewRun.status, 'resumed');
+    assert.equal(state.project.status, 'processing');
     assert.deepEqual(state.queuedJobs, [
       {
         projectId: state.project.id,
-        revisionFeedback: "Split atom and molecule concepts more clearly.",
+        revisionFeedback: 'Split atom and molecule concepts more clearly.',
       },
     ]);
     assert.equal(state.auditLogs.length, 1);
-    assert.equal(state.auditLogs[0]?.action, "artifact.revision_requested");
+    assert.equal(state.auditLogs[0]?.action, 'artifact.revision_requested');
     assert.equal(
       state.auditLogs[0]?.metadata?.revisionFeedback,
-      "Split atom and molecule concepts more clearly."
+      'Split atom and molecule concepts more clearly.'
     );
   });
 
-  it("rejects approval-state artifacts that cannot be revised", async () => {
-    state.artifact.status = "approved";
+  it('rejects approval-state artifacts that cannot be revised', async () => {
+    state.artifact.status = 'approved';
 
     await assert.rejects(
       requestConceptRevision(
         {
           artifactId: state.artifact.id,
-          revisionFeedback: "Try again.",
+          revisionFeedback: 'Try again.',
         },
         createDeps(state),
         actor
@@ -132,18 +128,18 @@ describe("requestConceptRevision", () => {
       ArtifactApprovalInvalidStateError
     );
 
-    assert.equal(state.reviewRun.status, "suspended");
+    assert.equal(state.reviewRun.status, 'suspended');
     assert.equal(state.queuedJobs.length, 0);
   });
 
-  it("requires a suspended review run before queueing re-extraction", async () => {
-    state.reviewRun.status = "completed";
+  it('requires a suspended review run before queueing re-extraction', async () => {
+    state.reviewRun.status = 'completed';
 
     await assert.rejects(
       requestConceptRevision(
         {
           artifactId: state.artifact.id,
-          revisionFeedback: "Try again.",
+          revisionFeedback: 'Try again.',
         },
         createDeps(state),
         actor
@@ -152,7 +148,7 @@ describe("requestConceptRevision", () => {
     );
 
     assert.equal(state.queuedJobs.length, 0);
-    assert.equal(state.artifact.status, "generated");
+    assert.equal(state.artifact.status, 'generated');
   });
 });
 
@@ -180,13 +176,13 @@ type TestState = {
 };
 
 function createTestState(): TestState {
-  const now = new Date("2026-05-15T00:00:00.000Z");
+  const now = new Date('2026-05-15T00:00:00.000Z');
   const version: ArtifactVersionRecord = {
-    artifactId: "11111111-1111-4111-8111-111111111111",
+    artifactId: '11111111-1111-4111-8111-111111111111',
     content: { concepts: [] },
     createdAt: now,
-    id: "22222222-2222-4222-8222-222222222222",
-    extractionMode: "llm_strict",
+    id: '22222222-2222-4222-8222-222222222222',
+    extractionMode: 'llm_strict',
     revisionFeedback: null,
     versionNumber: 1,
   };
@@ -194,9 +190,9 @@ function createTestState(): TestState {
     createdAt: now,
     currentVersionId: version.id,
     id: version.artifactId,
-    projectId: "33333333-3333-4333-8333-333333333333",
-    status: "generated",
-    type: "concept_graph",
+    projectId: '33333333-3333-4333-8333-333333333333',
+    status: 'generated',
+    type: 'concept_graph',
     updatedAt: now,
   };
   const project: ProjectRecord = {
@@ -204,23 +200,23 @@ function createTestState(): TestState {
     description: null,
     id: artifact.projectId,
     ownerId: actor.id,
-    sourceMaterial: "Atoms form molecules.",
-    status: "reviewing",
-    title: "Chemistry",
+    sourceMaterial: 'Atoms form molecules.',
+    status: 'reviewing',
+    title: 'Chemistry',
     updatedAt: now,
   };
   const reviewRun: ArtifactReviewRunRecord = {
     artifactId: artifact.id,
     artifactVersionId: version.id,
     createdAt: now,
-    id: "44444444-4444-4444-8444-444444444444",
-    resumeLabel: "review_concepts",
-    resumeLabels: ["review_concepts"],
-    status: "suspended",
-    suspendedSteps: [["extract-concepts"]],
+    id: '44444444-4444-4444-8444-444444444444',
+    resumeLabel: 'review_concepts',
+    resumeLabels: ['review_concepts'],
+    status: 'suspended',
+    suspendedSteps: [['extract-concepts']],
     updatedAt: now,
-    workflowId: "extract-concepts",
-    workflowRunId: "workflow-run-1",
+    workflowId: 'extract-concepts',
+    workflowRunId: 'workflow-run-1',
   };
 
   return {
@@ -237,7 +233,7 @@ function createTestState(): TestState {
 function createDeps(
   state: TestState,
   options: {
-    reviewStatus?: "success" | "suspended" | "failed" | "unknown";
+    reviewStatus?: 'success' | 'suspended' | 'failed' | 'unknown';
   } = {}
 ) {
   return {
@@ -255,7 +251,7 @@ function createDeps(
         state.resumeCalls.push(input);
 
         return {
-          status: options.reviewStatus ?? "success",
+          status: options.reviewStatus ?? 'success',
         };
       },
     },
@@ -265,10 +261,10 @@ function createDeps(
 function createArtifactRepository(state: TestState): ArtifactRepository {
   return {
     async create() {
-      throw new Error("Not needed for this test.");
+      throw new Error('Not needed for this test.');
     },
     async createVersion() {
-      throw new Error("Not needed for this test.");
+      throw new Error('Not needed for this test.');
     },
     async findById(artifactId) {
       return artifactId === state.artifact.id ? state.artifact : null;
@@ -279,7 +275,7 @@ function createArtifactRepository(state: TestState): ArtifactRepository {
         : null;
     },
     async findOrCreateForProject() {
-      throw new Error("Not needed for this test.");
+      throw new Error('Not needed for this test.');
     },
     async listVersions(artifactId) {
       return artifactId === state.artifact.id ? [state.version] : [];
@@ -299,17 +295,13 @@ function createArtifactRepository(state: TestState): ArtifactRepository {
   };
 }
 
-function createArtifactReviewRunRepository(
-  state: TestState
-): ArtifactReviewRunRepository {
+function createArtifactReviewRunRepository(state: TestState): ArtifactReviewRunRepository {
   return {
     async createSuspended() {
-      throw new Error("Not needed for this test.");
+      throw new Error('Not needed for this test.');
     },
     async findByArtifactVersionId(artifactVersionId) {
-      return artifactVersionId === state.reviewRun.artifactVersionId
-        ? state.reviewRun
-        : null;
+      return artifactVersionId === state.reviewRun.artifactVersionId ? state.reviewRun : null;
     },
     async updateStatus(_reviewRunId, status) {
       state.reviewRun = {
@@ -341,7 +333,7 @@ function createConceptExtractionQueue(state: TestState): ConceptExtractionQueue 
 function createProjectRepository(state: TestState): ProjectRepository {
   return {
     async create() {
-      throw new Error("Not needed for this test.");
+      throw new Error('Not needed for this test.');
     },
     async findById(projectId) {
       return projectId === state.project.id ? state.project : null;
@@ -355,13 +347,13 @@ function createProjectRepository(state: TestState): ProjectRepository {
       return ownerId === state.project.ownerId ? [state.project] : [];
     },
     async updateDetailsForOwner() {
-      throw new Error("Not needed for this test.");
+      throw new Error('Not needed for this test.');
     },
     async updateSourceMaterial() {
-      throw new Error("Not needed for this test.");
+      throw new Error('Not needed for this test.');
     },
     async updateSourceMaterialForOwner() {
-      throw new Error("Not needed for this test.");
+      throw new Error('Not needed for this test.');
     },
     async updateStatus(projectId, status) {
       if (projectId !== state.project.id) {
@@ -376,7 +368,7 @@ function createProjectRepository(state: TestState): ProjectRepository {
       return state.project;
     },
     async deleteForOwner() {
-      throw new Error("Not needed for this test.");
+      throw new Error('Not needed for this test.');
     },
   };
 }

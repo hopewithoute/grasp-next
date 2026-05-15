@@ -1,14 +1,11 @@
-import {
-  updateSourceMaterialDto,
-  type UpdateSourceMaterialDto,
-} from "./project.dto";
-import { canEditOwnedProject, type Actor } from "./project.policy";
+import { updateSourceMaterialDto, type UpdateSourceMaterialDto } from './project.dto';
+import { canEditOwnedProject, type Actor } from './project.policy';
 import type {
   AuditLogRepository,
   ConceptExtractionQueue,
   ProjectRecord,
   ProjectRepository,
-} from "./project.types";
+} from './project.types';
 
 export type SubmitSourceMaterialDeps = {
   auditLogRepository: AuditLogRepository;
@@ -18,15 +15,15 @@ export type SubmitSourceMaterialDeps = {
 
 export class ProjectNotFoundError extends Error {
   constructor() {
-    super("Project not found.");
-    this.name = "ProjectNotFoundError";
+    super('Project not found.');
+    this.name = 'ProjectNotFoundError';
   }
 }
 
 export class ProjectForbiddenError extends Error {
   constructor() {
-    super("Forbidden.");
-    this.name = "ProjectForbiddenError";
+    super('Forbidden.');
+    this.name = 'ProjectForbiddenError';
   }
 }
 
@@ -59,8 +56,8 @@ export async function submitSourceMaterial(
 
   await deps.auditLogRepository.write({
     actorId: actor.id,
-    action: "project.source_material.submitted",
-    entityType: "project",
+    action: 'project.source_material.submitted',
+    entityType: 'project',
     entityId: project.id,
     metadata: {
       status: project.status,

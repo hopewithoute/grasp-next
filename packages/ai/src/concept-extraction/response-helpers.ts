@@ -1,27 +1,27 @@
 export function getGeneratedText(response: { text?: unknown; content?: unknown }) {
-  if (typeof response.text === "string") {
+  if (typeof response.text === 'string') {
     return response.text;
   }
 
-  if (typeof response.content === "string") {
+  if (typeof response.content === 'string') {
     return response.content;
   }
 
-  return "";
+  return '';
 }
 
 export function parseLooseJsonResponse(value: string) {
   const cleaned = value
     .trim()
-    .replace(/^```(?:json)?/i, "")
-    .replace(/```$/i, "")
+    .replace(/^```(?:json)?/i, '')
+    .replace(/```$/i, '')
     .trim();
 
   return JSON.parse(cleaned);
 }
 
 export function normalizeLooseJsonResponse(value: unknown) {
-  if (typeof value !== "object" || value === null || !("concepts" in value)) {
+  if (typeof value !== 'object' || value === null || !('concepts' in value)) {
     return value;
   }
 
@@ -37,7 +37,7 @@ export function normalizeLooseJsonResponse(value: unknown) {
   return {
     ...graph,
     concepts: graph.concepts.map((concept) => {
-      if (typeof concept !== "object" || concept === null) {
+      if (typeof concept !== 'object' || concept === null) {
         return concept;
       }
 
@@ -61,7 +61,7 @@ function normalizeSourceEvidence(value: unknown) {
     return value;
   }
 
-  if (typeof value === "string" && value.trim()) {
+  if (typeof value === 'string' && value.trim()) {
     return [
       {
         excerpt: value.trim(),
@@ -73,25 +73,25 @@ function normalizeSourceEvidence(value: unknown) {
 }
 
 function normalizeConfidence(value: unknown) {
-  if (typeof value === "number") {
+  if (typeof value === 'number') {
     return value;
   }
 
-  if (typeof value !== "string") {
+  if (typeof value !== 'string') {
     return value;
   }
 
   const normalized = value.trim().toLowerCase();
 
-  if (normalized === "high") {
+  if (normalized === 'high') {
     return 0.85;
   }
 
-  if (normalized === "medium") {
+  if (normalized === 'medium') {
     return 0.65;
   }
 
-  if (normalized === "low") {
+  if (normalized === 'low') {
     return 0.35;
   }
 

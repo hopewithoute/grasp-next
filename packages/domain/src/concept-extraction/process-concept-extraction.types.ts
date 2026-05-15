@@ -1,17 +1,11 @@
-import type {
-  ArtifactRepository,
-  ArtifactReviewRunRepository,
-} from "../artifacts/artifact.types";
-import type { ConceptRepository } from "../concepts/concept.types";
-import type { ExtractedConceptGraphDto } from "../concepts/concept.dto";
-import type {
-  AuditLogRepository,
-  ProjectRepository,
-} from "../projects/project.types";
+import type { ArtifactRepository, ArtifactReviewRunRepository } from '../artifacts/artifact.types';
+import type { ConceptRepository } from '../concepts/concept.types';
+import type { ExtractedConceptGraphDto } from '../concepts/concept.dto';
+import type { AuditLogRepository, ProjectRepository } from '../projects/project.types';
 
 export type ConceptExtractionWorkflowResult = {
   conceptGraph: ExtractedConceptGraphDto;
-  extractionMode: "llm_strict" | "llm_json" | "deterministic";
+  extractionMode: 'llm_strict' | 'llm_json' | 'deterministic';
   workflowRunId: string;
   suspendedSteps: unknown;
   resumeLabels: unknown | null;
@@ -39,5 +33,5 @@ export type ProcessConceptExtractionResult = {
   reviewRunId: string;
   conceptCount: number;
   relationshipCount: number;
-  extractionMode: "llm_strict" | "llm_json" | "deterministic";
+  extractionMode: 'llm_strict' | 'llm_json' | 'deterministic';
 };

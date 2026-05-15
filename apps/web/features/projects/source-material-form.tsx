@@ -1,24 +1,21 @@
-"use client";
+'use client';
 
-import { useActionState, useMemo, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { submitSourceMaterialFormAction } from "./actions";
+import { useActionState, useMemo, useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { submitSourceMaterialFormAction } from './actions';
 
 type SourceMaterialFormProps = {
   projectId: string;
   sourceMaterial: string | null;
 };
 
-export function SourceMaterialForm({
-  projectId,
-  sourceMaterial,
-}: SourceMaterialFormProps) {
-  const [draft, setDraft] = useState(sourceMaterial ?? "");
-  const [mode, setMode] = useState<"edit" | "preview">("edit");
-  const [state, formAction, isPending] = useActionState(
-    submitSourceMaterialFormAction,
-    { error: null, success: false }
-  );
+export function SourceMaterialForm({ projectId, sourceMaterial }: SourceMaterialFormProps) {
+  const [draft, setDraft] = useState(sourceMaterial ?? '');
+  const [mode, setMode] = useState<'edit' | 'preview'>('edit');
+  const [state, formAction, isPending] = useActionState(submitSourceMaterialFormAction, {
+    error: null,
+    success: false,
+  });
   const counts = useMemo(() => getTextCounts(draft), [draft]);
 
   return (
@@ -35,15 +32,15 @@ export function SourceMaterialForm({
             <span>{counts.characters} chars</span>
             <div className="flex rounded-md border border-[#171916]/15 bg-[#f7f8f4] p-0.5">
               <button
-                className={modeButtonClass(mode === "edit")}
-                onClick={() => setMode("edit")}
+                className={modeButtonClass(mode === 'edit')}
+                onClick={() => setMode('edit')}
                 type="button"
               >
                 Edit
               </button>
               <button
-                className={modeButtonClass(mode === "preview")}
-                onClick={() => setMode("preview")}
+                className={modeButtonClass(mode === 'preview')}
+                onClick={() => setMode('preview')}
                 type="button"
               >
                 Preview
@@ -52,7 +49,7 @@ export function SourceMaterialForm({
           </div>
         </div>
 
-        {mode === "edit" ? (
+        {mode === 'edit' ? (
           <textarea
             className="min-h-[420px] w-full resize-y rounded-md border border-input bg-white px-3 py-3 text-sm leading-6 outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
             id="sourceMaterial"
@@ -83,7 +80,7 @@ export function SourceMaterialForm({
       ) : null}
 
       <Button className="h-9" disabled={isPending} type="submit">
-        {isPending ? "Submitting..." : "Submit source material"}
+        {isPending ? 'Submitting...' : 'Submit source material'}
       </Button>
     </form>
   );
@@ -125,7 +122,7 @@ function getTextCounts(value: string) {
 
 function modeButtonClass(isActive: boolean) {
   return [
-    "rounded px-2 py-1 transition-colors",
-    isActive ? "bg-white text-[#171916] shadow-sm" : "text-[#5c634f]",
-  ].join(" ");
+    'rounded px-2 py-1 transition-colors',
+    isActive ? 'bg-white text-[#171916] shadow-sm' : 'text-[#5c634f]',
+  ].join(' ');
 }

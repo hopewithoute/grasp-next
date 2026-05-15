@@ -1,14 +1,7 @@
-import {
-  updateProjectDetailsDto,
-  type UpdateProjectDetailsDto,
-} from "./project.dto";
-import { canEditOwnedProject, type Actor } from "./project.policy";
-import type {
-  AuditLogRepository,
-  ProjectRecord,
-  ProjectRepository,
-} from "./project.types";
-import { ProjectForbiddenError, ProjectNotFoundError } from "./submit-source-material.action";
+import { updateProjectDetailsDto, type UpdateProjectDetailsDto } from './project.dto';
+import { canEditOwnedProject, type Actor } from './project.policy';
+import type { AuditLogRepository, ProjectRecord, ProjectRepository } from './project.types';
+import { ProjectForbiddenError, ProjectNotFoundError } from './submit-source-material.action';
 
 export type UpdateProjectDetailsDeps = {
   auditLogRepository: AuditLogRepository;
@@ -31,14 +24,10 @@ export async function updateProjectDetails(
     throw new ProjectForbiddenError();
   }
 
-  const project = await deps.projectRepository.updateDetailsForOwner(
-    dto.projectId,
-    actor.id,
-    {
-      description: dto.description ?? null,
-      title: dto.title,
-    }
-  );
+  const project = await deps.projectRepository.updateDetailsForOwner(dto.projectId, actor.id, {
+    description: dto.description ?? null,
+    title: dto.title,
+  });
 
   if (!project) {
     throw new ProjectForbiddenError();
@@ -46,8 +35,8 @@ export async function updateProjectDetails(
 
   await deps.auditLogRepository.write({
     actorId: actor.id,
-    action: "project.details.updated",
-    entityType: "project",
+    action: 'project.details.updated',
+    entityType: 'project',
     entityId: project.id,
     metadata: {
       descriptionChanged: existingProject.description !== project.description,

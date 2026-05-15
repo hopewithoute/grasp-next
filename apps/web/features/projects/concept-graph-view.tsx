@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import {
   Background,
@@ -10,13 +10,13 @@ import {
   type Edge,
   type Node,
   type NodeProps,
-} from "@xyflow/react";
-import { useMemo, useState } from "react";
+} from '@xyflow/react';
+import { useMemo, useState } from 'react';
 
 export type ConceptRow = {
   confidence: string;
   definition: string;
-  difficulty: "advanced" | "beginner" | "intermediate";
+  difficulty: 'advanced' | 'beginner' | 'intermediate';
   id: string;
   name: string;
   sourceEvidence: unknown;
@@ -42,7 +42,7 @@ type ConceptGraphReviewProps = {
 
 type ConceptNodeData = {
   confidence: string;
-  difficulty: ConceptRow["difficulty"];
+  difficulty: ConceptRow['difficulty'];
   label: string;
 };
 
@@ -50,28 +50,17 @@ const nodeTypes = {
   concept: ConceptNode,
 };
 
-export function ConceptGraphView({
-  artifact,
-  concepts,
-  relationships,
-}: ConceptGraphReviewProps) {
-  const [selectedConceptId, setSelectedConceptId] = useState(
-    concepts[0]?.id ?? null
-  );
+export function ConceptGraphView({ artifact, concepts, relationships }: ConceptGraphReviewProps) {
+  const [selectedConceptId, setSelectedConceptId] = useState(concepts[0]?.id ?? null);
   const selectedConcept =
-    concepts.find((concept) => concept.id === selectedConceptId) ??
-    concepts[0] ??
-    null;
-  const conceptNameById = new Map(
-    concepts.map((concept) => [concept.id, concept.name])
-  );
+    concepts.find((concept) => concept.id === selectedConceptId) ?? concepts[0] ?? null;
+  const conceptNameById = new Map(concepts.map((concept) => [concept.id, concept.name]));
   const graph = useMemo(
     () => buildConceptGraph(concepts, relationships),
     [concepts, relationships]
   );
-  const canApprove =
-    artifact?.status === "generated" || artifact?.status === "needs_revision";
-  const canRequestRevision = artifact?.status === "generated";
+  const canApprove = artifact?.status === 'generated' || artifact?.status === 'needs_revision';
+  const canRequestRevision = artifact?.status === 'generated';
   const hasGraph = concepts.length > 0 && relationships.length > 0;
 
   return (
@@ -83,20 +72,17 @@ export function ConceptGraphView({
           </p>
           <h2 className="text-xl font-semibold">Generated concept graph</h2>
           <p className="max-w-2xl text-sm leading-6 text-[#5c634f]">
-            Review the extracted concepts, evidence excerpts, and prerequisite
-            links before allowing downstream lesson generation.
+            Review the extracted concepts, evidence excerpts, and prerequisite links before allowing
+            downstream lesson generation.
           </p>
         </div>
 
         {artifact ? (
           <div className="flex w-full flex-col items-start gap-3 lg:w-80 lg:items-end">
             <span className={artifactStatusClass(artifact.status)}>
-              {artifact.status.replace("_", " ")}
+              {artifact.status.replace('_', ' ')}
             </span>
-            <div
-              data-testid="approve-slot"
-              data-can-approve={String(canApprove)}
-            />
+            <div data-testid="approve-slot" data-can-approve={String(canApprove)} />
             <div
               data-testid="revision-slot"
               data-can-request-revision={String(canRequestRevision)}
@@ -141,8 +127,8 @@ export function ConceptGraphView({
           <aside className="rounded-md border border-[#171916]/10 bg-white p-4">
             <h3 className="text-sm font-semibold">Prerequisites</h3>
             <p className="mt-3 text-sm leading-6 text-[#5c634f]">
-              No prerequisite links were generated. This graph can still be
-              reviewed as a flat concept list.
+              No prerequisite links were generated. This graph can still be reviewed as a flat
+              concept list.
             </p>
           </aside>
         </div>
@@ -151,7 +137,7 @@ export function ConceptGraphView({
   );
 }
 
-function ConceptNode({ data }: NodeProps<Node<ConceptNodeData, "concept">>) {
+function ConceptNode({ data }: NodeProps<Node<ConceptNodeData, 'concept'>>) {
   return (
     <div className="w-52 rounded-md border border-[#171916]/20 bg-white px-3 py-2 shadow-[4px_4px_0_#d7e0bf]">
       <Handle
@@ -159,13 +145,9 @@ function ConceptNode({ data }: NodeProps<Node<ConceptNodeData, "concept">>) {
         position={Position.Left}
         type="target"
       />
-      <p className="line-clamp-2 text-sm font-semibold leading-5 text-[#171916]">
-        {data.label}
-      </p>
+      <p className="line-clamp-2 text-sm font-semibold leading-5 text-[#171916]">{data.label}</p>
       <div className="mt-2 flex items-center gap-2">
-        <span className={difficultyClass(data.difficulty)}>
-          {data.difficulty}
-        </span>
+        <span className={difficultyClass(data.difficulty)}>{data.difficulty}</span>
         <span className="rounded-full bg-[#f1f3ec] px-2 py-1 text-xs font-medium text-[#4f5a45]">
           {formatConfidence(data.confidence)}
         </span>
@@ -207,16 +189,12 @@ export function ConceptDetailPanel({
         </p>
         <h3 className="text-lg font-semibold">{concept.name}</h3>
         <div className="flex flex-wrap items-center gap-2">
-          <span className={difficultyClass(concept.difficulty)}>
-            {concept.difficulty}
-          </span>
+          <span className={difficultyClass(concept.difficulty)}>{concept.difficulty}</span>
           <span className="rounded-full bg-[#f1f3ec] px-2 py-1 text-xs font-medium text-[#4f5a45]">
             {formatConfidence(concept.confidence)}
           </span>
         </div>
-        <p className="text-sm leading-6 text-[#3b4035]">
-          {concept.definition}
-        </p>
+        <p className="text-sm leading-6 text-[#3b4035]">{concept.definition}</p>
       </div>
 
       <div>
@@ -247,8 +225,7 @@ export function ConceptDetailPanel({
                 className="rounded border border-[#171916]/10 bg-[#f7f8f4] px-3 py-2 text-sm text-[#3b4035]"
                 key={`in-${relationship.id}`}
               >
-                {conceptNameById.get(relationship.sourceConceptId) ??
-                  "Unknown concept"}{" "}
+                {conceptNameById.get(relationship.sourceConceptId) ?? 'Unknown concept'}{' '}
                 <span className="text-[#7a846d]">before this</span>
               </li>
             ))}
@@ -257,9 +234,8 @@ export function ConceptDetailPanel({
                 className="rounded border border-[#171916]/10 bg-[#f7f8f4] px-3 py-2 text-sm text-[#3b4035]"
                 key={`out-${relationship.id}`}
               >
-                This <span className="text-[#7a846d]">before</span>{" "}
-                {conceptNameById.get(relationship.targetConceptId) ??
-                  "Unknown concept"}
+                This <span className="text-[#7a846d]">before</span>{' '}
+                {conceptNameById.get(relationship.targetConceptId) ?? 'Unknown concept'}
               </li>
             ))}
           </ul>
@@ -277,21 +253,14 @@ export function ConceptList({ concepts }: { concepts: ConceptRow[] }) {
   return (
     <div className="space-y-3">
       {concepts.map((concept) => (
-        <article
-          className="rounded-md border border-[#171916]/10 bg-white p-4"
-          key={concept.id}
-        >
+        <article className="rounded-md border border-[#171916]/10 bg-white p-4" key={concept.id}>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
             <div className="space-y-1">
               <h3 className="text-base font-semibold">{concept.name}</h3>
-              <p className="text-sm leading-6 text-[#3b4035]">
-                {concept.definition}
-              </p>
+              <p className="text-sm leading-6 text-[#3b4035]">{concept.definition}</p>
             </div>
             <div className="flex shrink-0 items-center gap-2">
-              <span className={difficultyClass(concept.difficulty)}>
-                {concept.difficulty}
-              </span>
+              <span className={difficultyClass(concept.difficulty)}>{concept.difficulty}</span>
               <span className="rounded-full bg-[#f1f3ec] px-2 py-1 text-xs font-medium text-[#4f5a45]">
                 {formatConfidence(concept.confidence)}
               </span>
@@ -324,7 +293,7 @@ export function buildConceptGraph(
   relationships: RelationshipRow[]
 ): {
   edges: Edge[];
-  nodes: Array<Node<ConceptNodeData, "concept">>;
+  nodes: Array<Node<ConceptNodeData, 'concept'>>;
 } {
   const depthByConceptId = getDepthByConceptId(concepts, relationships);
   const rowByDepth = new Map<number, number>();
@@ -345,7 +314,7 @@ export function buildConceptGraph(
         x: depth * 280,
         y: row * 132 + (depth % 2) * 36,
       },
-      type: "concept" as const,
+      type: 'concept' as const,
     };
   });
 
@@ -353,12 +322,12 @@ export function buildConceptGraph(
     animated: false,
     id: relationship.id,
     markerEnd: {
-      color: "#315f94",
+      color: '#315f94',
       type: MarkerType.ArrowClosed,
     },
     source: relationship.sourceConceptId,
     style: {
-      stroke: "#315f94",
+      stroke: '#315f94',
       strokeWidth: 2,
     },
     target: relationship.targetConceptId,
@@ -370,10 +339,7 @@ export function buildConceptGraph(
   };
 }
 
-function getDepthByConceptId(
-  concepts: ConceptRow[],
-  relationships: RelationshipRow[]
-) {
+function getDepthByConceptId(concepts: ConceptRow[], relationships: RelationshipRow[]) {
   const conceptIds = new Set(concepts.map((concept) => concept.id));
   const incomingCount = new Map(concepts.map((concept) => [concept.id, 0]));
   const outgoing = new Map<string, string[]>();
@@ -443,10 +409,10 @@ function getEvidence(value: unknown): SourceEvidence[] {
 
   return value.filter((item): item is SourceEvidence => {
     return (
-      typeof item === "object" &&
+      typeof item === 'object' &&
       item !== null &&
-      "excerpt" in item &&
-      typeof item.excerpt === "string" &&
+      'excerpt' in item &&
+      typeof item.excerpt === 'string' &&
       item.excerpt.trim().length > 0
     );
   });
@@ -456,39 +422,39 @@ function formatConfidence(value: string) {
   const confidence = Number(value);
 
   if (!Number.isFinite(confidence)) {
-    return "confidence n/a";
+    return 'confidence n/a';
   }
 
   return `${Math.round(confidence * 100)}%`;
 }
 
-function difficultyClass(difficulty: ConceptRow["difficulty"]) {
+function difficultyClass(difficulty: ConceptRow['difficulty']) {
   const classByDifficulty = {
-    advanced: "bg-[#f9e8e2] text-[#9d4c32]",
-    beginner: "bg-[#e9f3df] text-[#4d7135]",
-    intermediate: "bg-[#e7eef8] text-[#315f94]",
+    advanced: 'bg-[#f9e8e2] text-[#9d4c32]',
+    beginner: 'bg-[#e9f3df] text-[#4d7135]',
+    intermediate: 'bg-[#e7eef8] text-[#315f94]',
   };
 
   return [
-    "rounded-full px-2 py-1 text-xs font-medium capitalize",
+    'rounded-full px-2 py-1 text-xs font-medium capitalize',
     classByDifficulty[difficulty],
-  ].join(" ");
+  ].join(' ');
 }
 
 function artifactStatusClass(status: string) {
   const classByStatus: Record<string, string> = {
-    approved: "bg-green-50 text-green-700",
-    failed: "bg-red-50 text-red-700",
-    generated: "bg-blue-50 text-blue-700",
-    generating: "bg-amber-50 text-amber-700",
-    needs_revision: "bg-orange-50 text-orange-700",
-    pending: "bg-[#ecefe5] text-[#4f5a45]",
-    published: "bg-green-50 text-green-700",
-    rejected: "bg-red-50 text-red-700",
+    approved: 'bg-green-50 text-green-700',
+    failed: 'bg-red-50 text-red-700',
+    generated: 'bg-blue-50 text-blue-700',
+    generating: 'bg-amber-50 text-amber-700',
+    needs_revision: 'bg-orange-50 text-orange-700',
+    pending: 'bg-[#ecefe5] text-[#4f5a45]',
+    published: 'bg-green-50 text-green-700',
+    rejected: 'bg-red-50 text-red-700',
   };
 
   return [
-    "rounded-full px-2.5 py-1 text-xs font-semibold capitalize",
-    classByStatus[status] ?? "bg-[#ecefe5] text-[#4f5a45]",
-  ].join(" ");
+    'rounded-full px-2.5 py-1 text-xs font-semibold capitalize',
+    classByStatus[status] ?? 'bg-[#ecefe5] text-[#4f5a45]',
+  ].join(' ');
 }

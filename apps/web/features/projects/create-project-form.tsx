@@ -1,15 +1,12 @@
-"use client";
+'use client';
 
-import { useActionState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { createProjectFormAction } from "./actions";
+import { useActionState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { createProjectFormAction } from './actions';
 
 export function CreateProjectForm() {
-  const [state, formAction, isPending] = useActionState(
-    createProjectFormAction,
-    { error: null }
-  );
+  const [state, formAction, isPending] = useActionState(createProjectFormAction, { error: null });
 
   return (
     <form action={formAction} className="space-y-4">
@@ -17,23 +14,14 @@ export function CreateProjectForm() {
         <label className="text-sm font-medium" htmlFor="title">
           Title
         </label>
-        <Input
-          id="title"
-          name="title"
-          placeholder="Photosynthesis foundations"
-          required
-        />
+        <Input id="title" name="title" placeholder="Photosynthesis foundations" required />
       </div>
 
       <div className="space-y-2">
         <label className="text-sm font-medium" htmlFor="description">
           Description
         </label>
-        <Input
-          id="description"
-          name="description"
-          placeholder="Grade 10 biology lesson prep"
-        />
+        <Input id="description" name="description" placeholder="Grade 10 biology lesson prep" />
       </div>
 
       <div className="space-y-2">
@@ -55,7 +43,7 @@ export function CreateProjectForm() {
       ) : null}
 
       <Button className="h-9 w-full" disabled={isPending} type="submit">
-        {isPending ? "Creating..." : "Create project"}
+        {isPending ? 'Creating...' : 'Create project'}
       </Button>
     </form>
   );

@@ -1,4 +1,4 @@
-import type { ConnectionOptions } from "bullmq";
+import type { ConnectionOptions } from 'bullmq';
 
 export type ConceptExtractionJob = {
   projectId: string;
@@ -7,10 +7,10 @@ export type ConceptExtractionJob = {
 
 export function parseRedisConnection(redisUrl: string): ConnectionOptions {
   const url = new URL(redisUrl);
-  const db = url.pathname === "/" ? undefined : Number(url.pathname.slice(1));
+  const db = url.pathname === '/' ? undefined : Number(url.pathname.slice(1));
 
   if (db !== undefined && !Number.isInteger(db)) {
-    throw new Error("QUEUE_REDIS_URL database path must be an integer.");
+    throw new Error('QUEUE_REDIS_URL database path must be an integer.');
   }
 
   return {
@@ -19,6 +19,6 @@ export function parseRedisConnection(redisUrl: string): ConnectionOptions {
     username: url.username ? decodeURIComponent(url.username) : undefined,
     password: url.password ? decodeURIComponent(url.password) : undefined,
     db,
-    tls: url.protocol === "rediss:" ? {} : undefined,
+    tls: url.protocol === 'rediss:' ? {} : undefined,
   };
 }

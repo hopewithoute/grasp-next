@@ -1,9 +1,6 @@
-import { eq } from "drizzle-orm";
-import type { DbClient } from "./client";
-import {
-  conceptRelationships,
-  concepts,
-} from "./schema";
+import { eq } from 'drizzle-orm';
+import type { DbClient } from './client';
+import { conceptRelationships, concepts } from './schema';
 
 export type ConceptRepository = ReturnType<typeof createConceptRepository>;
 
@@ -11,12 +8,12 @@ export type ReplaceConceptsInput = {
   concepts: Array<{
     confidence: string;
     definition: string;
-    difficulty: "beginner" | "intermediate" | "advanced";
+    difficulty: 'beginner' | 'intermediate' | 'advanced';
     name: string;
     sourceEvidence: unknown;
   }>;
   relationships: Array<{
-    relationshipType: "prerequisite";
+    relationshipType: 'prerequisite';
     sourceConceptName: string;
     targetConceptName: string;
   }>;
@@ -27,10 +24,7 @@ export function createConceptRepository(db: DbClient) {
     async listByProject(projectId: string) {
       const [conceptRows, relationshipRows] = await Promise.all([
         db.select().from(concepts).where(eq(concepts.projectId, projectId)),
-        db
-          .select()
-          .from(conceptRelationships)
-          .where(eq(conceptRelationships.projectId, projectId)),
+        db.select().from(conceptRelationships).where(eq(conceptRelationships.projectId, projectId)),
       ]);
 
       return {
@@ -41,9 +35,7 @@ export function createConceptRepository(db: DbClient) {
 
     async replaceForProject(projectId: string, input: ReplaceConceptsInput) {
       return db.transaction(async (tx) => {
-        await tx
-          .delete(conceptRelationships)
-          .where(eq(conceptRelationships.projectId, projectId));
+        await tx.delete(conceptRelationships).where(eq(conceptRelationships.projectId, projectId));
         await tx.delete(concepts).where(eq(concepts.projectId, projectId));
 
         const insertedConcepts = input.concepts.length
@@ -59,10 +51,7 @@ export function createConceptRepository(db: DbClient) {
           : [];
 
         const conceptIdByName = new Map(
-          insertedConcepts.map((concept) => [
-            normalizeConceptName(concept.name),
-            concept.id,
-          ])
+          insertedConcepts.map((concept) => [normalizeConceptName(concept.name), concept.id])
         );
 
         const insertedRelationships = input.relationships.length

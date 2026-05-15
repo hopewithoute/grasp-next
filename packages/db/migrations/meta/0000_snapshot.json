@@ -69,12 +69,7 @@
     "public.project_status": {
       "name": "project_status",
       "schema": "public",
-      "values": [
-        "draft",
-        "processing",
-        "processed",
-        "failed"
-      ]
+      "values": ["draft", "processing", "processed", "failed"]
     }
   },
   "schemas": {},

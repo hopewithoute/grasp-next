@@ -93,12 +93,8 @@
           "name": "account_user_id_user_id_fk",
           "tableFrom": "account",
           "tableTo": "user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -207,12 +203,8 @@
           "name": "artifact_review_runs_artifact_id_artifacts_id_fk",
           "tableFrom": "artifact_review_runs",
           "tableTo": "artifacts",
-          "columnsFrom": [
-            "artifact_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["artifact_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -220,12 +212,8 @@
           "name": "artifact_review_runs_artifact_version_id_artifact_versions_id_fk",
           "tableFrom": "artifact_review_runs",
           "tableTo": "artifact_versions",
-          "columnsFrom": [
-            "artifact_version_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["artifact_version_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -307,12 +295,8 @@
           "name": "artifact_versions_artifact_id_artifacts_id_fk",
           "tableFrom": "artifact_versions",
           "tableTo": "artifacts",
-          "columnsFrom": [
-            "artifact_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["artifact_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -404,12 +388,8 @@
           "name": "artifacts_project_id_projects_id_fk",
           "tableFrom": "artifacts",
           "tableTo": "projects",
-          "columnsFrom": [
-            "project_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["project_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -527,12 +507,8 @@
           "name": "concept_relationships_project_id_projects_id_fk",
           "tableFrom": "concept_relationships",
           "tableTo": "projects",
-          "columnsFrom": [
-            "project_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["project_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -540,12 +516,8 @@
           "name": "concept_relationships_source_concept_id_concepts_id_fk",
           "tableFrom": "concept_relationships",
           "tableTo": "concepts",
-          "columnsFrom": [
-            "source_concept_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["source_concept_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -553,12 +525,8 @@
           "name": "concept_relationships_target_concept_id_concepts_id_fk",
           "tableFrom": "concept_relationships",
           "tableTo": "concepts",
-          "columnsFrom": [
-            "target_concept_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["target_concept_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -638,12 +606,8 @@
           "name": "concepts_project_id_projects_id_fk",
           "tableFrom": "concepts",
           "tableTo": "projects",
-          "columnsFrom": [
-            "project_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["project_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -718,12 +682,8 @@
           "name": "projects_owner_id_user_id_fk",
           "tableFrom": "projects",
           "tableTo": "user",
-          "columnsFrom": [
-            "owner_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["owner_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -793,12 +753,8 @@
           "name": "session_user_id_user_id_fk",
           "tableFrom": "session",
           "tableTo": "user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -808,9 +764,7 @@
         "session_token_unique": {
           "name": "session_token_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "token"
-          ]
+          "columns": ["token"]
         }
       },
       "policies": {},
@@ -872,9 +826,7 @@
         "user_email_unique": {
           "name": "user_email_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "email"
-          ]
+          "columns": ["email"]
         }
       },
       "policies": {},
@@ -935,12 +887,7 @@
     "public.artifact_review_run_status": {
       "name": "artifact_review_run_status",
       "schema": "public",
-      "values": [
-        "suspended",
-        "resumed",
-        "completed",
-        "failed"
-      ]
+      "values": ["suspended", "resumed", "completed", "failed"]
     },
     "public.artifact_status": {
       "name": "artifact_status",
@@ -959,31 +906,17 @@
     "public.artifact_type": {
       "name": "artifact_type",
       "schema": "public",
-      "values": [
-        "concept_graph",
-        "learning_objectives",
-        "lesson_draft"
-      ]
+      "values": ["concept_graph", "learning_objectives", "lesson_draft"]
     },
     "public.concept_difficulty": {
       "name": "concept_difficulty",
       "schema": "public",
-      "values": [
-        "beginner",
-        "intermediate",
-        "advanced"
-      ]
+      "values": ["beginner", "intermediate", "advanced"]
     },
     "public.project_status": {
       "name": "project_status",
       "schema": "public",
-      "values": [
-        "draft",
-        "processing",
-        "reviewing",
-        "processed",
-        "failed"
-      ]
+      "values": ["draft", "processing", "reviewing", "processed", "failed"]
     }
   },
   "schemas": {},

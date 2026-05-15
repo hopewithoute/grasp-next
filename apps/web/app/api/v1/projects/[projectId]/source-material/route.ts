@@ -1,13 +1,13 @@
-import { NextResponse } from "next/server";
+import { NextResponse } from 'next/server';
 import {
   ProjectForbiddenError,
   ProjectNotFoundError,
   submitSourceMaterial,
   updateSourceMaterialDto,
-} from "@grasp/domain";
-import { getActor } from "@/server/actor";
-import { createProjectDeps } from "@/server/project-deps";
-import { parseJsonRequest, validationErrorResponse } from "../../../http";
+} from '@grasp/domain';
+import { getActor } from '@/server/actor';
+import { createProjectDeps } from '@/server/project-deps';
+import { parseJsonRequest, validationErrorResponse } from '../../../http';
 
 type RouteContext = {
   params: Promise<{
@@ -19,7 +19,7 @@ export async function POST(request: Request, context: RouteContext) {
   const actor = await getActor();
 
   if (!actor) {
-    return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+    return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
   }
 
   const { projectId } = await context.params;
@@ -31,7 +31,7 @@ export async function POST(request: Request, context: RouteContext) {
 
   try {
     const input = updateSourceMaterialDto.parse({
-      ...(typeof body.value === "object" && body.value !== null ? body.value : {}),
+      ...(typeof body.value === 'object' && body.value !== null ? body.value : {}),
       projectId,
     });
     const project = await submitSourceMaterial(input, createProjectDeps(), actor);
@@ -45,11 +45,11 @@ export async function POST(request: Request, context: RouteContext) {
     }
 
     if (error instanceof ProjectNotFoundError) {
-      return NextResponse.json({ error: "Project not found." }, { status: 404 });
+      return NextResponse.json({ error: 'Project not found.' }, { status: 404 });
     }
 
     if (error instanceof ProjectForbiddenError) {
-      return NextResponse.json({ error: "Forbidden." }, { status: 403 });
+      return NextResponse.json({ error: 'Forbidden.' }, { status: 403 });
     }
 
     throw error;

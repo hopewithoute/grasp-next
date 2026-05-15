@@ -1,10 +1,8 @@
-import type { ExtractedConceptGraphDto } from "@grasp/domain";
+import type { ExtractedConceptGraphDto } from '@grasp/domain';
 
 const sentencePattern = /[^.!?\n]+[.!?]?/g;
 
-export function extractConceptsDeterministically(
-  sourceMaterial: string
-): ExtractedConceptGraphDto {
+export function extractConceptsDeterministically(sourceMaterial: string): ExtractedConceptGraphDto {
   const sentences = sourceMaterial
     .match(sentencePattern)
     ?.map((sentence) => sentence.trim())
@@ -33,7 +31,7 @@ export function extractConceptsDeterministically(
   return {
     concepts,
     relationships: concepts.slice(1).map((concept, index) => ({
-      relationshipType: "prerequisite",
+      relationshipType: 'prerequisite',
       sourceConceptName: concepts[index].name,
       targetConceptName: concept.name,
     })),
@@ -42,7 +40,7 @@ export function extractConceptsDeterministically(
 
 function buildConceptName(excerpt: string, index: number) {
   const words = excerpt
-    .replace(/[^\w\s-]/g, " ")
+    .replace(/[^\w\s-]/g, ' ')
     .split(/\s+/)
     .filter((word) => word.length > 2)
     .slice(0, 4);
@@ -51,21 +49,19 @@ function buildConceptName(excerpt: string, index: number) {
     return `Concept ${index + 1}`;
   }
 
-  return words
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-    .join(" ");
+  return words.map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ');
 }
 
 function inferDifficulty(
   excerpt: string
-): ExtractedConceptGraphDto["concepts"][number]["difficulty"] {
+): ExtractedConceptGraphDto['concepts'][number]['difficulty'] {
   if (excerpt.length > 220) {
-    return "advanced";
+    return 'advanced';
   }
 
   if (excerpt.length > 120) {
-    return "intermediate";
+    return 'intermediate';
   }
 
-  return "beginner";
+  return 'beginner';
 }

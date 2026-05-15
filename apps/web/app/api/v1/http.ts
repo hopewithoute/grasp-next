@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
-import { ZodError } from "zod";
+import { NextResponse } from 'next/server';
+import { ZodError } from 'zod';
 
 export type ParsedJson =
   | {
@@ -20,10 +20,7 @@ export async function parseJsonRequest(request: Request): Promise<ParsedJson> {
   } catch {
     return {
       ok: false,
-      response: NextResponse.json(
-        { error: "Malformed JSON body." },
-        { status: 400 }
-      ),
+      response: NextResponse.json({ error: 'Malformed JSON body.' }, { status: 400 }),
     };
   }
 }
@@ -35,7 +32,7 @@ export function validationErrorResponse(error: unknown): NextResponse | null {
 
   return NextResponse.json(
     {
-      error: "Invalid request body.",
+      error: 'Invalid request body.',
       issues: error.issues,
     },
     { status: 400 }

@@ -1,72 +1,72 @@
-import assert from "node:assert/strict";
-import { beforeEach, describe, it } from "node:test";
-import { deleteProject, ProjectDeleteBlockedError } from "./delete-project.action";
-import { ProjectForbiddenError } from "./submit-source-material.action";
-import { updateProjectDetails } from "./update-project-details.action";
+import assert from 'node:assert/strict';
+import { beforeEach, describe, it } from 'node:test';
+import { deleteProject, ProjectDeleteBlockedError } from './delete-project.action';
+import { ProjectForbiddenError } from './submit-source-material.action';
+import { updateProjectDetails } from './update-project-details.action';
 import type {
   AuditLogRepository,
   ProjectRecord,
   ProjectRepository,
   ProjectStatus,
-} from "./project.types";
+} from './project.types';
 
-const actor = { id: "owner-1" };
+const actor = { id: 'owner-1' };
 
-describe("updateProjectDetails", () => {
+describe('updateProjectDetails', () => {
   let state: TestState;
 
   beforeEach(() => {
     state = createTestState();
   });
 
-  it("updates owner project metadata without changing status", async () => {
+  it('updates owner project metadata without changing status', async () => {
     const existingProject = requireProject(state);
     const project = await updateProjectDetails(
       {
-        description: "Updated description",
+        description: 'Updated description',
         projectId: existingProject.id,
-        title: "Updated title",
+        title: 'Updated title',
       },
       createDeps(state),
       actor
     );
 
-    assert.equal(project.title, "Updated title");
-    assert.equal(project.description, "Updated description");
-    assert.equal(project.status, "reviewing");
+    assert.equal(project.title, 'Updated title');
+    assert.equal(project.description, 'Updated description');
+    assert.equal(project.status, 'reviewing');
     assert.equal(state.auditLogs.length, 1);
-    assert.equal(state.auditLogs[0]?.action, "project.details.updated");
+    assert.equal(state.auditLogs[0]?.action, 'project.details.updated');
   });
 
-  it("rejects actors that do not own the project", async () => {
+  it('rejects actors that do not own the project', async () => {
     const existingProject = requireProject(state);
 
     await assert.rejects(
       updateProjectDetails(
         {
-          description: "Updated description",
+          description: 'Updated description',
           projectId: existingProject.id,
-          title: "Updated title",
+          title: 'Updated title',
         },
         createDeps(state),
-        { id: "other-user" }
+        { id: 'other-user' }
       ),
       ProjectForbiddenError
     );
 
-    assert.equal(requireProject(state).title, "Original title");
+    assert.equal(requireProject(state).title, 'Original title');
     assert.equal(state.auditLogs.length, 0);
   });
 });
 
-describe("deleteProject", () => {
+describe('deleteProject', () => {
   let state: TestState;
 
   beforeEach(() => {
     state = createTestState();
   });
 
-  it("deletes owner project after writing an audit log", async () => {
+  it('deletes owner project after writing an audit log', async () => {
     const existingProject = requireProject(state);
     const project = await deleteProject(
       {
@@ -79,15 +79,15 @@ describe("deleteProject", () => {
     assert.equal(project.id, state.deletedProject?.id);
     assert.equal(state.project, null);
     assert.equal(state.auditLogs.length, 1);
-    assert.equal(state.auditLogs[0]?.action, "project.deleted");
-    assert.equal(state.auditLogs[0]?.metadata?.title, "Original title");
+    assert.equal(state.auditLogs[0]?.action, 'project.deleted');
+    assert.equal(state.auditLogs[0]?.metadata?.title, 'Original title');
   });
 
-  it("blocks delete while project is processing", async () => {
+  it('blocks delete while project is processing', async () => {
     const existingProject = requireProject(state);
     state.project = {
       ...existingProject,
-      status: "processing",
+      status: 'processing',
     };
 
     await assert.rejects(
@@ -101,12 +101,12 @@ describe("deleteProject", () => {
       ProjectDeleteBlockedError
     );
 
-    assert.equal(requireProject(state).status, "processing");
+    assert.equal(requireProject(state).status, 'processing');
     assert.equal(state.deletedProject, null);
     assert.equal(state.auditLogs.length, 0);
   });
 
-  it("rejects actors that do not own the project", async () => {
+  it('rejects actors that do not own the project', async () => {
     const existingProject = requireProject(state);
 
     await assert.rejects(
@@ -115,7 +115,7 @@ describe("deleteProject", () => {
           projectId: existingProject.id,
         },
         createDeps(state),
-        { id: "other-user" }
+        { id: 'other-user' }
       ),
       ProjectForbiddenError
     );
@@ -138,19 +138,19 @@ type TestState = {
 };
 
 function createTestState(): TestState {
-  const now = new Date("2026-05-15T00:00:00.000Z");
+  const now = new Date('2026-05-15T00:00:00.000Z');
 
   return {
     auditLogs: [],
     deletedProject: null,
     project: {
       createdAt: now,
-      description: "Original description",
-      id: "33333333-3333-4333-8333-333333333333",
+      description: 'Original description',
+      id: '33333333-3333-4333-8333-333333333333',
       ownerId: actor.id,
-      sourceMaterial: "Photosynthesis uses light.",
-      status: "reviewing",
-      title: "Original title",
+      sourceMaterial: 'Photosynthesis uses light.',
+      status: 'reviewing',
+      title: 'Original title',
       updatedAt: now,
     },
   };
@@ -180,14 +180,10 @@ function createAuditLogRepository(state: TestState): AuditLogRepository {
 function createProjectRepository(state: TestState): ProjectRepository {
   return {
     async create() {
-      throw new Error("Not needed for this test.");
+      throw new Error('Not needed for this test.');
     },
     async deleteForOwner(projectId, ownerId) {
-      if (
-        !state.project ||
-        state.project.id !== projectId ||
-        state.project.ownerId !== ownerId
-      ) {
+      if (!state.project || state.project.id !== projectId || state.project.ownerId !== ownerId) {
         return null;
       }
 
@@ -208,11 +204,7 @@ function createProjectRepository(state: TestState): ProjectRepository {
       return state.project?.ownerId === ownerId ? [state.project] : [];
     },
     async updateDetailsForOwner(projectId, ownerId, input) {
-      if (
-        !state.project ||
-        state.project.id !== projectId ||
-        state.project.ownerId !== ownerId
-      ) {
+      if (!state.project || state.project.id !== projectId || state.project.ownerId !== ownerId) {
         return null;
       }
 
@@ -225,10 +217,10 @@ function createProjectRepository(state: TestState): ProjectRepository {
       return state.project;
     },
     async updateSourceMaterial() {
-      throw new Error("Not needed for this test.");
+      throw new Error('Not needed for this test.');
     },
     async updateSourceMaterialForOwner() {
-      throw new Error("Not needed for this test.");
+      throw new Error('Not needed for this test.');
     },
     async updateStatus(projectId, status) {
       if (!state.project || state.project.id !== projectId) {

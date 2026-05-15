@@ -1,11 +1,7 @@
-import { deleteProjectDto, type DeleteProjectDto } from "./project.dto";
-import { canEditOwnedProject, type Actor } from "./project.policy";
-import type {
-  AuditLogRepository,
-  ProjectRecord,
-  ProjectRepository,
-} from "./project.types";
-import { ProjectForbiddenError, ProjectNotFoundError } from "./submit-source-material.action";
+import { deleteProjectDto, type DeleteProjectDto } from './project.dto';
+import { canEditOwnedProject, type Actor } from './project.policy';
+import type { AuditLogRepository, ProjectRecord, ProjectRepository } from './project.types';
+import { ProjectForbiddenError, ProjectNotFoundError } from './submit-source-material.action';
 
 export type DeleteProjectDeps = {
   auditLogRepository: AuditLogRepository;
@@ -14,8 +10,8 @@ export type DeleteProjectDeps = {
 
 export class ProjectDeleteBlockedError extends Error {
   constructor() {
-    super("Project cannot be deleted while processing.");
-    this.name = "ProjectDeleteBlockedError";
+    super('Project cannot be deleted while processing.');
+    this.name = 'ProjectDeleteBlockedError';
   }
 }
 
@@ -35,14 +31,14 @@ export async function deleteProject(
     throw new ProjectForbiddenError();
   }
 
-  if (existingProject.status === "processing") {
+  if (existingProject.status === 'processing') {
     throw new ProjectDeleteBlockedError();
   }
 
   await deps.auditLogRepository.write({
     actorId: actor.id,
-    action: "project.deleted",
-    entityType: "project",
+    action: 'project.deleted',
+    entityType: 'project',
     entityId: existingProject.id,
     metadata: {
       status: existingProject.status,
@@ -50,10 +46,7 @@ export async function deleteProject(
     },
   });
 
-  const deletedProject = await deps.projectRepository.deleteForOwner(
-    dto.projectId,
-    actor.id
-  );
+  const deletedProject = await deps.projectRepository.deleteForOwner(dto.projectId, actor.id);
 
   if (!deletedProject) {
     throw new ProjectForbiddenError();

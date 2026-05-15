@@ -1,12 +1,9 @@
-"use client";
+'use client';
 
-import { Pencil, Trash2 } from "lucide-react";
-import { useActionState } from "react";
-import { Button } from "@/components/ui/button";
-import {
-  deleteProjectFormAction,
-  updateProjectDetailsFormAction,
-} from "./actions";
+import { Pencil, Trash2 } from 'lucide-react';
+import { useActionState } from 'react';
+import { Button } from '@/components/ui/button';
+import { deleteProjectFormAction, updateProjectDetailsFormAction } from './actions';
 
 type ProjectDetailsFormProps = {
   description: string | null;
@@ -19,15 +16,11 @@ type DeleteProjectFormProps = {
   projectId: string;
 };
 
-export function ProjectDetailsForm({
-  description,
-  projectId,
-  title,
-}: ProjectDetailsFormProps) {
-  const [state, formAction, isPending] = useActionState(
-    updateProjectDetailsFormAction,
-    { error: null, success: false }
-  );
+export function ProjectDetailsForm({ description, projectId, title }: ProjectDetailsFormProps) {
+  const [state, formAction, isPending] = useActionState(updateProjectDetailsFormAction, {
+    error: null,
+    success: false,
+  });
 
   return (
     <form action={formAction} className="space-y-4">
@@ -54,7 +47,7 @@ export function ProjectDetailsForm({
           </label>
           <input
             className="h-10 w-full rounded-md border border-input bg-white px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-            defaultValue={description ?? ""}
+            defaultValue={description ?? ''}
             id="projectDescription"
             maxLength={1000}
             name="description"
@@ -76,16 +69,13 @@ export function ProjectDetailsForm({
 
       <Button className="h-9" disabled={isPending} type="submit">
         <Pencil />
-        {isPending ? "Saving..." : "Save details"}
+        {isPending ? 'Saving...' : 'Save details'}
       </Button>
     </form>
   );
 }
 
-export function DeleteProjectForm({
-  disabled,
-  projectId,
-}: DeleteProjectFormProps) {
+export function DeleteProjectForm({ disabled, projectId }: DeleteProjectFormProps) {
   const [state, formAction, isPending] = useActionState(deleteProjectFormAction, {
     error: null,
   });
@@ -108,7 +98,7 @@ export function DeleteProjectForm({
 
       <Button disabled={disabled || isPending} type="submit" variant="destructive">
         <Trash2 />
-        {isPending ? "Deleting..." : "Delete project"}
+        {isPending ? 'Deleting...' : 'Delete project'}
       </Button>
     </form>
   );

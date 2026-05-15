@@ -1,14 +1,13 @@
-import type { DbClient } from "./client";
-import { auditLogs, type NewAuditLog } from "./schema";
+import type { DbClient } from './client';
+import { auditLogs, type NewAuditLog } from './schema';
 
 export type AuditLogRepository = ReturnType<typeof createAuditLogRepository>;
 
 export function createAuditLogRepository(db: DbClient) {
   return {
-    async write(input: Pick<
-      NewAuditLog,
-      "actorId" | "action" | "entityType" | "entityId" | "metadata"
-    >) {
+    async write(
+      input: Pick<NewAuditLog, 'actorId' | 'action' | 'entityType' | 'entityId' | 'metadata'>
+    ) {
       const [auditLog] = await db
         .insert(auditLogs)
         .values({

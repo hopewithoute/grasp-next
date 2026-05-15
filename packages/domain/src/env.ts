@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from 'zod';
 
 export const serverEnvSchema = z.object({
   DATABASE_URL: z.string().url(),
@@ -18,7 +18,7 @@ export const serverEnvSchema = z.object({
   CONCEPT_EXTRACTOR_MODEL: z.string().optional(),
   MASTRA_STORAGE_URL: z.string().url(),
   QUEUE_REDIS_URL: z.string().url(),
-  QUEUE_PREFIX: z.string().min(1).default("grasp"),
+  QUEUE_PREFIX: z.string().min(1).default('grasp'),
   GOOGLE_CLIENT_ID: z.string().min(1),
   GOOGLE_CLIENT_SECRET: z.string().min(1),
 });

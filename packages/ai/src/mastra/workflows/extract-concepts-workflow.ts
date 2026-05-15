@@ -1,13 +1,13 @@
-import { createStep, createWorkflow } from "@mastra/core/workflows";
-import type { PublicSchema } from "@mastra/core/schema";
-import type { ExtractedConceptGraphDto } from "@grasp/domain";
-import type { JSONSchema7 } from "json-schema";
-import { z } from "zod";
-import { conceptGraphJsonSchema } from "../../concept-extraction/concept-graph-json-schema";
+import { createStep, createWorkflow } from '@mastra/core/workflows';
+import type { PublicSchema } from '@mastra/core/schema';
+import type { ExtractedConceptGraphDto } from '@grasp/domain';
+import type { JSONSchema7 } from 'json-schema';
+import { z } from 'zod';
+import { conceptGraphJsonSchema } from '../../concept-extraction/concept-graph-json-schema';
 import {
   extractConceptGraph,
   type ExtractConceptGraphResult,
-} from "../../concept-extraction/extract-concept-graph";
+} from '../../concept-extraction/extract-concept-graph';
 
 export const extractConceptsWorkflowInputDto = z.object({
   sourceMaterial: z.string().trim().min(1),
@@ -19,27 +19,27 @@ export const reviewConceptsResumeDto = z.object({
 
 export type ReviewConceptsSuspendDto = {
   conceptGraph: ExtractedConceptGraphDto;
-  extractionMode: "llm_strict" | "llm_json" | "deterministic";
-  reason: "review_concepts";
+  extractionMode: 'llm_strict' | 'llm_json' | 'deterministic';
+  reason: 'review_concepts';
 };
 
 export const conceptGraphWorkflowSchema =
   conceptGraphJsonSchema as PublicSchema<ExtractedConceptGraphDto>;
 
 export const reviewConceptsSuspendJsonSchema = {
-  type: "object",
+  type: 'object',
   properties: {
     conceptGraph: conceptGraphJsonSchema,
     extractionMode: {
-      type: "string",
-      enum: ["llm_strict", "llm_json", "deterministic"],
+      type: 'string',
+      enum: ['llm_strict', 'llm_json', 'deterministic'],
     },
     reason: {
-      type: "string",
-      const: "review_concepts",
+      type: 'string',
+      const: 'review_concepts',
     },
   },
-  required: ["conceptGraph", "extractionMode", "reason"],
+  required: ['conceptGraph', 'extractionMode', 'reason'],
   additionalProperties: false,
 } satisfies JSONSchema7;
 
@@ -47,7 +47,7 @@ export const reviewConceptsSuspendSchema =
   reviewConceptsSuspendJsonSchema as PublicSchema<ReviewConceptsSuspendDto>;
 
 export const extractConceptsStep = createStep({
-  id: "extract-concepts",
+  id: 'extract-concepts',
   inputSchema: extractConceptsWorkflowInputDto,
   outputSchema: conceptGraphWorkflowSchema,
   resumeSchema: reviewConceptsResumeDto,
@@ -60,10 +60,10 @@ export const extractConceptsStep = createStep({
         {
           conceptGraph: extraction.graph,
           extractionMode: extraction.extractionMode,
-          reason: "review_concepts",
+          reason: 'review_concepts',
         },
         {
-          resumeLabel: "review_concepts",
+          resumeLabel: 'review_concepts',
         }
       );
     }
@@ -73,7 +73,7 @@ export const extractConceptsStep = createStep({
 });
 
 export const extractConceptsWorkflow = createWorkflow({
-  id: "extract-concepts",
+  id: 'extract-concepts',
   inputSchema: extractConceptsWorkflowInputDto,
   outputSchema: conceptGraphWorkflowSchema,
 })
@@ -96,17 +96,15 @@ function getConceptGraphForExecution(
   });
 }
 
-function isReviewConceptsSuspendDto(
-  value: unknown
-): value is ReviewConceptsSuspendDto {
-  if (typeof value !== "object" || value === null) {
+function isReviewConceptsSuspendDto(value: unknown): value is ReviewConceptsSuspendDto {
+  if (typeof value !== 'object' || value === null) {
     return false;
   }
 
   return (
-    "conceptGraph" in value &&
-    "extractionMode" in value &&
-    "reason" in value &&
-    value.reason === "review_concepts"
+    'conceptGraph' in value &&
+    'extractionMode' in value &&
+    'reason' in value &&
+    value.reason === 'review_concepts'
   );
 }

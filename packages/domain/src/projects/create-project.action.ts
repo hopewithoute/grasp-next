@@ -1,9 +1,5 @@
-import { createProjectDto, type CreateProjectDto } from "./project.dto";
-import type {
-  AuditLogRepository,
-  ProjectRecord,
-  ProjectRepository,
-} from "./project.types";
+import { createProjectDto, type CreateProjectDto } from './project.dto';
+import type { AuditLogRepository, ProjectRecord, ProjectRepository } from './project.types';
 
 export type CreateProjectDeps = {
   auditLogRepository: AuditLogRepository;
@@ -26,8 +22,8 @@ export async function createProject(
 
   await deps.auditLogRepository.write({
     actorId,
-    action: "project.created",
-    entityType: "project",
+    action: 'project.created',
+    entityType: 'project',
     entityId: project.id,
   });
 
