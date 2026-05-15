@@ -1,5 +1,4 @@
-import { Queue, type ConnectionOptions } from "bullmq";
-import type { QueueConfig } from "./queue-config.js";
+import type { ConnectionOptions } from "bullmq";
 
 export type ConceptExtractionJob = {
   projectId: string;
@@ -21,18 +20,5 @@ export function parseRedisConnection(redisUrl: string): ConnectionOptions {
     password: url.password ? decodeURIComponent(url.password) : undefined,
     db,
     tls: url.protocol === "rediss:" ? {} : undefined,
-  };
-}
-
-export function createConceptExtractionQueue(config: QueueConfig) {
-  const queue = new Queue<ConceptExtractionJob>("concept-extraction", {
-    connection: parseRedisConnection(config.redisUrl),
-    prefix: config.prefix,
-  });
-
-  return {
-    async enqueueConceptExtraction(input: ConceptExtractionJob) {
-      await queue.add("extract-concepts", input);
-    },
   };
 }

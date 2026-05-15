@@ -17,6 +17,7 @@
   "dependencies": {
     "@grasp/ai": "workspace:*",
     "@grasp/db": "workspace:*",
+    "@grasp/domain": "workspace:*",
     "bullmq": "^5.76.8"
   }
 }
