@@ -16,7 +16,7 @@ export function canUseAgentModel(
   }
 
   if (provider === "anthropic") {
-    return Boolean(env.ANTHROPIC_API_KEY);
+    return Boolean(env.ANTHROPIC_API_KEY || env.ANTHROPIC_AUTH_TOKEN);
   }
 
   return Boolean(env.OPENAI_API_KEY);
@@ -45,8 +45,18 @@ export function resolveAgentModel(
   }
 
   if (provider === "anthropic") {
+    const apiKey = env.ANTHROPIC_API_KEY;
+    const authToken = env.ANTHROPIC_AUTH_TOKEN;
+
+    if (!apiKey && !authToken) {
+      throw new Error("ANTHROPIC_API_KEY or ANTHROPIC_AUTH_TOKEN is required.");
+    }
+
     const anthropic = createAnthropic({
-      apiKey: requireEnv(env.ANTHROPIC_API_KEY, "ANTHROPIC_API_KEY"),
+      ...(authToken
+        ? { authToken }
+        : { apiKey: requireEnv(apiKey, "ANTHROPIC_API_KEY") }),
+      baseURL: env.ANTHROPIC_BASE_URL,
     });
 
     return anthropic(resolveAgentModelName(agent, provider, env));
@@ -74,7 +84,7 @@ function resolveAgentProvider(
     return "openai";
   }
 
-  if (env.ANTHROPIC_API_KEY) {
+  if (env.ANTHROPIC_API_KEY || env.ANTHROPIC_AUTH_TOKEN) {
     return "anthropic";
   }
 
