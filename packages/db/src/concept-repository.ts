@@ -3,25 +3,23 @@ import type { DbClient } from "./client";
 import {
   conceptRelationships,
   concepts,
-  type NewConcept,
 } from "./schema";
 
 export type ConceptRepository = ReturnType<typeof createConceptRepository>;
 
 export type ReplaceConceptsInput = {
-  concepts: Array<
-    Pick<
-      NewConcept,
-      "confidence" | "definition" | "difficulty" | "name" | "sourceEvidence"
-    >
-  >;
-  relationships: Array<
-    {
-      relationshipType: "prerequisite";
-      sourceConceptName: string;
-      targetConceptName: string;
-    }
-  >;
+  concepts: Array<{
+    confidence: string;
+    definition: string;
+    difficulty: "beginner" | "intermediate" | "advanced";
+    name: string;
+    sourceEvidence: unknown;
+  }>;
+  relationships: Array<{
+    relationshipType: "prerequisite";
+    sourceConceptName: string;
+    targetConceptName: string;
+  }>;
 };
 
 export function createConceptRepository(db: DbClient) {

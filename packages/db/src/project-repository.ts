@@ -53,6 +53,27 @@ export function createProjectRepository(db: DbClient) {
         .orderBy(desc(projects.createdAt));
     },
 
+    async updateDetailsForOwner(
+      projectId: string,
+      ownerId: string,
+      input: {
+        description?: string | null;
+        title: string;
+      }
+    ) {
+      const [project] = await db
+        .update(projects)
+        .set({
+          description: input.description ?? null,
+          title: input.title,
+          updatedAt: new Date(),
+        })
+        .where(and(eq(projects.id, projectId), eq(projects.ownerId, ownerId)))
+        .returning();
+
+      return project ?? null;
+    },
+
     async updateSourceMaterial(projectId: string, sourceMaterial: string) {
       const [project] = await db
         .update(projects)
@@ -93,6 +114,15 @@ export function createProjectRepository(db: DbClient) {
           updatedAt: new Date(),
         })
         .where(eq(projects.id, projectId))
+        .returning();
+
+      return project ?? null;
+    },
+
+    async deleteForOwner(projectId: string, ownerId: string) {
+      const [project] = await db
+        .delete(projects)
+        .where(and(eq(projects.id, projectId), eq(projects.ownerId, ownerId)))
         .returning();
 
       return project ?? null;

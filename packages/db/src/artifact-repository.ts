@@ -9,6 +9,7 @@ import {
 } from "./schema";
 
 export type ArtifactRepository = ReturnType<typeof createArtifactRepository>;
+type ExtractionMode = "llm_strict" | "llm_json" | "deterministic";
 
 export function createArtifactRepository(db: DbClient) {
   return {
@@ -74,7 +75,7 @@ export function createArtifactRepository(db: DbClient) {
     async createVersion(
       input: Pick<
         NewArtifactVersion,
-        "artifactId" | "content" | "revisionFeedback"
+        "artifactId" | "content" | "extractionMode" | "revisionFeedback"
       >
     ) {
       return db.transaction(async (tx) => {
@@ -90,6 +91,7 @@ export function createArtifactRepository(db: DbClient) {
           .values({
             artifactId: input.artifactId,
             content: input.content,
+            extractionMode: input.extractionMode ?? "deterministic",
             revisionFeedback: input.revisionFeedback,
             versionNumber: (nextVersionNumber ?? 0) + 1,
           })
@@ -103,16 +105,35 @@ export function createArtifactRepository(db: DbClient) {
           })
           .where(eq(artifacts.id, input.artifactId));
 
-        return version;
+        return toArtifactVersionRecord(version);
       });
     },
 
     async listVersions(artifactId: string) {
-      return db
+      const versions = await db
         .select()
         .from(artifactVersions)
         .where(eq(artifactVersions.artifactId, artifactId))
         .orderBy(desc(artifactVersions.versionNumber));
+
+      return versions.map(toArtifactVersionRecord);
     },
   };
+}
+
+function toArtifactVersionRecord(
+  version: typeof artifactVersions.$inferSelect
+) {
+  return {
+    ...version,
+    extractionMode: toExtractionMode(version.extractionMode),
+  };
+}
+
+function toExtractionMode(value: string): ExtractionMode {
+  if (value === "llm_strict" || value === "llm_json") {
+    return value;
+  }
+
+  return "deterministic";
 }
