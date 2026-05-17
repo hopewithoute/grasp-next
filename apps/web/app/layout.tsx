@@ -19,6 +19,12 @@ export default function RootLayout({
   return (
     <html lang="en" className={cn('font-sans', geist.variable)}>
       <body>
+        <a
+          className="sr-only z-50 rounded-full bg-[#53d1cb] px-4 py-2 font-medium text-[#061018] focus:not-sr-only focus:fixed focus:top-4 focus:left-4"
+          href="#main-content"
+        >
+          Skip to content
+        </a>
         <TooltipProvider>{children}</TooltipProvider>
       </body>
     </html>
