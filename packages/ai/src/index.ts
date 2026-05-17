@@ -12,6 +12,7 @@ export {
   type ResumeArtifactReviewInput,
   type ResumeArtifactReviewResult,
 } from './mastra/workflows/resume-artifact-review';
+export { parseReviewConceptsSuspendPayload } from './mastra/workflows/review-concepts-suspend-payload';
 export { mastra } from './mastra';
 export { aiProviderConfig, type AiProvider } from './model-config';
 export {

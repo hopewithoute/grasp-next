@@ -1,7 +1,13 @@
 import { canEditOwnedProject, type Actor } from '../projects/project.policy';
+import {
+  ARTIFACT_REVIEW_RUN_STATUS,
+  ARTIFACT_STATUS,
+  ARTIFACT_TYPE,
+  AUDIT_ACTION,
+  AUDIT_ENTITY_TYPE,
+} from '../constants';
 import type {
   AuditLogRepository,
-  ConceptExtractionQueue,
   ProjectRepository,
 } from '../projects/project.types';
 import type {
@@ -24,7 +30,6 @@ export type RequestConceptRevisionDeps = {
   artifactRepository: ArtifactRepository;
   artifactReviewRunRepository: ArtifactReviewRunRepository;
   auditLogRepository: AuditLogRepository;
-  conceptExtractionQueue: ConceptExtractionQueue;
   projectRepository: ProjectRepository;
 };
 
@@ -50,13 +55,16 @@ export async function requestConceptRevision(
     throw new ArtifactApprovalForbiddenError();
   }
 
-  if (artifact.type !== 'concept_graph') {
+  if (artifact.type !== ARTIFACT_TYPE.CONCEPT_GRAPH) {
     throw new ArtifactApprovalInvalidStateError(
       'Only concept graph artifacts can request concept revision.'
     );
   }
 
-  if (artifact.status !== 'generated' && artifact.status !== 'needs_revision') {
+  if (
+    artifact.status !== ARTIFACT_STATUS.GENERATED &&
+    artifact.status !== ARTIFACT_STATUS.NEEDS_REVISION
+  ) {
     throw new ArtifactApprovalInvalidStateError();
   }
 
@@ -72,24 +80,28 @@ export async function requestConceptRevision(
     throw new ArtifactApprovalReviewRunNotFoundError();
   }
 
-  if (reviewRun.status !== 'suspended') {
+  if (reviewRun.status !== ARTIFACT_REVIEW_RUN_STATUS.SUSPENDED) {
     throw new ArtifactApprovalInvalidStateError('Artifact review run is not suspended.');
   }
 
-  await deps.artifactReviewRunRepository.updateStatus(reviewRun.id, 'resumed');
+  await deps.artifactReviewRunRepository.updateStatus(
+    reviewRun.id,
+    ARTIFACT_REVIEW_RUN_STATUS.RESUMED
+  );
 
-  const revisedArtifact = await deps.artifactRepository.updateStatus(artifact.id, 'needs_revision');
+  const revisedArtifact = await deps.artifactRepository.updateStatus(
+    artifact.id,
+    ARTIFACT_STATUS.NEEDS_REVISION
+  );
 
   if (!revisedArtifact) {
     throw new ArtifactNotFoundError();
   }
 
-  await deps.projectRepository.updateStatus(project.id, 'processing');
-
   await deps.auditLogRepository.write({
     actorId: actor.id,
-    action: 'artifact.revision_requested',
-    entityType: 'artifact',
+    action: AUDIT_ACTION.ARTIFACT_REVISION_REQUESTED,
+    entityType: AUDIT_ENTITY_TYPE.ARTIFACT,
     entityId: revisedArtifact.id,
     metadata: {
       artifactVersionId: artifact.currentVersionId,
@@ -98,11 +110,6 @@ export async function requestConceptRevision(
       workflowId: reviewRun.workflowId,
       workflowRunId: reviewRun.workflowRunId,
     },
-  });
-
-  await deps.conceptExtractionQueue.enqueueConceptExtraction({
-    projectId: project.id,
-    revisionFeedback: dto.revisionFeedback,
   });
 
   return revisedArtifact;

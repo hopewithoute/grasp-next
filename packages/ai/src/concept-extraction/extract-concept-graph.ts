@@ -1,4 +1,9 @@
-import { extractedConceptGraphDto, type ExtractedConceptGraphDto } from '@grasp/domain';
+import {
+  EXTRACTION_MODE,
+  extractedConceptGraphDto,
+  type ExtractedConceptGraphDto,
+  type ExtractionMode,
+} from '@grasp/domain';
 import { conceptExtractorAgent } from '../mastra/agents/concept-extractor-agent';
 import { canUseAgentModel } from '../model-resolver';
 import { conceptGraphJsonSchema } from './concept-graph-json-schema';
@@ -17,7 +22,7 @@ export type ExtractConceptGraphInput = {
 
 export type ExtractConceptGraphResult = {
   graph: ExtractedConceptGraphDto;
-  extractionMode: 'llm_strict' | 'llm_json' | 'deterministic';
+  extractionMode: ExtractionMode;
 };
 
 type ConceptExtractorAgent = {
@@ -48,7 +53,7 @@ export async function extractConceptGraph(
   if (!dependencies.hasConfiguredLlmProvider()) {
     return {
       graph: extractConceptsDeterministically(input.sourceMaterial),
-      extractionMode: 'deterministic',
+      extractionMode: EXTRACTION_MODE.DETERMINISTIC,
     };
   }
 
@@ -64,7 +69,7 @@ export async function extractConceptGraph(
 
     return {
       graph: extractedConceptGraphDto.parse(response.object),
-      extractionMode: 'llm_strict',
+      extractionMode: EXTRACTION_MODE.LLM_STRICT,
     };
   } catch (error) {
     if (!isUnsupportedStructuredOutputError(error)) {
@@ -80,7 +85,7 @@ export async function extractConceptGraph(
 
     return {
       graph: parsed,
-      extractionMode: 'llm_json',
+      extractionMode: EXTRACTION_MODE.LLM_JSON,
     };
   }
 }

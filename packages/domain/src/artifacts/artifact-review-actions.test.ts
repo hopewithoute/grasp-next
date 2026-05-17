@@ -15,7 +15,6 @@ import type {
 } from './artifact.types';
 import type {
   AuditLogRepository,
-  ConceptExtractionQueue,
   ProjectRecord,
   ProjectRepository,
   ProjectStatus,
@@ -86,7 +85,7 @@ describe('requestConceptRevision', () => {
     state = createTestState();
   });
 
-  it('marks the current review run resumed, sets revision state, queues re-extraction, and logs feedback', async () => {
+  it('marks the current review run resumed, sets revision state, and logs feedback', async () => {
     const artifact = await requestConceptRevision(
       {
         artifactId: state.artifact.id,
@@ -98,13 +97,7 @@ describe('requestConceptRevision', () => {
 
     assert.equal(artifact.status, 'needs_revision');
     assert.equal(state.reviewRun.status, 'resumed');
-    assert.equal(state.project.status, 'processing');
-    assert.deepEqual(state.queuedJobs, [
-      {
-        projectId: state.project.id,
-        revisionFeedback: 'Split atom and molecule concepts more clearly.',
-      },
-    ]);
+    assert.equal(state.project.status, 'reviewing');
     assert.equal(state.auditLogs.length, 1);
     assert.equal(state.auditLogs[0]?.action, 'artifact.revision_requested');
     assert.equal(
@@ -129,10 +122,9 @@ describe('requestConceptRevision', () => {
     );
 
     assert.equal(state.reviewRun.status, 'suspended');
-    assert.equal(state.queuedJobs.length, 0);
   });
 
-  it('requires a suspended review run before queueing re-extraction', async () => {
+  it('requires a suspended review run before requesting re-extraction', async () => {
     state.reviewRun.status = 'completed';
 
     await assert.rejects(
@@ -147,7 +139,6 @@ describe('requestConceptRevision', () => {
       ArtifactApprovalInvalidStateError
     );
 
-    assert.equal(state.queuedJobs.length, 0);
     assert.equal(state.artifact.status, 'generated');
   });
 });
@@ -162,10 +153,6 @@ type TestState = {
     metadata?: Record<string, unknown>;
   }>;
   project: ProjectRecord;
-  queuedJobs: Array<{
-    projectId: string;
-    revisionFeedback?: string | null;
-  }>;
   resumeCalls: Array<{
     resumeLabel: string;
     workflowId: string;
@@ -223,7 +210,6 @@ function createTestState(): TestState {
     artifact,
     auditLogs: [],
     project,
-    queuedJobs: [],
     resumeCalls: [],
     reviewRun,
     version,
@@ -240,7 +226,6 @@ function createDeps(
     artifactRepository: createArtifactRepository(state),
     artifactReviewRunRepository: createArtifactReviewRunRepository(state),
     auditLogRepository: createAuditLogRepository(state),
-    conceptExtractionQueue: createConceptExtractionQueue(state),
     projectRepository: createProjectRepository(state),
     reviewWorkflow: {
       async resumeReview(input: {
@@ -318,14 +303,6 @@ function createAuditLogRepository(state: TestState): AuditLogRepository {
   return {
     async write(input) {
       state.auditLogs.push(input);
-    },
-  };
-}
-
-function createConceptExtractionQueue(state: TestState): ConceptExtractionQueue {
-  return {
-    async enqueueConceptExtraction(input) {
-      state.queuedJobs.push(input);
     },
   };
 }

@@ -1,4 +1,5 @@
 import { eq } from 'drizzle-orm';
+import { ARTIFACT_REVIEW_RUN_STATUS } from '@grasp/domain';
 import type { DbClient } from './client';
 import { artifactReviewRuns, type ArtifactReviewRun, type NewArtifactReviewRun } from './schema';
 
@@ -22,7 +23,7 @@ export function createArtifactReviewRunRepository(db: DbClient) {
         .insert(artifactReviewRuns)
         .values({
           ...input,
-          status: 'suspended',
+          status: ARTIFACT_REVIEW_RUN_STATUS.SUSPENDED,
         })
         .returning();
 

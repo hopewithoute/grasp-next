@@ -70,7 +70,6 @@ export function createProjectRepository(db: DbClient) {
         .update(projects)
         .set({
           sourceMaterial,
-          status: 'processing',
           updatedAt: new Date(),
         })
         .where(eq(projects.id, projectId))
@@ -84,7 +83,6 @@ export function createProjectRepository(db: DbClient) {
         .update(projects)
         .set({
           sourceMaterial,
-          status: 'processing',
           updatedAt: new Date(),
         })
         .where(and(eq(projects.id, projectId), eq(projects.ownerId, ownerId)))

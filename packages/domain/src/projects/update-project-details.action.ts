@@ -1,3 +1,4 @@
+import { AUDIT_ACTION, AUDIT_ENTITY_TYPE } from '../constants';
 import { updateProjectDetailsDto, type UpdateProjectDetailsDto } from './project.dto';
 import { canEditOwnedProject, type Actor } from './project.policy';
 import type { AuditLogRepository, ProjectRecord, ProjectRepository } from './project.types';
@@ -35,8 +36,8 @@ export async function updateProjectDetails(
 
   await deps.auditLogRepository.write({
     actorId: actor.id,
-    action: 'project.details.updated',
-    entityType: 'project',
+    action: AUDIT_ACTION.PROJECT_DETAILS_UPDATED,
+    entityType: AUDIT_ENTITY_TYPE.PROJECT,
     entityId: project.id,
     metadata: {
       descriptionChanged: existingProject.description !== project.description,

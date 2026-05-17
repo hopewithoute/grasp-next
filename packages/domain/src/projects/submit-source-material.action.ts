@@ -1,15 +1,14 @@
+import { AUDIT_ACTION, AUDIT_ENTITY_TYPE } from '../constants';
 import { updateSourceMaterialDto, type UpdateSourceMaterialDto } from './project.dto';
 import { canEditOwnedProject, type Actor } from './project.policy';
 import type {
   AuditLogRepository,
-  ConceptExtractionQueue,
   ProjectRecord,
   ProjectRepository,
 } from './project.types';
 
 export type SubmitSourceMaterialDeps = {
   auditLogRepository: AuditLogRepository;
-  conceptExtractionQueue: ConceptExtractionQueue;
   projectRepository: ProjectRepository;
 };
 
@@ -56,16 +55,12 @@ export async function submitSourceMaterial(
 
   await deps.auditLogRepository.write({
     actorId: actor.id,
-    action: 'project.source_material.submitted',
-    entityType: 'project',
+    action: AUDIT_ACTION.PROJECT_SOURCE_MATERIAL_SUBMITTED,
+    entityType: AUDIT_ENTITY_TYPE.PROJECT,
     entityId: project.id,
     metadata: {
       status: project.status,
     },
-  });
-
-  await deps.conceptExtractionQueue.enqueueConceptExtraction({
-    projectId: project.id,
   });
 
   return project;

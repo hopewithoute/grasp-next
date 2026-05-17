@@ -1,4 +1,12 @@
 import {
+  ARTIFACT_STATUS,
+  ARTIFACT_TYPE,
+  AUDIT_ACTION,
+  AUDIT_ENTITY_TYPE,
+  CONCEPT_EXTRACTION_WORKFLOW,
+  PROJECT_STATUS,
+} from '../constants';
+import {
   processConceptExtractionDto,
   type ProcessConceptExtractionInput,
 } from './process-concept-extraction.dto';
@@ -23,8 +31,8 @@ export async function processConceptExtraction(
 
     const artifact = await deps.artifactRepository.findOrCreateForProject({
       projectId: dto.projectId,
-      status: 'generating',
-      type: 'concept_graph',
+      status: ARTIFACT_STATUS.GENERATING,
+      type: ARTIFACT_TYPE.CONCEPT_GRAPH,
     });
 
     const artifactVersion = await deps.artifactRepository.createVersion({
@@ -37,10 +45,10 @@ export async function processConceptExtraction(
     const reviewRun = await deps.artifactReviewRunRepository.createSuspended({
       artifactId: artifact.id,
       artifactVersionId: artifactVersion.id,
-      resumeLabel: 'review_concepts',
+      resumeLabel: CONCEPT_EXTRACTION_WORKFLOW.REVIEW_RESUME_LABEL,
       resumeLabels: workflowResult.resumeLabels,
       suspendedSteps: workflowResult.suspendedSteps,
-      workflowId: 'extract-concepts',
+      workflowId: CONCEPT_EXTRACTION_WORKFLOW.ID,
       workflowRunId: workflowResult.workflowRunId,
     });
 
@@ -52,13 +60,16 @@ export async function processConceptExtraction(
       relationships: workflowResult.conceptGraph.relationships,
     });
 
-    await deps.artifactRepository.updateStatus(artifact.id, 'generated');
-    const updatedProject = await deps.projectRepository.updateStatus(dto.projectId, 'reviewing');
+    await deps.artifactRepository.updateStatus(artifact.id, ARTIFACT_STATUS.GENERATED);
+    const updatedProject = await deps.projectRepository.updateStatus(
+      dto.projectId,
+      PROJECT_STATUS.REVIEWING
+    );
 
     await deps.auditLogRepository.write({
       actorId: dto.ownerId,
-      action: 'project.concept_extraction.completed',
-      entityType: 'project',
+      action: AUDIT_ACTION.PROJECT_CONCEPT_EXTRACTION_COMPLETED,
+      entityType: AUDIT_ENTITY_TYPE.PROJECT,
       entityId: dto.projectId,
       metadata: {
         artifactId: artifact.id,
@@ -69,7 +80,7 @@ export async function processConceptExtraction(
         extractionMode: workflowResult.extractionMode,
         revisionFeedback: dto.revisionFeedback ?? null,
         workflowRunId: workflowResult.workflowRunId,
-        status: updatedProject?.status ?? 'reviewing',
+        status: updatedProject?.status ?? PROJECT_STATUS.REVIEWING,
       },
     });
 
@@ -82,21 +93,21 @@ export async function processConceptExtraction(
       extractionMode: workflowResult.extractionMode,
     };
   } catch (error) {
-    await deps.projectRepository.updateStatus(dto.projectId, 'failed');
+    await deps.projectRepository.updateStatus(dto.projectId, PROJECT_STATUS.FAILED);
 
     const artifact = await deps.artifactRepository.findByProjectAndType(
       dto.projectId,
-      'concept_graph'
+      ARTIFACT_TYPE.CONCEPT_GRAPH
     );
 
     if (artifact) {
-      await deps.artifactRepository.updateStatus(artifact.id, 'failed');
+      await deps.artifactRepository.updateStatus(artifact.id, ARTIFACT_STATUS.FAILED);
     }
 
     await deps.auditLogRepository.write({
       actorId: dto.ownerId,
-      action: 'project.concept_extraction.failed',
-      entityType: 'project',
+      action: AUDIT_ACTION.PROJECT_CONCEPT_EXTRACTION_FAILED,
+      entityType: AUDIT_ENTITY_TYPE.PROJECT,
       entityId: dto.projectId,
       metadata: {
         reason: error instanceof Error ? error.message : 'unknown_error',

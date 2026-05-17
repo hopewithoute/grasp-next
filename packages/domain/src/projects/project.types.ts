@@ -1,4 +1,6 @@
-export type ProjectStatus = 'draft' | 'processing' | 'reviewing' | 'processed' | 'failed';
+import type { ProjectStatus } from '../constants';
+
+export type { ProjectStatus } from '../constants';
 
 export type ProjectRecord = {
   id: string;
@@ -47,11 +49,4 @@ export type AuditLogRepository = {
     entityId: string;
     metadata?: Record<string, unknown>;
   }): Promise<unknown>;
-};
-
-export type ConceptExtractionQueue = {
-  enqueueConceptExtraction(input: {
-    projectId: string;
-    revisionFeedback?: string | null;
-  }): Promise<void>;
 };

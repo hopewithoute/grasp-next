@@ -39,8 +39,6 @@ export {
 } from './load-project-detail.action';
 export type {
   AuditLogRepository,
-  ConceptExtractionQueue,
   ProjectRecord,
   ProjectRepository,
-  ProjectStatus,
 } from './project.types';

@@ -1,4 +1,5 @@
 import { and, desc, eq, max } from 'drizzle-orm';
+import { EXTRACTION_MODE, type ExtractionMode } from '@grasp/domain';
 import type { DbClient } from './client';
 import {
   artifacts,
@@ -9,7 +10,6 @@ import {
 } from './schema';
 
 export type ArtifactRepository = ReturnType<typeof createArtifactRepository>;
-type ExtractionMode = 'llm_strict' | 'llm_json' | 'deterministic';
 
 export function createArtifactRepository(db: DbClient) {
   return {
@@ -81,7 +81,7 @@ export function createArtifactRepository(db: DbClient) {
           .values({
             artifactId: input.artifactId,
             content: input.content,
-            extractionMode: input.extractionMode ?? 'deterministic',
+            extractionMode: input.extractionMode ?? EXTRACTION_MODE.DETERMINISTIC,
             revisionFeedback: input.revisionFeedback,
             versionNumber: (nextVersionNumber ?? 0) + 1,
           })
@@ -119,9 +119,9 @@ function toArtifactVersionRecord(version: typeof artifactVersions.$inferSelect) 
 }
 
 function toExtractionMode(value: string): ExtractionMode {
-  if (value === 'llm_strict' || value === 'llm_json') {
+  if (value === EXTRACTION_MODE.LLM_STRICT || value === EXTRACTION_MODE.LLM_JSON) {
     return value;
   }
 
-  return 'deterministic';
+  return EXTRACTION_MODE.DETERMINISTIC;
 }

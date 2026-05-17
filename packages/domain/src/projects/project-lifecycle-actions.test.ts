@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict';
 import { beforeEach, describe, it } from 'node:test';
+import { ARTIFACT_TYPE } from '../constants';
+import type { ArtifactRepository } from '../artifacts/artifact.types';
+import type { ConceptRepository } from '../concepts/concept.types';
 import { deleteProject, ProjectDeleteBlockedError } from './delete-project.action';
+import { loadProjectDetail } from './load-project-detail.action';
 import { ProjectForbiddenError } from './submit-source-material.action';
 import { updateProjectDetails } from './update-project-details.action';
 import type {
@@ -125,6 +129,31 @@ describe('deleteProject', () => {
   });
 });
 
+describe('loadProjectDetail', () => {
+  let state: TestState;
+
+  beforeEach(() => {
+    state = createTestState();
+  });
+
+  it('accepts opaque auth user ids instead of requiring UUID owner ids', async () => {
+    const existingProject = requireProject(state);
+    const detail = await loadProjectDetail(
+      {
+        ownerId: actor.id,
+        projectId: existingProject.id,
+      },
+      {
+        artifactRepository: createArtifactRepository(),
+        conceptRepository: createConceptRepository(),
+        projectRepository: createProjectRepository(state),
+      }
+    );
+
+    assert.equal(detail.project.ownerId, 'owner-1');
+  });
+});
+
 type TestState = {
   auditLogs: Array<{
     action: string;
@@ -173,6 +202,48 @@ function createAuditLogRepository(state: TestState): AuditLogRepository {
   return {
     async write(input) {
       state.auditLogs.push(input);
+    },
+  };
+}
+
+function createArtifactRepository(): ArtifactRepository {
+  return {
+    async create() {
+      throw new Error('Not needed for this test.');
+    },
+    async createVersion() {
+      throw new Error('Not needed for this test.');
+    },
+    async findById() {
+      throw new Error('Not needed for this test.');
+    },
+    async findByProjectAndType(_projectId, type) {
+      assert.equal(type, ARTIFACT_TYPE.CONCEPT_GRAPH);
+
+      return null;
+    },
+    async findOrCreateForProject() {
+      throw new Error('Not needed for this test.');
+    },
+    async listVersions() {
+      throw new Error('Not needed for this test.');
+    },
+    async updateStatus() {
+      throw new Error('Not needed for this test.');
+    },
+  };
+}
+
+function createConceptRepository(): ConceptRepository {
+  return {
+    async listByProject() {
+      return {
+        concepts: [],
+        relationships: [],
+      };
+    },
+    async replaceForProject() {
+      throw new Error('Not needed for this test.');
     },
   };
 }

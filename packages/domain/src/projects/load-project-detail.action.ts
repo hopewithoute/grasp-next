@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { ARTIFACT_TYPE } from '../constants';
 import type { ConceptRepository } from '../concepts/concept.types';
 import type { ConceptDifficultyDto } from '../concepts/concept.dto';
 import type { ArtifactRecord, ArtifactRepository } from '../artifacts/artifact.types';
@@ -7,7 +8,7 @@ import { ProjectNotFoundError } from './submit-source-material.action';
 
 export const loadProjectDetailDto = z.object({
   projectId: z.uuid(),
-  ownerId: z.uuid(),
+  ownerId: z.string().trim().min(1),
 });
 
 export type LoadProjectDetailInput = z.infer<typeof loadProjectDetailDto>;
@@ -51,7 +52,7 @@ export async function loadProjectDetail(
 
   const [{ concepts, relationships }, conceptGraphArtifact] = await Promise.all([
     deps.conceptRepository.listByProject(project.id),
-    deps.artifactRepository.findByProjectAndType(project.id, 'concept_graph'),
+    deps.artifactRepository.findByProjectAndType(project.id, ARTIFACT_TYPE.CONCEPT_GRAPH),
   ]);
 
   return {

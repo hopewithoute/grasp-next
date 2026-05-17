@@ -1,14 +1,9 @@
-export type ArtifactType = 'concept_graph' | 'learning_objectives' | 'lesson_draft';
-
-export type ArtifactStatus =
-  | 'pending'
-  | 'generating'
-  | 'generated'
-  | 'needs_revision'
-  | 'approved'
-  | 'published'
-  | 'rejected'
-  | 'failed';
+import type {
+  ArtifactReviewRunStatus,
+  ArtifactStatus,
+  ArtifactType,
+  ExtractionMode,
+} from '../constants';
 
 export type ArtifactRecord = {
   id: string;
@@ -26,11 +21,9 @@ export type ArtifactVersionRecord = {
   versionNumber: number;
   content: unknown;
   revisionFeedback: string | null;
-  extractionMode: 'llm_strict' | 'llm_json' | 'deterministic';
+  extractionMode: ExtractionMode;
   createdAt: Date;
 };
-
-export type ArtifactReviewRunStatus = 'suspended' | 'resumed' | 'completed' | 'failed';
 
 export type ArtifactReviewRunRecord = {
   id: string;
@@ -64,7 +57,7 @@ export type ArtifactRepository = {
     artifactId: string;
     content: unknown;
     revisionFeedback?: string | null;
-    extractionMode?: 'llm_strict' | 'llm_json' | 'deterministic';
+    extractionMode?: ExtractionMode;
   }): Promise<ArtifactVersionRecord>;
   listVersions(artifactId: string): Promise<ArtifactVersionRecord[]>;
 };

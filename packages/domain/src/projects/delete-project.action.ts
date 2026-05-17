@@ -1,3 +1,4 @@
+import { AUDIT_ACTION, AUDIT_ENTITY_TYPE, PROJECT_STATUS } from '../constants';
 import { deleteProjectDto, type DeleteProjectDto } from './project.dto';
 import { canEditOwnedProject, type Actor } from './project.policy';
 import type { AuditLogRepository, ProjectRecord, ProjectRepository } from './project.types';
@@ -31,14 +32,14 @@ export async function deleteProject(
     throw new ProjectForbiddenError();
   }
 
-  if (existingProject.status === 'processing') {
+  if (existingProject.status === PROJECT_STATUS.PROCESSING) {
     throw new ProjectDeleteBlockedError();
   }
 
   await deps.auditLogRepository.write({
     actorId: actor.id,
-    action: 'project.deleted',
-    entityType: 'project',
+    action: AUDIT_ACTION.PROJECT_DELETED,
+    entityType: AUDIT_ENTITY_TYPE.PROJECT,
     entityId: existingProject.id,
     metadata: {
       status: existingProject.status,

@@ -1,4 +1,14 @@
 import {
+  ARTIFACT_REVIEW_RUN_STATUSES,
+  ARTIFACT_REVIEW_RUN_STATUS,
+  ARTIFACT_STATUSES,
+  ARTIFACT_STATUS,
+  ARTIFACT_TYPES,
+  EXTRACTION_MODE,
+  PROJECT_STATUSES,
+  PROJECT_STATUS,
+} from '@grasp/domain';
+import {
   boolean,
   integer,
   jsonb,
@@ -64,13 +74,7 @@ export const verification = pgTable('verification', {
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull(),
 });
 
-export const projectStatus = pgEnum('project_status', [
-  'draft',
-  'processing',
-  'reviewing',
-  'processed',
-  'failed',
-]);
+export const projectStatus = pgEnum('project_status', PROJECT_STATUSES);
 
 export const conceptDifficulty = pgEnum('concept_difficulty', [
   'beginner',
@@ -78,29 +82,14 @@ export const conceptDifficulty = pgEnum('concept_difficulty', [
   'advanced',
 ]);
 
-export const artifactType = pgEnum('artifact_type', [
-  'concept_graph',
-  'learning_objectives',
-  'lesson_draft',
-]);
+export const artifactType = pgEnum('artifact_type', ARTIFACT_TYPES);
 
-export const artifactStatus = pgEnum('artifact_status', [
-  'pending',
-  'generating',
-  'generated',
-  'needs_revision',
-  'approved',
-  'published',
-  'rejected',
-  'failed',
-]);
+export const artifactStatus = pgEnum('artifact_status', ARTIFACT_STATUSES);
 
-export const artifactReviewRunStatus = pgEnum('artifact_review_run_status', [
-  'suspended',
-  'resumed',
-  'completed',
-  'failed',
-]);
+export const artifactReviewRunStatus = pgEnum(
+  'artifact_review_run_status',
+  ARTIFACT_REVIEW_RUN_STATUSES
+);
 
 export const projects = pgTable('projects', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -110,7 +99,7 @@ export const projects = pgTable('projects', {
   title: text('title').notNull(),
   description: text('description'),
   sourceMaterial: text('source_material'),
-  status: projectStatus('status').notNull().default('draft'),
+  status: projectStatus('status').notNull().default(PROJECT_STATUS.DRAFT),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
@@ -152,7 +141,7 @@ export const artifacts = pgTable(
       .notNull()
       .references(() => projects.id, { onDelete: 'cascade' }),
     type: artifactType('type').notNull(),
-    status: artifactStatus('status').notNull().default('pending'),
+    status: artifactStatus('status').notNull().default(ARTIFACT_STATUS.PENDING),
     currentVersionId: uuid('current_version_id'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
@@ -170,7 +159,7 @@ export const artifactVersions = pgTable(
     versionNumber: integer('version_number').notNull(),
     content: jsonb('content').notNull(),
     revisionFeedback: text('revision_feedback'),
-    extractionMode: text('extraction_mode').notNull().default('deterministic'),
+    extractionMode: text('extraction_mode').notNull().default(EXTRACTION_MODE.DETERMINISTIC),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
@@ -196,7 +185,9 @@ export const artifactReviewRuns = pgTable(
     resumeLabel: text('resume_label').notNull(),
     suspendedSteps: jsonb('suspended_steps').notNull(),
     resumeLabels: jsonb('resume_labels'),
-    status: artifactReviewRunStatus('status').notNull().default('suspended'),
+    status: artifactReviewRunStatus('status')
+      .notNull()
+      .default(ARTIFACT_REVIEW_RUN_STATUS.SUSPENDED),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },

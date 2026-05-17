@@ -1,3 +1,4 @@
+import { CONCEPT_EXTRACTION_WORKFLOW } from '@grasp/domain';
 import { extractConceptsWorkflow } from './extract-concepts-workflow';
 import { mastra } from '../index';
 
@@ -18,7 +19,7 @@ export async function resumeArtifactReview(
     throw new Error(`Unsupported artifact review workflow: ${input.workflowId}`);
   }
 
-  const workflow = mastra.getWorkflow('extractConceptsWorkflow');
+  const workflow = mastra.getWorkflow(CONCEPT_EXTRACTION_WORKFLOW.REGISTRY_NAME);
   const run = await workflow.createRun({
     runId: input.workflowRunId,
   });

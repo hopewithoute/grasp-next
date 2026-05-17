@@ -1,6 +1,11 @@
 import { createStep, createWorkflow } from '@mastra/core/workflows';
 import type { PublicSchema } from '@mastra/core/schema';
-import type { ExtractedConceptGraphDto } from '@grasp/domain';
+import {
+  CONCEPT_EXTRACTION_WORKFLOW,
+  EXTRACTION_MODES,
+  type ExtractedConceptGraphDto,
+  type ExtractionMode,
+} from '@grasp/domain';
 import type { JSONSchema7 } from 'json-schema';
 import { z } from 'zod';
 import { conceptGraphJsonSchema } from '../../concept-extraction/concept-graph-json-schema';
@@ -19,8 +24,8 @@ export const reviewConceptsResumeDto = z.object({
 
 export type ReviewConceptsSuspendDto = {
   conceptGraph: ExtractedConceptGraphDto;
-  extractionMode: 'llm_strict' | 'llm_json' | 'deterministic';
-  reason: 'review_concepts';
+  extractionMode: ExtractionMode;
+  reason: typeof CONCEPT_EXTRACTION_WORKFLOW.REVIEW_SUSPEND_REASON;
 };
 
 export const conceptGraphWorkflowSchema =
@@ -32,11 +37,11 @@ export const reviewConceptsSuspendJsonSchema = {
     conceptGraph: conceptGraphJsonSchema,
     extractionMode: {
       type: 'string',
-      enum: ['llm_strict', 'llm_json', 'deterministic'],
+      enum: [...EXTRACTION_MODES],
     },
     reason: {
       type: 'string',
-      const: 'review_concepts',
+      const: CONCEPT_EXTRACTION_WORKFLOW.REVIEW_SUSPEND_REASON,
     },
   },
   required: ['conceptGraph', 'extractionMode', 'reason'],
@@ -47,7 +52,7 @@ export const reviewConceptsSuspendSchema =
   reviewConceptsSuspendJsonSchema as PublicSchema<ReviewConceptsSuspendDto>;
 
 export const extractConceptsStep = createStep({
-  id: 'extract-concepts',
+  id: CONCEPT_EXTRACTION_WORKFLOW.STEP_ID,
   inputSchema: extractConceptsWorkflowInputDto,
   outputSchema: conceptGraphWorkflowSchema,
   resumeSchema: reviewConceptsResumeDto,
@@ -60,10 +65,10 @@ export const extractConceptsStep = createStep({
         {
           conceptGraph: extraction.graph,
           extractionMode: extraction.extractionMode,
-          reason: 'review_concepts',
+          reason: CONCEPT_EXTRACTION_WORKFLOW.REVIEW_SUSPEND_REASON,
         },
         {
-          resumeLabel: 'review_concepts',
+          resumeLabel: CONCEPT_EXTRACTION_WORKFLOW.REVIEW_RESUME_LABEL,
         }
       );
     }
@@ -73,7 +78,7 @@ export const extractConceptsStep = createStep({
 });
 
 export const extractConceptsWorkflow = createWorkflow({
-  id: 'extract-concepts',
+  id: CONCEPT_EXTRACTION_WORKFLOW.ID,
   inputSchema: extractConceptsWorkflowInputDto,
   outputSchema: conceptGraphWorkflowSchema,
 })
@@ -105,6 +110,6 @@ function isReviewConceptsSuspendDto(value: unknown): value is ReviewConceptsSusp
     'conceptGraph' in value &&
     'extractionMode' in value &&
     'reason' in value &&
-    value.reason === 'review_concepts'
+    value.reason === CONCEPT_EXTRACTION_WORKFLOW.REVIEW_SUSPEND_REASON
   );
 }

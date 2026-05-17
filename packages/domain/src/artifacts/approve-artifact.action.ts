@@ -1,4 +1,10 @@
 import { canEditOwnedProject, type Actor } from '../projects/project.policy';
+import {
+  ARTIFACT_REVIEW_RUN_STATUS,
+  ARTIFACT_STATUS,
+  AUDIT_ACTION,
+  AUDIT_ENTITY_TYPE,
+} from '../constants';
 import type {
   ArtifactRecord,
   ArtifactRepository,
@@ -69,7 +75,10 @@ export async function approveArtifact(
     throw new ArtifactApprovalForbiddenError();
   }
 
-  if (artifact.status !== 'generated' && artifact.status !== 'needs_revision') {
+  if (
+    artifact.status !== ARTIFACT_STATUS.GENERATED &&
+    artifact.status !== ARTIFACT_STATUS.NEEDS_REVISION
+  ) {
     throw new ArtifactApprovalInvalidStateError();
   }
 
@@ -85,7 +94,7 @@ export async function approveArtifact(
     throw new ArtifactApprovalReviewRunNotFoundError();
   }
 
-  if (reviewRun.status !== 'suspended') {
+  if (reviewRun.status !== ARTIFACT_REVIEW_RUN_STATUS.SUSPENDED) {
     throw new ArtifactApprovalInvalidStateError('Artifact review run is not suspended.');
   }
 
@@ -96,15 +105,24 @@ export async function approveArtifact(
   });
 
   if (workflowResult.status !== 'success') {
-    await deps.artifactReviewRunRepository.updateStatus(reviewRun.id, 'failed');
+    await deps.artifactReviewRunRepository.updateStatus(
+      reviewRun.id,
+      ARTIFACT_REVIEW_RUN_STATUS.FAILED
+    );
     throw new ArtifactApprovalInvalidStateError(
       `Artifact review workflow did not complete: ${workflowResult.status}`
     );
   }
 
-  await deps.artifactReviewRunRepository.updateStatus(reviewRun.id, 'completed');
+  await deps.artifactReviewRunRepository.updateStatus(
+    reviewRun.id,
+    ARTIFACT_REVIEW_RUN_STATUS.COMPLETED
+  );
 
-  const approvedArtifact = await deps.artifactRepository.updateStatus(artifact.id, 'approved');
+  const approvedArtifact = await deps.artifactRepository.updateStatus(
+    artifact.id,
+    ARTIFACT_STATUS.APPROVED
+  );
 
   if (!approvedArtifact) {
     throw new ArtifactNotFoundError();
@@ -112,8 +130,8 @@ export async function approveArtifact(
 
   await deps.auditLogRepository.write({
     actorId: actor.id,
-    action: 'artifact.approved',
-    entityType: 'artifact',
+    action: AUDIT_ACTION.ARTIFACT_APPROVED,
+    entityType: AUDIT_ENTITY_TYPE.ARTIFACT,
     entityId: approvedArtifact.id,
     metadata: {
       artifactVersionId: artifact.currentVersionId,

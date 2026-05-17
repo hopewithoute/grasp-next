@@ -3,9 +3,6 @@ export type {
   ArtifactRepository,
   ArtifactReviewRunRecord,
   ArtifactReviewRunRepository,
-  ArtifactReviewRunStatus,
-  ArtifactStatus,
-  ArtifactType,
   ArtifactVersionRecord,
 } from './artifact.types';
 export {
