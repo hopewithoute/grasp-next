@@ -1,27 +1,31 @@
+import { PROJECT_STATUS, type ProjectStatus } from '@grasp/domain';
 import { Badge } from '@/components/ui/badge';
-
-type ProjectStatus = 'draft' | 'failed' | 'processed' | 'processing' | 'reviewing';
+import { statusBadgeVariants } from './project-style-variants';
 
 export function ProjectStatusBadge({ status }: { status: ProjectStatus }) {
-  const classNameByStatus = {
-    draft: 'bg-[#ecefe5] text-[#4f5a45]',
-    failed: 'bg-red-50 text-red-700',
-    processed: 'bg-green-50 text-green-700',
-    processing: 'bg-amber-50 text-amber-700',
-    reviewing: 'bg-blue-50 text-blue-700',
-  };
-
   const labelByStatus = {
-    draft: 'Draft',
-    failed: 'Failed',
-    processed: 'Processed',
-    processing: 'Processing',
-    reviewing: 'Reviewing',
+    [PROJECT_STATUS.DRAFT]: 'Draft',
+    [PROJECT_STATUS.FAILED]: 'Failed',
+    [PROJECT_STATUS.PROCESSED]: 'Processed',
+    [PROJECT_STATUS.PROCESSING]: 'Processing',
+    [PROJECT_STATUS.REVIEWING]: 'Reviewing',
   };
 
   return (
-    <Badge className={classNameByStatus[status]} variant="secondary">
+    <Badge className={statusBadgeVariants({ intent: projectStatusIntent(status) })} variant="secondary">
       {labelByStatus[status]}
     </Badge>
   );
+}
+
+function projectStatusIntent(status: ProjectStatus) {
+  const intentByProjectStatus = {
+    [PROJECT_STATUS.DRAFT]: 'neutral',
+    [PROJECT_STATUS.FAILED]: 'danger',
+    [PROJECT_STATUS.PROCESSED]: 'success',
+    [PROJECT_STATUS.PROCESSING]: 'warning',
+    [PROJECT_STATUS.REVIEWING]: 'info',
+  } as const;
+
+  return intentByProjectStatus[status];
 }

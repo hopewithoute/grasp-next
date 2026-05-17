@@ -5,13 +5,17 @@ import {
   Controls,
   Handle,
   MarkerType,
+  Panel,
   Position,
   ReactFlow,
   type Edge,
   type Node,
   type NodeProps,
+  useReactFlow,
 } from '@xyflow/react';
+import { Expand, Filter, LayoutGrid, Minus, Plus, Search, Star } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { artifactStatusVariant, conceptDifficultyVariants } from './project-style-variants';
 
 export type ConceptRow = {
   confidence: string;
@@ -59,45 +63,41 @@ export function ConceptGraphView({ artifact, concepts, relationships }: ConceptG
     () => buildConceptGraph(concepts, relationships),
     [concepts, relationships]
   );
-  const canApprove = artifact?.status === 'generated' || artifact?.status === 'needs_revision';
-  const canRequestRevision = artifact?.status === 'generated';
   const hasGraph = concepts.length > 0 && relationships.length > 0;
 
   return (
-    <section className="space-y-5 rounded-md border border-[#171916]/15 bg-[#fbfcf8] p-5 shadow-[6px_6px_0_#c8d8e8]">
-      <div className="flex flex-col gap-4 border-b border-[#171916]/10 pb-5 lg:flex-row lg:items-start lg:justify-between">
-        <div className="space-y-2">
-          <p className="text-xs font-semibold tracking-[0.24em] text-[#5c634f] uppercase">
-            Concept review
-          </p>
-          <h2 className="text-xl font-semibold">Generated concept graph</h2>
-          <p className="max-w-2xl text-sm leading-6 text-[#5c634f]">
-            Review the extracted concepts, evidence excerpts, and prerequisite links before allowing
-            downstream lesson generation.
-          </p>
-        </div>
-
-        {artifact ? (
-          <div className="flex w-full flex-col items-start gap-3 lg:w-80 lg:items-end">
-            <span className={artifactStatusClass(artifact.status)}>
-              {artifact.status.replace('_', ' ')}
-            </span>
-            <div data-testid="approve-slot" data-can-approve={String(canApprove)} />
-            <div
-              data-testid="revision-slot"
-              data-can-request-revision={String(canRequestRevision)}
-            />
-          </div>
-        ) : null}
-      </div>
-
+    <section className="space-y-5">
       {!concepts.length ? (
-        <div className="rounded-md border border-dashed border-[#171916]/20 bg-white px-4 py-8 text-sm text-[#5c634f]">
+        <div className="rounded-[1.5rem] border border-dashed border-slate-200 bg-white px-4 py-8 text-sm text-slate-500">
           No concept graph has been generated yet.
         </div>
       ) : hasGraph ? (
         <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
-          <div className="h-[520px] overflow-hidden rounded-md border border-[#171916]/15 bg-[#f2f5ec]">
+          <div className="overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white shadow-[0_18px_50px_rgba(15,23,42,0.06)]">
+            <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+              <div className="flex items-center gap-3">
+                <button className="inline-flex h-10 items-center gap-2 rounded-xl border border-slate-200 px-3 text-sm text-slate-600" type="button">
+                  <LayoutGrid className="size-4" />
+                  Layout
+                </button>
+                <button className="inline-flex h-10 items-center gap-2 rounded-xl border border-slate-200 px-3 text-sm text-slate-600" type="button">
+                  <Filter className="size-4" />
+                  Filter
+                </button>
+              </div>
+              <div className="flex items-center gap-2">
+                <button className="inline-flex size-10 items-center justify-center rounded-xl border border-slate-200 text-slate-500" type="button">
+                  <Search className="size-4" />
+                </button>
+                {artifact ? (
+                  <span className={artifactStatusVariant(artifact.status)}>
+                    {artifact.status.replace('_', ' ')}
+                  </span>
+                ) : null}
+              </div>
+            </div>
+
+            <div className="h-[680px] overflow-hidden bg-[radial-gradient(circle_at_top,_rgba(148,163,184,0.08),_transparent_30%),linear-gradient(180deg,_#ffffff,_#f8fafc)]">
             <ReactFlow
               colorMode="light"
               edges={graph.edges}
@@ -110,9 +110,11 @@ export function ConceptGraphView({ artifact, concepts, relationships }: ConceptG
               onNodeClick={(_, node) => setSelectedConceptId(node.id)}
               proOptions={{ hideAttribution: true }}
             >
-              <Background color="#c9d4bb" gap={18} size={1} />
-              <Controls position="bottom-right" showInteractive={false} />
+              <Background color="#e2e8f0" gap={18} size={1} />
+              <Controls className="!shadow-none" position="bottom-right" showInteractive={false} />
+              <FlowToolbar />
             </ReactFlow>
+            </div>
           </div>
 
           <ConceptDetailPanel
@@ -124,9 +126,9 @@ export function ConceptGraphView({ artifact, concepts, relationships }: ConceptG
       ) : (
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_280px]">
           <ConceptList concepts={concepts} />
-          <aside className="rounded-md border border-[#171916]/10 bg-white p-4">
-            <h3 className="text-sm font-semibold">Prerequisites</h3>
-            <p className="mt-3 text-sm leading-6 text-[#5c634f]">
+          <aside className="rounded-[1.5rem] border border-slate-200 bg-white p-4">
+            <h3 className="text-sm font-semibold text-slate-900">Prerequisites</h3>
+            <p className="mt-3 text-sm leading-6 text-slate-500">
               No prerequisite links were generated. This graph can still be reviewed as a flat
               concept list.
             </p>
@@ -139,21 +141,21 @@ export function ConceptGraphView({ artifact, concepts, relationships }: ConceptG
 
 function ConceptNode({ data }: NodeProps<Node<ConceptNodeData, 'concept'>>) {
   return (
-    <div className="w-52 rounded-md border border-[#171916]/20 bg-white px-3 py-2 shadow-[4px_4px_0_#d7e0bf]">
+    <div className="w-52 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-[0_8px_24px_rgba(15,23,42,0.08)]">
       <Handle
-        className="!h-2 !w-2 !border-[#171916]/30 !bg-[#9db46f]"
+        className="!h-2.5 !w-2.5 !border-white !bg-[#53d1cb]"
         position={Position.Left}
         type="target"
       />
-      <p className="line-clamp-2 text-sm font-semibold leading-5 text-[#171916]">{data.label}</p>
+      <p className="line-clamp-2 text-sm font-semibold leading-5 text-slate-900">{data.label}</p>
       <div className="mt-2 flex items-center gap-2">
-        <span className={difficultyClass(data.difficulty)}>{data.difficulty}</span>
-        <span className="rounded-full bg-[#f1f3ec] px-2 py-1 text-xs font-medium text-[#4f5a45]">
+        <span className={conceptDifficultyVariants({ difficulty: data.difficulty })}>{data.difficulty}</span>
+        <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-medium text-slate-500">
           {formatConfidence(data.confidence)}
         </span>
       </div>
       <Handle
-        className="!h-2 !w-2 !border-[#171916]/30 !bg-[#315f94]"
+        className="!h-2.5 !w-2.5 !border-white !bg-[#53d1cb]"
         position={Position.Right}
         type="source"
       />
@@ -182,32 +184,42 @@ export function ConceptDetailPanel({
   );
 
   return (
-    <aside className="space-y-4 rounded-md border border-[#171916]/10 bg-white p-4">
+    <aside className="space-y-5 rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-[0_18px_50px_rgba(15,23,42,0.06)]">
       <div className="space-y-2">
-        <p className="text-xs font-semibold tracking-[0.2em] text-[#6a725f] uppercase">
-          Selected concept
-        </p>
-        <h3 className="text-lg font-semibold">{concept.name}</h3>
-        <div className="flex flex-wrap items-center gap-2">
-          <span className={difficultyClass(concept.difficulty)}>{concept.difficulty}</span>
-          <span className="rounded-full bg-[#f1f3ec] px-2 py-1 text-xs font-medium text-[#4f5a45]">
-            {formatConfidence(concept.confidence)}
-          </span>
+        <p className="text-sm font-semibold text-slate-900">Detail Konsep</p>
+        <div className="rounded-[1.25rem] border border-slate-200 bg-white p-4">
+          <div className="flex items-start justify-between gap-3">
+            <h3 className="text-3xl font-semibold tracking-[-0.03em] text-slate-900">
+              {concept.name}
+            </h3>
+            <button className="inline-flex size-9 items-center justify-center rounded-full bg-[#eef2ff] text-[#4f46e5]" type="button">
+              <Star className="size-4" />
+            </button>
+          </div>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <span className={conceptDifficultyVariants({ difficulty: concept.difficulty })}>{concept.difficulty}</span>
+            <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-500">
+              {formatConfidence(concept.confidence)}
+            </span>
+          </div>
+          <p className="mt-5 text-sm leading-7 text-slate-600">{concept.definition}</p>
         </div>
-        <p className="text-sm leading-6 text-[#3b4035]">{concept.definition}</p>
       </div>
 
-      <div>
-        <h4 className="text-sm font-semibold">Evidence</h4>
-        <div className="mt-2 space-y-2">
+      <div className="space-y-3">
+        <p className="text-sm font-semibold text-slate-900">
+          Evidence <span className="text-emerald-500">•</span>
+        </p>
+        <div className="space-y-3">
           {getEvidence(concept.sourceEvidence).map((evidence, index) => (
             <blockquote
-              className="border-l-2 border-[#9db46f] bg-[#f7f8f4] px-3 py-2 text-sm leading-6 text-[#4a513f]"
+              className="rounded-[1.25rem] border border-emerald-200 bg-emerald-50/40 px-4 py-4 text-sm leading-7 text-slate-600"
               key={`${concept.id}-${index}`}
             >
+              <div className="mb-3 text-3xl leading-none text-emerald-500">“</div>
               {evidence.excerpt}
               {evidence.location ? (
-                <cite className="mt-1 block text-xs not-italic text-[#6a725f]">
+                <cite className="mt-3 block text-xs not-italic text-slate-400">
                   {evidence.location}
                 </cite>
               ) : null}
@@ -216,33 +228,44 @@ export function ConceptDetailPanel({
         </div>
       </div>
 
-      <div>
-        <h4 className="text-sm font-semibold">Prerequisite links</h4>
+      <div className="space-y-2">
+        <h4 className="text-sm font-semibold text-slate-900">Prasyarat</h4>
+        <p className="text-sm leading-6 text-slate-500">
+          {incoming.length || outgoing.length
+            ? 'Relasi prerequisite terdeteksi dan tercantum di bawah.'
+            : 'Tidak ada prasyarat yang diperlukan.'}
+        </p>
+      </div>
+
+      <div className="space-y-3">
+        <h4 className="text-sm font-semibold text-slate-900">Terhubung ke</h4>
         {incoming.length || outgoing.length ? (
           <ul className="mt-2 space-y-2">
             {incoming.map((relationship) => (
               <li
-                className="rounded border border-[#171916]/10 bg-[#f7f8f4] px-3 py-2 text-sm text-[#3b4035]"
+                className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600"
                 key={`in-${relationship.id}`}
               >
-                {conceptNameById.get(relationship.sourceConceptId) ?? 'Unknown concept'}{' '}
-                <span className="text-[#7a846d]">before this</span>
+                <span>{conceptNameById.get(relationship.sourceConceptId) ?? 'Unknown concept'}</span>
+                <span className="rounded-full bg-[#eef2ff] px-2 py-0.5 text-xs text-[#4f46e5]">
+                  before this
+                </span>
               </li>
             ))}
             {outgoing.map((relationship) => (
               <li
-                className="rounded border border-[#171916]/10 bg-[#f7f8f4] px-3 py-2 text-sm text-[#3b4035]"
+                className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600"
                 key={`out-${relationship.id}`}
               >
-                This <span className="text-[#7a846d]">before</span>{' '}
-                {conceptNameById.get(relationship.targetConceptId) ?? 'Unknown concept'}
+                <span>{conceptNameById.get(relationship.targetConceptId) ?? 'Unknown concept'}</span>
+                <span className="rounded-full bg-[#eef2ff] px-2 py-0.5 text-xs text-[#4f46e5]">
+                  after this
+                </span>
               </li>
             ))}
           </ul>
         ) : (
-          <p className="mt-2 text-sm leading-6 text-[#5c634f]">
-            No prerequisite links attach to this concept.
-          </p>
+          <p className="mt-2 text-sm leading-6 text-slate-500">Belum ada relasi yang terhubung.</p>
         )}
       </div>
     </aside>
@@ -253,15 +276,15 @@ export function ConceptList({ concepts }: { concepts: ConceptRow[] }) {
   return (
     <div className="space-y-3">
       {concepts.map((concept) => (
-        <article className="rounded-md border border-[#171916]/10 bg-white p-4" key={concept.id}>
+        <article className="rounded-[1.25rem] border border-slate-200 bg-white p-4" key={concept.id}>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
             <div className="space-y-1">
-              <h3 className="text-base font-semibold">{concept.name}</h3>
-              <p className="text-sm leading-6 text-[#3b4035]">{concept.definition}</p>
+              <h3 className="text-base font-semibold text-slate-900">{concept.name}</h3>
+              <p className="text-sm leading-6 text-slate-600">{concept.definition}</p>
             </div>
             <div className="flex shrink-0 items-center gap-2">
-              <span className={difficultyClass(concept.difficulty)}>{concept.difficulty}</span>
-              <span className="rounded-full bg-[#f1f3ec] px-2 py-1 text-xs font-medium text-[#4f5a45]">
+              <span className={conceptDifficultyVariants({ difficulty: concept.difficulty })}>{concept.difficulty}</span>
+              <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-medium text-slate-500">
                 {formatConfidence(concept.confidence)}
               </span>
             </div>
@@ -270,12 +293,12 @@ export function ConceptList({ concepts }: { concepts: ConceptRow[] }) {
           <div className="mt-4 space-y-2">
             {getEvidence(concept.sourceEvidence).map((evidence, index) => (
               <blockquote
-                className="border-l-2 border-[#9db46f] bg-[#f7f8f4] px-3 py-2 text-sm leading-6 text-[#4a513f]"
+                className="rounded-xl border border-emerald-200 bg-emerald-50/40 px-3 py-3 text-sm leading-6 text-slate-600"
                 key={`${concept.id}-${index}`}
               >
                 {evidence.excerpt}
                 {evidence.location ? (
-                  <cite className="mt-1 block text-xs not-italic text-[#6a725f]">
+                  <cite className="mt-1 block text-xs not-italic text-slate-400">
                     {evidence.location}
                   </cite>
                 ) : null}
@@ -322,12 +345,12 @@ export function buildConceptGraph(
     animated: false,
     id: relationship.id,
     markerEnd: {
-      color: '#315f94',
+      color: '#53d1cb',
       type: MarkerType.ArrowClosed,
     },
     source: relationship.sourceConceptId,
     style: {
-      stroke: '#315f94',
+      stroke: '#53d1cb',
       strokeWidth: 2,
     },
     target: relationship.targetConceptId,
@@ -428,33 +451,34 @@ function formatConfidence(value: string) {
   return `${Math.round(confidence * 100)}%`;
 }
 
-function difficultyClass(difficulty: ConceptRow['difficulty']) {
-  const classByDifficulty = {
-    advanced: 'bg-[#f9e8e2] text-[#9d4c32]',
-    beginner: 'bg-[#e9f3df] text-[#4d7135]',
-    intermediate: 'bg-[#e7eef8] text-[#315f94]',
-  };
+function FlowToolbar() {
+  const { fitView, zoomIn, zoomOut } = useReactFlow();
 
-  return [
-    'rounded-full px-2 py-1 text-xs font-medium capitalize',
-    classByDifficulty[difficulty],
-  ].join(' ');
-}
-
-function artifactStatusClass(status: string) {
-  const classByStatus: Record<string, string> = {
-    approved: 'bg-green-50 text-green-700',
-    failed: 'bg-red-50 text-red-700',
-    generated: 'bg-blue-50 text-blue-700',
-    generating: 'bg-amber-50 text-amber-700',
-    needs_revision: 'bg-orange-50 text-orange-700',
-    pending: 'bg-[#ecefe5] text-[#4f5a45]',
-    published: 'bg-green-50 text-green-700',
-    rejected: 'bg-red-50 text-red-700',
-  };
-
-  return [
-    'rounded-full px-2.5 py-1 text-xs font-semibold capitalize',
-    classByStatus[status] ?? 'bg-[#ecefe5] text-[#4f5a45]',
-  ].join(' ');
+  return (
+    <Panel position="top-right">
+      <div className="mr-4 mt-4 flex items-center gap-2 rounded-2xl border border-slate-200 bg-white/92 p-2 shadow-[0_12px_30px_rgba(15,23,42,0.08)] backdrop-blur">
+        <button
+          className="inline-flex size-9 items-center justify-center rounded-xl border border-slate-200 text-slate-500"
+          onClick={() => zoomOut()}
+          type="button"
+        >
+          <Minus className="size-4" />
+        </button>
+        <button
+          className="inline-flex size-9 items-center justify-center rounded-xl border border-slate-200 text-slate-500"
+          onClick={() => zoomIn()}
+          type="button"
+        >
+          <Plus className="size-4" />
+        </button>
+        <button
+          className="inline-flex size-9 items-center justify-center rounded-xl border border-slate-200 text-slate-500"
+          onClick={() => fitView({ padding: 0.18 })}
+          type="button"
+        >
+          <Expand className="size-4" />
+        </button>
+      </div>
+    </Panel>
+  );
 }

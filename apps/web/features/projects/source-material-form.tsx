@@ -3,13 +3,19 @@
 import { useActionState, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { submitSourceMaterialFormAction } from './actions';
+import { sourceModeButtonVariants, sourceTextareaVariants } from './project-style-variants';
 
 type SourceMaterialFormProps = {
+  compact?: boolean;
   projectId: string;
   sourceMaterial: string | null;
 };
 
-export function SourceMaterialForm({ projectId, sourceMaterial }: SourceMaterialFormProps) {
+export function SourceMaterialForm({
+  compact = false,
+  projectId,
+  sourceMaterial,
+}: SourceMaterialFormProps) {
   const [draft, setDraft] = useState(sourceMaterial ?? '');
   const [mode, setMode] = useState<'edit' | 'preview'>('edit');
   const [state, formAction, isPending] = useActionState(submitSourceMaterialFormAction, {
@@ -27,19 +33,19 @@ export function SourceMaterialForm({ projectId, sourceMaterial }: SourceMaterial
           <label className="text-sm font-medium" htmlFor="sourceMaterial">
             Source material
           </label>
-          <div className="flex items-center gap-3 text-xs text-[#5c634f]">
-            <span>{counts.words} words</span>
-            <span>{counts.characters} chars</span>
-            <div className="flex rounded-md border border-[#171916]/15 bg-[#f7f8f4] p-0.5">
+          <div className="flex flex-wrap items-center gap-3 text-xs text-[#f3efe3]/42 sm:justify-end">
+            <span className="font-mono tabular-nums">{counts.words} words</span>
+            <span className="font-mono tabular-nums">{counts.characters} chars</span>
+            <div className="flex rounded-full border border-white/10 bg-white/[0.035] p-0.5">
               <button
-                className={modeButtonClass(mode === 'edit')}
+                className={sourceModeButtonVariants({ active: mode === 'edit' })}
                 onClick={() => setMode('edit')}
                 type="button"
               >
                 Edit
               </button>
               <button
-                className={modeButtonClass(mode === 'preview')}
+                className={sourceModeButtonVariants({ active: mode === 'preview' })}
                 onClick={() => setMode('preview')}
                 type="button"
               >
@@ -51,7 +57,7 @@ export function SourceMaterialForm({ projectId, sourceMaterial }: SourceMaterial
 
         {mode === 'edit' ? (
           <textarea
-            className="min-h-[420px] w-full resize-y rounded-md border border-input bg-white px-3 py-3 text-sm leading-6 outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+            className={sourceTextareaVariants({ compact })}
             id="sourceMaterial"
             name="sourceMaterial"
             onChange={(event) => setDraft(event.target.value)}
@@ -68,19 +74,23 @@ export function SourceMaterialForm({ projectId, sourceMaterial }: SourceMaterial
       </div>
 
       {state.error ? (
-        <p className="border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+        <p className="rounded-[1rem] border border-[#e5685b]/30 bg-[#e5685b]/10 px-3 py-2 text-sm text-[#f3efe3]">
           {state.error}
         </p>
       ) : null}
 
       {state.success ? (
-        <p className="border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700">
-          Source material submitted for processing.
+        <p className="rounded-[1rem] border border-[#00bb7f]/30 bg-[#00bb7f]/10 px-3 py-2 text-sm text-[#f3efe3]">
+          Source material saved.
         </p>
       ) : null}
 
-      <Button className="h-9" disabled={isPending} type="submit">
-        {isPending ? 'Submitting...' : 'Submit source material'}
+      <Button
+        className="h-9 rounded-full bg-[#53d1cb] px-4 text-[#041018] hover:bg-[#7ceae3]"
+        disabled={isPending}
+        type="submit"
+      >
+        {isPending ? 'Saving...' : 'Save source'}
       </Button>
     </form>
   );
@@ -94,14 +104,14 @@ function SourcePreview({ value }: { value: string }) {
 
   if (!blocks.length) {
     return (
-      <div className="min-h-[420px] rounded-md border border-dashed border-[#171916]/20 bg-[#f7f8f4] px-4 py-4 text-sm text-[#5c634f]">
+      <div className="min-h-[420px] rounded-[1.25rem] border border-dashed border-white/12 bg-white/[0.025] px-4 py-4 text-sm text-[#f3efe3]/42">
         Nothing to preview yet.
       </div>
     );
   }
 
   return (
-    <div className="min-h-[420px] space-y-4 rounded-md border border-[#171916]/10 bg-[#fbfcf8] px-4 py-4 text-sm leading-6 text-[#242820]">
+    <div className="min-h-[420px] space-y-4 rounded-[1.25rem] border border-white/10 bg-[#0d1824] px-4 py-4 text-sm leading-6 text-[#f3efe3]/82 shadow-[inset_3px_0_0_rgba(83,209,203,0.58),inset_0_1px_0_rgba(255,255,255,0.04)]">
       {blocks.map((block, index) => (
         <p className="whitespace-pre-wrap" key={`${block}-${index}`}>
           {block}
@@ -118,11 +128,4 @@ function getTextCounts(value: string) {
     characters: value.length,
     words: trimmed ? trimmed.split(/\s+/).length : 0,
   };
-}
-
-function modeButtonClass(isActive: boolean) {
-  return [
-    'rounded px-2 py-1 transition-colors',
-    isActive ? 'bg-white text-[#171916] shadow-sm' : 'text-[#5c634f]',
-  ].join(' ');
 }

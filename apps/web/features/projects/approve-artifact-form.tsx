@@ -19,14 +19,19 @@ export function ApproveArtifactForm({ artifactId, disabled = false }: ApproveArt
   return (
     <form action={formAction} className="space-y-2">
       <input name="artifactId" type="hidden" value={artifactId} />
-      <Button disabled={disabled || isPending} size="lg" type="submit">
+      <Button
+        className="h-11 rounded-2xl border border-[#53d1cb]/28 bg-[#53d1cb] px-5 text-[#041018] hover:bg-[#7ceae3]"
+        disabled={disabled || isPending}
+        size="lg"
+        type="submit"
+      >
         <CheckCircle2 />
         {isPending ? 'Approving...' : 'Approve concept graph'}
       </Button>
 
-      {state.error ? <p className="text-sm text-red-700">{state.error}</p> : null}
+      {state.error ? <p className="text-sm text-red-200">{state.error}</p> : null}
 
-      {state.success ? <p className="text-sm text-green-700">Concept graph approved.</p> : null}
+      {state.success ? <p className="text-sm text-emerald-200">Concept graph approved.</p> : null}
     </form>
   );
 }

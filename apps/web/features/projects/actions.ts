@@ -10,8 +10,6 @@ import {
   createProjectDto,
   deleteProject,
   deleteProjectDto,
-  requestConceptRevision,
-  requestConceptRevisionDto,
   submitSourceMaterial,
   updateProjectDetails,
   updateProjectDetailsDto,
@@ -32,11 +30,6 @@ export type SourceMaterialFormState = {
 };
 
 export type ApproveArtifactFormState = {
-  error: string | null;
-  success: boolean;
-};
-
-export type RequestConceptRevisionFormState = {
   error: string | null;
   success: boolean;
 };
@@ -245,39 +238,6 @@ export async function approveArtifactFormAction(
   } catch (error) {
     return {
       error: error instanceof Error ? error.message : 'Artifact approval failed.',
-      success: false,
-    };
-  }
-}
-
-export async function requestConceptRevisionFormAction(
-  _state: RequestConceptRevisionFormState,
-  formData: FormData
-): Promise<RequestConceptRevisionFormState> {
-  const actor = await getActor();
-
-  if (!actor) {
-    return { error: 'Unauthorized.', success: false };
-  }
-
-  const parsed = requestConceptRevisionDto.safeParse({
-    artifactId: formData.get('artifactId')?.toString() ?? '',
-    revisionFeedback: formData.get('revisionFeedback')?.toString() ?? '',
-  });
-
-  if (!parsed.success) {
-    return { error: 'Revision feedback is required.', success: false };
-  }
-
-  try {
-    const artifact = await requestConceptRevision(parsed.data, createProjectDeps(), actor);
-
-    revalidatePath(`/dashboard/projects/${artifact.projectId}`);
-
-    return { error: null, success: true };
-  } catch (error) {
-    return {
-      error: error instanceof Error ? error.message : 'Concept revision request failed.',
       success: false,
     };
   }

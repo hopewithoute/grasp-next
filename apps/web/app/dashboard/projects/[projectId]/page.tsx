@@ -4,10 +4,14 @@ type PageProps = {
   params: Promise<{
     projectId: string;
   }>;
+  searchParams: Promise<{
+    stage?: string;
+  }>;
 };
 
-export default async function Page({ params }: PageProps) {
+export default async function Page({ params, searchParams }: PageProps) {
   const { projectId } = await params;
+  const { stage } = await searchParams;
 
-  return <ProjectDetailPage projectId={projectId} />;
+  return <ProjectDetailPage currentStage={stage} projectId={projectId} />;
 }

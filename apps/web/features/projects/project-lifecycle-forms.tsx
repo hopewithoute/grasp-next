@@ -28,11 +28,11 @@ export function ProjectDetailsForm({ description, projectId, title }: ProjectDet
 
       <div className="grid gap-4 md:grid-cols-[1fr_1.4fr]">
         <div className="space-y-2">
-          <label className="text-sm font-medium" htmlFor="projectTitle">
+          <label className="text-sm font-medium text-slate-700" htmlFor="projectTitle">
             Title
           </label>
           <input
-            className="h-10 w-full rounded-md border border-input bg-white px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+            className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus-visible:border-[#53d1cb] focus-visible:ring-3 focus-visible:ring-[#53d1cb]/20"
             defaultValue={title}
             id="projectTitle"
             maxLength={160}
@@ -42,11 +42,11 @@ export function ProjectDetailsForm({ description, projectId, title }: ProjectDet
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-medium" htmlFor="projectDescription">
+          <label className="text-sm font-medium text-slate-700" htmlFor="projectDescription">
             Description
           </label>
           <input
-            className="h-10 w-full rounded-md border border-input bg-white px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+            className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus-visible:border-[#53d1cb] focus-visible:ring-3 focus-visible:ring-[#53d1cb]/20"
             defaultValue={description ?? ''}
             id="projectDescription"
             maxLength={1000}
@@ -56,20 +56,24 @@ export function ProjectDetailsForm({ description, projectId, title }: ProjectDet
       </div>
 
       {state.error ? (
-        <p className="border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+        <p className="rounded-2xl border border-red-400/20 bg-red-500/8 px-4 py-3 text-sm text-red-200">
           {state.error}
         </p>
       ) : null}
 
       {state.success ? (
-        <p className="border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700">
+        <p className="rounded-2xl border border-emerald-400/20 bg-emerald-500/8 px-4 py-3 text-sm text-emerald-200">
           Project details updated.
         </p>
       ) : null}
 
-      <Button className="h-9" disabled={isPending} type="submit">
+      <Button
+        className="h-10 rounded-full bg-[#53d1cb] px-5 text-[#041018] hover:bg-[#7ceae3] active:translate-y-[1px]"
+        disabled={isPending}
+        type="submit"
+      >
         <Pencil />
-        {isPending ? 'Saving...' : 'Save details'}
+        {isPending ? 'Saving…' : 'Save details'}
       </Button>
     </form>
   );
@@ -85,13 +89,13 @@ export function DeleteProjectForm({ disabled, projectId }: DeleteProjectFormProp
       <input name="projectId" type="hidden" value={projectId} />
 
       {disabled ? (
-        <p className="text-sm leading-6 text-[#5c634f]">
-          Deletion is blocked while extraction is processing.
+        <p className="text-sm leading-7 text-slate-500">
+          Deletion is blocked while a graph build is running.
         </p>
       ) : null}
 
       {state.error ? (
-        <p className="border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+        <p className="rounded-2xl border border-red-400/20 bg-red-500/8 px-4 py-3 text-sm text-red-200">
           {state.error}
         </p>
       ) : null}

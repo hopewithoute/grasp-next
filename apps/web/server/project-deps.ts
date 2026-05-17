@@ -9,7 +9,6 @@ import {
   createProjectRepository,
 } from '@grasp/db';
 import { resumeArtifactReview } from '@grasp/ai';
-import { createConceptExtractionQueue } from './queue';
 import { serverEnv } from './env';
 
 export function createProjectDeps() {
@@ -30,7 +29,6 @@ function buildProjectDeps() {
     artifactReviewRunRepository: createArtifactReviewRunRepository(db),
     auditLogRepository: createAuditLogRepository(db),
     conceptRepository: createConceptRepository(db),
-    conceptExtractionQueue: createConceptExtractionQueue(),
     projectRepository: createProjectRepository(db),
     reviewWorkflow: {
       resumeReview: resumeArtifactReview,
