@@ -16,7 +16,6 @@
     "@tailwindcss/postcss": "^4.3.0",
     "@xyflow/react": "^12.10.2",
     "better-auth": "^1.6.11",
-    "bullmq": "^5.76.8",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^1.14.0",
