@@ -36,7 +36,6 @@ import {
   Expand,
   FileText,
   GitBranch,
-  History,
   ListFilter,
   MessageSquareText,
   Minus,
@@ -44,22 +43,19 @@ import {
   Plus,
   Quote,
   Search,
-  Send,
   Sparkles,
-  Zap,
 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
 import {
-  useCallback,
+  useActionState,
   useEffect,
   useId,
   useMemo,
   useRef,
   useState,
-  type FormEvent,
 } from 'react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { updateKnowledgebaseConceptFormAction } from './actions';
 import { artifactStatusVariant } from './project-style-variants';
 import {
   buildConceptGraph,
@@ -77,7 +73,12 @@ type ConceptGraphWorkspaceProps = {
   concepts: ConceptRow[];
   projectId: string;
   relationships: RelationshipRow[];
-  sourceMaterial: string | null;
+  sources: Array<{
+    content: string | null;
+    id: string;
+    title: string;
+    type: string;
+  }>;
 };
 
 export function ConceptGraphWorkspace(props: ConceptGraphWorkspaceProps) {
@@ -105,8 +106,7 @@ type WorkspaceEvent =
       relationshipType: 'prerequisite';
     }
   | { type: 'evidence_attached'; concept: string; excerpt: string; location?: string }
-  | { type: 'graph_version_created'; artifactVersionId: string }
-  | { type: 'review_ready'; artifactId: string };
+  | { type: 'ingestion_complete'; conceptCount: number; relationshipCount: number };
 
 type StreamEvent = Exclude<WorkspaceEvent, { type: 'assistant_message' }>;
 
@@ -138,13 +138,9 @@ type ConceptNodeData = {
 function ConceptGraphEditor({
   artifact,
   concepts,
-  projectId,
   relationships,
-  sourceMaterial,
+  sources,
 }: ConceptGraphWorkspaceProps) {
-  const router = useRouter();
-  const eventSourceRef = useRef<EventSource | null>(null);
-
   // Selection is stored as the user's *intent* and resolved during render against
   // the current concept list. This keeps state valid across server refreshes
   // (post-stream) without needing a setState-in-effect dance.
@@ -153,20 +149,21 @@ function ConceptGraphEditor({
   );
   const [searchQuery, setSearchQuery] = useState('');
   const [difficultyFilter, setDifficultyFilter] = useState<DifficultyFilter>('all');
-  const [instruction, setInstruction] = useState('');
-  const [isRunning, setIsRunning] = useState(false);
   const [isInventoryCollapsed, setIsInventoryCollapsed] = useState(false);
   const [isRefinementCollapsed, setIsRefinementCollapsed] = useState(false);
-  const [items, setItems] = useState<ChatItem[]>(() => [
-    {
-      id: 'agent-ready',
-      kind: 'message',
-      role: 'agent',
-      text: artifact
-        ? 'Concept graph is open. Tell me what to refine, or rebuild from the current source.'
-        : 'I can build a concept graph from the current source and prepare a reviewable artifact.',
-    },
-  ]);
+  const items = useMemo<ChatItem[]>(
+    () => [
+      {
+        id: 'agent-ready',
+        kind: 'message',
+        role: 'agent',
+        text: artifact
+          ? 'Concept graph is open. Edit a source on the left to rebuild the graph; ingestion runs automatically when you save a source.'
+          : 'Add a source on the left to build the concept graph. Ingestion runs automatically when you save a source.',
+      },
+    ],
+    [artifact],
+  );
 
   const selectedConceptId = useMemo(() => {
     if (!concepts.length) return null;
@@ -176,14 +173,6 @@ function ConceptGraphEditor({
     return concepts[0]?.id ?? null;
   }, [concepts, pendingSelectedId]);
   const setSelectedConceptId = setPendingSelectedId;
-
-  // Tear down stream on unmount.
-  useEffect(() => {
-    return () => {
-      eventSourceRef.current?.close();
-      eventSourceRef.current = null;
-    };
-  }, []);
 
   const filteredConcepts = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -218,90 +207,16 @@ function ConceptGraphEditor({
     [items],
   );
 
-  const sourceReady = Boolean(sourceMaterial?.trim());
+  const sourceReady = sources.some((source) => source.content?.trim());
   const sourceWords = useMemo(() => {
-    const trimmed = sourceMaterial?.trim() ?? '';
+    const trimmed = sources
+      .map((source) => source.content?.trim() ?? '')
+      .filter(Boolean)
+      .join('\n');
     return trimmed ? trimmed.split(/\s+/).length : 0;
-  }, [sourceMaterial]);
+  }, [sources]);
 
-  const startRun = useCallback(
-    (nextInstruction: string) => {
-      eventSourceRef.current?.close();
-      setIsRunning(true);
-
-      const trimmed = nextInstruction.trim();
-      if (trimmed) {
-        setItems((current) => [
-          ...current,
-          {
-            id: `user-${Date.now()}`,
-            kind: 'message',
-            role: 'user',
-            text: trimmed,
-          },
-        ]);
-      }
-
-      const params = new URLSearchParams();
-      if (trimmed) params.set('instruction', trimmed);
-
-      const source = new EventSource(
-        `/api/v1/projects/${projectId}/concept-graph/stream?${params.toString()}`,
-      );
-      eventSourceRef.current = source;
-
-      source.addEventListener('graph_workspace', (message) => {
-        const event = JSON.parse(message.data) as WorkspaceEvent;
-
-        if (event.type === 'assistant_message') {
-          setItems((current) => [
-            ...current,
-            {
-              id: `agent-${Date.now()}-${current.length}`,
-              kind: 'message',
-              role: 'agent',
-              text: event.text,
-            },
-          ]);
-          return;
-        }
-
-        setItems((current) => [
-          ...current,
-          {
-            id: `event-${Date.now()}-${current.length}`,
-            kind: 'event',
-            event,
-          },
-        ]);
-
-        if (event.type === 'review_ready') {
-          setIsRunning(false);
-          source.close();
-          eventSourceRef.current = null;
-          router.refresh();
-        }
-      });
-
-      source.onerror = () => {
-        source.close();
-        eventSourceRef.current = null;
-        setIsRunning(false);
-        router.refresh();
-      };
-    },
-    [projectId, router],
-  );
-
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!instruction.trim()) return;
-    const next = instruction;
-    setInstruction('');
-    startRun(next);
-  };
-
-  const composerDisabled = isRunning || !sourceReady;
+  const isRunning = false;
 
   return (
     <section
@@ -349,14 +264,8 @@ function ConceptGraphEditor({
 
       <ChatPane
         collapsed={isRefinementCollapsed}
-        composerDisabled={composerDisabled}
-        instruction={instruction}
-        isRunning={isRunning}
         items={items}
-        onInstructionChange={setInstruction}
         onCollapseToggle={() => setIsRefinementCollapsed((current) => !current)}
-        onStartRun={startRun}
-        onSubmit={handleSubmit}
         sourceReady={sourceReady}
         sourceWords={sourceWords}
       />
@@ -656,6 +565,7 @@ function GraphCanvasPane({
       </div>
 
       <ConceptDetailStrip
+        artifact={artifact}
         concept={selectedConcept}
         conceptNameById={conceptNameById}
         relationships={relationships}
@@ -889,10 +799,12 @@ function GraphCanvasEmpty() {
 // ───────────────────────────────────────────────────────────────────────────
 
 function ConceptDetailStrip({
+  artifact,
   concept,
   conceptNameById,
   relationships,
 }: {
+  artifact: ConceptGraphArtifact;
   concept: ConceptRow | null;
   conceptNameById: Map<string, string>;
   relationships: RelationshipRow[];
@@ -909,6 +821,8 @@ function ConceptDetailStrip({
   const outgoing = relationships.filter((rel) => rel.sourceConceptId === concept.id);
   const evidence = getEvidence(concept.sourceEvidence);
   const headline = evidence.find((item) => !isSameConceptText(item.excerpt, concept.definition));
+  const canPatchKnowledgebase =
+    artifact?.status === 'generated' || artifact?.status === 'needs_revision';
 
   return (
     <footer className="border-t border-white/8 bg-[#0a131c] px-5 py-4">
@@ -970,7 +884,101 @@ function ConceptDetailStrip({
           ) : null}
         </div>
       ) : null}
+      {artifact ? (
+        <KnowledgebaseConceptPatchForm
+          artifactId={artifact.id}
+          concept={concept}
+          disabled={!canPatchKnowledgebase}
+        />
+      ) : null}
     </footer>
+  );
+}
+
+function KnowledgebaseConceptPatchForm({
+  artifactId,
+  concept,
+  disabled,
+}: {
+  artifactId: string;
+  concept: ConceptRow;
+  disabled: boolean;
+}) {
+  const [state, formAction, isPending] = useActionState(updateKnowledgebaseConceptFormAction, {
+    error: null,
+    success: false,
+  });
+
+  return (
+    <details className="group mt-4 rounded-[1rem] border border-white/8 bg-white/[0.025] open:bg-white/[0.04]">
+      <summary className="flex cursor-pointer items-center justify-between gap-3 px-4 py-3 text-xs text-[#f3efe3]/72 transition-colors hover:text-[#f3efe3]">
+        <span className="font-mono tabular-nums tracking-[0.16em] uppercase text-[#53d1cb]">
+          Knowledgebase patch
+        </span>
+        <span className="font-mono text-[0.6rem] tracking-[0.16em] uppercase text-[#f3efe3]/42 group-open:text-[#53d1cb]">
+          {disabled ? 'locked' : 'edit record'}
+        </span>
+      </summary>
+      <form action={formAction} className="grid gap-3 border-t border-white/8 p-4 md:grid-cols-[14rem_minmax(0,1fr)_9rem]">
+        <input name="artifactId" type="hidden" value={artifactId} />
+        <input name="conceptId" type="hidden" value={concept.id} />
+        <label className="space-y-1.5">
+          <span className="font-mono text-[0.6rem] tracking-[0.16em] uppercase text-[#f3efe3]/42">
+            Name
+          </span>
+          <input
+            className="h-10 w-full rounded-xl border border-white/10 bg-[#07111b] px-3 text-sm text-[#f3efe3] outline-none transition-colors focus:border-[#53d1cb]/60 disabled:opacity-50"
+            defaultValue={concept.name}
+            disabled={disabled || isPending}
+            name="name"
+            required
+          />
+        </label>
+        <label className="space-y-1.5">
+          <span className="font-mono text-[0.6rem] tracking-[0.16em] uppercase text-[#f3efe3]/42">
+            Definition
+          </span>
+          <textarea
+            className="min-h-10 w-full resize-y rounded-xl border border-white/10 bg-[#07111b] px-3 py-2 text-sm leading-6 text-[#f3efe3] outline-none transition-colors focus:border-[#53d1cb]/60 disabled:opacity-50"
+            defaultValue={concept.definition}
+            disabled={disabled || isPending}
+            name="definition"
+            required
+            rows={2}
+          />
+        </label>
+        <div className="grid gap-2">
+          <label className="space-y-1.5">
+            <span className="font-mono text-[0.6rem] tracking-[0.16em] uppercase text-[#f3efe3]/42">
+              Difficulty
+            </span>
+            <select
+              className="h-10 w-full rounded-xl border border-white/10 bg-[#07111b] px-3 text-sm text-[#f3efe3] outline-none transition-colors focus:border-[#53d1cb]/60 disabled:opacity-50"
+              defaultValue={concept.difficulty}
+              disabled={disabled || isPending}
+              name="difficulty"
+            >
+              <option value="beginner">beginner</option>
+              <option value="intermediate">intermediate</option>
+              <option value="advanced">advanced</option>
+            </select>
+          </label>
+          <Button disabled={disabled || isPending} size="sm" type="submit" variant="secondary">
+            {isPending ? 'Saving' : 'Patch'}
+          </Button>
+        </div>
+        {state.error ? (
+          <p className="md:col-span-3 text-xs leading-5 text-status-danger-foreground">
+            {state.error}
+          </p>
+        ) : null}
+        {state.success ? (
+          <p className="md:col-span-3 text-xs leading-5 text-status-success-foreground">
+            Knowledgebase version updated.
+          </p>
+        ) : null}
+      </form>
+    </details>
   );
 }
 
@@ -1001,31 +1009,18 @@ function normalizeConceptText(value: string): string {
 
 function ChatPane({
   collapsed,
-  composerDisabled,
-  instruction,
-  isRunning,
   items,
   onCollapseToggle,
-  onInstructionChange,
-  onStartRun,
-  onSubmit,
   sourceReady,
   sourceWords,
 }: {
   collapsed: boolean;
-  composerDisabled: boolean;
-  instruction: string;
-  isRunning: boolean;
   items: ChatItem[];
   onCollapseToggle: () => void;
-  onInstructionChange: (value: string) => void;
-  onStartRun: (instruction: string) => void;
-  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
   sourceReady: boolean;
   sourceWords: number;
 }) {
   const scrollRef = useRef<HTMLDivElement | null>(null);
-  const composerRef = useRef<HTMLTextAreaElement | null>(null);
 
   // Pin the timeline to the latest activity.
   useEffect(() => {
@@ -1034,23 +1029,14 @@ function ChatPane({
     queueMicrotask(() => {
       node.scrollTop = node.scrollHeight;
     });
-  }, [items, isRunning]);
-
-  useEffect(() => {
-    const node = composerRef.current;
-    if (!node) return;
-
-    node.style.height = 'auto';
-    node.style.height = `${node.scrollHeight}px`;
-    node.style.overflowY = 'hidden';
-  }, [instruction]);
+  }, [items]);
 
   if (collapsed) {
     return (
       <CollapsedPaneRail
         ariaLabel="Expand refinement"
         eyebrow="Refinement"
-        meta={isRunning ? 'streaming' : 'ready'}
+        meta="paused"
         onToggle={onCollapseToggle}
         side="right"
         title="Graph agent"
@@ -1064,16 +1050,8 @@ function ChatPane({
         eyebrow="Refinement"
         meta={
           <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.03] px-2 py-0.5 font-mono text-[0.62rem] tabular-nums tracking-[0.18em] uppercase">
-            <span
-              aria-hidden
-              className={cn(
-                'size-1.5 rounded-full',
-                isRunning ? 'bg-[#53d1cb] pulse-soft' : 'bg-emerald-400',
-              )}
-            />
-            <span className={isRunning ? 'text-[#53d1cb]' : 'text-emerald-300/82'}>
-              {isRunning ? 'streaming' : 'ready'}
-            </span>
+            <span aria-hidden className="size-1.5 rounded-full bg-[#f3efe3]/42" />
+            <span className="text-[#f3efe3]/62">paused</span>
           </span>
         }
         onCollapseToggle={onCollapseToggle}
@@ -1082,27 +1060,10 @@ function ChatPane({
       />
 
       <div className="border-b border-white/8 px-4 py-3">
-        <div className="grid grid-cols-3 gap-1.5">
-          <ActionPill
-            disabled={composerDisabled}
-            icon={<Sparkles className="size-3.5" strokeWidth={1.5} />}
-            label="Generate"
-            onClick={() => onStartRun('')}
-            tone="primary"
-          />
-          <ActionPill
-            disabled={composerDisabled}
-            icon={<Zap className="size-3.5" strokeWidth={1.5} />}
-            label="Refine"
-            onClick={() => onStartRun('Refine the current concept graph based on the latest source material.')}
-          />
-          <ActionPill
-            disabled={composerDisabled}
-            icon={<CheckCircle2 className="size-3.5" strokeWidth={1.5} />}
-            label="Approve"
-            onClick={() => onStartRun('Prepare the current concept graph for final review and approval.')}
-          />
-        </div>
+        <p className="text-[0.78rem] leading-5 text-[#f3efe3]/72">
+          Graph rebuilds run automatically when you save a source. Refinement chat is paused until
+          source-driven refinement is reconnected to the ingestion agent.
+        </p>
         <p className="mt-2.5 flex items-center gap-2 font-mono text-[0.6rem] tabular-nums tracking-[0.16em] uppercase text-[#f3efe3]/42">
           <FileText className="size-3" strokeWidth={1.5} />
           <span>Source · {sourceReady ? `${sourceWords} words` : 'empty'}</span>
@@ -1114,108 +1075,23 @@ function ChatPane({
           {items.map((item) => (
             <li key={item.id}>
               {item.kind === 'message' ? (
-                <ChatMessage
-                  role={item.role}
-                  streaming={Boolean(item.streaming) && isRunning}
-                  text={item.text}
-                />
+                <ChatMessage role={item.role} streaming={false} text={item.text} />
               ) : (
                 <ChatEvent event={item.event} />
               )}
             </li>
           ))}
-          {isRunning ? (
-            <li>
-              <ChatTypingIndicator />
-            </li>
-          ) : null}
         </ol>
       </div>
 
-      <form className="shrink-0 border-t border-white/8 bg-[#0a131c] px-4 py-3" onSubmit={onSubmit}>
-        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-2">
-          <label className="sr-only" htmlFor="graph-chat-composer">
-            Refinement instruction
-          </label>
-          <textarea
-            className="min-h-11 w-full resize-none overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-2.5 text-sm leading-6 text-[#f3efe3] outline-none transition-[height,border-color,background-color] duration-150 ease-out placeholder:text-[#f3efe3]/36 focus:border-[#53d1cb]/50 focus:bg-white/[0.05] disabled:opacity-60"
-            disabled={composerDisabled}
-            id="graph-chat-composer"
-            onChange={(event) => onInstructionChange(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter' && !event.shiftKey) {
-                event.preventDefault();
-                event.currentTarget.form?.requestSubmit();
-              }
-            }}
-            placeholder={
-              sourceReady
-                ? 'Ask the agent to merge, split, or re-evidence concepts…'
-                : 'Add source material to enable refinement.'
-            }
-            ref={composerRef}
-            rows={1}
-            value={instruction}
-          />
-          <Button
-            aria-label="Send instruction"
-            className="size-11 rounded-2xl bg-[#53d1cb] text-[#041018] hover:bg-[#7ceae3] disabled:opacity-50"
-            disabled={composerDisabled || !instruction.trim()}
-            size="icon"
-            type="submit"
-          >
-            <Send className="size-4" strokeWidth={1.6} />
-          </Button>
-        </div>
-        {!sourceReady ? (
-          <p className="mt-2 text-[0.7rem] leading-5 text-[#f3efe3]/52">
-            The agent reads from your source material. Add or paste markdown in the source stage to
-            unlock the chat.
-          </p>
-        ) : null}
-      </form>
+      <div className="shrink-0 border-t border-white/8 bg-[#0a131c] px-4 py-3">
+        <p className="text-[0.7rem] leading-5 text-[#f3efe3]/52">
+          Edit a source on the left to trigger ingestion. The agent rewrites the knowledgebase from
+          your sources directly; manual refinement chat will return when source-aware refinement is
+          wired in.
+        </p>
+      </div>
     </aside>
-  );
-}
-
-const actionPillVariants = cva(
-  'inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-full border text-xs font-medium tracking-wide transition-all duration-150 disabled:cursor-not-allowed disabled:opacity-50',
-  {
-    defaultVariants: { tone: 'ghost' },
-    variants: {
-      tone: {
-        ghost:
-          'border-white/10 bg-white/[0.03] text-[#f3efe3]/82 hover:border-white/20 hover:bg-white/[0.06] hover:text-[#f3efe3] active:translate-y-px',
-        primary:
-          'border-[#53d1cb]/50 bg-[#53d1cb]/[0.12] text-[#7ceae3] hover:border-[#53d1cb] hover:bg-[#53d1cb]/[0.18] hover:text-[#f3efe3] active:translate-y-px',
-      },
-    },
-  },
-);
-
-function ActionPill({
-  disabled,
-  icon,
-  label,
-  onClick,
-  tone = 'ghost',
-}: {
-  disabled?: boolean;
-  icon: React.ReactNode;
-  label: string;
-  onClick: () => void;
-  tone?: 'ghost' | 'primary';
-}) {
-  return (
-    <button
-      className={actionPillVariants({ tone })}
-      disabled={disabled}
-      onClick={onClick}
-      type="button"
-    >
-      {icon}
-      {label}
-    </button>
   );
 }
 
@@ -1252,22 +1128,6 @@ function ChatMessage({
           <span aria-hidden className="ml-1 inline-block h-3.5 w-[2px] translate-y-0.5 bg-[#53d1cb] stream-cursor" />
         ) : null}
       </p>
-    </div>
-  );
-}
-
-function ChatTypingIndicator() {
-  return (
-    <div className="flex items-center gap-2.5 px-1 text-[0.7rem] text-[#f3efe3]/52">
-      <span aria-hidden className="grid size-7 place-items-center rounded-full border border-white/10 bg-[#0d1824] text-[#53d1cb]">
-        <Bot className="size-3.5" strokeWidth={1.5} />
-      </span>
-      <span className="flex items-center gap-1">
-        <span className="size-1.5 rounded-full bg-[#53d1cb] pulse-soft" />
-        <span className="size-1.5 rounded-full bg-[#53d1cb]/72 pulse-soft" style={{ animationDelay: '0.2s' }} />
-        <span className="size-1.5 rounded-full bg-[#53d1cb]/42 pulse-soft" style={{ animationDelay: '0.4s' }} />
-      </span>
-      <span className="font-mono uppercase tracking-[0.18em]">Reading source</span>
     </div>
   );
 }
@@ -1339,23 +1199,14 @@ function getEventTone(event: StreamEvent): {
         label: 'text-[#f3efe3]/72',
         title: 'Evidence attached',
       };
-    case 'graph_version_created':
-      return {
-        border: 'border-white/8',
-        copy: `Version ${event.artifactVersionId.slice(0, 6)} saved`,
-        icon: <History className="size-3" strokeWidth={1.6} />,
-        iconBg: 'bg-white/[0.06] text-[#f3efe3]/82',
-        label: 'text-[#f3efe3]/52',
-        title: 'Version saved',
-      };
-    case 'review_ready':
+    case 'ingestion_complete':
       return {
         border: 'border-emerald-400/24',
-        copy: 'Artifact is ready for review and approval.',
+        copy: `${event.conceptCount} concepts and ${event.relationshipCount} relationships ingested.`,
         icon: <CheckCircle2 className="size-3" strokeWidth={1.6} />,
         iconBg: 'bg-emerald-400/[0.14] text-emerald-300',
         label: 'text-emerald-300',
-        title: 'Review ready',
+        title: 'Ingestion complete',
       };
     default:
       return {

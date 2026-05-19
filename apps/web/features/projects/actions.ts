@@ -3,19 +3,22 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import {
-  approveArtifact,
-  approveArtifactDto,
+  addProjectSource,
+  addProjectSourceDto,
   canCreateProject,
   createProject,
   createProjectDto,
+  deleteProjectSource,
+  deleteProjectSourceDto,
   deleteProject,
   deleteProjectDto,
-  submitSourceMaterial,
+  updateKnowledgebaseConcept,
+  updateKnowledgebaseConceptDto,
+  updateProjectSource,
+  updateProjectSourceDto,
   updateProjectDetails,
   updateProjectDetailsDto,
-  updateSourceMaterialDto,
   type CreateProjectDto,
-  type UpdateSourceMaterialDto,
 } from '@grasp/domain';
 import { getActor } from '@/server/actor';
 import { createProjectDeps } from '@/server/project-deps';
@@ -24,13 +27,9 @@ export type CreateProjectFormState = {
   error: string | null;
 };
 
-export type SourceMaterialFormState = {
+export type ProjectSourceFormState = {
   error: string | null;
-  success: boolean;
-};
-
-export type ApproveArtifactFormState = {
-  error: string | null;
+  sourceId?: string;
   success: boolean;
 };
 
@@ -41,6 +40,11 @@ export type UpdateProjectDetailsFormState = {
 
 export type DeleteProjectFormState = {
   error: string | null;
+};
+
+export type KnowledgebaseConceptFormState = {
+  error: string | null;
+  success: boolean;
 };
 
 export async function createProjectAction(input: CreateProjectDto) {
@@ -69,7 +73,6 @@ export async function createProjectFormAction(
 
   const parsed = createProjectDto.safeParse({
     description: formData.get('description')?.toString().trim() || undefined,
-    sourceMaterial: formData.get('sourceMaterial')?.toString().trim() || undefined,
     title: formData.get('title')?.toString() ?? '',
   });
 
@@ -84,49 +87,112 @@ export async function createProjectFormAction(
   return { error: null };
 }
 
-export async function submitSourceMaterialAction(input: UpdateSourceMaterialDto) {
-  const actor = await getActor();
-
-  if (!actor) {
-    throw new Error('Unauthorized.');
-  }
-
-  const project = await submitSourceMaterial(input, createProjectDeps(), actor);
-
-  revalidatePath(`/dashboard/projects/${project.id}`);
-
-  return project;
-}
-
-export async function submitSourceMaterialFormAction(
-  _state: SourceMaterialFormState,
+export async function addProjectSourceFormAction(
+  _state: ProjectSourceFormState,
   formData: FormData
-): Promise<SourceMaterialFormState> {
+): Promise<ProjectSourceFormState> {
   const actor = await getActor();
 
   if (!actor) {
     return { error: 'Unauthorized.', success: false };
   }
 
-  const parsed = updateSourceMaterialDto.safeParse({
+  const parsed = addProjectSourceDto.safeParse({
+    content: formData.get('content')?.toString() ?? '',
     projectId: formData.get('projectId')?.toString() ?? '',
-    sourceMaterial: formData.get('sourceMaterial')?.toString() ?? '',
+    title: formData.get('title')?.toString() ?? '',
+    type: formData.get('type')?.toString() || 'markdown',
   });
 
   if (!parsed.success) {
-    return { error: 'Source material is required.', success: false };
+    return { error: 'Source title and content are required.', success: false };
   }
 
   try {
-    const project = await submitSourceMaterial(parsed.data, createProjectDeps(), actor);
+    const deps = createProjectDeps();
+    const source = await addProjectSource(parsed.data, deps, actor);
 
     revalidatePath('/dashboard/projects');
-    revalidatePath(`/dashboard/projects/${project.id}`);
+    revalidatePath(`/dashboard/projects/${source.projectId}`);
+
+    return { error: null, sourceId: source.id, success: true };
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : 'Source creation failed.',
+      success: false,
+    };
+  }
+}
+
+export async function updateProjectSourceFormAction(
+  _state: ProjectSourceFormState,
+  formData: FormData
+): Promise<ProjectSourceFormState> {
+  const actor = await getActor();
+
+  if (!actor) {
+    return { error: 'Unauthorized.', success: false };
+  }
+
+  const parsed = updateProjectSourceDto.safeParse({
+    content: formData.get('content')?.toString() ?? '',
+    sourceId: formData.get('sourceId')?.toString() ?? '',
+    title: formData.get('title')?.toString() ?? '',
+    type: formData.get('type')?.toString() || 'markdown',
+  });
+
+  if (!parsed.success) {
+    return { error: 'Source title and content are required.', success: false };
+  }
+
+  try {
+    const deps = createProjectDeps();
+    const source = await updateProjectSource(parsed.data, deps, actor);
+
+    revalidatePath(`/dashboard/projects/${source.projectId}`);
+
+    return { error: null, sourceId: source.id, success: true };
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : 'Source update failed.',
+      success: false,
+    };
+  }
+}
+
+export async function deleteProjectSourceFormAction(
+  _state: ProjectSourceFormState,
+  formData: FormData
+): Promise<ProjectSourceFormState> {
+  const actor = await getActor();
+
+  if (!actor) {
+    return { error: 'Unauthorized.', success: false };
+  }
+
+  const parsed = deleteProjectSourceDto.safeParse({
+    sourceId: formData.get('sourceId')?.toString() ?? '',
+  });
+
+  if (!parsed.success) {
+    return { error: 'Source is required.', success: false };
+  }
+
+  try {
+    const deps = createProjectDeps();
+    const source = await deleteProjectSource(parsed.data, deps, actor);
+
+    await deps.knowledgebaseRepository.cleanupDeletedSource({
+      projectId: source.projectId,
+      sourceId: source.id,
+    });
+
+    revalidatePath(`/dashboard/projects/${source.projectId}`);
 
     return { error: null, success: true };
   } catch (error) {
     return {
-      error: error instanceof Error ? error.message : 'Source material failed.',
+      error: error instanceof Error ? error.message : 'Source deletion failed.',
       success: false,
     };
   }
@@ -197,47 +263,37 @@ export async function deleteProjectFormAction(
   redirect('/dashboard/projects');
 }
 
-export async function approveArtifactAction(input: { artifactId: string }) {
-  const actor = await getActor();
-
-  if (!actor) {
-    throw new Error('Unauthorized.');
-  }
-
-  const artifact = await approveArtifact(input, createProjectDeps(), actor);
-
-  revalidatePath(`/dashboard/projects/${artifact.projectId}`);
-
-  return artifact;
-}
-
-export async function approveArtifactFormAction(
-  _state: ApproveArtifactFormState,
+export async function updateKnowledgebaseConceptFormAction(
+  _state: KnowledgebaseConceptFormState,
   formData: FormData
-): Promise<ApproveArtifactFormState> {
+): Promise<KnowledgebaseConceptFormState> {
   const actor = await getActor();
 
   if (!actor) {
     return { error: 'Unauthorized.', success: false };
   }
 
-  const parsed = approveArtifactDto.safeParse({
+  const parsed = updateKnowledgebaseConceptDto.safeParse({
     artifactId: formData.get('artifactId')?.toString() ?? '',
+    conceptId: formData.get('conceptId')?.toString() ?? '',
+    definition: formData.get('definition')?.toString() ?? '',
+    difficulty: formData.get('difficulty')?.toString() ?? '',
+    name: formData.get('name')?.toString() ?? '',
   });
 
   if (!parsed.success) {
-    return { error: 'Artifact is required.', success: false };
+    return { error: 'Concept name, definition, and difficulty are required.', success: false };
   }
 
   try {
-    const artifact = await approveArtifact(parsed.data, createProjectDeps(), actor);
+    const artifact = await updateKnowledgebaseConcept(parsed.data, createProjectDeps(), actor);
 
     revalidatePath(`/dashboard/projects/${artifact.projectId}`);
 
     return { error: null, success: true };
   } catch (error) {
     return {
-      error: error instanceof Error ? error.message : 'Artifact approval failed.',
+      error: error instanceof Error ? error.message : 'Knowledgebase concept update failed.',
       success: false,
     };
   }

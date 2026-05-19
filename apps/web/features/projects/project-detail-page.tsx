@@ -7,16 +7,12 @@ import {
   ArrowUpRight,
   CheckCircle2,
   CircleDashed,
-  FileBadge,
   FileText,
   GitBranch,
   History,
   Layers3,
-  Link2,
   MoreVertical,
-  Plus,
   Sparkles,
-  Video,
 } from 'lucide-react';
 import {
   loadProjectDetail,
@@ -26,11 +22,10 @@ import {
 } from '@grasp/domain';
 import { getActor } from '@/server/actor';
 import { createProjectDeps } from '@/server/project-deps';
-import { ApproveArtifactForm } from './approve-artifact-form';
 import { ProjectStatusBadge } from './project-status-badge';
 import { ConceptGraphWorkspace } from './concept-graph-workspace';
 import { DeleteProjectForm, ProjectDetailsForm } from './project-lifecycle-forms';
-import { SourceMaterialForm } from './source-material-form';
+import { ProjectSourcesPanel } from './source-material-form';
 import { statusChipVariants } from './project-style-variants';
 import {
   buildStageHref,
@@ -59,9 +54,10 @@ export async function ProjectDetailPage({ currentStage, projectId }: ProjectDeta
     detail = await loadProjectDetail(
       { projectId, ownerId: actor.id },
       {
-        artifactRepository: deps.artifactRepository,
-        conceptRepository: deps.conceptRepository,
+        ingestionRunRepository: deps.ingestionRunRepository,
+        knowledgebaseRepository: deps.knowledgebaseRepository,
         projectRepository: deps.projectRepository,
+        projectSourceRepository: deps.projectSourceRepository,
       }
     );
   } catch (error) {
@@ -72,21 +68,16 @@ export async function ProjectDetailPage({ currentStage, projectId }: ProjectDeta
     throw error;
   }
 
-  const canApprove =
-    detail.conceptGraphArtifact?.status === 'generated' ||
-    detail.conceptGraphArtifact?.status === 'needs_revision';
   const stage = resolveStage(currentStage);
-  const sourceReady = Boolean(detail.project.sourceMaterial?.trim());
-  const graphReady = detail.concepts.length > 0;
-  const graphApproved = detail.conceptGraphArtifact?.status === 'approved';
-  const sourceCounts = getSourceCounts(detail.project.sourceMaterial);
+  const sourceReady = detail.sources.some((source) => source.content?.trim());
+  const knowledgebaseGraph = detail.knowledgebaseGraph;
+  const graphReady = sourceReady && knowledgebaseGraph.concepts.length > 0;
+  const sourceCounts = getSourceCounts(detail.sources);
+  const ingestionStatus = getIngestionStatus(detail.latestIngestionRun);
   const nextAction = getNextAction({
-    graphApproved,
     graphReady,
     sourceReady,
   });
-  const artifactStatusLabel =
-    detail.conceptGraphArtifact?.status.replace('_', ' ') ?? 'not generated';
 
   return (
     <section className="flex w-full flex-col gap-10 text-[#f3efe3]">
@@ -135,7 +126,7 @@ export async function ProjectDetailPage({ currentStage, projectId }: ProjectDeta
         </div>
 
         {/* Status strip — compact rail, secondary to the project heading */}
-        <dl className="grid gap-px overflow-hidden rounded-[1.35rem] border border-white/8 bg-white/[0.045] lg:grid-cols-[1.25fr_0.85fr_0.85fr]">
+        <dl className="grid gap-px overflow-hidden rounded-[1.35rem] border border-white/8 bg-white/[0.045] lg:grid-cols-[1.25fr_0.85fr_0.85fr_0.85fr]">
           <NextActionCell
             copy={nextAction.copy}
             href={buildStageHref(projectId, nextAction.stage)}
@@ -150,12 +141,19 @@ export async function ProjectDetailPage({ currentStage, projectId }: ProjectDeta
             unit="words"
           />
           <StatusCell
-            label="Graph"
-            ready={graphReady}
-            statHint={`${detail.relationships.length} prerequisite links`}
-            statValue={String(detail.concepts.length)}
-            unit="concepts"
+            label="Ingestion"
+            ready={ingestionStatus.ready}
+            statHint={ingestionStatus.hint}
+            statValue={ingestionStatus.value}
+            unit={ingestionStatus.unit}
           />
+            <StatusCell
+              label="Graph"
+              ready={graphReady}
+              statHint={`${knowledgebaseGraph.relationships.length} prerequisite links`}
+              statValue={String(knowledgebaseGraph.concepts.length)}
+              unit="concepts"
+            />
         </dl>
       </header>
 
@@ -195,7 +193,7 @@ export async function ProjectDetailPage({ currentStage, projectId }: ProjectDeta
         </div>
       </details>
 
-      {detail.project.status === PROJECT_STATUS.FAILED && detail.project.sourceMaterial ? (
+      {detail.project.status === PROJECT_STATUS.FAILED && sourceReady ? (
         <section className="rounded-[1.5rem] border border-status-danger-border bg-status-danger-surface p-5">
           <div className="space-y-1">
             <p className="font-mono text-[0.65rem] tabular-nums tracking-[0.18em] uppercase text-status-danger-foreground">
@@ -239,18 +237,26 @@ export async function ProjectDetailPage({ currentStage, projectId }: ProjectDeta
                 />
                 <PipelineRow
                   cite="02"
-                  copy="Graph review stays grounded with evidence and confidence."
-                  icon={GitBranch}
-                  ready={graphReady}
-                  stat={`${detail.concepts.length} concepts`}
-                  title="Graph"
+                  copy="Source changes trigger direct ingestion into the knowledgebase projection."
+                  icon={Sparkles}
+                  ready={ingestionStatus.ready}
+                  stat={ingestionStatus.value}
+                  title="Ingestion"
                 />
                 <PipelineRow
                   cite="03"
-                  copy="Lesson and publish layer on top of the approved graph."
+                  copy="Graph review stays grounded with evidence and confidence."
+                  icon={GitBranch}
+                  ready={graphReady}
+                  stat={`${knowledgebaseGraph.concepts.length} concepts`}
+                  title="Graph"
+                />
+                <PipelineRow
+                  cite="04"
+                  copy="Lesson and publish layer on top of the reviewed graph."
                   icon={Layers3}
-                  ready={graphApproved}
-                  stat={graphApproved ? 'graph approved' : 'pending approval'}
+                  ready={false}
+                  stat="planned"
                   title="Next slices"
                 />
               </ol>
@@ -277,22 +283,16 @@ export async function ProjectDetailPage({ currentStage, projectId }: ProjectDeta
                 </Link>
               </header>
 
-              <dl className="grid gap-px overflow-hidden rounded-[1.75rem] border border-white/10 bg-white/8 md:grid-cols-3">
+              <dl className="grid gap-px overflow-hidden rounded-[1.75rem] border border-white/10 bg-white/8 md:grid-cols-2">
                 <GraphStatCell
-                  label="Artifact"
-                  unit="status"
-                  value={artifactStatusLabel}
+                  label="Concepts"
+                  unit="extracted"
+                  value={String(knowledgebaseGraph.concepts.length)}
                 />
                 <GraphStatCell
                   label="Relationships"
                   unit="prerequisites"
-                  value={String(detail.relationships.length)}
-                />
-                <GraphStatCell
-                  accent={graphApproved}
-                  label="Approval"
-                  unit={graphApproved ? 'cleared' : 'pending'}
-                  value={graphApproved ? 'ready' : 'review'}
+                  value={String(knowledgebaseGraph.relationships.length)}
                 />
               </dl>
             </section>
@@ -325,8 +325,8 @@ export async function ProjectDetailPage({ currentStage, projectId }: ProjectDeta
               <Eyebrow>Current readiness</Eyebrow>
               <ul className="space-y-2">
                 <ReadinessRow label="Source saved" ready={sourceReady} />
+                <ReadinessRow label="Ingestion completed" ready={ingestionStatus.ready} />
                 <ReadinessRow label="Graph generated" ready={graphReady} />
-                <ReadinessRow label="Graph approved" ready={graphApproved} />
                 <ReadinessRow label="Lesson review" ready={false} />
                 <ReadinessRow label="Publish gate" ready={false} />
               </ul>
@@ -345,9 +345,8 @@ export async function ProjectDetailPage({ currentStage, projectId }: ProjectDeta
                 Curate the multi-source library that feeds the graph.
               </h2>
               <p className="max-w-[60ch] text-pretty text-sm leading-relaxed text-[#f3efe3]/62">
-                Concepts and evidence are extracted from the sources below. Today the studio reads a
-                primary text source — additional inputs (URL, PDF, video transcript) are wiring up
-                next.
+                Source edits trigger direct ingestion into the relational knowledgebase projection.
+                Additional inputs (URL, PDF, video transcript) are wiring up next.
               </p>
             </div>
             <span className="inline-flex items-center gap-2 self-start rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 font-mono text-[0.65rem] tracking-[0.18em] uppercase text-[#f3efe3]/72">
@@ -356,101 +355,9 @@ export async function ProjectDetailPage({ currentStage, projectId }: ProjectDeta
             </span>
           </header>
 
-          <div className="grid gap-6 xl:grid-cols-[18rem_minmax(0,1fr)_18rem]">
-            {/* Left rail — sources list */}
-            <aside className="min-w-0 space-y-5">
-              <div className="flex items-center justify-between gap-3">
-                <Eyebrow>Sources</Eyebrow>
-                <span className="font-mono text-[0.65rem] tabular-nums tracking-[0.16em] uppercase text-[#f3efe3]/42">
-                  01 / 01
-                </span>
-              </div>
-              <ul className="space-y-2">
-                <li>
-                  <SourceListItem
-                    active
-                    characters={sourceCounts.characters}
-                    hint={getSourcePreview(detail.project.sourceMaterial)}
-                    index="01"
-                    kind="text"
-                    label="Primary text source"
-                    ready={sourceReady}
-                    words={sourceCounts.words}
-                  />
-                </li>
-                <li>
-                  <AddSourceCard />
-                </li>
-              </ul>
-            </aside>
+          <IngestionStatusPanel status={ingestionStatus} />
 
-            {/* Editor */}
-            <section className="rounded-[1.75rem] border border-white/10 bg-white/[0.025] p-6">
-              <div className="mb-5 flex flex-col gap-3 border-b border-white/8 pb-5 lg:flex-row lg:items-end lg:justify-between">
-                <div className="space-y-2">
-                  <span className="font-mono text-[0.65rem] tabular-nums tracking-[0.18em] uppercase text-[#53d1cb]">
-                    source 01 · text
-                  </span>
-                  <h3 className="text-xl font-medium tracking-tight text-[#f3efe3]">
-                    Primary text source
-                  </h3>
-                  <p className="max-w-[52ch] text-sm leading-relaxed text-[#f3efe3]/62">
-                    The graph agent reads this body verbatim. Keep terminology consistent and remove
-                    boilerplate before the first run.
-                  </p>
-                </div>
-                <span className={statusChipVariants({ ready: sourceReady })}>
-                  {sourceReady ? (
-                    <CheckCircle2 className="size-3.5" />
-                  ) : (
-                    <CircleDashed className="size-3.5" />
-                  )}
-                  {sourceReady ? 'Saved' : 'Empty'}
-                </span>
-              </div>
-              <div className="rounded-[1.35rem] border border-white/10 bg-[#0d1824]/72 p-5 text-[#f3efe3] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
-                <SourceMaterialForm
-                  projectId={detail.project.id}
-                  sourceMaterial={detail.project.sourceMaterial}
-                />
-              </div>
-            </section>
-
-            {/* Right rail — health + next step */}
-            <aside className="min-w-0 space-y-6">
-              <section className="space-y-4">
-                <Eyebrow>Source health</Eyebrow>
-                <dl className="grid gap-px overflow-hidden rounded-[1.35rem] border border-white/10 bg-white/8">
-                  <SourceStatRow
-                    label="Words"
-                    unit="primary"
-                    value={String(sourceCounts.words)}
-                  />
-                  <SourceStatRow
-                    label="Characters"
-                    unit="primary"
-                    value={String(sourceCounts.characters)}
-                  />
-                  <SourceStatRow label="Sources" unit="connected" value="1" />
-                </dl>
-              </section>
-
-              <section className="space-y-3 rounded-[1.35rem] border border-white/10 bg-white/[0.025] p-5">
-                <Eyebrow>Next step</Eyebrow>
-                <p className="text-sm leading-relaxed text-[#f3efe3]/72">
-                  Once the source is saved and stable, run the concept graph to extract concepts,
-                  evidence, and prerequisite links.
-                </p>
-                <Link
-                  className="group inline-flex w-full items-center justify-between gap-2 rounded-2xl border border-white/12 bg-white/[0.04] px-4 py-2.5 text-sm font-medium text-[#f3efe3]/82 transition-all duration-200 hover:border-[#53d1cb]/24 hover:bg-[#53d1cb]/8 hover:text-[#53d1cb]"
-                  href={buildStageHref(projectId, 'graph')}
-                >
-                  Open graph workspace
-                  <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
-                </Link>
-              </section>
-            </aside>
-          </div>
+          <ProjectSourcesPanel projectId={detail.project.id} sources={detail.sources} />
         </div>
       ) : null}
 
@@ -460,26 +367,20 @@ export async function ProjectDetailPage({ currentStage, projectId }: ProjectDeta
             <div className="space-y-3">
               <Eyebrow>Concept graph</Eyebrow>
               <h2 className="max-w-[28ch] text-balance text-2xl leading-[1.05] font-medium tracking-[-0.03em] text-[#f3efe3] md:text-3xl">
-                Review extraction, refine, and approve when the graph reads cleanly.
+                Review extraction and refine the concept structure.
               </h2>
               <p className="max-w-[60ch] text-pretty text-sm leading-relaxed text-[#f3efe3]/62">
-                Approval locks the current artifact version. Status:{' '}
-                <span className="text-[#f3efe3]/82 capitalize">{artifactStatusLabel}</span>.
+                The graph is built directly from source ingestion. Refine definitions and
+                relationships as needed.
               </p>
             </div>
-            {detail.conceptGraphArtifact ? (
-              <ApproveArtifactForm
-                artifactId={detail.conceptGraphArtifact.id}
-                disabled={!canApprove}
-              />
-            ) : null}
           </header>
           <ConceptGraphWorkspace
-            artifact={detail.conceptGraphArtifact}
-            concepts={detail.concepts}
+            artifact={null}
+            concepts={knowledgebaseGraph.concepts}
             projectId={detail.project.id}
-            relationships={detail.relationships}
-            sourceMaterial={detail.project.sourceMaterial}
+            relationships={knowledgebaseGraph.relationships}
+            sources={detail.sources}
           />
         </div>
       ) : null}
@@ -487,12 +388,12 @@ export async function ProjectDetailPage({ currentStage, projectId }: ProjectDeta
       {stage === 'lesson' ? (
         <PlannedStagePanel
           blockers={[
-            graphApproved ? 'Approved concept graph is ready for downstream generation.' : 'Approve the concept graph before lesson generation opens.',
+            graphReady ? 'Concept graph is ready for downstream generation.' : 'Generate the concept graph before lesson generation opens.',
             'Learning objectives and lesson block generation are not implemented yet.',
             'Per-block revision and version history UI still belong to the next slice.',
           ]}
-          ctaHref={buildStageHref(projectId, graphApproved ? 'graph' : 'overview')}
-          ctaLabel={graphApproved ? 'Review graph again' : 'Return to overview'}
+          ctaHref={buildStageHref(projectId, graphReady ? 'graph' : 'overview')}
+          ctaLabel={graphReady ? 'Review graph again' : 'Return to overview'}
           eyebrow="Lesson workspace"
           title="This stage is reserved for objective and block review."
         />
@@ -501,12 +402,12 @@ export async function ProjectDetailPage({ currentStage, projectId }: ProjectDeta
       {stage === 'publish' ? (
         <PlannedStagePanel
           blockers={[
-            graphApproved ? 'Graph approval is in place.' : 'Graph approval must happen before publish readiness matters.',
+            graphReady ? 'Graph is in place.' : 'Graph must be generated before publish readiness matters.',
             'Lesson approval is not implemented yet.',
             'Learner preview and publish gate UI are still planned.',
           ]}
-          ctaHref={buildStageHref(projectId, graphApproved ? 'lesson' : 'graph')}
-          ctaLabel={graphApproved ? 'Open lesson stage' : 'Open graph stage'}
+          ctaHref={buildStageHref(projectId, graphReady ? 'lesson' : 'graph')}
+          ctaLabel={graphReady ? 'Open lesson stage' : 'Open graph stage'}
           eyebrow="Publish gate"
           title="Publish stays visible so the studio keeps the full end-to-end shape."
         />
@@ -515,8 +416,11 @@ export async function ProjectDetailPage({ currentStage, projectId }: ProjectDeta
   );
 }
 
-function getSourceCounts(sourceMaterial: string | null) {
-  const value = sourceMaterial?.trim() ?? '';
+function getSourceCounts(sources: Array<{ content: string | null }>) {
+  const value = sources
+    .map((source) => source.content?.trim() ?? '')
+    .filter(Boolean)
+    .join('\n');
 
   return {
     characters: value.length,
@@ -524,8 +428,61 @@ function getSourceCounts(sourceMaterial: string | null) {
   };
 }
 
+function getIngestionStatus(
+  latestRun: {
+    completedAt: Date | null;
+    failureReason: string | null;
+    startedAt: Date;
+    status: 'ingesting' | 'completed' | 'failed';
+  } | null
+) {
+  if (!latestRun) {
+    return {
+      hint: 'No ingestion run yet',
+      ready: false,
+      unit: 'waiting',
+      value: 'none',
+    };
+  }
+
+  if (latestRun.status === 'completed') {
+    return {
+      hint: latestRun.completedAt
+        ? `Completed ${formatRelativeDate(latestRun.completedAt)}`
+        : 'Knowledgebase projection is current',
+      ready: true,
+      unit: 'current',
+      value: 'done',
+    };
+  }
+
+  if (latestRun.status === 'failed') {
+    return {
+      hint: latestRun.failureReason ?? 'Last ingestion failed',
+      ready: false,
+      unit: 'failed',
+      value: 'failed',
+    };
+  }
+
+  return {
+    hint: `Started ${formatRelativeDate(latestRun.startedAt)}`,
+    ready: false,
+    unit: 'running',
+    value: 'active',
+  };
+}
+
+function formatRelativeDate(value: Date) {
+  return new Intl.DateTimeFormat('en', {
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    month: 'short',
+  }).format(value);
+}
+
 function getNextAction(input: {
-  graphApproved: boolean;
   graphReady: boolean;
   sourceReady: boolean;
 }): { copy: string; stage: StudioStage; title: string } {
@@ -545,18 +502,10 @@ function getNextAction(input: {
     };
   }
 
-  if (!input.graphApproved) {
-    return {
-      copy: 'The graph exists, but it still needs review. Refine definitions, relationships, and evidence before approval.',
-      stage: 'graph',
-      title: 'Approve the graph',
-    };
-  }
-
   return {
-    copy: 'The approved graph is ready for the lesson slice once objective and block review ship.',
-    stage: 'lesson',
-    title: 'Prepare lesson review',
+    copy: 'The graph exists. Refine definitions, relationships, and evidence as needed.',
+    stage: 'graph',
+    title: 'Review the graph',
   };
 }
 
@@ -737,144 +686,31 @@ function StatusChip({ ready }: { ready: boolean }) {
   );
 }
 
-type SourceKind = 'pdf' | 'text' | 'url' | 'video';
-
-const SOURCE_KIND_ICON: Record<SourceKind, typeof FileText> = {
-  pdf: FileBadge,
-  text: FileText,
-  url: Link2,
-  video: Video,
-};
-
-function getSourcePreview(value: string | null): string {
-  const trimmed = value?.trim() ?? '';
-
-  if (!trimmed) {
-    return 'No content yet — paste markdown or notes to get started.';
-  }
-
-  return trimmed.length > 90 ? `${trimmed.slice(0, 90)}…` : trimmed;
-}
-
-function SourceListItem({
-  active,
-  characters,
-  hint,
-  index,
-  kind,
-  label,
-  ready,
-  words,
+function IngestionStatusPanel({
+  status,
 }: {
-  active: boolean;
-  characters: number;
-  hint: string;
-  index: string;
-  kind: SourceKind;
-  label: string;
-  ready: boolean;
-  words: number;
+  status: ReturnType<typeof getIngestionStatus>;
 }) {
-  const Icon = SOURCE_KIND_ICON[kind];
-  const containerClass = active
-    ? 'border-white/12 bg-[#0d1824]'
-    : 'border-white/8 bg-white/[0.02] hover:border-white/12 hover:bg-white/[0.04]';
-  const statusClass = ready
-    ? 'border-status-success-border bg-status-success-surface text-status-success-foreground'
-    : 'border-status-neutral-border bg-status-neutral-surface text-status-neutral-foreground';
-
   return (
-    <article
-      className={`group relative overflow-hidden rounded-[1.25rem] border px-4 py-4 transition-all duration-200 ${containerClass}`}
-    >
-      {active ? (
-        <span
-          aria-hidden
-          className="absolute top-4 bottom-4 left-0 w-[2px] rounded-full bg-[#53d1cb]"
-        />
-      ) : null}
-      <div className="space-y-3 pl-3">
-        <div className="flex items-center justify-between gap-2">
-          <span className="inline-flex items-center gap-2 font-mono text-[0.6rem] tabular-nums tracking-[0.18em] uppercase text-[#53d1cb]">
-            {index}
-            <span className="text-[#f3efe3]/42">·</span>
-            <span className="text-[#f3efe3]/62">{kind}</span>
-          </span>
-          <span
-            className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[0.6rem] font-medium tracking-[0.14em] uppercase ${statusClass}`}
-          >
-            {ready ? 'Active' : 'Empty'}
-          </span>
+    <section className="grid gap-px overflow-hidden rounded-[1.35rem] border border-white/8 bg-white/[0.045] md:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
+      <div className="flex items-center justify-between gap-4 bg-[#0b131d]/72 p-5">
+        <div className="space-y-1">
+          <p className="font-mono text-[0.62rem] tabular-nums tracking-[0.18em] uppercase text-[#f3efe3]/44">
+            Ingestion
+          </p>
+          <p className="text-lg font-medium tracking-tight text-[#f3efe3] capitalize">
+            {status.value}
+          </p>
         </div>
-        <div className="space-y-1.5">
-          <h3 className="flex items-center gap-2 text-sm font-medium tracking-tight text-[#f3efe3]">
-            <Icon className="size-3.5 text-[#f3efe3]/72" strokeWidth={1.5} />
-            {label}
-          </h3>
-          <p className="line-clamp-2 text-xs leading-relaxed text-[#f3efe3]/52">{hint}</p>
-        </div>
-        <p className="font-mono text-[0.6rem] tabular-nums tracking-[0.14em] uppercase text-[#f3efe3]/42">
-          {words} words · {characters} chars
+        <StatusChip ready={status.ready} />
+      </div>
+      <div className="bg-[#0b131d]/72 p-5">
+        <p className="text-sm leading-7 text-[#f3efe3]/68">{status.hint}</p>
+        <p className="mt-2 font-mono text-[0.65rem] tracking-[0.16em] uppercase text-[#f3efe3]/42">
+          Direct source ingestion / vector search later
         </p>
       </div>
-    </article>
-  );
-}
-
-function AddSourceCard() {
-  return (
-    <div className="rounded-[1.25rem] border border-dashed border-white/12 bg-white/[0.015] p-4">
-      <div className="flex items-start justify-between gap-3">
-        <div className="space-y-1.5">
-          <p className="flex items-center gap-2 text-sm font-medium text-[#f3efe3]/72">
-            <Plus className="size-3.5" strokeWidth={1.5} />
-            Add source
-          </p>
-          <p className="font-mono text-[0.6rem] tabular-nums tracking-[0.14em] uppercase text-[#f3efe3]/42">
-            multi-source · soon
-          </p>
-        </div>
-        <span className="font-mono text-[0.6rem] tabular-nums tracking-[0.18em] uppercase text-[#53d1cb]/72">
-          02 +
-        </span>
-      </div>
-      <ul className="mt-4 grid grid-cols-2 gap-2 text-[0.65rem] tracking-wide text-[#f3efe3]/52">
-        <li className="flex items-center gap-2">
-          <Link2 className="size-3" strokeWidth={1.5} />
-          URL · web
-        </li>
-        <li className="flex items-center gap-2">
-          <FileBadge className="size-3" strokeWidth={1.5} />
-          PDF · doc
-        </li>
-        <li className="flex items-center gap-2">
-          <Video className="size-3" strokeWidth={1.5} />
-          Video · transcript
-        </li>
-        <li className="flex items-center gap-2">
-          <FileText className="size-3" strokeWidth={1.5} />
-          Markdown · notes
-        </li>
-      </ul>
-    </div>
-  );
-}
-
-function SourceStatRow({ label, unit, value }: { label: string; unit: string; value: string }) {
-  return (
-    <div className="flex items-center justify-between gap-4 bg-[#0d1824] px-4 py-3">
-      <span className="font-mono text-[0.65rem] tabular-nums tracking-[0.16em] uppercase text-[#f3efe3]/52">
-        {label}
-      </span>
-      <div className="flex items-baseline gap-2">
-        <span className="font-mono text-base font-medium tabular-nums tracking-tight text-[#f3efe3]">
-          {value}
-        </span>
-        <span className="font-mono text-[0.6rem] uppercase tracking-[0.14em] text-[#f3efe3]/42">
-          {unit}
-        </span>
-      </div>
-    </div>
+    </section>
   );
 }
 

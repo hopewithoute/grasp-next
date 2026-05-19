@@ -41,21 +41,6 @@ export function CreateProjectForm() {
         />
       </div>
 
-      <div className="space-y-2">
-        <label
-          className="font-mono text-[0.65rem] font-medium tracking-[0.18em] text-[#f3efe3]/52 uppercase"
-          htmlFor="sourceMaterial"
-        >
-          Source material
-        </label>
-        <textarea
-          className="min-h-40 w-full resize-y rounded-[1.5rem] border border-white/10 bg-[#0d1824] px-4 py-4 text-sm leading-7 text-[#f3efe3] outline-none placeholder:text-[#f3efe3]/30 focus-visible:border-[#53d1cb]/60 focus-visible:ring-3 focus-visible:ring-[#53d1cb]/20"
-          id="sourceMaterial"
-          name="sourceMaterial"
-          placeholder="Paste notes, textbook excerpts, or markdown here."
-        />
-      </div>
-
       {state.error ? (
         <div
           className="flex items-start gap-2 rounded-2xl border border-[#e5685b]/30 bg-[#e5685b]/8 px-4 py-3 text-sm text-[#f4a8a0]"

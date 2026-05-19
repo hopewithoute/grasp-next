@@ -2,13 +2,13 @@ import 'server-only';
 
 import {
   createArtifactRepository,
-  createArtifactReviewRunRepository,
   createAuditLogRepository,
-  createConceptRepository,
   createDbClient,
+  createIngestionRunRepository,
+  createKnowledgebaseRepository,
+  createProjectSourceRepository,
   createProjectRepository,
 } from '@grasp/db';
-import { resumeArtifactReview } from '@grasp/ai';
 import { serverEnv } from './env';
 
 export function createProjectDeps() {
@@ -26,13 +26,11 @@ function buildProjectDeps() {
 
   return {
     artifactRepository: createArtifactRepository(db),
-    artifactReviewRunRepository: createArtifactReviewRunRepository(db),
     auditLogRepository: createAuditLogRepository(db),
-    conceptRepository: createConceptRepository(db),
+    ingestionRunRepository: createIngestionRunRepository(db),
+    knowledgebaseRepository: createKnowledgebaseRepository(db),
     projectRepository: createProjectRepository(db),
-    reviewWorkflow: {
-      resumeReview: resumeArtifactReview,
-    },
+    projectSourceRepository: createProjectSourceRepository(db),
   };
 }
 
