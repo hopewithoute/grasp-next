@@ -5,19 +5,27 @@ import {
   ARTIFACT_STATUS,
   ARTIFACT_TYPES,
   EXTRACTION_MODE,
+  INGESTION_RUN_STATUSES,
+  INGESTION_RUN_STATUS,
+  KNOWLEDGEBASE_VERSION_STATUSES,
+  KNOWLEDGEBASE_VERSION_STATUS,
+  PROJECT_SOURCE_TYPES,
   PROJECT_STATUSES,
   PROJECT_STATUS,
 } from '@grasp/domain';
 import {
   boolean,
+  index,
   integer,
   jsonb,
   pgEnum,
   pgTable,
+  real,
   text,
   timestamp,
   uniqueIndex,
   uuid,
+  vector,
 } from 'drizzle-orm/pg-core';
 
 export const user = pgTable('user', {
@@ -76,11 +84,14 @@ export const verification = pgTable('verification', {
 
 export const projectStatus = pgEnum('project_status', PROJECT_STATUSES);
 
-export const conceptDifficulty = pgEnum('concept_difficulty', [
-  'beginner',
-  'intermediate',
-  'advanced',
-]);
+export const projectSourceType = pgEnum('project_source_type', PROJECT_SOURCE_TYPES);
+
+export const ingestionRunStatus = pgEnum('ingestion_run_status', INGESTION_RUN_STATUSES);
+
+export const knowledgebaseVersionStatus = pgEnum(
+  'knowledgebase_version_status',
+  KNOWLEDGEBASE_VERSION_STATUSES
+);
 
 export const artifactType = pgEnum('artifact_type', ARTIFACT_TYPES);
 
@@ -98,40 +109,69 @@ export const projects = pgTable('projects', {
     .references(() => user.id, { onDelete: 'cascade' }),
   title: text('title').notNull(),
   description: text('description'),
-  sourceMaterial: text('source_material'),
   status: projectStatus('status').notNull().default(PROJECT_STATUS.DRAFT),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const concepts = pgTable('concepts', {
+export const projectSources = pgTable('project_sources', {
   id: uuid('id').primaryKey().defaultRandom(),
   projectId: uuid('project_id')
     .notNull()
     .references(() => projects.id, { onDelete: 'cascade' }),
-  name: text('name').notNull(),
-  definition: text('definition').notNull(),
-  difficulty: conceptDifficulty('difficulty').notNull(),
-  confidence: text('confidence').notNull(),
-  sourceEvidence: jsonb('source_evidence').notNull(),
+  type: projectSourceType('type').notNull(),
+  title: text('title').notNull(),
+  content: text('content'),
+  fileRef: text('file_ref'),
+  metadata: jsonb('metadata'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const conceptRelationships = pgTable('concept_relationships', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  projectId: uuid('project_id')
-    .notNull()
-    .references(() => projects.id, { onDelete: 'cascade' }),
-  sourceConceptId: uuid('source_concept_id')
-    .notNull()
-    .references(() => concepts.id, { onDelete: 'cascade' }),
-  targetConceptId: uuid('target_concept_id')
-    .notNull()
-    .references(() => concepts.id, { onDelete: 'cascade' }),
-  relationshipType: text('relationship_type').notNull().default('prerequisite'),
-  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-});
+export const sourcePassages = pgTable(
+  'source_passages',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    projectId: uuid('project_id')
+      .notNull()
+      .references(() => projects.id, { onDelete: 'cascade' }),
+    sourceId: uuid('source_id')
+      .notNull()
+      .references(() => projectSources.id, { onDelete: 'cascade' }),
+    blockId: text('block_id').notNull(),
+    kind: text('kind').notNull(),
+    text: text('text').notNull(),
+    location: jsonb('location').notNull(),
+    metadata: jsonb('metadata'),
+    order: integer('order').notNull(),
+    embedding: vector('embedding', { dimensions: 1536 }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index('source_passages_project_idx').on(table.projectId),
+    uniqueIndex('source_passages_source_block_unique').on(table.sourceId, table.blockId),
+  ]
+);
+
+export const ingestionRuns = pgTable(
+  'ingestion_runs',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    projectId: uuid('project_id')
+      .notNull()
+      .references(() => projects.id, { onDelete: 'cascade' }),
+    sourceId: uuid('source_id').references(() => projectSources.id, { onDelete: 'set null' }),
+    status: ingestionRunStatus('status').notNull().default(INGESTION_RUN_STATUS.INGESTING),
+    failureReason: text('failure_reason'),
+    metadata: jsonb('metadata'),
+    startedAt: timestamp('started_at', { withTimezone: true }).notNull().defaultNow(),
+    completedAt: timestamp('completed_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index('ingestion_runs_project_idx').on(table.projectId)]
+);
 
 export const artifacts = pgTable(
   'artifacts',
@@ -159,7 +199,7 @@ export const artifactVersions = pgTable(
     versionNumber: integer('version_number').notNull(),
     content: jsonb('content').notNull(),
     revisionFeedback: text('revision_feedback'),
-    extractionMode: text('extraction_mode').notNull().default(EXTRACTION_MODE.DETERMINISTIC),
+    extractionMode: text('extraction_mode').notNull().default(EXTRACTION_MODE.LLM_JSON),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
@@ -169,6 +209,131 @@ export const artifactVersions = pgTable(
     ),
   ]
 );
+
+export const knowledgebases = pgTable(
+  'knowledgebases',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    projectId: uuid('project_id')
+      .notNull()
+      .references(() => projects.id, { onDelete: 'cascade' }),
+    artifactId: uuid('artifact_id')
+      .references(() => artifacts.id, { onDelete: 'set null' }),
+    currentVersionId: uuid('current_version_id'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('knowledgebases_project_unique').on(table.projectId),
+  ]
+);
+
+export const knowledgebaseVersions = pgTable(
+  'knowledgebase_versions',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    knowledgebaseId: uuid('knowledgebase_id')
+      .notNull()
+      .references(() => knowledgebases.id, { onDelete: 'cascade' }),
+    artifactVersionId: uuid('artifact_version_id')
+      .references(() => artifactVersions.id, { onDelete: 'set null' }),
+    versionNumber: integer('version_number').notNull(),
+    status: knowledgebaseVersionStatus('status')
+      .notNull()
+      .default(KNOWLEDGEBASE_VERSION_STATUS.GENERATED),
+    snapshot: jsonb('snapshot').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('knowledgebase_versions_version_unique').on(
+      table.knowledgebaseId,
+      table.versionNumber
+    ),
+  ]
+);
+
+export const wikiConcepts = pgTable(
+  'wiki_concepts',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    knowledgebaseId: uuid('knowledgebase_id')
+      .notNull()
+      .references(() => knowledgebases.id, { onDelete: 'cascade' }),
+    knowledgebaseVersionId: uuid('knowledgebase_version_id')
+      .references(() => knowledgebaseVersions.id, { onDelete: 'cascade' }),
+    conceptKey: text('concept_key').notNull(),
+    name: text('name').notNull(),
+    definition: text('definition').notNull(),
+    difficulty: text('difficulty').notNull(),
+    confidence: real('confidence').notNull(),
+    metadata: jsonb('metadata'),
+    embedding: vector('embedding', { dimensions: 1536 }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index('wiki_concepts_knowledgebase_idx').on(table.knowledgebaseId),
+    uniqueIndex('wiki_concepts_kb_key_unique').on(
+      table.knowledgebaseId,
+      table.conceptKey
+    ),
+  ]
+);
+
+export const wikiRelationships = pgTable(
+  'wiki_relationships',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    knowledgebaseId: uuid('knowledgebase_id')
+      .notNull()
+      .references(() => knowledgebases.id, { onDelete: 'cascade' }),
+    knowledgebaseVersionId: uuid('knowledgebase_version_id')
+      .references(() => knowledgebaseVersions.id, { onDelete: 'cascade' }),
+    relationshipKey: text('relationship_key').notNull(),
+    sourceConceptId: uuid('source_concept_id')
+      .notNull()
+      .references(() => wikiConcepts.id, { onDelete: 'cascade' }),
+    targetConceptId: uuid('target_concept_id')
+      .notNull()
+      .references(() => wikiConcepts.id, { onDelete: 'cascade' }),
+    relationshipType: text('relationship_type').notNull(),
+    rationale: text('rationale'),
+    metadata: jsonb('metadata'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index('wiki_relationships_knowledgebase_idx').on(table.knowledgebaseId),
+    uniqueIndex('wiki_relationships_kb_key_unique').on(
+      table.knowledgebaseId,
+      table.relationshipKey
+    ),
+  ]
+);
+
+export const wikiConceptSourceRefs = pgTable('wiki_concept_source_refs', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  conceptId: uuid('concept_id')
+    .notNull()
+    .references(() => wikiConcepts.id, { onDelete: 'cascade' }),
+  sourcePassageId: uuid('source_passage_id')
+    .notNull()
+    .references(() => sourcePassages.id, { onDelete: 'cascade' }),
+  quote: text('quote').notNull(),
+  locationLabel: text('location_label').notNull(),
+});
+
+export const wikiRelationshipSourceRefs = pgTable('wiki_relationship_source_refs', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  relationshipId: uuid('relationship_id')
+    .notNull()
+    .references(() => wikiRelationships.id, { onDelete: 'cascade' }),
+  sourcePassageId: uuid('source_passage_id')
+    .notNull()
+    .references(() => sourcePassages.id, { onDelete: 'cascade' }),
+  quote: text('quote').notNull(),
+  locationLabel: text('location_label').notNull(),
+});
 
 export const artifactReviewRuns = pgTable(
   'artifact_review_runs',
@@ -212,12 +377,19 @@ export const schema = {
   artifactReviewRuns,
   artifacts,
   auditLogs,
-  conceptRelationships,
-  concepts,
+  ingestionRuns,
+  knowledgebaseVersions,
+  knowledgebases,
   projects,
+  projectSources,
   session,
+  sourcePassages,
   user,
   verification,
+  wikiConceptSourceRefs,
+  wikiConcepts,
+  wikiRelationshipSourceRefs,
+  wikiRelationships,
 };
 
 export type AuditLog = typeof auditLogs.$inferSelect;
@@ -228,9 +400,17 @@ export type ArtifactVersion = typeof artifactVersions.$inferSelect;
 export type NewArtifact = typeof artifacts.$inferInsert;
 export type NewArtifactReviewRun = typeof artifactReviewRuns.$inferInsert;
 export type NewArtifactVersion = typeof artifactVersions.$inferInsert;
-export type Concept = typeof concepts.$inferSelect;
-export type ConceptRelationship = typeof conceptRelationships.$inferSelect;
-export type NewConcept = typeof concepts.$inferInsert;
-export type NewConceptRelationship = typeof conceptRelationships.$inferInsert;
+export type IngestionRun = typeof ingestionRuns.$inferSelect;
+export type Knowledgebase = typeof knowledgebases.$inferSelect;
+export type KnowledgebaseVersion = typeof knowledgebaseVersions.$inferSelect;
+export type NewIngestionRun = typeof ingestionRuns.$inferInsert;
+export type NewKnowledgebase = typeof knowledgebases.$inferInsert;
+export type NewKnowledgebaseVersion = typeof knowledgebaseVersions.$inferInsert;
 export type Project = typeof projects.$inferSelect;
 export type NewProject = typeof projects.$inferInsert;
+export type ProjectSource = typeof projectSources.$inferSelect;
+export type NewProjectSource = typeof projectSources.$inferInsert;
+export type SourcePassage = typeof sourcePassages.$inferSelect;
+export type NewSourcePassage = typeof sourcePassages.$inferInsert;
+export type WikiConcept = typeof wikiConcepts.$inferSelect;
+export type WikiRelationship = typeof wikiRelationships.$inferSelect;

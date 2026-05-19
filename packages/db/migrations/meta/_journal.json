@@ -64,6 +64,48 @@
       "when": 1778811000000,
       "tag": "0008_add_artifact_version_extraction_mode",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1779054400000,
+      "tag": "0009_project_sources",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1779055200000,
+      "tag": "0010_drop_legacy_concept_tables",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1779106642521,
+      "tag": "0011_knowledgebase_relational_ingestion",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1779192000000,
+      "tag": "0012_decouple_knowledgebase_from_artifact",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1779278400000,
+      "tag": "0013_mutable_wiki_tables",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1779364800000,
+      "tag": "0014_drop_wiki_sections",
+      "breakpoints": true
     }
   ]
 }

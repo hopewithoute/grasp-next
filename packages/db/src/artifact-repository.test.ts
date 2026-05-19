@@ -43,7 +43,6 @@ describeIfDatabase('createArtifactRepository', () => {
     const project = await projectRepository.create({
       description: 'Repository integration test',
       ownerId,
-      sourceMaterial: 'Atoms form molecules.',
       title: 'Artifact repository test',
     });
 
@@ -66,7 +65,7 @@ describeIfDatabase('createArtifactRepository', () => {
         content: {
           concepts: ['Atom', 'Molecule'],
         },
-        extractionMode: 'deterministic',
+        extractionMode: 'llm_json',
         revisionFeedback: 'Split atom and molecule concepts.',
       });
       const versions = await artifactRepository.listVersions(artifact.id);
@@ -77,7 +76,7 @@ describeIfDatabase('createArtifactRepository', () => {
       assert.equal(versionOne.extractionMode, 'llm_strict');
       assert.equal(versionTwo.versionNumber, 2);
       assert.equal(versionTwo.revisionFeedback, 'Split atom and molecule concepts.');
-      assert.equal(versionTwo.extractionMode, 'deterministic');
+      assert.equal(versionTwo.extractionMode, 'llm_json');
       assert.equal(versions.length, 2);
       assert.equal(versions[0]?.id, versionTwo.id);
       assert.equal(versions[1]?.id, versionOne.id);

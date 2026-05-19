@@ -6,14 +6,13 @@ export type ProjectRepository = ReturnType<typeof createProjectRepository>;
 
 export function createProjectRepository(db: DbClient) {
   return {
-    async create(input: Pick<NewProject, 'description' | 'ownerId' | 'sourceMaterial' | 'title'>) {
+    async create(input: Pick<NewProject, 'description' | 'ownerId' | 'title'>) {
       const [project] = await db
         .insert(projects)
         .values({
           ownerId: input.ownerId,
           title: input.title,
           description: input.description,
-          sourceMaterial: input.sourceMaterial,
         })
         .returning();
 
@@ -57,32 +56,6 @@ export function createProjectRepository(db: DbClient) {
         .set({
           description: input.description ?? null,
           title: input.title,
-          updatedAt: new Date(),
-        })
-        .where(and(eq(projects.id, projectId), eq(projects.ownerId, ownerId)))
-        .returning();
-
-      return project ?? null;
-    },
-
-    async updateSourceMaterial(projectId: string, sourceMaterial: string) {
-      const [project] = await db
-        .update(projects)
-        .set({
-          sourceMaterial,
-          updatedAt: new Date(),
-        })
-        .where(eq(projects.id, projectId))
-        .returning();
-
-      return project ?? null;
-    },
-
-    async updateSourceMaterialForOwner(projectId: string, ownerId: string, sourceMaterial: string) {
-      const [project] = await db
-        .update(projects)
-        .set({
-          sourceMaterial,
           updatedAt: new Date(),
         })
         .where(and(eq(projects.id, projectId), eq(projects.ownerId, ownerId)))

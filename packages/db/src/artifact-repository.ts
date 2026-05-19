@@ -81,7 +81,7 @@ export function createArtifactRepository(db: DbClient) {
           .values({
             artifactId: input.artifactId,
             content: input.content,
-            extractionMode: input.extractionMode ?? EXTRACTION_MODE.DETERMINISTIC,
+            extractionMode: input.extractionMode ?? EXTRACTION_MODE.LLM_JSON,
             revisionFeedback: input.revisionFeedback,
             versionNumber: (nextVersionNumber ?? 0) + 1,
           })
@@ -123,5 +123,5 @@ function toExtractionMode(value: string): ExtractionMode {
     return value;
   }
 
-  return EXTRACTION_MODE.DETERMINISTIC;
+  return EXTRACTION_MODE.LLM_JSON;
 }
