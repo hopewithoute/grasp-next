@@ -2,11 +2,9 @@ export {
   createProjectDto,
   deleteProjectDto,
   updateProjectDetailsDto,
-  updateSourceMaterialDto,
   type CreateProjectDto,
   type DeleteProjectDto,
   type UpdateProjectDetailsDto,
-  type UpdateSourceMaterialDto,
 } from './project.dto';
 export {
   canCreateProject,
@@ -15,12 +13,7 @@ export {
   type Actor,
 } from './project.policy';
 export { createProject, type CreateProjectDeps } from './create-project.action';
-export {
-  ProjectForbiddenError,
-  ProjectNotFoundError,
-  submitSourceMaterial,
-  type SubmitSourceMaterialDeps,
-} from './submit-source-material.action';
+export { ProjectForbiddenError, ProjectNotFoundError } from './project.errors';
 export {
   updateProjectDetails,
   type UpdateProjectDetailsDeps,

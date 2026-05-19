@@ -7,7 +7,6 @@ export type ProjectRecord = {
   ownerId: string;
   title: string;
   description: string | null;
-  sourceMaterial: string | null;
   status: ProjectStatus;
   createdAt: Date;
   updatedAt: Date;
@@ -18,7 +17,6 @@ export type ProjectRepository = {
     ownerId: string;
     title: string;
     description?: string;
-    sourceMaterial?: string;
   }): Promise<ProjectRecord>;
   findById(projectId: string): Promise<ProjectRecord | null>;
   findByIdForOwner(projectId: string, ownerId: string): Promise<ProjectRecord | null>;
@@ -30,12 +28,6 @@ export type ProjectRepository = {
       description?: string | null;
       title: string;
     }
-  ): Promise<ProjectRecord | null>;
-  updateSourceMaterial(projectId: string, sourceMaterial: string): Promise<ProjectRecord | null>;
-  updateSourceMaterialForOwner(
-    projectId: string,
-    ownerId: string,
-    sourceMaterial: string
   ): Promise<ProjectRecord | null>;
   updateStatus(projectId: string, status: ProjectStatus): Promise<ProjectRecord | null>;
   deleteForOwner(projectId: string, ownerId: string): Promise<ProjectRecord | null>;

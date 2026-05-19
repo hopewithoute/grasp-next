@@ -1,8 +1,8 @@
 import { AUDIT_ACTION, AUDIT_ENTITY_TYPE, PROJECT_STATUS } from '../constants';
 import { deleteProjectDto, type DeleteProjectDto } from './project.dto';
+import { ProjectForbiddenError, ProjectNotFoundError } from './project.errors';
 import { canEditOwnedProject, type Actor } from './project.policy';
 import type { AuditLogRepository, ProjectRecord, ProjectRepository } from './project.types';
-import { ProjectForbiddenError, ProjectNotFoundError } from './submit-source-material.action';
 
 export type DeleteProjectDeps = {
   auditLogRepository: AuditLogRepository;

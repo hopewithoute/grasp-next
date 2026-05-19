@@ -22,3 +22,11 @@ export {
   requestConceptRevisionDto,
   type RequestConceptRevisionInput,
 } from './request-concept-revision.dto';
+export {
+  updateKnowledgebaseConcept,
+  type UpdateKnowledgebaseConceptDeps,
+} from './update-knowledgebase-concept.action';
+export {
+  updateKnowledgebaseConceptDto,
+  type UpdateKnowledgebaseConceptInput,
+} from './update-knowledgebase-concept.dto';

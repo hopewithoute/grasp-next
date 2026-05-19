@@ -1,8 +1,8 @@
 import { AUDIT_ACTION, AUDIT_ENTITY_TYPE } from '../constants';
 import { updateProjectDetailsDto, type UpdateProjectDetailsDto } from './project.dto';
+import { ProjectForbiddenError, ProjectNotFoundError } from './project.errors';
 import { canEditOwnedProject, type Actor } from './project.policy';
 import type { AuditLogRepository, ProjectRecord, ProjectRepository } from './project.types';
-import { ProjectForbiddenError, ProjectNotFoundError } from './submit-source-material.action';
 
 export type UpdateProjectDetailsDeps = {
   auditLogRepository: AuditLogRepository;

@@ -14,6 +14,22 @@ export const PROJECT_STATUSES = [
   PROJECT_STATUS.FAILED,
 ] as const;
 
+export const PROJECT_SOURCE_TYPE = {
+  MARKDOWN: 'markdown',
+  TEXT: 'text',
+  PDF: 'pdf',
+  VIDEO: 'video',
+  WEB: 'web',
+} as const;
+
+export const PROJECT_SOURCE_TYPES = [
+  PROJECT_SOURCE_TYPE.MARKDOWN,
+  PROJECT_SOURCE_TYPE.TEXT,
+  PROJECT_SOURCE_TYPE.PDF,
+  PROJECT_SOURCE_TYPE.VIDEO,
+  PROJECT_SOURCE_TYPE.WEB,
+] as const;
+
 export const ARTIFACT_TYPE = {
   CONCEPT_GRAPH: 'concept_graph',
   LEARNING_OBJECTIVES: 'learning_objectives',
@@ -65,22 +81,36 @@ export const ARTIFACT_REVIEW_RUN_STATUSES = [
 export const EXTRACTION_MODE = {
   LLM_STRICT: 'llm_strict',
   LLM_JSON: 'llm_json',
-  DETERMINISTIC: 'deterministic',
 } as const;
 
 export const EXTRACTION_MODES = [
   EXTRACTION_MODE.LLM_STRICT,
   EXTRACTION_MODE.LLM_JSON,
-  EXTRACTION_MODE.DETERMINISTIC,
 ] as const;
 
-export const CONCEPT_EXTRACTION_WORKFLOW = {
-  ID: 'extract-concepts',
-  REGISTRY_NAME: 'extractConceptsWorkflow',
-  STEP_ID: 'extract-concepts',
-  REVIEW_RESUME_LABEL: 'review_concepts',
-  REVIEW_SUSPEND_REASON: 'review_concepts',
+export const INGESTION_RUN_STATUS = {
+  INGESTING: 'ingesting',
+  COMPLETED: 'completed',
+  FAILED: 'failed',
 } as const;
+
+export const INGESTION_RUN_STATUSES = [
+  INGESTION_RUN_STATUS.INGESTING,
+  INGESTION_RUN_STATUS.COMPLETED,
+  INGESTION_RUN_STATUS.FAILED,
+] as const;
+
+export const KNOWLEDGEBASE_VERSION_STATUS = {
+  GENERATED: 'generated',
+  APPROVED: 'approved',
+  NEEDS_REVISION: 'needs_revision',
+} as const;
+
+export const KNOWLEDGEBASE_VERSION_STATUSES = [
+  KNOWLEDGEBASE_VERSION_STATUS.GENERATED,
+  KNOWLEDGEBASE_VERSION_STATUS.APPROVED,
+  KNOWLEDGEBASE_VERSION_STATUS.NEEDS_REVISION,
+] as const;
 
 export const AUDIT_ENTITY_TYPE = {
   PROJECT: 'project',
@@ -89,17 +119,21 @@ export const AUDIT_ENTITY_TYPE = {
 
 export const AUDIT_ACTION = {
   ARTIFACT_APPROVED: 'artifact.approved',
+  ARTIFACT_KNOWLEDGEBASE_CONCEPT_UPDATED: 'artifact.knowledgebase_concept.updated',
   ARTIFACT_REVISION_REQUESTED: 'artifact.revision_requested',
   PROJECT_CREATED: 'project.created',
-  PROJECT_CONCEPT_EXTRACTION_COMPLETED: 'project.concept_extraction.completed',
-  PROJECT_CONCEPT_EXTRACTION_FAILED: 'project.concept_extraction.failed',
   PROJECT_DELETED: 'project.deleted',
   PROJECT_DETAILS_UPDATED: 'project.details.updated',
-  PROJECT_SOURCE_MATERIAL_SUBMITTED: 'project.source_material.submitted',
+  PROJECT_SOURCE_CREATED: 'project_source.created',
+  PROJECT_SOURCE_DELETED: 'project_source.deleted',
+  PROJECT_SOURCE_UPDATED: 'project_source.updated',
 } as const;
 
 export type ProjectStatus = (typeof PROJECT_STATUSES)[number];
+export type ProjectSourceType = (typeof PROJECT_SOURCE_TYPES)[number];
 export type ArtifactType = (typeof ARTIFACT_TYPES)[number];
 export type ArtifactStatus = (typeof ARTIFACT_STATUSES)[number];
 export type ArtifactReviewRunStatus = (typeof ARTIFACT_REVIEW_RUN_STATUSES)[number];
 export type ExtractionMode = (typeof EXTRACTION_MODES)[number];
+export type IngestionRunStatus = (typeof INGESTION_RUN_STATUSES)[number];
+export type KnowledgebaseVersionStatus = (typeof KNOWLEDGEBASE_VERSION_STATUSES)[number];

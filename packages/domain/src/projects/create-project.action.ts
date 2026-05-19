@@ -18,7 +18,6 @@ export async function createProject(
     ownerId: actorId,
     title: dto.title,
     description: dto.description,
-    sourceMaterial: dto.sourceMaterial,
   });
 
   await deps.auditLogRepository.write({

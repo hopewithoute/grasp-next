@@ -6,6 +6,7 @@ import {
   ArtifactApprovalInvalidStateError,
 } from './approve-artifact.action';
 import { requestConceptRevision } from './request-concept-revision.action';
+import { updateKnowledgebaseConcept } from './update-knowledgebase-concept.action';
 import type {
   ArtifactRecord,
   ArtifactRepository,
@@ -19,6 +20,7 @@ import type {
   ProjectRepository,
   ProjectStatus,
 } from '../projects/project.types';
+import type { KnowledgebaseRepository } from '../knowledgebase';
 
 const actor = { id: 'owner-1' };
 
@@ -143,6 +145,69 @@ describe('requestConceptRevision', () => {
   });
 });
 
+describe('updateKnowledgebaseConcept', () => {
+  let state: TestState;
+
+  beforeEach(() => {
+    state = createTestState();
+    state.version = {
+      ...state.version,
+      content: knowledgebaseArtifactContent(),
+    };
+    state.versions[0] = state.version;
+  });
+
+  it('creates a new artifact version with patched concept content and regenerated projection', async () => {
+    const artifact = await updateKnowledgebaseConcept(
+      {
+        artifactId: state.artifact.id,
+        conceptId: 'atom',
+        definition: 'A corrected definition for atoms.',
+        difficulty: 'intermediate',
+        name: 'Atomic Structure',
+      },
+      createDeps(state),
+      actor
+    );
+
+    assert.equal(artifact.status, 'generated');
+    assert.equal(state.versions.length, 2);
+    assert.equal(state.artifact.currentVersionId, state.versions[1]?.id);
+
+    const content = state.versions[1]?.content as ReturnType<typeof knowledgebaseArtifactContent>;
+    assert.equal(content.knowledgebase.concepts[0]?.name, 'Atomic Structure');
+    assert.equal(content.knowledgebase.concepts[0]?.definition, 'A corrected definition for atoms.');
+    assert.equal(content.knowledgebase.concepts[0]?.difficulty, 'intermediate');
+    assert.equal(content.graphProjection.nodes[0]?.conceptId, 'atom');
+    assert.equal(content.graphProjection.nodes[0]?.label, 'Atomic Structure');
+    assert.deepEqual(state.knowledgebaseWrites[0], {
+      projectId: state.artifact.projectId,
+    });
+    assert.equal(state.auditLogs[0]?.action, 'artifact.knowledgebase_concept.updated');
+  });
+
+  it('rejects approved artifacts', async () => {
+    state.artifact.status = 'approved';
+
+    await assert.rejects(
+      updateKnowledgebaseConcept(
+        {
+          artifactId: state.artifact.id,
+          conceptId: 'atom',
+          definition: 'A corrected definition for atoms.',
+          difficulty: 'intermediate',
+          name: 'Atomic Structure',
+        },
+        createDeps(state),
+        actor
+      ),
+      ArtifactApprovalInvalidStateError
+    );
+
+    assert.equal(state.versions.length, 1);
+  });
+});
+
 type TestState = {
   artifact: ArtifactRecord;
   auditLogs: Array<{
@@ -152,6 +217,9 @@ type TestState = {
     entityType: string;
     metadata?: Record<string, unknown>;
   }>;
+  knowledgebaseWrites: Array<{
+    projectId: string;
+  }>;
   project: ProjectRecord;
   resumeCalls: Array<{
     resumeLabel: string;
@@ -160,6 +228,7 @@ type TestState = {
   }>;
   reviewRun: ArtifactReviewRunRecord;
   version: ArtifactVersionRecord;
+  versions: ArtifactVersionRecord[];
 };
 
 function createTestState(): TestState {
@@ -187,7 +256,6 @@ function createTestState(): TestState {
     description: null,
     id: artifact.projectId,
     ownerId: actor.id,
-    sourceMaterial: 'Atoms form molecules.',
     status: 'reviewing',
     title: 'Chemistry',
     updatedAt: now,
@@ -209,10 +277,12 @@ function createTestState(): TestState {
   return {
     artifact,
     auditLogs: [],
+    knowledgebaseWrites: [],
     project,
     resumeCalls: [],
     reviewRun,
     version,
+    versions: [version],
   };
 }
 
@@ -226,6 +296,7 @@ function createDeps(
     artifactRepository: createArtifactRepository(state),
     artifactReviewRunRepository: createArtifactReviewRunRepository(state),
     auditLogRepository: createAuditLogRepository(state),
+    knowledgebaseRepository: createKnowledgebaseRepository(state),
     projectRepository: createProjectRepository(state),
     reviewWorkflow: {
       async resumeReview(input: {
@@ -243,13 +314,61 @@ function createDeps(
   };
 }
 
+function createKnowledgebaseRepository(state: TestState): KnowledgebaseRepository {
+  return {
+    async findCurrentGraphByProject() {
+      throw new Error('Not needed for this test.');
+    },
+    async searchConceptsForIngestion() {
+      return [];
+    },
+    async getConceptContext() {
+      return null;
+    },
+    async mergeIngestionOutput() {
+      throw new Error('Not needed for this test.');
+    },
+    async upsertSourcePassages() {},
+    async cleanupDeletedSource() {},
+    async replaceVersionFromContent(input) {
+      state.knowledgebaseWrites.push({
+        projectId: input.projectId,
+      });
+
+      return {
+        createdAt: new Date('2026-05-15T00:00:00.000Z'),
+        id: `55555555-5555-4555-8555-${String(state.knowledgebaseWrites.length).padStart(12, '0')}`,
+        knowledgebaseId: '66666666-6666-4666-8666-666666666666',
+        versionNumber: state.knowledgebaseWrites.length,
+      };
+    },
+  };
+}
+
 function createArtifactRepository(state: TestState): ArtifactRepository {
   return {
     async create() {
       throw new Error('Not needed for this test.');
     },
-    async createVersion() {
-      throw new Error('Not needed for this test.');
+    async createVersion(input) {
+      const version: ArtifactVersionRecord = {
+        artifactId: input.artifactId,
+        content: input.content,
+        createdAt: new Date('2026-05-15T00:00:00.000Z'),
+        extractionMode: input.extractionMode ?? 'llm_json',
+        id: `22222222-2222-4222-8222-${String(state.versions.length + 1).padStart(12, '0')}`,
+        revisionFeedback: input.revisionFeedback ?? null,
+        versionNumber: state.versions.length + 1,
+      };
+
+      state.versions.push(version);
+      state.version = version;
+      state.artifact = {
+        ...state.artifact,
+        currentVersionId: version.id,
+      };
+
+      return version;
     },
     async findById(artifactId) {
       return artifactId === state.artifact.id ? state.artifact : null;
@@ -263,7 +382,7 @@ function createArtifactRepository(state: TestState): ArtifactRepository {
       throw new Error('Not needed for this test.');
     },
     async listVersions(artifactId) {
-      return artifactId === state.artifact.id ? [state.version] : [];
+      return artifactId === state.artifact.id ? state.versions : [];
     },
     async updateStatus(artifactId, status) {
       if (artifactId !== state.artifact.id) {
@@ -276,6 +395,57 @@ function createArtifactRepository(state: TestState): ArtifactRepository {
       };
 
       return state.artifact;
+    },
+  };
+}
+
+function knowledgebaseArtifactContent() {
+  const sourceRef = {
+    blockId: 'source-1:block-0001',
+    locationLabel: 'Chemistry source / Block 1',
+    quote: 'Atoms are the basic units of matter.',
+    sourceId: 'source-1',
+  };
+
+  return {
+    graphProjection: {
+      edges: [],
+      nodes: [
+        {
+          conceptId: 'atom',
+          id: 'node:atom',
+          label: 'Atom',
+        },
+      ],
+    },
+    knowledgebase: {
+      concepts: [
+        {
+          confidence: 0.91,
+          definition: 'The basic unit of matter.',
+          difficulty: 'beginner' as const,
+          id: 'atom',
+          name: 'Atom',
+          sourceRefs: [sourceRef],
+        },
+      ],
+      overview: 'Atoms are the basic units of matter.',
+      relationships: [],
+    },
+    normalizedSource: {
+      blocks: [
+        {
+          id: 'source-1:block-0001',
+          kind: 'paragraph' as const,
+          location: { label: 'Chemistry source / Block 1' },
+          order: 0,
+          sourceId: 'source-1',
+          text: 'Atoms are the basic units of matter.',
+        },
+      ],
+      id: 'project-1:source-set:current',
+      sourceType: 'text' as const,
+      title: 'Project sources',
     },
   };
 }
@@ -324,12 +494,6 @@ function createProjectRepository(state: TestState): ProjectRepository {
       return ownerId === state.project.ownerId ? [state.project] : [];
     },
     async updateDetailsForOwner() {
-      throw new Error('Not needed for this test.');
-    },
-    async updateSourceMaterial() {
-      throw new Error('Not needed for this test.');
-    },
-    async updateSourceMaterialForOwner() {
       throw new Error('Not needed for this test.');
     },
     async updateStatus(projectId, status) {

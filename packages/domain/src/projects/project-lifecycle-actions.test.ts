@@ -1,11 +1,10 @@
 import assert from 'node:assert/strict';
 import { beforeEach, describe, it } from 'node:test';
-import { ARTIFACT_TYPE } from '../constants';
-import type { ArtifactRepository } from '../artifacts/artifact.types';
-import type { ConceptRepository } from '../concepts/concept.types';
+import type { IngestionRunRepository, KnowledgebaseRepository } from '../knowledgebase';
+import type { ProjectSourceRepository } from '../project-sources';
 import { deleteProject, ProjectDeleteBlockedError } from './delete-project.action';
 import { loadProjectDetail } from './load-project-detail.action';
-import { ProjectForbiddenError } from './submit-source-material.action';
+import { ProjectForbiddenError } from './project.errors';
 import { updateProjectDetails } from './update-project-details.action';
 import type {
   AuditLogRepository,
@@ -144,13 +143,101 @@ describe('loadProjectDetail', () => {
         projectId: existingProject.id,
       },
       {
-        artifactRepository: createArtifactRepository(),
-        conceptRepository: createConceptRepository(),
         projectRepository: createProjectRepository(state),
+        projectSourceRepository: createProjectSourceRepository(),
       }
     );
 
     assert.equal(detail.project.ownerId, 'owner-1');
+    assert.equal(detail.sources.length, 1);
+    assert.equal(detail.knowledgebaseGraph.source, 'none');
+    assert.equal(detail.knowledgebaseGraph.concepts.length, 0);
+  });
+
+  it('derives graph read data from the current knowledgebase artifact version', async () => {
+    const existingProject = requireProject(state);
+    const detail = await loadProjectDetail(
+      {
+        ownerId: actor.id,
+        projectId: existingProject.id,
+      },
+      {
+        ingestionRunRepository: createIngestionRunRepository(),
+        knowledgebaseRepository: createKnowledgebaseRepository(),
+        projectRepository: createProjectRepository(state),
+        projectSourceRepository: createProjectSourceRepository(),
+      }
+    );
+
+    assert.equal(detail.knowledgebaseGraph.source, 'relational_projection');
+    assert.equal(detail.knowledgebaseGraph.concepts.length, 1);
+    assert.equal(detail.knowledgebaseGraph.concepts[0]?.id, 'relational-market');
+    assert.equal(detail.knowledgebaseGraph.relationships.length, 0);
+  });
+
+  it('prefers the current relational knowledgebase projection over artifact JSONB', async () => {
+    const existingProject = requireProject(state);
+    const detail = await loadProjectDetail(
+      {
+        ownerId: actor.id,
+        projectId: existingProject.id,
+      },
+      {
+        ingestionRunRepository: createIngestionRunRepository(),
+        knowledgebaseRepository: createKnowledgebaseRepository(),
+        projectRepository: createProjectRepository(state),
+        projectSourceRepository: createProjectSourceRepository(),
+      }
+    );
+
+    assert.equal(detail.knowledgebaseGraph.source, 'relational_projection');
+    assert.equal(detail.knowledgebaseGraph.concepts.length, 1);
+    assert.equal(detail.knowledgebaseGraph.concepts[0]?.id, 'relational-market');
+    assert.equal(detail.knowledgebaseGraph.relationships.length, 0);
+  });
+
+  it('does not expose stale graph data when the project has no usable source', async () => {
+    const existingProject = requireProject(state);
+    const detail = await loadProjectDetail(
+      {
+        ownerId: actor.id,
+        projectId: existingProject.id,
+      },
+      {
+        ingestionRunRepository: createIngestionRunRepository(),
+        knowledgebaseRepository: createKnowledgebaseRepository(),
+        projectRepository: createProjectRepository(state),
+        projectSourceRepository: createProjectSourceRepository({ content: '' }),
+      }
+    );
+
+    assert.equal(detail.sources.length, 1);
+    assert.equal(detail.knowledgebaseGraph.source, 'none');
+    assert.equal(detail.knowledgebaseGraph.concepts.length, 0);
+    assert.equal(detail.knowledgebaseGraph.relationships.length, 0);
+  });
+
+  it('does not expose stale graph data when source changed after latest ingestion', async () => {
+    const existingProject = requireProject(state);
+    const detail = await loadProjectDetail(
+      {
+        ownerId: actor.id,
+        projectId: existingProject.id,
+      },
+      {
+        ingestionRunRepository: createIngestionRunRepository({
+          completedAt: new Date('2026-05-15T00:00:00.000Z'),
+        }),
+        knowledgebaseRepository: createKnowledgebaseRepository(),
+        projectRepository: createProjectRepository(state),
+        projectSourceRepository: createProjectSourceRepository({
+          updatedAt: new Date('2026-05-15T00:01:00.000Z'),
+        }),
+      }
+    );
+
+    assert.equal(detail.knowledgebaseGraph.source, 'none');
+    assert.equal(detail.knowledgebaseGraph.concepts.length, 0);
   });
 });
 
@@ -177,7 +264,6 @@ function createTestState(): TestState {
       description: 'Original description',
       id: '33333333-3333-4333-8333-333333333333',
       ownerId: actor.id,
-      sourceMaterial: 'Photosynthesis uses light.',
       status: 'reviewing',
       title: 'Original title',
       updatedAt: now,
@@ -206,45 +292,117 @@ function createAuditLogRepository(state: TestState): AuditLogRepository {
   };
 }
 
-function createArtifactRepository(): ArtifactRepository {
+function createProjectSourceRepository(
+  options: {
+    content?: string | null;
+    updatedAt?: Date;
+  } = {}
+): ProjectSourceRepository {
   return {
-    async create() {
+    async createForProjectOwner() {
       throw new Error('Not needed for this test.');
     },
-    async createVersion() {
+    async deleteForProjectOwner() {
       throw new Error('Not needed for this test.');
     },
-    async findById() {
+    async listByProject(projectId) {
+      return [
+        {
+          content: options.content ?? 'Photosynthesis uses light.',
+          createdAt: new Date('2026-05-15T00:00:00.000Z'),
+          fileRef: null,
+          id: '77777777-7777-4777-8777-777777777777',
+          metadata: null,
+          projectId,
+          title: 'Photosynthesis source',
+          type: 'text',
+          updatedAt: options.updatedAt ?? new Date('2026-05-15T00:00:00.000Z'),
+        },
+      ];
+    },
+    async listByProjectForOwner() {
       throw new Error('Not needed for this test.');
     },
-    async findByProjectAndType(_projectId, type) {
-      assert.equal(type, ARTIFACT_TYPE.CONCEPT_GRAPH);
-
-      return null;
-    },
-    async findOrCreateForProject() {
-      throw new Error('Not needed for this test.');
-    },
-    async listVersions() {
-      throw new Error('Not needed for this test.');
-    },
-    async updateStatus() {
+    async updateForProjectOwner() {
       throw new Error('Not needed for this test.');
     },
   };
 }
 
-function createConceptRepository(): ConceptRepository {
+function createIngestionRunRepository(
+  options: {
+    completedAt?: Date | null;
+    status?: 'completed' | 'failed' | 'ingesting';
+  } = {}
+): IngestionRunRepository {
+  const completedAt = options.completedAt ?? new Date('2026-05-15T00:00:00.000Z');
+  const status = options.status ?? 'completed';
+
   return {
-    async listByProject() {
+    async create() {
+      throw new Error('Not needed for this test.');
+    },
+    async findLatestByProject(projectId) {
       return {
-        concepts: [],
+        completedAt: status === 'completed' ? completedAt : null,
+        createdAt: new Date('2026-05-15T00:00:00.000Z'),
+        failureReason: status === 'failed' ? 'failed' : null,
+        id: '88888888-8888-4888-8888-888888888888',
+        metadata: null,
+        projectId,
+        sourceId: null,
+        startedAt: new Date('2026-05-15T00:00:00.000Z'),
+        status,
+        updatedAt: completedAt ?? new Date('2026-05-15T00:00:00.000Z'),
+      };
+    },
+    async markCompleted() {
+      throw new Error('Not needed for this test.');
+    },
+    async markFailed() {
+      throw new Error('Not needed for this test.');
+    },
+  };
+}
+
+function createKnowledgebaseRepository(): KnowledgebaseRepository {
+  return {
+    async findCurrentGraphByProject() {
+      return {
+        concepts: [
+          {
+            confidence: '0.99',
+            definition: 'A relationally loaded market concept.',
+            difficulty: 'beginner',
+            id: 'relational-market',
+            name: 'Relational Market',
+            sourceEvidence: [
+              {
+                blockId: 'source-1:block-0001',
+                excerpt: 'Markets coordinate supply and demand.',
+                location: 'Market source / Block 1',
+                sourceId: 'source-1',
+              },
+            ],
+          },
+        ],
         relationships: [],
       };
     },
-    async replaceForProject() {
+    async replaceVersionFromContent() {
       throw new Error('Not needed for this test.');
     },
+    async searchConceptsForIngestion() {
+      return [];
+    },
+    async getConceptContext() {
+      return null;
+    },
+    async mergeIngestionOutput() {
+      throw new Error('Not needed for this test.');
+    },
+    async upsertSourcePassages() {},
+    async cleanupDeletedSource() {},
   };
 }
 
@@ -286,12 +444,6 @@ function createProjectRepository(state: TestState): ProjectRepository {
       };
 
       return state.project;
-    },
-    async updateSourceMaterial() {
-      throw new Error('Not needed for this test.');
-    },
-    async updateSourceMaterialForOwner() {
-      throw new Error('Not needed for this test.');
     },
     async updateStatus(projectId, status) {
       if (!state.project || state.project.id !== projectId) {

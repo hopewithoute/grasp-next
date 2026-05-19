@@ -1,10 +1,13 @@
 import { z } from 'zod';
-import { ARTIFACT_TYPE } from '../constants';
-import type { ConceptRepository } from '../concepts/concept.types';
 import type { ConceptDifficultyDto } from '../concepts/concept.dto';
-import type { ArtifactRecord, ArtifactRepository } from '../artifacts/artifact.types';
+import type {
+  IngestionRunRecord,
+  IngestionRunRepository,
+  KnowledgebaseRepository,
+} from '../knowledgebase';
+import type { ProjectSourceRecord, ProjectSourceRepository } from '../project-sources';
 import type { ProjectRecord, ProjectRepository } from './project.types';
-import { ProjectNotFoundError } from './submit-source-material.action';
+import { ProjectNotFoundError } from './project.errors';
 
 export const loadProjectDetailDto = z.object({
   projectId: z.uuid(),
@@ -14,28 +17,41 @@ export const loadProjectDetailDto = z.object({
 export type LoadProjectDetailInput = z.infer<typeof loadProjectDetailDto>;
 
 export type LoadProjectDetailDeps = {
-  artifactRepository: ArtifactRepository;
-  conceptRepository: ConceptRepository;
+  ingestionRunRepository?: IngestionRunRepository;
+  knowledgebaseRepository?: KnowledgebaseRepository;
   projectRepository: ProjectRepository;
+  projectSourceRepository: ProjectSourceRepository;
+};
+
+export type KnowledgebaseGraphConceptReadModel = {
+  id: string;
+  name: string;
+  definition: string;
+  difficulty: ConceptDifficultyDto;
+  confidence: string;
+  sourceEvidence: unknown;
+};
+
+export type KnowledgebaseGraphRelationshipReadModel = {
+  id: string;
+  sourceConceptId: string;
+  targetConceptId: string;
+  relationshipType: string;
+};
+
+export type KnowledgebaseGraphReadModel = {
+  source: 'none' | 'relational_projection';
+  concepts: KnowledgebaseGraphConceptReadModel[];
+  relationships: KnowledgebaseGraphRelationshipReadModel[];
 };
 
 export type LoadProjectDetailResult = {
   project: ProjectRecord;
-  concepts: Array<{
-    id: string;
-    name: string;
-    definition: string;
-    difficulty: ConceptDifficultyDto;
-    confidence: string;
-    sourceEvidence: unknown;
-  }>;
-  relationships: Array<{
-    id: string;
-    sourceConceptId: string;
-    targetConceptId: string;
-    relationshipType: string;
-  }>;
-  conceptGraphArtifact: ArtifactRecord | null;
+  knowledgebaseGraph: KnowledgebaseGraphReadModel;
+  latestIngestionRun: IngestionRunRecord | null;
+  concepts: KnowledgebaseGraphConceptReadModel[];
+  relationships: KnowledgebaseGraphRelationshipReadModel[];
+  sources: ProjectSourceRecord[];
 };
 
 export async function loadProjectDetail(
@@ -50,15 +66,63 @@ export async function loadProjectDetail(
     throw new ProjectNotFoundError();
   }
 
-  const [{ concepts, relationships }, conceptGraphArtifact] = await Promise.all([
-    deps.conceptRepository.listByProject(project.id),
-    deps.artifactRepository.findByProjectAndType(project.id, ARTIFACT_TYPE.CONCEPT_GRAPH),
+  const [latestIngestionRun, sources] = await Promise.all([
+    deps.ingestionRunRepository?.findLatestByProject(project.id) ?? Promise.resolve(null),
+    deps.projectSourceRepository.listByProject(project.id),
   ]);
+  const hasUsableSource = sources.some((source) => source.content?.trim());
+  const graphIsCurrentForSources = hasUsableSource && isIngestionCurrentForSources(
+    latestIngestionRun,
+    sources
+  );
+
+  const relationalReadModel = deps.knowledgebaseRepository
+    ? graphIsCurrentForSources
+      ? await deps.knowledgebaseRepository.findCurrentGraphByProject(project.id)
+      : null
+    : null;
+
+  const conceptReadModel = relationalReadModel
+    ? {
+        ...relationalReadModel,
+        source: 'relational_projection' as const,
+      }
+    : emptyKnowledgebaseReadModel();
 
   return {
     project,
-    concepts,
-    relationships,
-    conceptGraphArtifact,
+    knowledgebaseGraph: conceptReadModel,
+    latestIngestionRun,
+    concepts: conceptReadModel.concepts,
+    relationships: conceptReadModel.relationships,
+    sources,
+  };
+}
+
+function isIngestionCurrentForSources(
+  latestIngestionRun: IngestionRunRecord | null,
+  sources: ProjectSourceRecord[]
+) {
+  if (latestIngestionRun?.status !== 'completed') {
+    return false;
+  }
+
+  const completedAt = latestIngestionRun.completedAt ?? latestIngestionRun.updatedAt;
+  const latestSourceUpdatedAt = sources.reduce<Date | null>((latest, source) => {
+    if (!source.content?.trim()) {
+      return latest;
+    }
+
+    return !latest || source.updatedAt > latest ? source.updatedAt : latest;
+  }, null);
+
+  return latestSourceUpdatedAt ? completedAt >= latestSourceUpdatedAt : false;
+}
+
+function emptyKnowledgebaseReadModel(): KnowledgebaseGraphReadModel {
+  return {
+    concepts: [],
+    relationships: [],
+    source: 'none',
   };
 }
