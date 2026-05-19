@@ -3,13 +3,16 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./ingestion": "./src/ingestion/index.ts",
+    "./model-resolver": "./src/model-resolver.ts"
   },
   "scripts": {
     "build": "tsc --noEmit",
     "studio": "mastra dev",
     "lint": "eslint . --max-warnings=0",
     "mastra:build": "mastra build",
+    "test": "tsx --test src/**/*.test.ts",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
@@ -17,6 +20,7 @@
     "@types/node": "^25.7.0",
     "eslint": "^9.39.1",
     "mastra": "^1.9.1",
+    "tsx": "^4.21.0",
     "typescript": "^5.9.3"
   },
   "dependencies": {

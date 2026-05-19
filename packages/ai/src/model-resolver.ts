@@ -3,7 +3,7 @@ import { createOpenAI } from '@ai-sdk/openai';
 import { aiProviderConfig } from './model-config';
 
 export type AiModelProvider = 'anthropic' | 'openai' | 'openai-compatible';
-export type AgentModelKey = 'conceptExtractor';
+export type AgentModelKey = 'ingestionAgent';
 
 export function canUseAgentModel(agent: AgentModelKey, env: NodeJS.ProcessEnv = process.env) {
   const provider = resolveAgentProvider(agent, env);
@@ -23,13 +23,15 @@ export function resolveAgentModel(agent: AgentModelKey, env: NodeJS.ProcessEnv) 
   const provider = resolveAgentProvider(agent, env);
 
   if (provider === 'openai-compatible') {
+    const modelName = resolveAgentModelName(agent, provider, env);
     const openAICompatible = createOpenAI({
       name: env.OPENAI_COMPATIBLE_PROVIDER_NAME ?? 'openai-compatible',
       baseURL: requireEnv(env.OPENAI_COMPATIBLE_BASE_URL, 'OPENAI_COMPATIBLE_BASE_URL'),
       apiKey: requireEnv(env.OPENAI_COMPATIBLE_API_KEY, 'OPENAI_COMPATIBLE_API_KEY'),
+      fetch: isDeepSeekModel(modelName) ? createDeepSeekReasoningFetch() : undefined,
     });
 
-    return openAICompatible.chat(resolveAgentModelName(agent, provider, env));
+    return openAICompatible.chat(modelName);
   }
 
   if (provider === 'anthropic') {
@@ -117,4 +119,117 @@ function requireEnv(value: string | undefined, key: string) {
   }
 
   return value;
+}
+
+function isDeepSeekModel(modelName: string) {
+  return modelName.toLowerCase().includes('deepseek');
+}
+
+function createDeepSeekReasoningFetch(): typeof fetch {
+  const reasoningByToolCallId = new Map<string, string>();
+
+  return async (input, init) => {
+    const patchedInit = patchDeepSeekReasoningRequest(init, reasoningByToolCallId);
+    const response = await fetch(input, patchedInit);
+
+    if (!isJsonResponse(response)) {
+      return response;
+    }
+
+    const body = await response.clone().json().catch(() => null);
+    if (!body || typeof body !== 'object') {
+      return response;
+    }
+
+    rememberDeepSeekReasoning(body, reasoningByToolCallId);
+
+    return new Response(JSON.stringify(body), {
+      status: response.status,
+      statusText: response.statusText,
+      headers: response.headers,
+    });
+  };
+}
+
+function patchDeepSeekReasoningRequest(
+  init: RequestInit | undefined,
+  reasoningByToolCallId: Map<string, string>
+): RequestInit | undefined {
+  if (!init || typeof init.body !== 'string') {
+    return init;
+  }
+
+  const body = tryParseJson(init.body) as {
+    messages?: Array<{
+      role?: string;
+      reasoning_content?: string;
+      tool_calls?: Array<{ id?: string }>;
+    }>;
+  };
+
+  if (!body || typeof body !== 'object' || !Array.isArray(body.messages)) {
+    return init;
+  }
+
+  let changed = false;
+  for (const message of body.messages) {
+    if (message.role !== 'assistant' || !Array.isArray(message.tool_calls)) {
+      continue;
+    }
+
+    if (message.reasoning_content != null) {
+      continue;
+    }
+
+    const reasoning = message.tool_calls
+      .map((toolCall) => (toolCall.id ? reasoningByToolCallId.get(toolCall.id) : undefined))
+      .find((value): value is string => value != null);
+
+    message.reasoning_content = reasoning ?? '';
+    changed = true;
+  }
+
+  return changed ? { ...init, body: JSON.stringify(body) } : init;
+}
+
+function rememberDeepSeekReasoning(
+  body: unknown,
+  reasoningByToolCallId: Map<string, string>
+) {
+  const choices = (body as { choices?: unknown }).choices;
+  if (!Array.isArray(choices)) {
+    return;
+  }
+
+  for (const choice of choices) {
+    const message = (choice as { message?: unknown }).message;
+    if (!message || typeof message !== 'object') {
+      continue;
+    }
+
+    const reasoning = (message as { reasoning_content?: unknown }).reasoning_content;
+    const toolCalls = (message as { tool_calls?: unknown }).tool_calls;
+    if (typeof reasoning !== 'string' || !Array.isArray(toolCalls)) {
+      continue;
+    }
+
+    for (const toolCall of toolCalls) {
+      const id = (toolCall as { id?: unknown }).id;
+      if (typeof id === 'string') {
+        reasoningByToolCallId.set(id, reasoning);
+      }
+    }
+  }
+}
+
+function isJsonResponse(response: Response) {
+  return response.headers.get('content-type')?.includes('application/json') ?? false;
+}
+
+function tryParseJson(value: string): unknown {
+  try {
+    return JSON.parse(value);
+  } catch {
+    return null;
+  }
 }
