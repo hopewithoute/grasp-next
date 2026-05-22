@@ -1,4 +1,5 @@
 import { revalidatePath } from 'next/cache';
+import { createUIMessageStream, createUIMessageStreamResponse } from 'ai';
 import { getActor } from '@/server/actor';
 import {
   runSourceIngestion,
@@ -36,14 +37,14 @@ export async function POST(request: Request, context: RouteContext) {
     return new Response('sourceId and content are required.', { status: 400 });
   }
 
-  const encoder = new TextEncoder();
-
-  const stream = new ReadableStream<Uint8Array>({
-    async start(controller) {
+  const stream = createUIMessageStream({
+    async execute({ writer }) {
       const send = (event: IngestionStreamEvent) => {
-        controller.enqueue(
-          encoder.encode(`event: ingestion\ndata: ${JSON.stringify(event)}\n\n`)
-        );
+        writer.write({
+          type: 'data-ingestion',
+          data: event,
+          transient: true,
+        });
       };
 
       try {
@@ -65,17 +66,14 @@ export async function POST(request: Request, context: RouteContext) {
           type: 'ingestion_failed',
           reason: error instanceof Error ? error.message : 'Unknown error',
         });
-      } finally {
-        controller.close();
       }
     },
   });
 
-  return new Response(stream, {
+  return createUIMessageStreamResponse({
+    stream,
     headers: {
       'Cache-Control': 'no-cache, no-transform',
-      Connection: 'keep-alive',
-      'Content-Type': 'text/event-stream; charset=utf-8',
     },
   });
 }
