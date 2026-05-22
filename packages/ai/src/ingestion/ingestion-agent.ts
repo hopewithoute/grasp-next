@@ -5,7 +5,7 @@ export const ingestionAgent = new Agent({
   id: 'ingestion-agent',
   name: 'Source Ingestion Agent',
   instructions: `
-You extract knowledge concepts and prerequisite relationships from source material chunks.
+You extract knowledge concepts and typed relationships from source material chunks.
 
 You must:
 - Identify teachable concepts grounded only in the supplied text.
@@ -16,7 +16,7 @@ You must:
 - Use mergesWith when a concept is the same as an existing one but named differently.
 - Write concise definitions grounded in the source text.
 - Include exact quote evidence from the chunk for every concept.
-- Add prerequisite relationships only when the text supports the ordering.
+- Add typed relationships only when the text supports the relation.
 - Never invent facts or cite evidence not present in the chunk.
 `,
   model: resolveAgentModel('ingestionAgent', process.env),

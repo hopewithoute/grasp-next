@@ -1,7 +1,10 @@
 import {
   ingestionAgentOutputDto,
+  knowledgebaseRelationshipTypeDto,
+  type IngestionConceptContext,
   type IngestionAgentOutput,
   type IngestionConcept,
+  type IngestionRelationClaim,
   type IngestionRelationship,
 } from '@grasp/domain';
 import { ingestionAgent } from './ingestion-agent';
@@ -13,21 +16,7 @@ import {
   validateAndAnchorSourceRefs,
   type SourceBlockForValidation,
 } from './validate-source-refs';
-
-function extractThinkingAndJson(text: string): { thinking: string; json: string } {
-  const thinkingMatch = text.match(/<thinking>([\s\S]*?)<\/thinking>/i);
-  const thinking = thinkingMatch?.[1]?.trim() ?? '';
-
-  // JSON is everything after </thinking>, or the whole text if no thinking block
-  let json = thinkingMatch
-    ? text.slice(text.indexOf('</thinking>') + '</thinking>'.length).trim()
-    : text.trim();
-
-  // Strip markdown code fences if present
-  json = json.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
-
-  return { thinking, json };
-}
+import { scoreLinkEvidence } from './linking';
 
 export type ExtractChunkInput = {
   blocks: SourceBlockForValidation[];
@@ -36,12 +25,14 @@ export type ExtractChunkInput = {
   sourceId: string;
   draftConcepts: IngestionConcept[];
   draftRelationships: IngestionRelationship[];
+  retrievedConcepts?: IngestionConceptContext[];
   retrievalTools?: ReturnType<typeof createIngestionRetrievalTools>;
   onThinking?: (thinking: string) => void;
 };
 
 export type ExtractChunkResult = {
   concepts: IngestionConcept[];
+  relationClaims: IngestionRelationClaim[];
   relationships: IngestionRelationship[];
   thinking: string;
   droppedConceptKeys: string[];
@@ -65,6 +56,12 @@ export async function extractChunk(input: ExtractChunkInput): Promise<ExtractChu
       name: c.name,
       definition: c.definition,
     })),
+    retrievedConcepts: input.retrievedConcepts?.map((context) => ({
+      conceptKey: context.concept.conceptKey,
+      definition: context.concept.definition,
+      name: context.concept.name,
+      neighbors: context.neighbors,
+    })),
   });
 
   const MAX_ATTEMPTS = 3;
@@ -78,7 +75,7 @@ export async function extractChunk(input: ExtractChunkInput): Promise<ExtractChu
       if (attempt === 0) {
         effectivePrompt = prompt;
       } else {
-        effectivePrompt = `${prompt}\n\n## CORRECTION REQUIRED (attempt ${attempt + 1}/${MAX_ATTEMPTS})\n\nYour previous response had an error:\n\`\`\`\n${lastError}\n\`\`\`\n\nFix this. Keep <thinking> brief. Ensure your JSON is complete and valid. Do not truncate.`;
+        effectivePrompt = `${prompt}\n\n## CORRECTION REQUIRED (attempt ${attempt + 1}/${MAX_ATTEMPTS})\n\nYour previous response had an error:\n\`\`\`\n${lastError}\n\`\`\`\n\nFix this. Return compact complete JSON only. Use at most 4 concepts and at most 3 typed relationships. Ensure your JSON has all closing brackets/braces. Do not include markdown fences, prose, or separate reasoning text. Do not truncate.`;
       }
 
       const response = input.retrievalTools
@@ -90,14 +87,7 @@ export async function extractChunk(input: ExtractChunkInput): Promise<ExtractChu
           })
         : await ingestionAgent.generate(effectivePrompt);
       const text = getGeneratedText(response);
-      const extracted = extractThinkingAndJson(text);
-
-      if (attempt === 0 && extracted.thinking && input.onThinking) {
-        input.onThinking(extracted.thinking);
-      }
-      thinking = extracted.thinking || thinking;
-
-      const parsed = parseLooseJsonResponse(extracted.json);
+      const parsed = normalizeAgentOutput(parseLooseJsonResponse(text));
       const result = ingestionAgentOutputDto.parse(parsed);
       const validated = validateAgainstBlocks(result, input.blocks);
       return { ...validated, thinking };
@@ -109,6 +99,7 @@ export async function extractChunk(input: ExtractChunkInput): Promise<ExtractChu
 
   return {
     concepts: [],
+    relationClaims: [],
     relationships: [],
     thinking,
     droppedConceptKeys: [],
@@ -116,11 +107,37 @@ export async function extractChunk(input: ExtractChunkInput): Promise<ExtractChu
   };
 }
 
-function validateAgainstBlocks(
+export function normalizeAgentOutput(value: unknown) {
+  if (!value || typeof value !== 'object') {
+    return value;
+  }
+
+  const record = value as Record<string, unknown>;
+
+  if (!Array.isArray(record.relationships)) {
+    return value;
+  }
+
+  return {
+    ...record,
+    relationships: record.relationships.filter((relationship) => {
+      return (
+        relationship &&
+        typeof relationship === 'object' &&
+        knowledgebaseRelationshipTypeDto.safeParse(
+          (relationship as Record<string, unknown>).relationshipType
+        ).success
+      );
+    }),
+  };
+}
+
+export function validateAgainstBlocks(
   agentOutput: IngestionAgentOutput,
   blocks: SourceBlockForValidation[]
 ): {
   concepts: IngestionConcept[];
+  relationClaims: IngestionRelationClaim[];
   relationships: IngestionRelationship[];
   droppedConceptKeys: string[];
   droppedRefCount: number;
@@ -155,21 +172,94 @@ function validateAgainstBlocks(
     }
 
     const validatedRefs = validateAndAnchorSourceRefs(relationship.sourceRefs, blocks);
-    droppedRefCount += relationship.sourceRefs.length - validatedRefs.length;
+    const scoredRefs = validatedRefs.map((ref) => ({
+      evidenceQuality: scoreLinkEvidence({
+        quote: ref.quote,
+        relationshipType: relationship.relationshipType,
+        relationshipTypeConfidence: estimateLocalRelationshipTypeConfidence(relationship),
+        semanticSupportConfidence: estimateLocalRelationshipSupportConfidence(relationship),
+      }),
+      ref,
+    }));
+    const usableRelationshipRefs = scoredRefs.filter(
+      (item) => item.evidenceQuality.finalEvidenceScore >= 0.6
+    );
+    droppedRefCount += relationship.sourceRefs.length - usableRelationshipRefs.length;
+
+    if (usableRelationshipRefs.length === 0) {
+      continue;
+    }
+
+    const bestEvidenceQuality = usableRelationshipRefs
+      .map((item) => item.evidenceQuality)
+      .sort((a, b) => b.finalEvidenceScore - a.finalEvidenceScore)[0];
+
+    validatedRelationships.push({
+      ...relationship,
+      evidenceQuality: bestEvidenceQuality,
+      sourceRefs: usableRelationshipRefs.map((item) => item.ref),
+    });
+  }
+
+  const validatedRelationClaims: IngestionRelationClaim[] = [];
+  for (const claim of agentOutput.relationClaims) {
+    const validatedRefs = validateAndAnchorSourceRefs(claim.sourceRefs, blocks);
+    droppedRefCount += claim.sourceRefs.length - validatedRefs.length;
 
     if (validatedRefs.length === 0) {
       continue;
     }
 
-    validatedRelationships.push({ ...relationship, sourceRefs: validatedRefs });
+    validatedRelationClaims.push({ ...claim, sourceRefs: validatedRefs });
   }
 
   return {
     concepts: validatedConcepts,
+    relationClaims: validatedRelationClaims,
     relationships: validatedRelationships,
     droppedConceptKeys,
     droppedRefCount,
   };
+}
+
+function estimateLocalRelationshipSupportConfidence(relationship: IngestionRelationship) {
+  const rationale = relationship.rationale?.toLowerCase() ?? '';
+
+  if (rationale.includes('explicit') || rationale.includes('states')) {
+    return 0.88;
+  }
+
+  return 0.82;
+}
+
+function estimateLocalRelationshipTypeConfidence(relationship: IngestionRelationship) {
+  const evidenceText = [
+    relationship.rationale ?? '',
+    ...relationship.sourceRefs.map((ref) => ref.quote),
+  ].join('\n');
+
+  if (
+    relationship.relationshipType === 'prerequisite' &&
+    /\b(builds on|requires|depends on|foundational|prerequisite)\b/i.test(evidenceText)
+  ) {
+    return 0.9;
+  }
+
+  if (
+    relationship.relationshipType === 'part_of' &&
+    /\b(part of|component|includes|contains|consists of)\b/i.test(evidenceText)
+  ) {
+    return 0.88;
+  }
+
+  if (
+    relationship.relationshipType === 'explains' &&
+    /\b(explains|because|therefore|causes|leads to)\b/i.test(evidenceText)
+  ) {
+    return 0.88;
+  }
+
+  return relationship.relationshipType === 'related_to' ? 0.78 : 0.72;
 }
 
 /**
@@ -179,7 +269,7 @@ function validateAgainstBlocks(
  */
 export function mergeDraft(
   draft: IngestionAgentOutput,
-  chunkResult: Pick<ExtractChunkResult, 'concepts' | 'relationships'>
+  chunkResult: Pick<ExtractChunkResult, 'concepts' | 'relationClaims' | 'relationships'>
 ): IngestionAgentOutput {
   const conceptsByKey = new Map<string, IngestionConcept>(
     draft.concepts.map((c) => [c.conceptKey, c])
@@ -218,6 +308,7 @@ export function mergeDraft(
 
   return {
     concepts: [...conceptsByKey.values()],
+    relationClaims: [...draft.relationClaims, ...chunkResult.relationClaims],
     relationships: newRelationships,
   };
 }

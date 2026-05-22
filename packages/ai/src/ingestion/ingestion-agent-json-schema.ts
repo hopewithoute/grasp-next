@@ -34,6 +34,36 @@ export const ingestionAgentJsonSchema: JSONSchema7 = {
         additionalProperties: false,
       },
     },
+    relationClaims: {
+      type: 'array',
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['subjectText', 'predicate', 'objectText', 'sourceRefs'],
+        properties: {
+          subjectText: { type: 'string' },
+          predicate: {
+            type: 'string',
+            enum: ['builds_on', 'requires', 'depends_on', 'part_of', 'explains', 'related_to'],
+          },
+          objectText: { type: 'string' },
+          sourceRefs: {
+            type: 'array',
+            minItems: 1,
+            items: {
+              type: 'object',
+              additionalProperties: false,
+              required: ['blockId', 'quote'],
+              properties: {
+                blockId: { type: 'string' },
+                quote: { type: 'string' },
+                locationLabel: { type: 'string' },
+              },
+            },
+          },
+        },
+      },
+    },
     relationships: {
       type: 'array',
       items: {
@@ -41,7 +71,10 @@ export const ingestionAgentJsonSchema: JSONSchema7 = {
         properties: {
           sourceConceptKey: { type: 'string', minLength: 1 },
           targetConceptKey: { type: 'string', minLength: 1 },
-          relationshipType: { type: 'string', const: 'prerequisite' },
+          relationshipType: {
+            type: 'string',
+            enum: ['prerequisite', 'part_of', 'related_to', 'explains'],
+          },
           rationale: { type: 'string' },
           sourceRefs: {
             type: 'array',
@@ -63,6 +96,6 @@ export const ingestionAgentJsonSchema: JSONSchema7 = {
       },
     },
   },
-  required: ['concepts', 'relationships'],
+  required: ['concepts', 'relationClaims', 'relationships'],
   additionalProperties: false,
 };

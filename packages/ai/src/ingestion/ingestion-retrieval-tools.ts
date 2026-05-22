@@ -22,12 +22,13 @@ export function createIngestionRetrievalTools(retrieval: IngestionRetrieval) {
     outputSchema: z.object({
       concepts: z.array(
         z.object({
-          conceptKey: z.string(),
-          confidence: z.number(),
-          definition: z.string(),
-          difficulty: z.string(),
-          evidenceCount: z.number(),
-          name: z.string(),
+                  conceptKey: z.string(),
+                  confidence: z.number(),
+                  definition: z.string(),
+                  distance: z.number().optional(),
+                  difficulty: z.string(),
+                  evidenceCount: z.number(),
+                  name: z.string(),
         })
       ),
     }),
@@ -80,8 +81,32 @@ export function createIngestionRetrievalTools(retrieval: IngestionRetrieval) {
     },
   });
 
+  const getConceptNeighborsTool = createTool({
+    id: 'get-concept-neighbors',
+    description:
+      'Walk one graph hop from an existing concept and return incoming/outgoing neighboring concepts before proposing typed relationships.',
+    inputSchema: z.object({
+      conceptKey: z.string().trim().min(1),
+    }),
+    outputSchema: z.object({
+      neighbors: z.array(
+        z.object({
+          conceptKey: z.string(),
+          direction: z.enum(['incoming', 'outgoing']),
+          name: z.string(),
+          relationshipType: z.string(),
+        })
+      ),
+    }),
+    execute: async ({ conceptKey }) => {
+      const context = await retrieval.getConceptContext(conceptKey);
+      return { neighbors: context?.neighbors ?? [] };
+    },
+  });
+
   return {
     getConceptContextTool,
+    getConceptNeighborsTool,
     searchWikiConceptsTool,
   };
 }

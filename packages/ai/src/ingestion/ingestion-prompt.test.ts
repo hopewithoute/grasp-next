@@ -14,6 +14,9 @@ describe('buildIngestionPrompt', () => {
 
     assert.match(prompt, /search-wiki-concepts/);
     assert.match(prompt, /get-concept-context/);
+    assert.doesNotMatch(prompt, /search-source-passages/);
+    assert.doesNotMatch(prompt, /<thinking>/);
+    assert.doesNotMatch(prompt, /<\/thinking>/);
     assert.doesNotMatch(prompt, /Existing Concepts/);
     assert.doesNotMatch(prompt, /already in knowledgebase/);
   });

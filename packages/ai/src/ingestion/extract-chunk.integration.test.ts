@@ -36,7 +36,7 @@ describeIfLlm('ingestion extraction (real agent)', () => {
     const chunks = chunkNormalizedBlocks(normalized.blocks);
     assert.ok(chunks.length >= 1, `Expected at least 1 chunk, got ${chunks.length}`);
 
-    let draft: IngestionAgentOutput = { concepts: [], relationships: [] };
+    let draft: IngestionAgentOutput = { concepts: [], relationClaims: [], relationships: [] };
 
     for (const chunk of chunks) {
       const result = await extractChunk({
@@ -103,7 +103,7 @@ describeIfLlm('ingestion extraction (real agent)', () => {
     });
     const chunksA = chunkNormalizedBlocks(normalizedA.blocks);
 
-    let draftA: IngestionAgentOutput = { concepts: [], relationships: [] };
+    let draftA: IngestionAgentOutput = { concepts: [], relationClaims: [], relationships: [] };
     for (const chunk of chunksA) {
       const result = await extractChunk({
         blocks: chunk.blocks.map((b) => ({ id: b.id, text: b.text })),
@@ -128,7 +128,7 @@ describeIfLlm('ingestion extraction (real agent)', () => {
     });
     const chunksB = chunkNormalizedBlocks(normalizedB.blocks);
 
-    let draftB: IngestionAgentOutput = { concepts: [], relationships: [] };
+    let draftB: IngestionAgentOutput = { concepts: [], relationClaims: [], relationships: [] };
     for (const chunk of chunksB) {
       const result = await extractChunk({
         blocks: chunk.blocks.map((b) => ({ id: b.id, text: b.text })),
@@ -179,7 +179,11 @@ describeIfLlm('ingestion extraction (real agent)', () => {
 
     // Verify the merged state makes sense
     const finalDraft = mergeDraft(
-      { concepts: draftA.concepts, relationships: draftA.relationships },
+      {
+        concepts: draftA.concepts,
+        relationClaims: draftA.relationClaims,
+        relationships: draftA.relationships,
+      },
       draftB
     );
 
