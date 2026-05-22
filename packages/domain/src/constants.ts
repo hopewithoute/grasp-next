@@ -120,6 +120,10 @@ export const AUDIT_ENTITY_TYPE = {
 export const AUDIT_ACTION = {
   ARTIFACT_APPROVED: 'artifact.approved',
   ARTIFACT_KNOWLEDGEBASE_CONCEPT_UPDATED: 'artifact.knowledgebase_concept.updated',
+  ARTIFACT_KNOWLEDGEBASE_EVIDENCE_UPDATED: 'artifact.knowledgebase_evidence.updated',
+  ARTIFACT_KNOWLEDGEBASE_RELATIONSHIP_EVIDENCE_UPDATED:
+    'artifact.knowledgebase_relationship_evidence.updated',
+  ARTIFACT_KNOWLEDGEBASE_RELATIONSHIP_UPDATED: 'artifact.knowledgebase_relationship.updated',
   ARTIFACT_REVISION_REQUESTED: 'artifact.revision_requested',
   PROJECT_CREATED: 'project.created',
   PROJECT_DELETED: 'project.deleted',

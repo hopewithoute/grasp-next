@@ -30,3 +30,27 @@ export {
   updateKnowledgebaseConceptDto,
   type UpdateKnowledgebaseConceptInput,
 } from './update-knowledgebase-concept.dto';
+export {
+  updateKnowledgebaseConceptEvidence,
+  type UpdateKnowledgebaseConceptEvidenceDeps,
+} from './update-knowledgebase-concept-evidence.action';
+export {
+  updateKnowledgebaseConceptEvidenceDto,
+  type UpdateKnowledgebaseConceptEvidenceInput,
+} from './update-knowledgebase-concept-evidence.dto';
+export {
+  updateKnowledgebaseRelationship,
+  type UpdateKnowledgebaseRelationshipDeps,
+} from './update-knowledgebase-relationship.action';
+export {
+  updateKnowledgebaseRelationshipDto,
+  type UpdateKnowledgebaseRelationshipInput,
+} from './update-knowledgebase-relationship.dto';
+export {
+  updateKnowledgebaseRelationshipEvidence,
+  type UpdateKnowledgebaseRelationshipEvidenceDeps,
+} from './update-knowledgebase-relationship-evidence.action';
+export {
+  updateKnowledgebaseRelationshipEvidenceDto,
+  type UpdateKnowledgebaseRelationshipEvidenceInput,
+} from './update-knowledgebase-relationship-evidence.dto';

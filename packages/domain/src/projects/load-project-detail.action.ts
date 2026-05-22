@@ -34,6 +34,7 @@ export type KnowledgebaseGraphConceptReadModel = {
 
 export type KnowledgebaseGraphRelationshipReadModel = {
   id: string;
+  sourceEvidence?: unknown;
   sourceConceptId: string;
   targetConceptId: string;
   relationshipType: string;

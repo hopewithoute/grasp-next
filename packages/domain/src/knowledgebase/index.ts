@@ -8,12 +8,14 @@ export {
   knowledgebaseDto,
   knowledgebaseGraphProjectionDto,
   knowledgebaseRelationshipDto,
+  knowledgebaseRelationshipTypeDto,
   sourceReferenceDto,
   type KnowledgebaseArtifactContentDto,
   type KnowledgebaseConceptDto,
   type KnowledgebaseDto,
   type KnowledgebaseGraphProjectionDto,
   type KnowledgebaseRelationshipDto,
+  type KnowledgebaseRelationshipTypeDto,
   type SourceReferenceDto,
 } from './knowledgebase.dto';
 export type {

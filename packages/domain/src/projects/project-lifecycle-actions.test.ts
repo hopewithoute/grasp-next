@@ -367,6 +367,13 @@ function createIngestionRunRepository(
 
 function createKnowledgebaseRepository(): KnowledgebaseRepository {
   return {
+    async addConceptEvidence() {},
+    async createSnapshot() { return null; },
+    async addConcept() {},
+    async updateConcept() {},
+    async deleteConcept() {},
+    async addRelationship() {},
+    async deleteRelationship() {},
     async findCurrentGraphByProject() {
       return {
         concepts: [
@@ -394,6 +401,9 @@ function createKnowledgebaseRepository(): KnowledgebaseRepository {
     },
     async searchConceptsForIngestion() {
       return [];
+    },
+    async searchConceptsWithPagination() {
+      return { concepts: [], totalCount: 0 };
     },
     async getConceptContext() {
       return null;

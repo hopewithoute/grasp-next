@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { after, before, describe, it } from 'node:test';
 import { drizzle } from 'drizzle-orm/postgres-js';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import postgres from 'postgres';
 import { knowledgebaseArtifactContentDto } from '@grasp/domain';
 import { createKnowledgebaseRepository } from './knowledgebase-repository';
@@ -16,6 +16,7 @@ import {
   sourcePassages,
   user,
   wikiConcepts,
+  wikiRelationships,
 } from './schema';
 
 const databaseUrl = process.env.DATABASE_URL;
@@ -121,6 +122,247 @@ describeIfDatabase('createKnowledgebaseRepository', () => {
       assert.equal(context?.concept.evidenceCount, 1);
       assert.equal(context?.evidence[0]?.blockId, `${source.id}:block-0001`);
       assert.equal(context?.neighbors.length, 0);
+
+      await db
+        .update(wikiConcepts)
+        .set({ embedding: embeddingVector(0.9, 0.1) })
+        .where(eq(wikiConcepts.conceptKey, 'market'));
+
+      const semanticConcepts = await knowledgebaseRepository.searchConceptsForIngestion({
+        embedding: embeddingVector(0.9, 0.1),
+        projectId: project.id,
+        query: 'exchange venue',
+      });
+
+      assert.equal(semanticConcepts[0]?.conceptKey, 'market');
+      assert.equal(typeof semanticConcepts[0]?.distance, 'number');
+
+      await knowledgebaseRepository.upsertSourcePassages({
+        blocks: [
+          {
+            id: 'evidence-only',
+            kind: 'paragraph',
+            location: { label: 'Evidence only' },
+            order: 1,
+            sourceId: source.id,
+            text: 'Inflation is a sustained rise in the general price level.',
+          },
+        ],
+        projectId: project.id,
+        sourceId: source.id,
+      });
+
+      const [evidenceOnlyPassage] = await db
+        .select({ embedding: sourcePassages.embedding })
+        .from(sourcePassages)
+        .where(eq(sourcePassages.blockId, `${source.id}:evidence-only`));
+
+      assert.equal(evidenceOnlyPassage?.embedding, null);
+    } finally {
+      await db.delete(projects).where(eq(projects.id, project.id));
+    }
+  });
+
+  it('persists relationship evidence quality metadata from ingestion output', async () => {
+    const project = await projectRepository.create({
+      description: 'Relationship metadata test',
+      ownerId,
+      title: 'Relationship metadata',
+    });
+
+    try {
+      const source = await projectSourceRepository.createForProjectOwner(project.id, ownerId, {
+        content: 'Elasticity builds on supply and demand.',
+        title: 'Elasticity source',
+        type: 'text',
+      });
+      assert.ok(source);
+
+      await knowledgebaseRepository.upsertSourcePassages({
+        blocks: [
+          {
+            id: 'block-0001',
+            kind: 'paragraph',
+            location: { label: 'Elasticity source / Block 1' },
+            order: 0,
+            sourceId: source.id,
+            text: 'Elasticity builds on supply and demand.',
+          },
+        ],
+        projectId: project.id,
+        sourceId: source.id,
+      });
+
+      await knowledgebaseRepository.mergeIngestionOutput({
+        output: {
+          concepts: [
+            {
+              conceptKey: 'supply-and-demand',
+              confidence: 0.9,
+              definition: 'Supply and demand describes market coordination.',
+              difficulty: 'beginner',
+              mergesWith: undefined,
+              name: 'Supply and Demand',
+              sourceRefs: [
+                {
+                  blockId: 'block-0001',
+                  locationLabel: 'Elasticity source / Block 1',
+                  quote: 'Elasticity builds on supply and demand.',
+                },
+              ],
+            },
+            {
+              conceptKey: 'elasticity',
+              confidence: 0.9,
+              definition: 'Elasticity measures responsiveness.',
+              difficulty: 'intermediate',
+              mergesWith: undefined,
+              name: 'Elasticity',
+              sourceRefs: [
+                {
+                  blockId: 'block-0001',
+                  locationLabel: 'Elasticity source / Block 1',
+                  quote: 'Elasticity builds on supply and demand.',
+                },
+              ],
+            },
+          ],
+          relationClaims: [],
+          relationships: [
+            {
+              evidenceQuality: {
+                evidenceKind: 'sentence',
+                evidenceReason: 'sentence+prerequisite_language',
+                evidenceStrength: 'strong',
+                finalEvidenceScore: 0.88,
+                grounded: true,
+                groundingReason: 'exact_quote',
+                relationshipTypeConfidence: 0.9,
+                semanticSupportConfidence: 0.88,
+                shapeScore: 0.85,
+              },
+              relationshipType: 'prerequisite',
+              sourceConceptKey: 'supply-and-demand',
+              sourceRefs: [
+                {
+                  blockId: 'block-0001',
+                  locationLabel: 'Elasticity source / Block 1',
+                  quote: 'Elasticity builds on supply and demand.',
+                },
+              ],
+              targetConceptKey: 'elasticity',
+            },
+          ],
+        },
+        projectId: project.id,
+        sourceId: source.id,
+      });
+
+      const graph = await knowledgebaseRepository.findCurrentGraphByProject(project.id);
+      const relationship = graph?.relationships[0];
+      const metadata = relationship?.metadata as
+        | { evidenceQuality?: { finalEvidenceScore?: number } }
+        | undefined;
+
+      assert.equal(relationship?.relationshipType, 'prerequisite');
+      assert.equal(metadata?.evidenceQuality?.finalEvidenceScore, 0.88);
+
+      const [storedRelationship] = await db
+        .select({ metadata: wikiRelationships.metadata })
+        .from(wikiRelationships)
+        .innerJoin(knowledgebases, eq(wikiRelationships.knowledgebaseId, knowledgebases.id))
+        .where(
+          and(
+            eq(knowledgebases.projectId, project.id),
+            eq(wikiRelationships.relationshipKey, 'supply-and-demand:elasticity:prerequisite')
+          )
+        );
+
+      assert.deepEqual(storedRelationship?.metadata, relationship?.metadata);
+    } finally {
+      await db.delete(projects).where(eq(projects.id, project.id));
+    }
+  });
+
+  it('searchConceptsWithPagination returns paginated results', async () => {
+    const project = await projectRepository.create({
+      description: 'Pagination test project',
+      ownerId,
+      title: 'Pagination metadata',
+    });
+
+    try {
+      const source = await projectSourceRepository.createForProjectOwner(project.id, ownerId, {
+        content: 'Test content',
+        title: 'Test source',
+        type: 'text',
+      });
+      assert.ok(source);
+
+      await knowledgebaseRepository.upsertSourcePassages({
+        blocks: [
+          {
+            id: 'block-0001',
+            kind: 'paragraph',
+            location: { label: 'Source / Block 1' },
+            order: 0,
+            sourceId: source.id,
+            text: 'Test content here.',
+          },
+        ],
+        projectId: project.id,
+        sourceId: source.id,
+      });
+
+      await knowledgebaseRepository.mergeIngestionOutput({
+        output: {
+          concepts: [
+            {
+              conceptKey: 'concept-1',
+              confidence: 0.9,
+              definition: 'Definition for concept 1',
+              difficulty: 'beginner',
+              mergesWith: undefined,
+              name: 'Concept One',
+              sourceRefs: [],
+            },
+            {
+              conceptKey: 'concept-2',
+              confidence: 0.8,
+              definition: 'Definition for concept 2',
+              difficulty: 'advanced',
+              mergesWith: undefined,
+              name: 'Concept Two',
+              sourceRefs: [],
+            },
+          ],
+          relationClaims: [],
+          relationships: [],
+        },
+        projectId: project.id,
+        sourceId: source.id,
+      });
+
+      const result = await knowledgebaseRepository.searchConceptsWithPagination({
+        projectId: project.id,
+        limit: 1,
+        offset: 0,
+      });
+
+      assert.equal(result.totalCount, 2);
+      assert.equal(result.concepts.length, 1);
+      assert.equal(result.concepts[0]?.name, 'Concept One');
+
+      const resultWithQuery = await knowledgebaseRepository.searchConceptsWithPagination({
+        projectId: project.id,
+        query: 'Two',
+        limit: 10,
+        offset: 0,
+      });
+
+      assert.equal(resultWithQuery.totalCount, 1);
+      assert.equal(resultWithQuery.concepts[0]?.name, 'Concept Two');
+
     } finally {
       await db.delete(projects).where(eq(projects.id, project.id));
     }
@@ -181,4 +423,12 @@ function normalizedSource(sourceId: string) {
     sourceType: 'text',
     title: 'Project sources',
   };
+}
+
+function embeddingVector(first: number, second: number) {
+  return Array.from({ length: 1536 }, (_, index) => {
+    if (index === 0) return first;
+    if (index === 1) return second;
+    return 0;
+  });
 }

@@ -7,6 +7,9 @@ import {
 } from './approve-artifact.action';
 import { requestConceptRevision } from './request-concept-revision.action';
 import { updateKnowledgebaseConcept } from './update-knowledgebase-concept.action';
+import { updateKnowledgebaseConceptEvidence } from './update-knowledgebase-concept-evidence.action';
+import { updateKnowledgebaseRelationship } from './update-knowledgebase-relationship.action';
+import { updateKnowledgebaseRelationshipEvidence } from './update-knowledgebase-relationship-evidence.action';
 import type {
   ArtifactRecord,
   ArtifactRepository,
@@ -20,7 +23,7 @@ import type {
   ProjectRepository,
   ProjectStatus,
 } from '../projects/project.types';
-import type { KnowledgebaseRepository } from '../knowledgebase';
+import type { KnowledgebaseArtifactContentDto, KnowledgebaseRepository } from '../knowledgebase';
 
 const actor = { id: 'owner-1' };
 
@@ -174,7 +177,7 @@ describe('updateKnowledgebaseConcept', () => {
     assert.equal(state.versions.length, 2);
     assert.equal(state.artifact.currentVersionId, state.versions[1]?.id);
 
-    const content = state.versions[1]?.content as ReturnType<typeof knowledgebaseArtifactContent>;
+    const content = state.versions[1]?.content as KnowledgebaseArtifactContentDto;
     assert.equal(content.knowledgebase.concepts[0]?.name, 'Atomic Structure');
     assert.equal(content.knowledgebase.concepts[0]?.definition, 'A corrected definition for atoms.');
     assert.equal(content.knowledgebase.concepts[0]?.difficulty, 'intermediate');
@@ -197,6 +200,303 @@ describe('updateKnowledgebaseConcept', () => {
           definition: 'A corrected definition for atoms.',
           difficulty: 'intermediate',
           name: 'Atomic Structure',
+        },
+        createDeps(state),
+        actor
+      ),
+      ArtifactApprovalInvalidStateError
+    );
+
+    assert.equal(state.versions.length, 1);
+  });
+});
+
+describe('updateKnowledgebaseRelationship', () => {
+  let state: TestState;
+
+  beforeEach(() => {
+    state = createTestState();
+    state.version = {
+      ...state.version,
+      content: knowledgebaseArtifactContent(),
+    };
+    state.versions[0] = state.version;
+  });
+
+  it('creates a new artifact version with patched relationship endpoints and regenerated projection', async () => {
+    const artifact = await updateKnowledgebaseRelationship(
+      {
+        artifactId: state.artifact.id,
+        relationshipId: 'rel-atom-molecule',
+        relationshipType: 'prerequisite',
+        sourceConceptId: 'molecule',
+        targetConceptId: 'atom',
+      },
+      createDeps(state),
+      actor
+    );
+
+    assert.equal(artifact.status, 'generated');
+    assert.equal(state.versions.length, 2);
+    assert.equal(state.artifact.currentVersionId, state.versions[1]?.id);
+
+    const content = state.versions[1]?.content as KnowledgebaseArtifactContentDto;
+    assert.equal(content.knowledgebase.relationships[0]?.sourceConceptId, 'molecule');
+    assert.equal(content.knowledgebase.relationships[0]?.targetConceptId, 'atom');
+    assert.equal(content.graphProjection.edges[0]?.sourceNodeId, 'node:molecule');
+    assert.equal(content.graphProjection.edges[0]?.targetNodeId, 'node:atom');
+    assert.deepEqual(state.knowledgebaseWrites[0], {
+      projectId: state.artifact.projectId,
+    });
+    assert.equal(state.auditLogs[0]?.action, 'artifact.knowledgebase_relationship.updated');
+  });
+
+  it('rejects self-referential relationship patches', async () => {
+    await assert.rejects(
+      updateKnowledgebaseRelationship(
+        {
+          artifactId: state.artifact.id,
+          relationshipId: 'rel-atom-molecule',
+          relationshipType: 'prerequisite',
+          sourceConceptId: 'atom',
+          targetConceptId: 'atom',
+        },
+        createDeps(state),
+        actor
+      ),
+      ArtifactApprovalInvalidStateError
+    );
+
+    assert.equal(state.versions.length, 1);
+  });
+});
+
+describe('updateKnowledgebaseConceptEvidence', () => {
+  let state: TestState;
+
+  beforeEach(() => {
+    state = createTestState();
+    state.version = {
+      ...state.version,
+      content: knowledgebaseArtifactContent(),
+    };
+    state.versions[0] = state.version;
+  });
+
+  it('creates a new artifact version with patched evidence when quote is grounded in the source block', async () => {
+    const artifact = await updateKnowledgebaseConceptEvidence(
+      {
+        artifactId: state.artifact.id,
+        blockId: 'source-1:block-0001',
+        conceptId: 'atom',
+        locationLabel: 'Chemistry source / Block 1',
+        originalBlockId: 'source-1:block-0001',
+        originalQuote: 'Atoms are the basic units of matter.',
+        originalSourceId: 'source-1',
+        quote: 'basic units of matter',
+        sourceId: 'source-1',
+      },
+      createDeps(state),
+      actor
+    );
+
+    assert.equal(artifact.status, 'generated');
+    assert.equal(state.versions.length, 2);
+
+    const content = state.versions[1]?.content as KnowledgebaseArtifactContentDto;
+    assert.equal(content.knowledgebase.concepts[0]?.sourceRefs[0]?.quote, 'basic units of matter');
+    assert.equal(
+      content.knowledgebase.concepts[0]?.sourceRefs[0]?.blockId,
+      'source-1:block-0001'
+    );
+    assert.deepEqual(state.knowledgebaseWrites[0], {
+      projectId: state.artifact.projectId,
+    });
+    assert.equal(state.auditLogs[0]?.action, 'artifact.knowledgebase_evidence.updated');
+  });
+
+  it('patches concept evidence by original source ref identity instead of rendered index', async () => {
+    const content = knowledgebaseArtifactContent();
+    content.normalizedSource.blocks.push({
+      id: 'source-1:block-0002',
+      kind: 'paragraph' as const,
+      location: { label: 'Chemistry source / Block 2' },
+      order: 1,
+      sourceId: 'source-1',
+      text: 'Atoms can join into molecules.',
+    });
+    content.knowledgebase.concepts[0]!.sourceRefs = [
+      {
+        blockId: 'source-1:block-0001',
+        locationLabel: 'Chemistry source / Block 1',
+        quote: 'Atoms are the basic units of matter.',
+        sourceId: 'source-1',
+      },
+      {
+        blockId: 'source-1:block-0002',
+        locationLabel: 'Chemistry source / Block 2',
+        quote: 'Atoms can join into molecules.',
+        sourceId: 'source-1',
+      },
+    ];
+    state.version = { ...state.version, content };
+    state.versions[0] = state.version;
+
+    await updateKnowledgebaseConceptEvidence(
+      {
+        artifactId: state.artifact.id,
+        blockId: 'source-1:block-0002',
+        conceptId: 'atom',
+        locationLabel: 'Chemistry source / Block 2',
+        originalBlockId: 'source-1:block-0002',
+        originalQuote: 'Atoms can join into molecules.',
+        originalSourceId: 'source-1',
+        quote: 'join into molecules',
+        sourceId: 'source-1',
+      },
+      createDeps(state),
+      actor
+    );
+
+    const nextContent = state.versions[1]?.content as KnowledgebaseArtifactContentDto;
+    assert.equal(
+      nextContent.knowledgebase.concepts[0]?.sourceRefs[0]?.quote,
+      'Atoms are the basic units of matter.'
+    );
+    assert.equal(nextContent.knowledgebase.concepts[0]?.sourceRefs[1]?.quote, 'join into molecules');
+  });
+
+  it('rejects evidence quotes that are not exact source block substrings', async () => {
+    await assert.rejects(
+      updateKnowledgebaseConceptEvidence(
+        {
+          artifactId: state.artifact.id,
+          blockId: 'source-1:block-0001',
+          conceptId: 'atom',
+          locationLabel: 'Chemistry source / Block 1',
+          originalBlockId: 'source-1:block-0001',
+          originalQuote: 'Atoms are the basic units of matter.',
+          originalSourceId: 'source-1',
+          quote: 'not actually in the block',
+          sourceId: 'source-1',
+        },
+        createDeps(state),
+        actor
+      ),
+      ArtifactApprovalInvalidStateError
+    );
+
+    assert.equal(state.versions.length, 1);
+  });
+});
+
+describe('updateKnowledgebaseRelationshipEvidence', () => {
+  let state: TestState;
+
+  beforeEach(() => {
+    state = createTestState();
+    state.version = {
+      ...state.version,
+      content: knowledgebaseArtifactContent(),
+    };
+    state.versions[0] = state.version;
+  });
+
+  it('creates a new artifact version with patched relationship evidence when quote is grounded', async () => {
+    const artifact = await updateKnowledgebaseRelationshipEvidence(
+      {
+        artifactId: state.artifact.id,
+        blockId: 'source-1:block-0001',
+        locationLabel: 'Chemistry source / Block 1',
+        originalBlockId: 'source-1:block-0001',
+        originalQuote: 'Atoms are the basic units of matter.',
+        originalSourceId: 'source-1',
+        quote: 'Atoms are the basic units',
+        relationshipId: 'rel-atom-molecule',
+        sourceId: 'source-1',
+      },
+      createDeps(state),
+      actor
+    );
+
+    assert.equal(artifact.status, 'generated');
+    assert.equal(state.versions.length, 2);
+
+    const content = state.versions[1]?.content as KnowledgebaseArtifactContentDto;
+    assert.equal(
+      content.knowledgebase.relationships[0]?.sourceRefs[0]?.quote,
+      'Atoms are the basic units'
+    );
+    assert.equal(state.auditLogs[0]?.action, 'artifact.knowledgebase_relationship_evidence.updated');
+  });
+
+  it('patches relationship evidence by original source ref identity instead of rendered index', async () => {
+    const content = knowledgebaseArtifactContent();
+    content.normalizedSource.blocks.push({
+      id: 'source-1:block-0002',
+      kind: 'paragraph' as const,
+      location: { label: 'Chemistry source / Block 2' },
+      order: 1,
+      sourceId: 'source-1',
+      text: 'Atoms combine before molecules emerge.',
+    });
+    content.knowledgebase.relationships[0]!.sourceRefs = [
+      {
+        blockId: 'source-1:block-0001',
+        locationLabel: 'Chemistry source / Block 1',
+        quote: 'Atoms are the basic units of matter.',
+        sourceId: 'source-1',
+      },
+      {
+        blockId: 'source-1:block-0002',
+        locationLabel: 'Chemistry source / Block 2',
+        quote: 'Atoms combine before molecules emerge.',
+        sourceId: 'source-1',
+      },
+    ];
+    state.version = { ...state.version, content };
+    state.versions[0] = state.version;
+
+    await updateKnowledgebaseRelationshipEvidence(
+      {
+        artifactId: state.artifact.id,
+        blockId: 'source-1:block-0002',
+        locationLabel: 'Chemistry source / Block 2',
+        originalBlockId: 'source-1:block-0002',
+        originalQuote: 'Atoms combine before molecules emerge.',
+        originalSourceId: 'source-1',
+        quote: 'combine before molecules',
+        relationshipId: 'rel-atom-molecule',
+        sourceId: 'source-1',
+      },
+      createDeps(state),
+      actor
+    );
+
+    const nextContent = state.versions[1]?.content as KnowledgebaseArtifactContentDto;
+    assert.equal(
+      nextContent.knowledgebase.relationships[0]?.sourceRefs[0]?.quote,
+      'Atoms are the basic units of matter.'
+    );
+    assert.equal(
+      nextContent.knowledgebase.relationships[0]?.sourceRefs[1]?.quote,
+      'combine before molecules'
+    );
+  });
+
+  it('rejects relationship evidence quotes that are not exact source block substrings', async () => {
+    await assert.rejects(
+      updateKnowledgebaseRelationshipEvidence(
+        {
+          artifactId: state.artifact.id,
+          blockId: 'source-1:block-0001',
+          locationLabel: 'Chemistry source / Block 1',
+          originalBlockId: 'source-1:block-0001',
+          originalQuote: 'Atoms are the basic units of matter.',
+          originalSourceId: 'source-1',
+          quote: 'not actually in the block',
+          relationshipId: 'rel-atom-molecule',
+          sourceId: 'source-1',
         },
         createDeps(state),
         actor
@@ -316,11 +616,21 @@ function createDeps(
 
 function createKnowledgebaseRepository(state: TestState): KnowledgebaseRepository {
   return {
+    async addConceptEvidence() {},
+    async createSnapshot() { return null; },
+    async addConcept() {},
+    async updateConcept() {},
+    async deleteConcept() {},
+    async addRelationship() {},
+    async deleteRelationship() {},
     async findCurrentGraphByProject() {
       throw new Error('Not needed for this test.');
     },
     async searchConceptsForIngestion() {
       return [];
+    },
+    async searchConceptsWithPagination() {
+      return { concepts: [], totalCount: 0 };
     },
     async getConceptContext() {
       return null;
@@ -428,9 +738,25 @@ function knowledgebaseArtifactContent() {
           name: 'Atom',
           sourceRefs: [sourceRef],
         },
+        {
+          confidence: 0.86,
+          definition: 'A group of atoms bonded together.',
+          difficulty: 'beginner' as const,
+          id: 'molecule',
+          name: 'Molecule',
+          sourceRefs: [sourceRef],
+        },
       ],
       overview: 'Atoms are the basic units of matter.',
-      relationships: [],
+      relationships: [
+        {
+          id: 'rel-atom-molecule',
+          relationshipType: 'prerequisite' as const,
+          sourceConceptId: 'atom',
+          sourceRefs: [sourceRef],
+          targetConceptId: 'molecule',
+        },
+      ],
     },
     normalizedSource: {
       blocks: [

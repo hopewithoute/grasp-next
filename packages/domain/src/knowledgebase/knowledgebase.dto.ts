@@ -9,6 +9,13 @@ export const sourceReferenceDto = z.object({
   sourceId: z.string().trim().min(1),
 });
 
+export const knowledgebaseRelationshipTypeDto = z.enum([
+  'prerequisite',
+  'part_of',
+  'related_to',
+  'explains',
+]);
+
 export const knowledgebaseConceptDto = z.object({
   confidence: z.number().min(0).max(1),
   definition: z.string().trim().min(1),
@@ -21,7 +28,7 @@ export const knowledgebaseConceptDto = z.object({
 export const knowledgebaseRelationshipDto = z.object({
   id: z.string().trim().min(1),
   rationale: z.string().trim().min(1).optional(),
-  relationshipType: z.literal('prerequisite'),
+  relationshipType: knowledgebaseRelationshipTypeDto,
   sourceConceptId: z.string().trim().min(1),
   sourceRefs: z.array(sourceReferenceDto).min(1),
   targetConceptId: z.string().trim().min(1),
@@ -38,7 +45,7 @@ export const knowledgebaseGraphProjectionDto = z.object({
     z.object({
       id: z.string().trim().min(1),
       relationshipId: z.string().trim().min(1),
-      relationshipType: z.literal('prerequisite'),
+      relationshipType: knowledgebaseRelationshipTypeDto,
       sourceNodeId: z.string().trim().min(1),
       targetNodeId: z.string().trim().min(1),
     })
@@ -63,4 +70,5 @@ export type KnowledgebaseConceptDto = z.infer<typeof knowledgebaseConceptDto>;
 export type KnowledgebaseDto = z.infer<typeof knowledgebaseDto>;
 export type KnowledgebaseGraphProjectionDto = z.infer<typeof knowledgebaseGraphProjectionDto>;
 export type KnowledgebaseRelationshipDto = z.infer<typeof knowledgebaseRelationshipDto>;
+export type KnowledgebaseRelationshipTypeDto = z.infer<typeof knowledgebaseRelationshipTypeDto>;
 export type SourceReferenceDto = z.infer<typeof sourceReferenceDto>;

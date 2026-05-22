@@ -53,7 +53,9 @@ export type KnowledgebaseGraphConceptRecord = {
 
 export type KnowledgebaseGraphRelationshipRecord = {
   id: string;
+  metadata: unknown;
   sourceConceptId: string;
+  sourceEvidence: unknown;
   targetConceptId: string;
   relationshipType: string;
 };
@@ -72,6 +74,7 @@ export type ExistingConceptSummary = {
 };
 
 export type IngestionConceptSearchResult = ExistingConceptSummary & {
+  distance?: number;
   evidenceCount: number;
 };
 
@@ -94,10 +97,30 @@ export type IngestionConceptContext = {
   evidence: IngestionConceptEvidence[];
   neighbors: IngestionConceptNeighbor[];
 };
+export type ConceptSearchPaginationInput = {
+  projectId: string;
+  query?: string;
+  difficulty?: string;
+  limit: number;
+  offset: number;
+};
+
+export type ConceptSearchPaginationResult = {
+  concepts: {
+    id: string;
+    name: string;
+    definition: string;
+    difficulty: 'advanced' | 'beginner' | 'intermediate';
+    confidence: string;
+    sourceEvidence: unknown;
+  }[];
+  totalCount: number;
+};
 
 export type KnowledgebaseRepository = {
   findCurrentGraphByProject(projectId: string): Promise<KnowledgebaseGraphProjectionRecord | null>;
   searchConceptsForIngestion(input: {
+    embedding?: number[];
     limit?: number;
     projectId: string;
     query: string;
@@ -107,6 +130,7 @@ export type KnowledgebaseRepository = {
     projectId: string;
   }): Promise<IngestionConceptContext | null>;
   mergeIngestionOutput(input: {
+    conceptEmbeddingsByKey?: Record<string, number[]>;
     output: IngestionAgentOutput;
     projectId: string;
     sourceId: string;
@@ -124,4 +148,56 @@ export type KnowledgebaseRepository = {
     content: KnowledgebaseArtifactContentDto;
     projectId: string;
   }): Promise<KnowledgebaseVersionRecord>;
+  searchConceptsWithPagination(input: ConceptSearchPaginationInput): Promise<ConceptSearchPaginationResult>;
+  
+  addConcept(input: {
+    projectId: string;
+    conceptKey: string;
+    name: string;
+    definition: string;
+    difficulty: string;
+    confidence: number;
+    metadata?: unknown;
+  }): Promise<void>;
+  updateConcept(input: {
+    projectId: string;
+    conceptKey: string;
+    name?: string;
+    definition?: string;
+    difficulty?: string;
+    confidence?: number;
+    metadata?: unknown;
+  }): Promise<void>;
+  deleteConcept(input: {
+    projectId: string;
+    conceptKey: string;
+  }): Promise<void>;
+  addRelationship(input: {
+    projectId: string;
+    relationshipKey: string;
+    sourceConceptKey: string;
+    targetConceptKey: string;
+    relationshipType: string;
+    rationale?: string;
+    metadata?: unknown;
+  }): Promise<void>;
+  deleteRelationship(input: {
+    projectId: string;
+    relationshipKey: string;
+  }): Promise<void>;
+  
+  addConceptEvidence(input: {
+    projectId: string;
+    conceptKey: string;
+    sourceType: 'web' | 'text';
+    url?: string;
+    title: string;
+    quote: string;
+    locationLabel: string;
+  }): Promise<void>;
+
+  createSnapshot(input: {
+    projectId: string;
+    trigger: string;
+  }): Promise<KnowledgebaseVersionRecord | null>;
 };

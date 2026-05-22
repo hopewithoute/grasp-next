@@ -1,10 +1,11 @@
-import { and, asc, eq, ilike, max, or, sql } from 'drizzle-orm';
+import { and, asc, eq, exists, ilike, max, or, sql } from 'drizzle-orm';
 import type { KnowledgebaseArtifactContentDto, KnowledgebaseRepository } from '@grasp/domain';
 import { KNOWLEDGEBASE_VERSION_STATUS } from '@grasp/domain';
 import type { DbClient } from './client';
 import {
   knowledgebases,
   knowledgebaseVersions,
+  projectSources,
   sourcePassages,
   wikiConcepts,
   wikiConceptSourceRefs,
@@ -45,6 +46,10 @@ export function createKnowledgebaseRepository(db: DbClient): KnowledgebaseReposi
       }
 
       const evidenceByConceptId = await getConceptEvidence(db, conceptRows.map((concept) => concept.id));
+      const evidenceByRelationshipId = await getRelationshipEvidence(
+        db,
+        relationshipRows.map((relationship) => relationship.id)
+      );
       const conceptKeyByRowId = new Map(
         conceptRows.map((concept) => [concept.id, concept.conceptKey])
       );
@@ -60,9 +65,11 @@ export function createKnowledgebaseRepository(db: DbClient): KnowledgebaseReposi
         })),
         relationships: relationshipRows.map((relationship) => ({
           id: relationship.relationshipKey,
+          metadata: relationship.metadata,
           relationshipType: relationship.relationshipType,
           sourceConceptId:
             conceptKeyByRowId.get(relationship.sourceConceptId) ?? relationship.sourceConceptId,
+          sourceEvidence: evidenceByRelationshipId.get(relationship.id) ?? [],
           targetConceptId:
             conceptKeyByRowId.get(relationship.targetConceptId) ?? relationship.targetConceptId,
         })),
@@ -86,11 +93,16 @@ export function createKnowledgebaseRepository(db: DbClient): KnowledgebaseReposi
       }
 
       const pattern = `%${query}%`;
+      const distance = input.embedding
+        ? sql<number>`${wikiConcepts.embedding} <=> ${vectorLiteral(input.embedding)}::vector`
+        : sql<number | null>`null`;
+
       const rows = await db
         .select({
           conceptKey: wikiConcepts.conceptKey,
           confidence: wikiConcepts.confidence,
           definition: wikiConcepts.definition,
+          distance,
           difficulty: wikiConcepts.difficulty,
           evidenceCount: sql<number>`count(${wikiConceptSourceRefs.id})::int`,
           name: wikiConcepts.name,
@@ -103,7 +115,8 @@ export function createKnowledgebaseRepository(db: DbClient): KnowledgebaseReposi
             or(
               ilike(wikiConcepts.conceptKey, pattern),
               ilike(wikiConcepts.name, pattern),
-              ilike(wikiConcepts.definition, pattern)
+              ilike(wikiConcepts.definition, pattern),
+              input.embedding ? sql`${wikiConcepts.embedding} is not null` : sql`false`
             )
           )
         )
@@ -115,10 +128,13 @@ export function createKnowledgebaseRepository(db: DbClient): KnowledgebaseReposi
           wikiConcepts.difficulty,
           wikiConcepts.name
         )
-        .orderBy(asc(wikiConcepts.createdAt))
+        .orderBy(input.embedding ? distance : asc(wikiConcepts.createdAt))
         .limit(input.limit ?? 10);
 
-      return rows;
+      return rows.map((row) => ({
+        ...row,
+        distance: row.distance == null ? undefined : Number(row.distance),
+      }));
     },
 
     async getConceptContext(input) {
@@ -252,8 +268,14 @@ export function createKnowledgebaseRepository(db: DbClient): KnowledgebaseReposi
           }
         }
 
-        // Resolve concept IDs (upsert concepts)
-        const conceptIdByKey = new Map<string, string>();
+        // Resolve concept IDs (existing + newly upserted concepts)
+        const existingConcepts = await tx
+          .select({ conceptKey: wikiConcepts.conceptKey, id: wikiConcepts.id })
+          .from(wikiConcepts)
+          .where(eq(wikiConcepts.knowledgebaseId, knowledgebase.id));
+        const conceptIdByKey = new Map(
+          existingConcepts.map((concept) => [concept.conceptKey, concept.id])
+        );
 
         for (const concept of input.output.concepts) {
           const effectiveKey = concept.mergesWith ?? concept.conceptKey;
@@ -265,6 +287,7 @@ export function createKnowledgebaseRepository(db: DbClient): KnowledgebaseReposi
               confidence: concept.confidence,
               definition: concept.definition,
               difficulty: concept.difficulty,
+              embedding: input.conceptEmbeddingsByKey?.[effectiveKey] ?? null,
               knowledgebaseId: knowledgebase.id,
               metadata: null,
               name: concept.name,
@@ -274,6 +297,7 @@ export function createKnowledgebaseRepository(db: DbClient): KnowledgebaseReposi
                 confidence: concept.confidence,
                 definition: concept.definition,
                 difficulty: concept.difficulty,
+                embedding: input.conceptEmbeddingsByKey?.[effectiveKey] ?? null,
                 name: concept.name,
                 updatedAt: new Date(),
               },
@@ -319,7 +343,7 @@ export function createKnowledgebaseRepository(db: DbClient): KnowledgebaseReposi
             .insert(wikiRelationships)
             .values({
               knowledgebaseId: knowledgebase.id,
-              metadata: null,
+              metadata: relationshipMetadata(rel),
               rationale: rel.rationale ?? null,
               relationshipKey,
               relationshipType: rel.relationshipType,
@@ -328,6 +352,7 @@ export function createKnowledgebaseRepository(db: DbClient): KnowledgebaseReposi
             })
             .onConflictDoUpdate({
               set: {
+                metadata: relationshipMetadata(rel),
                 rationale: rel.rationale ?? null,
                 updatedAt: new Date(),
               },
@@ -481,9 +506,11 @@ export function createKnowledgebaseRepository(db: DbClient): KnowledgebaseReposi
             projectId: input.projectId,
             sourceId: input.sourceId,
             text: block.text,
+            embedding: null,
           })
           .onConflictDoUpdate({
             set: {
+              embedding: null,
               kind: block.kind,
               location: block.location,
               metadata: block.metadata ?? null,
@@ -494,6 +521,84 @@ export function createKnowledgebaseRepository(db: DbClient): KnowledgebaseReposi
             target: [sourcePassages.sourceId, sourcePassages.blockId],
           });
       }
+    },
+
+    async searchConceptsWithPagination(input) {
+      const { projectId, query, difficulty, limit, offset } = input;
+
+      const [knowledgebase] = await db
+        .select()
+        .from(knowledgebases)
+        .where(eq(knowledgebases.projectId, projectId))
+        .limit(1);
+
+      if (!knowledgebase) {
+        return { concepts: [], totalCount: 0 };
+      }
+
+      const filterConditions = [eq(wikiConcepts.knowledgebaseId, knowledgebase.id)];
+
+      if (difficulty && difficulty !== 'all') {
+        filterConditions.push(eq(wikiConcepts.difficulty, difficulty));
+      }
+
+      if (query && query.trim() !== '') {
+        const searchPattern = `%${query.trim()}%`;
+        const searchOr = or(
+          ilike(wikiConcepts.name, searchPattern),
+          ilike(wikiConcepts.definition, searchPattern),
+          exists(
+            db
+              .select({ id: wikiConceptSourceRefs.id })
+              .from(wikiConceptSourceRefs)
+              .where(
+                and(
+                  eq(wikiConceptSourceRefs.conceptId, wikiConcepts.id),
+                  ilike(wikiConceptSourceRefs.quote, searchPattern)
+                )
+              )
+          )
+        );
+        if (searchOr) {
+          filterConditions.push(searchOr);
+        }
+      }
+
+      const combinedWhere = and(...filterConditions);
+
+      const [{ count }] = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(wikiConcepts)
+        .where(combinedWhere);
+
+      const conceptRows = await db
+        .select()
+        .from(wikiConcepts)
+        .where(combinedWhere)
+        .orderBy(asc(wikiConcepts.name))
+        .limit(limit)
+        .offset(offset);
+
+      if (!conceptRows.length) {
+        return { concepts: [], totalCount: Number(count) };
+      }
+
+      const evidenceByConceptId = await getConceptEvidence(
+        db,
+        conceptRows.map((c) => c.id)
+      );
+
+      return {
+        concepts: conceptRows.map((concept) => ({
+          confidence: concept.confidence.toFixed(2),
+          definition: concept.definition,
+          difficulty: toConceptDifficulty(concept.difficulty),
+          id: concept.conceptKey,
+          name: concept.name,
+          sourceEvidence: evidenceByConceptId.get(concept.id) ?? [],
+        })),
+        totalCount: Number(count),
+      };
     },
 
     async replaceVersionFromContent(input) {
@@ -537,6 +642,292 @@ export function createKnowledgebaseRepository(db: DbClient): KnowledgebaseReposi
         };
       });
     },
+
+    async addConcept(input) {
+      const [knowledgebase] = await db
+        .select()
+        .from(knowledgebases)
+        .where(eq(knowledgebases.projectId, input.projectId))
+        .limit(1);
+
+      if (!knowledgebase) {
+        throw new Error(`Knowledgebase not found for project ${input.projectId}`);
+      }
+
+      await db.insert(wikiConcepts).values({
+        knowledgebaseId: knowledgebase.id,
+        conceptKey: input.conceptKey,
+        name: input.name,
+        definition: input.definition,
+        difficulty: input.difficulty,
+        confidence: input.confidence,
+        metadata: input.metadata,
+      });
+    },
+
+    async updateConcept(input) {
+      const [knowledgebase] = await db
+        .select()
+        .from(knowledgebases)
+        .where(eq(knowledgebases.projectId, input.projectId))
+        .limit(1);
+
+      if (!knowledgebase) {
+        throw new Error(`Knowledgebase not found for project ${input.projectId}`);
+      }
+
+      const updates: Partial<typeof wikiConcepts.$inferInsert> = {};
+      if (input.name !== undefined) updates.name = input.name;
+      if (input.definition !== undefined) updates.definition = input.definition;
+      if (input.difficulty !== undefined) updates.difficulty = input.difficulty;
+      if (input.confidence !== undefined) updates.confidence = input.confidence;
+      if (input.metadata !== undefined) updates.metadata = input.metadata;
+      
+      updates.updatedAt = new Date();
+
+      await db
+        .update(wikiConcepts)
+        .set(updates)
+        .where(
+          and(
+            eq(wikiConcepts.knowledgebaseId, knowledgebase.id),
+            eq(wikiConcepts.conceptKey, input.conceptKey)
+          )
+        );
+    },
+
+    async deleteConcept(input) {
+      const [knowledgebase] = await db
+        .select()
+        .from(knowledgebases)
+        .where(eq(knowledgebases.projectId, input.projectId))
+        .limit(1);
+
+      if (!knowledgebase) return;
+
+      await db
+        .delete(wikiConcepts)
+        .where(
+          and(
+            eq(wikiConcepts.knowledgebaseId, knowledgebase.id),
+            eq(wikiConcepts.conceptKey, input.conceptKey)
+          )
+        );
+    },
+
+    async addRelationship(input) {
+      const [knowledgebase] = await db
+        .select()
+        .from(knowledgebases)
+        .where(eq(knowledgebases.projectId, input.projectId))
+        .limit(1);
+
+      if (!knowledgebase) {
+        throw new Error(`Knowledgebase not found for project ${input.projectId}`);
+      }
+
+      const [sourceConcept] = await db
+        .select()
+        .from(wikiConcepts)
+        .where(
+          and(
+            eq(wikiConcepts.knowledgebaseId, knowledgebase.id),
+            eq(wikiConcepts.conceptKey, input.sourceConceptKey)
+          )
+        )
+        .limit(1);
+
+      const [targetConcept] = await db
+        .select()
+        .from(wikiConcepts)
+        .where(
+          and(
+            eq(wikiConcepts.knowledgebaseId, knowledgebase.id),
+            eq(wikiConcepts.conceptKey, input.targetConceptKey)
+          )
+        )
+        .limit(1);
+
+      if (!sourceConcept || !targetConcept) {
+        throw new Error(`Source or target concept not found for relationship`);
+      }
+
+      await db.insert(wikiRelationships).values({
+        knowledgebaseId: knowledgebase.id,
+        relationshipKey: input.relationshipKey,
+        sourceConceptId: sourceConcept.id,
+        targetConceptId: targetConcept.id,
+        relationshipType: input.relationshipType,
+        rationale: input.rationale,
+        metadata: input.metadata,
+      });
+    },
+
+    async deleteRelationship(input) {
+      const [knowledgebase] = await db
+        .select()
+        .from(knowledgebases)
+        .where(eq(knowledgebases.projectId, input.projectId))
+        .limit(1);
+
+      if (!knowledgebase) return;
+
+      await db
+        .delete(wikiRelationships)
+        .where(
+          and(
+            eq(wikiRelationships.knowledgebaseId, knowledgebase.id),
+            eq(wikiRelationships.relationshipKey, input.relationshipKey)
+          )
+        );
+    },
+
+    async addConceptEvidence(input) {
+      return db.transaction(async (tx) => {
+        const [knowledgebase] = await tx
+          .select()
+          .from(knowledgebases)
+          .where(eq(knowledgebases.projectId, input.projectId))
+          .limit(1);
+
+        if (!knowledgebase) {
+          throw new Error(`Knowledgebase not found for project ${input.projectId}`);
+        }
+
+        const [concept] = await tx
+          .select()
+          .from(wikiConcepts)
+          .where(
+            and(
+              eq(wikiConcepts.knowledgebaseId, knowledgebase.id),
+              eq(wikiConcepts.conceptKey, input.conceptKey)
+            )
+          )
+          .limit(1);
+
+        if (!concept) {
+          throw new Error(`Concept ${input.conceptKey} not found`);
+        }
+
+        const sourceTitle = input.sourceType === 'text' 
+            ? 'User Chat Correction' 
+            : input.title;
+        
+        const fileRef = input.url ?? null;
+        
+        let [source] = await tx
+          .select()
+          .from(projectSources)
+          .where(
+            and(
+              eq(projectSources.projectId, input.projectId),
+              fileRef ? eq(projectSources.fileRef, fileRef) : eq(projectSources.title, sourceTitle)
+            )
+          )
+          .limit(1);
+
+        if (!source) {
+          const type = input.sourceType === 'web' ? 'web' : 'text';
+          const [newSource] = await tx
+            .insert(projectSources)
+            .values({
+              projectId: input.projectId,
+              type,
+              title: sourceTitle,
+              content: input.sourceType === 'text' ? input.quote : null,
+              fileRef,
+            })
+            .returning();
+          source = newSource;
+        }
+
+        const blockId = `virtual-${Date.now()}`;
+        const [passage] = await tx
+          .insert(sourcePassages)
+          .values({
+            projectId: input.projectId,
+            sourceId: source.id,
+            blockId,
+            kind: 'paragraph',
+            text: input.quote,
+            location: { label: input.locationLabel },
+            order: 0,
+          })
+          .returning();
+
+        await tx.insert(wikiConceptSourceRefs).values({
+          conceptId: concept.id,
+          sourcePassageId: passage.id,
+          quote: input.quote,
+          locationLabel: input.locationLabel,
+        });
+      });
+    },
+
+    async createSnapshot(input) {
+      return db.transaction(async (tx) => {
+        const [knowledgebase] = await tx
+          .select()
+          .from(knowledgebases)
+          .where(eq(knowledgebases.projectId, input.projectId))
+          .limit(1);
+
+        if (!knowledgebase) return null;
+
+        const allConcepts = await tx
+          .select()
+          .from(wikiConcepts)
+          .where(eq(wikiConcepts.knowledgebaseId, knowledgebase.id));
+        
+        const allRelationships = await tx
+          .select()
+          .from(wikiRelationships)
+          .where(eq(wikiRelationships.knowledgebaseId, knowledgebase.id));
+
+        const snapshot = {
+          concepts: allConcepts.map((c) => ({
+            conceptKey: c.conceptKey,
+            confidence: c.confidence,
+            definition: c.definition,
+            difficulty: c.difficulty,
+            name: c.name,
+          })),
+          relationships: allRelationships.map((r) => ({
+            rationale: r.rationale,
+            relationshipKey: r.relationshipKey,
+            relationshipType: r.relationshipType,
+          })),
+          trigger: { event: input.trigger },
+        };
+
+        const [{ nextVersionNumber }] = await tx
+          .select({ nextVersionNumber: max(knowledgebaseVersions.versionNumber) })
+          .from(knowledgebaseVersions)
+          .where(eq(knowledgebaseVersions.knowledgebaseId, knowledgebase.id));
+
+        const [version] = await tx
+          .insert(knowledgebaseVersions)
+          .values({
+            knowledgebaseId: knowledgebase.id,
+            snapshot,
+            status: KNOWLEDGEBASE_VERSION_STATUS.GENERATED,
+            versionNumber: (nextVersionNumber ?? 0) + 1,
+          })
+          .returning();
+
+        await tx
+          .update(knowledgebases)
+          .set({ currentVersionId: version.id, updatedAt: new Date() })
+          .where(eq(knowledgebases.id, knowledgebase.id));
+
+        return {
+          createdAt: version.createdAt,
+          id: version.id,
+          knowledgebaseId: version.knowledgebaseId,
+          versionNumber: version.versionNumber,
+        };
+      });
+    },
   };
 }
 
@@ -561,12 +952,41 @@ async function getConceptEvidence(db: DbClient, conceptIds: string[]) {
   return evidenceByConceptId;
 }
 
+async function getRelationshipEvidence(db: DbClient, relationshipIds: string[]) {
+  const evidenceByRelationshipId = new Map<string, unknown[]>();
+
+  for (const relationshipId of relationshipIds) {
+    const rows = await db
+      .select({
+        blockId: sourcePassages.blockId,
+        excerpt: wikiRelationshipSourceRefs.quote,
+        location: wikiRelationshipSourceRefs.locationLabel,
+        sourceId: sourcePassages.sourceId,
+      })
+      .from(wikiRelationshipSourceRefs)
+      .innerJoin(sourcePassages, eq(wikiRelationshipSourceRefs.sourcePassageId, sourcePassages.id))
+      .where(eq(wikiRelationshipSourceRefs.relationshipId, relationshipId));
+
+    evidenceByRelationshipId.set(relationshipId, rows);
+  }
+
+  return evidenceByRelationshipId;
+}
+
 function toConceptDifficulty(value: string) {
   if (value === 'beginner' || value === 'intermediate' || value === 'advanced') {
     return value;
   }
 
   return 'beginner';
+}
+
+function relationshipMetadata(relationship: { evidenceQuality?: unknown }) {
+  return relationship.evidenceQuality
+    ? {
+        evidenceQuality: relationship.evidenceQuality,
+      }
+    : null;
 }
 
 async function findOrCreateKnowledgebase(
@@ -618,9 +1038,11 @@ async function upsertSourcePassages(
         projectId,
         sourceId: block.sourceId,
         text: block.text,
+        embedding: null,
       })
       .onConflictDoUpdate({
         set: {
+          embedding: null,
           kind: block.kind,
           location: block.location,
           metadata: block.metadata ?? null,
@@ -631,6 +1053,10 @@ async function upsertSourcePassages(
         target: [sourcePassages.sourceId, sourcePassages.blockId],
       });
   }
+}
+
+function vectorLiteral(embedding: number[]) {
+  return `[${embedding.join(',')}]`;
 }
 
 async function insertWikiProjection(

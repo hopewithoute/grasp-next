@@ -19,3 +19,4 @@ export {
 } from './project-source-repository';
 export { createProjectRepository, type ProjectRepository } from './project-repository';
 export * from './schema';
+export { eq } from 'drizzle-orm';
