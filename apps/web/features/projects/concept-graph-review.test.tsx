@@ -16,7 +16,14 @@ const concepts: ConceptRow[] = [
     difficulty: 'beginner',
     id: 'c1',
     name: 'Force',
-    sourceEvidence: [{ excerpt: 'Force changes motion.', location: 'excerpt 1' }],
+    sourceEvidence: [
+      {
+        blockId: 'source-1:block-0001',
+        excerpt: 'Force changes motion.',
+        location: 'excerpt 1',
+        sourceId: 'source-1',
+      },
+    ],
   },
   {
     confidence: '0.81',
@@ -28,6 +35,8 @@ const concepts: ConceptRow[] = [
       {
         excerpt: 'Acceleration is the rate of change of velocity.',
         location: 'excerpt 2',
+        blockId: 'source-1:block-0002',
+        sourceId: 'source-1',
       },
     ],
   },
@@ -37,6 +46,14 @@ const relationships: RelationshipRow[] = [
   {
     id: 'r1',
     relationshipType: 'prerequisite',
+    sourceEvidence: [
+      {
+        blockId: 'source-1:block-0002',
+        excerpt: 'Acceleration is the rate of change of velocity.',
+        location: 'excerpt 2',
+        sourceId: 'source-1',
+      },
+    ],
     sourceConceptId: 'c1',
     targetConceptId: 'c2',
   },
@@ -64,7 +81,7 @@ describe('concept graph review', () => {
     assert.match(markup, /beginner/);
   });
 
-  it('renders the selected concept detail panel with prerequisite links', () => {
+  it('renders the selected concept detail panel with relationship links', () => {
     const conceptNameById = new Map(concepts.map((concept) => [concept.id, concept.name]));
     const markup = renderToStaticMarkup(
       <ConceptDetailPanel
@@ -76,7 +93,8 @@ describe('concept graph review', () => {
 
     assert.match(markup, /Acceleration/);
     assert.match(markup, /rate of change of velocity/);
+    assert.match(markup, /block-0002/);
     assert.match(markup, /Force/);
-    assert.match(markup, /before this/);
+    assert.match(markup, /prerequisite/);
   });
 });

@@ -26,6 +26,7 @@ import {
   type NodeProps,
 } from '@xyflow/react';
 import { cva } from 'class-variance-authority';
+
 import {
   ArrowRight,
   Bot,
@@ -36,6 +37,7 @@ import {
   Expand,
   FileText,
   GitBranch,
+  Info,
   ListFilter,
   MessageSquareText,
   Minus,
@@ -52,10 +54,24 @@ import {
   useMemo,
   useRef,
   useState,
+  useTransition,
+  useCallback,
+  type ReactNode,
 } from 'react';
+import { useTheme } from 'next-themes';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
+import { consumeUIMessageChunks } from '@/lib/ui-message-stream';
 import { cn } from '@/lib/utils';
-import { updateKnowledgebaseConceptFormAction } from './actions';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import {
+  updateKnowledgebaseConceptFormAction,
+  updateKnowledgebaseEvidenceFormAction,
+  updateKnowledgebaseRelationshipEvidenceFormAction,
+  updateKnowledgebaseRelationshipFormAction,
+  searchKnowledgebaseConceptsAction,
+} from './actions';
 import { artifactStatusVariant } from './project-style-variants';
 import {
   buildConceptGraph,
@@ -63,6 +79,7 @@ import {
   type ConceptRow,
   type RelationshipRow,
 } from './concept-graph-view';
+import { IngestionActivityPanel } from './ingestion-activity-panel';
 
 // ───────────────────────────────────────────────────────────────────────────
 // Public API
@@ -103,10 +120,11 @@ type WorkspaceEvent =
       type: 'relationship_proposed';
       source: string;
       target: string;
-      relationshipType: 'prerequisite';
+      relationshipType: string;
     }
   | { type: 'evidence_attached'; concept: string; excerpt: string; location?: string }
-  | { type: 'ingestion_complete'; conceptCount: number; relationshipCount: number };
+  | { type: 'ingestion_complete'; conceptCount: number; relationshipCount: number }
+  | { type: 'agent_activity'; label: string; detail: string; status?: 'started' | 'completed' };
 
 type StreamEvent = Exclude<WorkspaceEvent, { type: 'assistant_message' }>;
 
@@ -135,9 +153,23 @@ type ConceptNodeData = {
 // Editor shell
 // ───────────────────────────────────────────────────────────────────────────
 
+function useDebounce<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+  return debouncedValue;
+}
+
 function ConceptGraphEditor({
   artifact,
   concepts,
+  projectId,
   relationships,
   sources,
 }: ConceptGraphWorkspaceProps) {
@@ -147,10 +179,53 @@ function ConceptGraphEditor({
   const [pendingSelectedId, setPendingSelectedId] = useState<string | null>(
     concepts[0]?.id ?? null,
   );
+  const [chatContextConceptIds, setChatContextConceptIds] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearchQuery = useDebounce(searchQuery, 400);
   const [difficultyFilter, setDifficultyFilter] = useState<DifficultyFilter>('all');
-  const [isInventoryCollapsed, setIsInventoryCollapsed] = useState(false);
+  const [isInventoryCollapsed, setIsInventoryCollapsed] = useState(true);
   const [isRefinementCollapsed, setIsRefinementCollapsed] = useState(false);
+  
+  const initialConcepts = concepts;
+  const [serverConcepts, setServerConcepts] = useState<ConceptRow[]>(initialConcepts);
+  const [hasMore, setHasMore] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+
+  const fetchConcepts = useCallback(async (query: string, difficulty: DifficultyFilter, offset: number, replace = false) => {
+    setIsLoadingMore(true);
+    try {
+      const result = await searchKnowledgebaseConceptsAction({
+        projectId,
+        query,
+        difficulty: difficulty === 'all' ? undefined : difficulty,
+        offset,
+        limit: 5,
+      });
+      
+      setServerConcepts(prev => {
+        if (replace) return result.concepts;
+        
+        const existingIds = new Set(prev.map(c => c.id));
+        const newConcepts = result.concepts.filter(c => !existingIds.has(c.id));
+        return [...prev, ...newConcepts];
+      });
+      setHasMore(result.concepts.length === 5);
+    } catch (error) {
+      console.error('Failed to fetch concepts', error);
+    } finally {
+      setIsLoadingMore(false);
+    }
+  }, [projectId]);
+
+  useEffect(() => {
+    fetchConcepts(debouncedSearchQuery, difficultyFilter, 0, true);
+  }, [debouncedSearchQuery, difficultyFilter, fetchConcepts]);
+
+  const loadMoreConcepts = useCallback(() => {
+    if (!hasMore || isLoadingMore) return;
+    fetchConcepts(debouncedSearchQuery, difficultyFilter, serverConcepts.length, false);
+  }, [hasMore, isLoadingMore, fetchConcepts, debouncedSearchQuery, difficultyFilter, serverConcepts.length]);
+
   const items = useMemo<ChatItem[]>(
     () => [
       {
@@ -174,19 +249,21 @@ function ConceptGraphEditor({
   }, [concepts, pendingSelectedId]);
   const setSelectedConceptId = setPendingSelectedId;
 
-  const filteredConcepts = useMemo(() => {
-    const query = searchQuery.trim().toLowerCase();
-    return concepts.filter((concept) => {
-      if (difficultyFilter !== 'all' && concept.difficulty !== difficultyFilter) {
-        return false;
-      }
-      if (!query) return true;
-      return (
-        concept.name.toLowerCase().includes(query) ||
-        concept.definition.toLowerCase().includes(query)
+  const handleSelectConcept = useCallback((id: string, isContextAction?: boolean) => {
+    if (isContextAction) {
+      setChatContextConceptIds((prev) => 
+        prev.includes(id) ? prev.filter((cId) => cId !== id) : [...prev, id]
       );
-    });
-  }, [concepts, difficultyFilter, searchQuery]);
+    } else {
+      setPendingSelectedId(id);
+    }
+  }, []);
+
+  const chatContextConcepts = useMemo(() => 
+    concepts.filter(c => chatContextConceptIds.includes(c.id)),
+  [concepts, chatContextConceptIds]);
+
+  const filteredConcepts = serverConcepts;
 
   const conceptNameById = useMemo(
     () => new Map(concepts.map((concept) => [concept.id, concept.name])),
@@ -210,8 +287,10 @@ function ConceptGraphEditor({
   const sourceReady = sources.some((source) => source.content?.trim());
   const sourceWords = useMemo(() => {
     const trimmed = sources
-      .map((source) => source.content?.trim() ?? '')
-      .filter(Boolean)
+      .flatMap((source) => {
+        const val = source.content?.trim();
+        return val ? [val] : [];
+      })
       .join('\n');
     return trimmed ? trimmed.split(/\s+/).length : 0;
   }, [sources]);
@@ -222,13 +301,13 @@ function ConceptGraphEditor({
     <section
       aria-label="Concept graph editor"
       className={cn(
-        'grid min-h-[720px] w-full grid-cols-1 overflow-hidden rounded-[1.75rem] border border-white/10 bg-[#0d1824]/60 shadow-[0_24px_80px_rgba(0,0,0,0.28)] lg:h-[min(calc(100dvh-320px),920px)] lg:min-h-0',
+        'grid min-h-[720px] w-full grid-cols-1 overflow-hidden rounded-[1.75rem] border border-border bg-card/50 shadow-2xl shadow-foreground/5 lg:h-[min(calc(100dvh-320px),920px)] lg:min-h-0',
         !isInventoryCollapsed &&
           !isRefinementCollapsed &&
-          'lg:grid-cols-[20rem_minmax(0,1fr)_22rem] xl:grid-cols-[22rem_minmax(0,1fr)_24rem]',
+          'lg:grid-cols-[20rem_minmax(0,1fr)_28rem] xl:grid-cols-[22rem_minmax(0,1fr)_30rem]',
         isInventoryCollapsed &&
           !isRefinementCollapsed &&
-          'lg:grid-cols-[4rem_minmax(0,1fr)_22rem] xl:grid-cols-[4rem_minmax(0,1fr)_24rem]',
+          'lg:grid-cols-[4rem_minmax(0,1fr)_28rem] xl:grid-cols-[4rem_minmax(0,1fr)_30rem]',
         !isInventoryCollapsed &&
           isRefinementCollapsed &&
           'lg:grid-cols-[20rem_minmax(0,1fr)_4rem] xl:grid-cols-[22rem_minmax(0,1fr)_4rem]',
@@ -242,10 +321,13 @@ function ConceptGraphEditor({
         concepts={concepts}
         difficultyFilter={difficultyFilter}
         filteredConcepts={filteredConcepts}
+        hasMore={hasMore}
+        isLoadingMore={isLoadingMore}
         onCollapseToggle={() => setIsInventoryCollapsed((current) => !current)}
         onDifficultyFilterChange={setDifficultyFilter}
+        onLoadMore={loadMoreConcepts}
         onSearchQueryChange={setSearchQuery}
-        onSelectConcept={setSelectedConceptId}
+        onSelectConcept={handleSelectConcept}
         relationshipsCount={relationships.length}
         searchQuery={searchQuery}
         selectedConceptId={selectedConceptId}
@@ -255,7 +337,7 @@ function ConceptGraphEditor({
         artifact={artifact}
         concepts={concepts}
         isRunning={isRunning}
-        onSelectConcept={setSelectedConceptId}
+        onSelectConcept={handleSelectConcept}
         proposalCount={proposalCount}
         relationships={relationships}
         selectedConcept={selectedConcept}
@@ -266,6 +348,9 @@ function ConceptGraphEditor({
         collapsed={isRefinementCollapsed}
         items={items}
         onCollapseToggle={() => setIsRefinementCollapsed((current) => !current)}
+        projectId={projectId}
+        chatContextConcepts={chatContextConcepts}
+        onRemoveChatContext={(id) => setChatContextConceptIds(prev => prev.filter(c => c !== id))}
         sourceReady={sourceReady}
         sourceWords={sourceWords}
       />
@@ -291,8 +376,11 @@ function ConceptListPane({
   concepts,
   difficultyFilter,
   filteredConcepts,
+  hasMore,
+  isLoadingMore,
   onCollapseToggle,
   onDifficultyFilterChange,
+  onLoadMore,
   onSearchQueryChange,
   onSelectConcept,
   relationshipsCount,
@@ -303,8 +391,11 @@ function ConceptListPane({
   concepts: ConceptRow[];
   difficultyFilter: DifficultyFilter;
   filteredConcepts: ConceptRow[];
+  hasMore?: boolean;
+  isLoadingMore?: boolean;
   onCollapseToggle: () => void;
   onDifficultyFilterChange: (value: DifficultyFilter) => void;
+  onLoadMore?: () => void;
   onSearchQueryChange: (value: string) => void;
   onSelectConcept: (id: string) => void;
   relationshipsCount: number;
@@ -312,6 +403,31 @@ function ConceptListPane({
   selectedConceptId: string | null;
 }) {
   const searchInputId = useId();
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!hasMore || isLoadingMore || !onLoadMore) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          onLoadMore();
+        }
+      },
+      { root: null, rootMargin: '100px', threshold: 0.1 }
+    );
+
+    const currentRef = loadMoreRef.current;
+    if (currentRef) {
+      observer.observe(currentRef);
+    }
+
+    return () => {
+      if (currentRef) {
+        observer.unobserve(currentRef);
+      }
+    };
+  }, [hasMore, isLoadingMore, onLoadMore]);
 
   if (collapsed) {
     return (
@@ -329,12 +445,12 @@ function ConceptListPane({
   return (
     <aside
       aria-label="Concepts"
-      className="flex min-h-[520px] flex-col border-b border-white/8 bg-[#0a131c] lg:min-h-0 lg:border-b-0 lg:border-r"
+      className="flex min-h-[520px] flex-col border-b border-border bg-card lg:min-h-0 lg:border-b-0 lg:border-r"
     >
       <PaneHeader
         eyebrow="Concepts"
         meta={
-          <span className="font-mono tabular-nums text-[#f3efe3]/52">
+          <span className="font-mono tabular-nums text-muted-foreground">
             {String(filteredConcepts.length).padStart(2, '0')} / {String(concepts.length).padStart(2, '0')}
           </span>
         }
@@ -347,10 +463,10 @@ function ConceptListPane({
         <label className="sr-only" htmlFor={searchInputId}>
           Search concepts
         </label>
-        <div className="flex h-9 items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-3 transition-colors focus-within:border-[#53d1cb]/50 focus-within:bg-white/[0.05]">
-          <Search className="size-3.5 shrink-0 text-[#f3efe3]/52" strokeWidth={1.5} />
+        <div className="flex h-9 items-center gap-2 rounded-full border border-border bg-card/50 px-3 transition-colors focus-within:border-brand-accent-border focus-within:bg-card/50">
+          <Search className="size-3.5 shrink-0 text-muted-foreground" strokeWidth={1.5} />
           <input
-            className="flex-1 border-0 bg-transparent text-sm leading-5 text-[#f3efe3] outline-none placeholder:text-[#f3efe3]/36"
+            className="flex-1 border-0 bg-transparent text-sm leading-5 text-foreground outline-none placeholder:text-muted-foreground"
             id={searchInputId}
             onChange={(event) => onSearchQueryChange(event.target.value)}
             placeholder="Search concept or definition"
@@ -366,8 +482,8 @@ function ConceptListPane({
               className={cn(
                 'inline-flex h-7 items-center gap-1.5 rounded-full border px-2.5 text-[0.7rem] font-medium tracking-wide transition-colors',
                 difficultyFilter === value
-                  ? 'border-[#53d1cb]/40 bg-[#53d1cb]/10 text-[#f3efe3]'
-                  : 'border-white/10 bg-white/[0.025] text-[#f3efe3]/62 hover:border-white/20 hover:text-[#f3efe3]',
+                  ? 'border-brand-accent-border bg-brand-accent-surface text-foreground'
+                  : 'border-border bg-card/50 text-muted-foreground hover:border-border hover:text-foreground',
               )}
               key={value}
               onClick={() => onDifficultyFilterChange(value)}
@@ -376,7 +492,7 @@ function ConceptListPane({
               {value === 'all' ? (
                 <ListFilter className="size-3" strokeWidth={1.5} />
               ) : (
-                <span aria-hidden className="size-1.5 rounded-full bg-[#53d1cb]" />
+                <span aria-hidden className="size-1.5 rounded-full bg-brand-accent" />
               )}
               {DIFFICULTY_FILTER_LABEL[value]}
             </button>
@@ -388,25 +504,40 @@ function ConceptListPane({
         {filteredConcepts.length === 0 ? (
           <ConceptListEmpty hasConcepts={concepts.length > 0} />
         ) : (
-          <ol className="divide-y divide-white/8 border-y border-white/8">
-            {filteredConcepts.map((concept, index) => (
-              <li key={concept.id}>
-                <ConceptListItem
-                  active={concept.id === selectedConceptId}
-                  concept={concept}
-                  index={index + 1}
-                  onSelect={onSelectConcept}
-                />
-              </li>
-            ))}
-          </ol>
+          <>
+            <ol className="divide-y divide-border border-y border-border">
+              {filteredConcepts.map((concept, index) => (
+                <li key={concept.id}>
+                  <ConceptListItem
+                    active={concept.id === selectedConceptId}
+                    concept={concept}
+                    index={index + 1}
+                    onSelect={onSelectConcept}
+                  />
+                </li>
+              ))}
+            </ol>
+            <div ref={loadMoreRef} className="flex h-16 items-center justify-center">
+              {isLoadingMore ? (
+                <span className="font-mono text-xs text-muted-foreground">Loading…</span>
+              ) : hasMore ? (
+                <button
+                  type="button"
+                  onClick={onLoadMore}
+                  className="font-mono text-xs text-brand-accent-foreground hover:text-brand-accent-foreground"
+                >
+                  Load More
+                </button>
+              ) : null}
+            </div>
+          </>
         )}
       </div>
 
-      <footer className="flex items-center justify-between gap-3 border-t border-white/8 px-4 py-3 font-mono text-[0.62rem] tabular-nums tracking-[0.16em] uppercase text-[#f3efe3]/52">
+      <footer className="flex items-center justify-between gap-3 border-t border-border px-4 py-3 font-mono text-[0.62rem] tabular-nums tracking-[0.16em] uppercase text-muted-foreground">
         <span>{String(concepts.length).padStart(2, '0')} concepts</span>
-        <span aria-hidden className="text-[#f3efe3]/24">·</span>
-        <span>{String(relationshipsCount).padStart(2, '0')} prerequisites</span>
+        <span aria-hidden className="text-muted-foreground">·</span>
+        <span>{String(relationshipsCount).padStart(2, '0')} relationships</span>
       </footer>
     </aside>
   );
@@ -418,8 +549,8 @@ const conceptListItemVariants = cva(
     defaultVariants: { active: false },
     variants: {
       active: {
-        false: 'bg-transparent hover:bg-white/[0.03]',
-        true: 'bg-[#53d1cb]/[0.06]',
+        false: 'bg-transparent hover:bg-card/50',
+        true: 'bg-brand-accent-surface',
       },
     },
   },
@@ -434,25 +565,25 @@ function ConceptListItem({
   active: boolean;
   concept: ConceptRow;
   index: number;
-  onSelect: (id: string) => void;
+  onSelect: (id: string, multi?: boolean) => void;
 }) {
   return (
     <button
       aria-current={active ? 'true' : undefined}
       className={conceptListItemVariants({ active })}
-      onClick={() => onSelect(concept.id)}
+      onClick={(e) => onSelect(concept.id, e.ctrlKey || e.metaKey || e.shiftKey)}
       type="button"
     >
       {active ? (
         <span
           aria-hidden
-          className="absolute top-3 bottom-3 left-0 w-[2px] rounded-full bg-[#53d1cb]"
+          className="absolute top-3 bottom-3 left-0 w-[2px] rounded-full bg-brand-accent"
         />
       ) : null}
       <div className="flex items-center justify-between gap-3 pl-2">
-        <span className="flex items-baseline gap-2 font-mono text-[0.62rem] tabular-nums tracking-[0.16em] uppercase text-[#f3efe3]/42">
-          <span className={active ? 'text-[#53d1cb]' : ''}>{String(index).padStart(2, '0')}</span>
-          <span aria-hidden className="text-[#f3efe3]/20">·</span>
+        <span className="flex items-baseline gap-2 font-mono text-[0.62rem] tabular-nums tracking-[0.16em] uppercase text-muted-foreground">
+          <span className={active ? 'text-brand-accent-foreground' : ''}>{String(index).padStart(2, '0')}</span>
+          <span aria-hidden className="text-muted-foreground">·</span>
           <span>{concept.difficulty}</span>
         </span>
         <ConfidencePill confidence={concept.confidence} muted={!active} />
@@ -460,7 +591,7 @@ function ConceptListItem({
       <p
         className={cn(
           'line-clamp-2 pl-2 text-sm font-medium leading-snug tracking-tight',
-          active ? 'text-[#f3efe3]' : 'text-[#f3efe3]/82',
+          active ? 'text-foreground' : 'text-muted-foreground',
         )}
       >
         {concept.name}
@@ -471,11 +602,11 @@ function ConceptListItem({
 
 function ConceptListEmpty({ hasConcepts }: { hasConcepts: boolean }) {
   return (
-    <div className="m-4 rounded-[1.25rem] border border-dashed border-white/12 bg-white/[0.015] px-4 py-6">
-      <p className="font-mono text-[0.62rem] tabular-nums tracking-[0.18em] uppercase text-[#f3efe3]/52">
+    <div className="m-4 rounded-[1.25rem] border border-dashed border-border bg-white/[0.015] px-4 py-6">
+      <p className="font-mono text-[0.62rem] tabular-nums tracking-[0.18em] uppercase text-muted-foreground">
         {hasConcepts ? 'No matches' : 'Empty'}
       </p>
-      <p className="mt-2 text-sm leading-relaxed text-[#f3efe3]/72">
+      <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
         {hasConcepts
           ? 'Adjust the search query or difficulty filter to surface concepts again.'
           : 'No concepts yet. Use the chat to extract concepts from the current source.'}
@@ -502,7 +633,7 @@ function GraphCanvasPane({
   concepts: ConceptRow[];
   conceptNameById: Map<string, string>;
   isRunning: boolean;
-  onSelectConcept: (id: string) => void;
+  onSelectConcept: (id: string, multi?: boolean) => void;
   proposalCount: number;
   relationships: RelationshipRow[];
   selectedConcept: ConceptRow | null;
@@ -513,7 +644,7 @@ function GraphCanvasPane({
   return (
     <section
       aria-label="Concept graph canvas"
-      className="flex min-h-[520px] flex-col border-b border-white/8 bg-[#07111b] lg:min-h-0 lg:border-b-0 lg:border-r"
+      className="flex min-h-[520px] flex-col border-b border-border bg-background lg:min-h-0 lg:border-b-0 lg:border-r"
     >
       <PaneHeader
         eyebrow="Concept graph"
@@ -522,20 +653,18 @@ function GraphCanvasPane({
             <span className={artifactStatusVariant(artifact.status)}>
               {artifact.status.replace('_', ' ')}
             </span>
-          ) : (
-            <span className="font-mono tabular-nums text-[#f3efe3]/52">not generated</span>
-          )
+          ) : null
         }
-        title={artifact ? 'Active version' : 'No version yet'}
+        title="Interactive Canvas"
       />
 
       {isRunning || proposalCount > 0 ? (
-        <div className="hairline-shimmer mx-4 mb-3 flex items-center gap-3 rounded-full border border-[#53d1cb]/24 bg-[#53d1cb]/[0.06] px-3.5 py-1.5">
-          <span aria-hidden className="size-1.5 rounded-full bg-[#53d1cb] pulse-soft" />
-          <span className="font-mono text-[0.62rem] tabular-nums tracking-[0.16em] uppercase text-[#53d1cb]">
+        <div className="hairline-shimmer mx-4 mb-3 flex items-center gap-3 rounded-full border border-brand-accent-border bg-brand-accent-surface px-3.5 py-1.5">
+          <span aria-hidden className="size-1.5 rounded-full bg-brand-accent pulse-soft" />
+          <span className="font-mono text-[0.62rem] tabular-nums tracking-[0.16em] uppercase text-brand-accent-foreground">
             {isRunning ? 'Streaming' : 'Buffered'}
           </span>
-          <span className="text-xs text-[#f3efe3]/72">
+          <span className="text-xs text-muted-foreground">
             {proposalCount === 0
               ? 'agent is reading source'
               : `${proposalCount} concept${proposalCount === 1 ? '' : 's'} proposed`}
@@ -567,6 +696,7 @@ function GraphCanvasPane({
       <ConceptDetailStrip
         artifact={artifact}
         concept={selectedConcept}
+        concepts={concepts}
         conceptNameById={conceptNameById}
         relationships={relationships}
       />
@@ -581,10 +711,11 @@ function GraphCanvas({
   selectedConceptId,
 }: {
   concepts: ConceptRow[];
-  onSelectConcept: (id: string) => void;
+  onSelectConcept: (id: string, multi?: boolean) => void;
   relationships: RelationshipRow[];
   selectedConceptId: string | null;
 }) {
+  const { resolvedTheme } = useTheme();
   const baseGraph = useMemo(
     () => buildConceptGraph(concepts, relationships),
     [concepts, relationships],
@@ -604,11 +735,11 @@ function GraphCanvas({
         ...edge,
         animated: isLinked,
         markerEnd: {
-          color: isLinked ? '#7ceae3' : '#53d1cb',
+          color: isLinked ? 'var(--brand-accent)' : 'var(--brand-accent)',
           type: MarkerType.ArrowClosed,
         },
         style: {
-          stroke: isLinked ? '#7ceae3' : 'rgba(83, 209, 203, 0.55)',
+          stroke: isLinked ? 'var(--brand-accent)' : 'rgba(83, 209, 203, 0.55)',
           strokeWidth: isLinked ? 2 : 1.4,
         },
       };
@@ -618,7 +749,7 @@ function GraphCanvas({
 
   return (
     <ReactFlow
-      colorMode="dark"
+      colorMode={resolvedTheme === 'dark' ? 'dark' : 'light'}
       edges={decorated.edges}
       fitView
       fitViewOptions={{ padding: 0.22 }}
@@ -628,12 +759,12 @@ function GraphCanvas({
       nodeTypes={nodeTypes}
       nodesDraggable={false}
       nodesConnectable={false}
-      onNodeClick={(_, node) => onSelectConcept(node.id)}
+      onNodeClick={(event, node) => onSelectConcept(node.id, event.ctrlKey || event.metaKey || event.shiftKey)}
       panOnDrag
       proOptions={{ hideAttribution: true }}
       zoomOnDoubleClick={false}
     >
-      <Background color="rgba(243, 239, 227, 0.08)" gap={22} size={1} />
+      <Background gap={22} size={1} />
       <FlowToolbar />
     </ReactFlow>
   );
@@ -647,28 +778,28 @@ function ConceptNode({ data }: NodeProps<Node<ConceptNodeData, 'concept'>>) {
   return (
     <div
       className={cn(
-        'w-56 rounded-2xl border bg-[#0d1824] px-4 py-3 transition-all duration-200 ease-out',
+        'w-56 rounded-2xl border bg-card px-4 py-3 transition-all duration-200 ease-out',
         data.selected
-          ? 'border-[#53d1cb] shadow-[0_0_0_1px_rgba(83,209,203,0.6),0_18px_50px_rgba(7,17,27,0.55)]'
-          : 'border-white/12 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_12px_32px_rgba(0,0,0,0.28)] hover:border-white/24',
+          ? 'border-brand-accent ring-1 ring-brand-accent/50 shadow-lg shadow-brand-accent/20'
+          : 'border-border shadow-sm hover:border-brand-accent/50',
       )}
     >
       <Handle
-        className="!h-2.5 !w-2.5 !border-[#0d1824] !bg-[#53d1cb]"
+        className="!h-2.5 !w-2.5 !border-background !bg-brand-accent"
         position={Position.Left}
         type="target"
       />
-      <p className="line-clamp-2 text-[0.82rem] font-medium leading-5 tracking-tight text-[#f3efe3]">
+      <p className="line-clamp-2 text-[0.82rem] font-medium leading-5 tracking-tight text-foreground">
         {data.label}
       </p>
       <div className="mt-2 flex items-center justify-between gap-2">
         <DifficultyChip difficulty={data.difficulty} />
-        <span className="font-mono text-[0.65rem] tabular-nums text-[#f3efe3]/72">
+        <span className="font-mono text-[0.65rem] tabular-nums text-muted-foreground">
           {formatConfidence(data.confidence)}
         </span>
       </div>
       <Handle
-        className="!h-2.5 !w-2.5 !border-[#0d1824] !bg-[#53d1cb]"
+        className="!h-2.5 !w-2.5 !border-background !bg-brand-accent"
         position={Position.Right}
         type="source"
       />
@@ -681,7 +812,7 @@ function FlowToolbar() {
 
   return (
     <Panel position="top-right">
-      <div className="mr-3 mt-3 flex items-center gap-1 rounded-full border border-white/10 bg-[#0a131c]/90 p-1 shadow-[0_12px_32px_rgba(0,0,0,0.32)] backdrop-blur">
+      <div className="mr-3 mt-3 flex items-center gap-1 rounded-full border border-border bg-card/50 p-1 shadow-md backdrop-blur">
         <ToolbarButton label="Zoom out" onClick={() => zoomOut()}>
           <Minus className="size-3.5" strokeWidth={1.5} />
         </ToolbarButton>
@@ -708,7 +839,7 @@ function ToolbarButton({
   return (
     <button
       aria-label={label}
-      className="inline-flex size-7 items-center justify-center rounded-full text-[#f3efe3]/72 transition-colors hover:bg-white/[0.06] hover:text-[#f3efe3]"
+      className="inline-flex size-7 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
       onClick={onClick}
       type="button"
     >
@@ -727,33 +858,33 @@ function GraphListFallback({
   selectedConceptId: string | null;
 }) {
   return (
-    <div className="h-full overflow-y-auto px-5 py-5">
-      <div className="mb-4 flex items-center gap-2 font-mono text-[0.65rem] tabular-nums tracking-[0.18em] uppercase text-[#f3efe3]/52">
-        <Network className="size-3.5 text-[#53d1cb]" strokeWidth={1.5} />
-        <span>List view · no prerequisites</span>
+    <div className="h-full overflow-y-auto p-5">
+      <div className="mb-4 flex items-center gap-2 font-mono text-[0.65rem] tabular-nums tracking-[0.18em] uppercase text-muted-foreground">
+        <Network className="size-3.5 text-brand-accent-foreground" strokeWidth={1.5} />
+        <span>List view · no relationships</span>
       </div>
-      <p className="mb-5 max-w-[60ch] text-sm leading-relaxed text-[#f3efe3]/72">
-        Concepts were extracted, but the agent has not proposed prerequisite links yet. Review them
-        as a flat list, then ask the agent to draw relationships.
+      <p className="mb-5 max-w-[60ch] text-sm leading-relaxed text-muted-foreground">
+        Concepts were extracted, but the agent has not proposed relationship links yet. Review them
+        as a flat list, then ask the agent to connect them.
       </p>
-      <ol className="divide-y divide-white/8 border-y border-white/8">
+      <ol className="divide-y divide-border border-y border-border">
         {concepts.map((concept, index) => (
           <li key={concept.id}>
             <button
               aria-current={concept.id === selectedConceptId ? 'true' : undefined}
               className={cn(
-                'flex w-full items-start gap-4 py-3.5 text-left transition-colors hover:bg-white/[0.03]',
-                concept.id === selectedConceptId && 'bg-[#53d1cb]/[0.06]',
+                'flex w-full items-start gap-4 py-3.5 text-left transition-colors hover:bg-card/50',
+                concept.id === selectedConceptId && 'bg-brand-accent-surface',
               )}
               onClick={() => onSelectConcept(concept.id)}
               type="button"
             >
-              <span className="w-8 shrink-0 font-mono text-[0.65rem] tabular-nums tracking-[0.16em] uppercase text-[#53d1cb]">
+              <span className="w-8 shrink-0 font-mono text-[0.65rem] tabular-nums tracking-[0.16em] uppercase text-brand-accent-foreground">
                 {String(index + 1).padStart(2, '0')}
               </span>
               <span className="min-w-0 flex-1 space-y-1">
-                <p className="text-sm font-medium tracking-tight text-[#f3efe3]">{concept.name}</p>
-                <p className="line-clamp-2 text-[0.82rem] leading-5 text-[#f3efe3]/62">
+                <p className="text-sm font-medium tracking-tight text-foreground">{concept.name}</p>
+                <p className="line-clamp-2 text-[0.82rem] leading-5 text-muted-foreground">
                   {concept.definition}
                 </p>
               </span>
@@ -775,18 +906,18 @@ function GraphCanvasEmpty() {
       <div className="max-w-md text-center">
         <span
           aria-hidden
-          className="mx-auto inline-flex size-12 items-center justify-center rounded-2xl border border-[#53d1cb]/24 bg-[#53d1cb]/[0.08] text-[#53d1cb]"
+          className="mx-auto inline-flex size-12 items-center justify-center rounded-2xl border border-brand-accent-border bg-brand-accent/[0.08] text-brand-accent-foreground"
         >
           <Network className="size-5" strokeWidth={1.5} />
         </span>
-        <p className="mt-4 font-mono text-[0.62rem] tabular-nums tracking-[0.18em] uppercase text-[#f3efe3]/52">
+        <p className="mt-4 font-mono text-[0.62rem] tabular-nums tracking-[0.18em] uppercase text-muted-foreground">
           No graph yet
         </p>
-        <h3 className="mt-2 text-xl font-medium tracking-tight text-[#f3efe3]">
+        <h3 className="mt-2 text-xl font-medium tracking-tight text-foreground">
           Generate from the current source.
         </h3>
-        <p className="mx-auto mt-3 max-w-[44ch] text-sm leading-relaxed text-[#f3efe3]/62">
-          Use the chat on the right to run a fresh extraction. Concepts and prerequisite edges will
+        <p className="mx-auto mt-3 max-w-[44ch] text-sm leading-relaxed text-muted-foreground">
+          Use the chat on the right to run a fresh extraction. Concepts and relationship edges will
           stream in as the agent reads the material.
         </p>
       </div>
@@ -801,18 +932,20 @@ function GraphCanvasEmpty() {
 function ConceptDetailStrip({
   artifact,
   concept,
+  concepts,
   conceptNameById,
   relationships,
 }: {
   artifact: ConceptGraphArtifact;
   concept: ConceptRow | null;
+  concepts: ConceptRow[];
   conceptNameById: Map<string, string>;
   relationships: RelationshipRow[];
 }) {
   if (!concept) {
     return (
-      <footer className="border-t border-white/8 px-5 py-4 text-xs leading-relaxed text-[#f3efe3]/52">
-        Select a concept to inspect its definition, evidence, and prerequisite links.
+      <footer className="border-t border-border px-5 py-4 text-xs leading-relaxed text-muted-foreground">
+        Select a concept to inspect its definition, evidence, and relationship links.
       </footer>
     );
   }
@@ -820,46 +953,41 @@ function ConceptDetailStrip({
   const incoming = relationships.filter((rel) => rel.targetConceptId === concept.id);
   const outgoing = relationships.filter((rel) => rel.sourceConceptId === concept.id);
   const evidence = getEvidence(concept.sourceEvidence);
-  const headline = evidence.find((item) => !isSameConceptText(item.excerpt, concept.definition));
+  const nonDefinitionEvidence = evidence
+    .filter((item) => !isSameConceptText(item.excerpt, concept.definition))
+    .slice(0, 3);
+  const displayEvidence = nonDefinitionEvidence.length
+    ? nonDefinitionEvidence
+    : evidence.slice(0, 3);
   const canPatchKnowledgebase =
     artifact?.status === 'generated' || artifact?.status === 'needs_revision';
 
   return (
-    <footer className="border-t border-white/8 bg-[#0a131c] px-5 py-4">
+    <footer className="border-t border-border bg-card px-5 py-4">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:gap-6">
         <div className="min-w-0 flex-1 space-y-2">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="font-mono text-[0.62rem] tabular-nums tracking-[0.18em] uppercase text-[#53d1cb]">
+            <span className="font-mono text-[0.62rem] tabular-nums tracking-[0.18em] uppercase text-brand-accent-foreground">
               Selected
             </span>
             <DifficultyChip difficulty={concept.difficulty} />
             <ConfidencePill confidence={concept.confidence} />
           </div>
-          <h3 className="text-base font-medium leading-snug tracking-tight text-[#f3efe3]">
+          <h3 className="text-base font-medium leading-snug tracking-tight text-foreground">
             {concept.name}
           </h3>
-          <p className="line-clamp-2 text-sm leading-6 text-[#f3efe3]/72">{concept.definition}</p>
+          <p className="line-clamp-2 text-sm leading-6 text-muted-foreground">{concept.definition}</p>
         </div>
 
-        {headline ? (
-          <blockquote className="relative max-w-md rounded-[1rem] border border-white/8 bg-white/[0.03] px-4 py-3 text-xs leading-6 text-[#f3efe3]/72 shadow-[inset_3px_0_0_#53d1cb]">
-            <Quote className="absolute -top-2.5 -left-1 size-4 -rotate-12 text-[#53d1cb]/72" strokeWidth={1.5} />
-            <p className="line-clamp-3">{headline.excerpt}</p>
-            {headline.location ? (
-              <cite className="mt-2 block font-mono text-[0.6rem] tabular-nums tracking-[0.18em] uppercase text-[#f3efe3]/42 not-italic">
-                §{headline.location}
-              </cite>
-            ) : null}
-          </blockquote>
-        ) : null}
+        <EvidenceStack evidence={displayEvidence} totalCount={evidence.length} />
       </div>
 
       {incoming.length || outgoing.length ? (
         <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs">
           {incoming.length ? (
             <span className="flex flex-wrap items-center gap-1.5">
-              <span className="font-mono tabular-nums tracking-[0.16em] uppercase text-[#f3efe3]/42">
-                Requires
+              <span className="font-mono tabular-nums tracking-[0.16em] uppercase text-muted-foreground">
+                Incoming
               </span>
               {incoming.map((rel) => (
                 <RelationChip
@@ -871,8 +999,8 @@ function ConceptDetailStrip({
           ) : null}
           {outgoing.length ? (
             <span className="flex flex-wrap items-center gap-1.5">
-              <span className="font-mono tabular-nums tracking-[0.16em] uppercase text-[#f3efe3]/42">
-                Unlocks
+              <span className="font-mono tabular-nums tracking-[0.16em] uppercase text-muted-foreground">
+                Outgoing
               </span>
               {outgoing.map((rel) => (
                 <RelationChip
@@ -884,6 +1012,22 @@ function ConceptDetailStrip({
           ) : null}
         </div>
       ) : null}
+      {artifact && (incoming.length || outgoing.length) ? (
+        <KnowledgebaseRelationshipPatchList
+          artifactId={artifact.id}
+          concepts={concepts}
+          disabled={!canPatchKnowledgebase}
+          relationships={[...incoming, ...outgoing]}
+        />
+      ) : null}
+      {artifact && evidence.length ? (
+        <KnowledgebaseEvidencePatchList
+          artifactId={artifact.id}
+          concept={concept}
+          disabled={!canPatchKnowledgebase}
+          evidence={evidence}
+        />
+      ) : null}
       {artifact ? (
         <KnowledgebaseConceptPatchForm
           artifactId={artifact.id}
@@ -892,6 +1036,389 @@ function ConceptDetailStrip({
         />
       ) : null}
     </footer>
+  );
+}
+
+function KnowledgebaseEvidencePatchList({
+  artifactId,
+  concept,
+  disabled,
+  evidence,
+}: {
+  artifactId: string;
+  concept: ConceptRow;
+  disabled: boolean;
+  evidence: SourceEvidence[];
+}) {
+  return (
+    <details className="group mt-4 rounded-[1rem] border border-border bg-white/[0.02] open:bg-card/50">
+      <summary className="flex cursor-pointer items-center justify-between gap-3 px-4 py-3 text-xs text-muted-foreground transition-colors hover:text-foreground">
+        <span className="font-mono tabular-nums tracking-[0.16em] uppercase text-brand-accent-foreground">
+          Evidence patch
+        </span>
+        <span className="font-mono text-[0.6rem] tracking-[0.16em] uppercase text-muted-foreground group-open:text-brand-accent-foreground">
+          {disabled ? 'locked' : `${evidence.length} refs`}
+        </span>
+      </summary>
+      <div className="grid gap-3 border-t border-border p-4">
+        {evidence.map((item, index) => (
+          <KnowledgebaseEvidencePatchForm
+            artifactId={artifactId}
+            concept={concept}
+            disabled={disabled}
+            evidence={item}
+            key={`${item.sourceId ?? 'source'}-${item.blockId ?? index}-${index}`}
+          />
+        ))}
+      </div>
+    </details>
+  );
+}
+
+function KnowledgebaseEvidencePatchForm({
+  artifactId,
+  concept,
+  disabled,
+  evidence,
+}: {
+  artifactId: string;
+  concept: ConceptRow;
+  disabled: boolean;
+  evidence: SourceEvidence;
+}) {
+  const [state, formAction, isPending] = useActionState(updateKnowledgebaseEvidenceFormAction, {
+    error: null,
+    success: false,
+  });
+
+  return (
+    <form action={formAction} className="grid gap-3 rounded-[0.9rem] border border-border bg-background/70 p-3 md:grid-cols-[11rem_minmax(0,1fr)_7rem]">
+      <input name="artifactId" type="hidden" value={artifactId} />
+      <input name="conceptId" type="hidden" value={concept.id} />
+      <input name="originalBlockId" type="hidden" value={evidence.blockId ?? ''} />
+      <input name="originalQuote" type="hidden" value={evidence.excerpt} />
+      <input name="originalSourceId" type="hidden" value={evidence.sourceId ?? ''} />
+      <label className="space-y-1.5">
+        <span className="font-mono text-[0.6rem] tracking-[0.16em] uppercase text-muted-foreground">
+          Source block
+        </span>
+        <input
+          className="h-10 w-full rounded-xl border border-border bg-background px-3 font-mono text-xs text-foreground outline-none transition-colors focus:border-brand-accent-border/60 disabled:opacity-50"
+          defaultValue={evidence.blockId ?? ''}
+          disabled={disabled || isPending}
+          name="blockId"
+          required
+        />
+      </label>
+      <label className="space-y-1.5">
+        <span className="font-mono text-[0.6rem] tracking-[0.16em] uppercase text-muted-foreground">
+          Quote
+        </span>
+        <textarea
+          className="min-h-10 w-full resize-y rounded-xl border border-border bg-background px-3 py-2 text-sm leading-6 text-foreground outline-none transition-colors focus:border-brand-accent-border/60 disabled:opacity-50"
+          defaultValue={evidence.excerpt}
+          disabled={disabled || isPending}
+          name="quote"
+          required
+          rows={2}
+        />
+      </label>
+      <div className="grid gap-2">
+        <label className="space-y-1.5">
+          <span className="font-mono text-[0.6rem] tracking-[0.16em] uppercase text-muted-foreground">
+            Location
+          </span>
+          <input
+            className="h-10 w-full rounded-xl border border-border bg-background px-3 text-xs text-foreground outline-none transition-colors focus:border-brand-accent-border/60 disabled:opacity-50"
+            defaultValue={evidence.location ?? 'unknown'}
+            disabled={disabled || isPending}
+            name="locationLabel"
+            required
+          />
+        </label>
+        <input name="sourceId" type="hidden" value={evidence.sourceId ?? ''} />
+        <Button disabled={disabled || isPending} size="sm" type="submit" variant="secondary">
+          {isPending ? 'Saving' : 'Patch'}
+        </Button>
+      </div>
+      {state.error ? (
+        <p className="text-xs leading-5 text-status-danger-foreground md:col-span-3">
+          {state.error}
+        </p>
+      ) : null}
+      {state.success ? (
+        <p className="text-xs leading-5 text-status-success-foreground md:col-span-3">
+          Evidence version updated.
+        </p>
+      ) : null}
+    </form>
+  );
+}
+
+function KnowledgebaseRelationshipPatchList({
+  artifactId,
+  concepts,
+  disabled,
+  relationships,
+}: {
+  artifactId: string;
+  concepts: ConceptRow[];
+  disabled: boolean;
+  relationships: RelationshipRow[];
+}) {
+  return (
+    <details className="group mt-4 rounded-[1rem] border border-border bg-white/[0.02] open:bg-card/50">
+      <summary className="flex cursor-pointer items-center justify-between gap-3 px-4 py-3 text-xs text-muted-foreground transition-colors hover:text-foreground">
+        <span className="font-mono tabular-nums tracking-[0.16em] uppercase text-brand-accent-foreground">
+          Relationship patch
+        </span>
+        <span className="font-mono text-[0.6rem] tracking-[0.16em] uppercase text-muted-foreground group-open:text-brand-accent-foreground">
+          {disabled ? 'locked' : `${relationships.length} editable`}
+        </span>
+      </summary>
+      <div className="grid gap-3 border-t border-border p-4">
+        {relationships.map((relationship) => (
+          <KnowledgebaseRelationshipPatchForm
+            artifactId={artifactId}
+            concepts={concepts}
+            disabled={disabled}
+            key={relationship.id}
+            relationship={relationship}
+          />
+        ))}
+      </div>
+    </details>
+  );
+}
+
+function KnowledgebaseRelationshipPatchForm({
+  artifactId,
+  concepts,
+  disabled,
+  relationship,
+}: {
+  artifactId: string;
+  concepts: ConceptRow[];
+  disabled: boolean;
+  relationship: RelationshipRow;
+}) {
+  const [state, formAction, isPending] = useActionState(updateKnowledgebaseRelationshipFormAction, {
+    error: null,
+    success: false,
+  });
+  const evidence = getEvidence(relationship.sourceEvidence);
+  const evidenceQuality = getRelationshipEvidenceQuality(relationship.metadata);
+
+  return (
+    <div className="grid gap-3 rounded-[0.9rem] border border-border bg-background/70 p-3">
+      <form action={formAction} className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_7rem]">
+        <input name="artifactId" type="hidden" value={artifactId} />
+        <input name="relationshipId" type="hidden" value={relationship.id} />
+        <input name="relationshipType" type="hidden" value={relationship.relationshipType} />
+        <RelationshipConceptSelect
+          concepts={concepts}
+          defaultValue={relationship.sourceConceptId}
+          disabled={disabled || isPending}
+          label="Source"
+          name="sourceConceptId"
+        />
+        <RelationshipConceptSelect
+          concepts={concepts}
+          defaultValue={relationship.targetConceptId}
+          disabled={disabled || isPending}
+          label="Target"
+          name="targetConceptId"
+        />
+        <div className="grid content-end gap-2">
+          <Button disabled={disabled || isPending} size="sm" type="submit" variant="secondary">
+            {isPending ? 'Saving' : 'Patch'}
+          </Button>
+        </div>
+        {state.error ? (
+          <p className="text-xs leading-5 text-status-danger-foreground md:col-span-3">
+            {state.error}
+          </p>
+        ) : null}
+        {state.success ? (
+          <p className="text-xs leading-5 text-status-success-foreground md:col-span-3">
+            Relationship version updated.
+          </p>
+        ) : null}
+      </form>
+      {evidence.length ? (
+        <div className="grid gap-2 border-t border-border pt-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="font-mono text-[0.6rem] tracking-[0.16em] uppercase text-muted-foreground">
+              Relationship evidence
+            </span>
+            {evidenceQuality ? (
+              <span className="rounded-full border border-brand-accent-border/20 bg-brand-accent-surface px-2 py-1 font-mono text-[0.62rem] uppercase tracking-[0.12em] text-[#9de7e2]">
+                {evidenceQuality.evidenceStrength} · {Math.round(evidenceQuality.finalEvidenceScore * 100)}%
+              </span>
+            ) : null}
+          </div>
+          {evidence.map((item, index) => (
+            <KnowledgebaseRelationshipEvidencePatchForm
+              artifactId={artifactId}
+              disabled={disabled}
+              evidence={item}
+              key={`${item.sourceId ?? 'source'}-${item.blockId ?? index}-${index}`}
+              relationship={relationship}
+            />
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function KnowledgebaseRelationshipEvidencePatchForm({
+  artifactId,
+  disabled,
+  evidence,
+  relationship,
+}: {
+  artifactId: string;
+  disabled: boolean;
+  evidence: SourceEvidence;
+  relationship: RelationshipRow;
+}) {
+  const [state, formAction, isPending] = useActionState(
+    updateKnowledgebaseRelationshipEvidenceFormAction,
+    {
+      error: null,
+      success: false,
+    }
+  );
+
+  return (
+    <form action={formAction} className="grid gap-2 rounded-[0.75rem] border border-border bg-white/[0.02] p-3 md:grid-cols-[10rem_minmax(0,1fr)_7rem]">
+      <input name="artifactId" type="hidden" value={artifactId} />
+      <input name="relationshipId" type="hidden" value={relationship.id} />
+      <input name="originalBlockId" type="hidden" value={evidence.blockId ?? ''} />
+      <input name="originalQuote" type="hidden" value={evidence.excerpt} />
+      <input name="originalSourceId" type="hidden" value={evidence.sourceId ?? ''} />
+      <input name="sourceId" type="hidden" value={evidence.sourceId ?? ''} />
+      <label className="space-y-1.5">
+        <span className="font-mono text-[0.6rem] tracking-[0.16em] uppercase text-muted-foreground">
+          Block
+        </span>
+        <input
+          className="h-9 w-full rounded-xl border border-border bg-background px-3 font-mono text-xs text-foreground outline-none transition-colors focus:border-brand-accent-border/60 disabled:opacity-50"
+          defaultValue={evidence.blockId ?? ''}
+          disabled={disabled || isPending}
+          name="blockId"
+          required
+        />
+      </label>
+      <label className="space-y-1.5">
+        <span className="font-mono text-[0.6rem] tracking-[0.16em] uppercase text-muted-foreground">
+          Quote
+        </span>
+        <textarea
+          className="min-h-9 w-full resize-y rounded-xl border border-border bg-background px-3 py-2 text-xs leading-5 text-foreground outline-none transition-colors focus:border-brand-accent-border/60 disabled:opacity-50"
+          defaultValue={evidence.excerpt}
+          disabled={disabled || isPending}
+          name="quote"
+          required
+          rows={2}
+        />
+      </label>
+      <div className="grid gap-2">
+        <input name="locationLabel" type="hidden" value={evidence.location ?? 'unknown'} />
+        <Button disabled={disabled || isPending} size="sm" type="submit" variant="secondary">
+          {isPending ? 'Saving' : 'Patch'}
+        </Button>
+      </div>
+      {state.error ? (
+        <p className="text-xs leading-5 text-status-danger-foreground md:col-span-3">
+          {state.error}
+        </p>
+      ) : null}
+      {state.success ? (
+        <p className="text-xs leading-5 text-status-success-foreground md:col-span-3">
+          Relationship evidence updated.
+        </p>
+      ) : null}
+    </form>
+  );
+}
+
+function RelationshipConceptSelect({
+  concepts,
+  defaultValue,
+  disabled,
+  label,
+  name,
+}: {
+  concepts: ConceptRow[];
+  defaultValue: string;
+  disabled: boolean;
+  label: string;
+  name: string;
+}) {
+  return (
+    <label className="space-y-1.5">
+      <span className="font-mono text-[0.6rem] tracking-[0.16em] uppercase text-muted-foreground">
+        {label}
+      </span>
+      <select
+        className="h-10 w-full rounded-xl border border-border bg-background px-3 text-sm text-foreground outline-none transition-colors focus:border-brand-accent-border/60 disabled:opacity-50"
+        defaultValue={defaultValue}
+        disabled={disabled}
+        name={name}
+      >
+        {concepts.map((concept) => (
+          <option key={concept.id} value={concept.id}>
+            {concept.name}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
+function EvidenceStack({
+  evidence,
+  totalCount,
+}: {
+  evidence: SourceEvidence[];
+  totalCount: number;
+}) {
+  if (!evidence.length) {
+    return (
+      <div className="max-w-md rounded-[1rem] border border-dashed border-border bg-white/[0.02] px-4 py-3 text-xs leading-5 text-muted-foreground">
+        No grounded evidence quote is attached to this concept yet.
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid max-w-xl gap-2">
+      <div className="flex items-center justify-between gap-3">
+        <span className="font-mono text-[0.6rem] tabular-nums tracking-[0.18em] uppercase text-brand-accent-foreground">
+          Evidence
+        </span>
+        <span className="font-mono text-[0.58rem] tabular-nums tracking-[0.16em] uppercase text-muted-foreground">
+          {evidence.length}/{totalCount} shown
+        </span>
+      </div>
+      <div className="grid gap-2">
+        {evidence.map((item, index) => (
+          <blockquote
+            className="relative rounded-[1rem] border border-border border-l-4 border-l-brand-accent/70 bg-card/50 px-4 py-3 text-xs leading-6 text-muted-foreground shadow-sm"
+            key={`${item.sourceId ?? 'source'}-${item.blockId ?? index}-${index}`}
+          >
+            <Quote className="absolute -top-2.5 -left-1 size-4 -rotate-12 text-brand-accent-foreground/72" strokeWidth={1.5} />
+            <p className="line-clamp-2">{item.excerpt}</p>
+            <cite className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[0.58rem] tabular-nums tracking-[0.14em] uppercase text-muted-foreground not-italic">
+              {item.location ? <span>§{item.location}</span> : null}
+              {item.blockId ? <span>{shortenBlockId(item.blockId)}</span> : null}
+            </cite>
+          </blockquote>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -910,24 +1437,24 @@ function KnowledgebaseConceptPatchForm({
   });
 
   return (
-    <details className="group mt-4 rounded-[1rem] border border-white/8 bg-white/[0.025] open:bg-white/[0.04]">
-      <summary className="flex cursor-pointer items-center justify-between gap-3 px-4 py-3 text-xs text-[#f3efe3]/72 transition-colors hover:text-[#f3efe3]">
-        <span className="font-mono tabular-nums tracking-[0.16em] uppercase text-[#53d1cb]">
+    <details className="group mt-4 rounded-[1rem] border border-border bg-card/50 open:bg-card/50">
+      <summary className="flex cursor-pointer items-center justify-between gap-3 px-4 py-3 text-xs text-muted-foreground transition-colors hover:text-foreground">
+        <span className="font-mono tabular-nums tracking-[0.16em] uppercase text-brand-accent-foreground">
           Knowledgebase patch
         </span>
-        <span className="font-mono text-[0.6rem] tracking-[0.16em] uppercase text-[#f3efe3]/42 group-open:text-[#53d1cb]">
+        <span className="font-mono text-[0.6rem] tracking-[0.16em] uppercase text-muted-foreground group-open:text-brand-accent-foreground">
           {disabled ? 'locked' : 'edit record'}
         </span>
       </summary>
-      <form action={formAction} className="grid gap-3 border-t border-white/8 p-4 md:grid-cols-[14rem_minmax(0,1fr)_9rem]">
+      <form action={formAction} className="grid gap-3 border-t border-border p-4 md:grid-cols-[14rem_minmax(0,1fr)_9rem]">
         <input name="artifactId" type="hidden" value={artifactId} />
         <input name="conceptId" type="hidden" value={concept.id} />
         <label className="space-y-1.5">
-          <span className="font-mono text-[0.6rem] tracking-[0.16em] uppercase text-[#f3efe3]/42">
+          <span className="font-mono text-[0.6rem] tracking-[0.16em] uppercase text-muted-foreground">
             Name
           </span>
           <input
-            className="h-10 w-full rounded-xl border border-white/10 bg-[#07111b] px-3 text-sm text-[#f3efe3] outline-none transition-colors focus:border-[#53d1cb]/60 disabled:opacity-50"
+            className="h-10 w-full rounded-xl border border-border bg-background px-3 text-sm text-foreground outline-none transition-colors focus:border-brand-accent-border/60 disabled:opacity-50"
             defaultValue={concept.name}
             disabled={disabled || isPending}
             name="name"
@@ -935,11 +1462,11 @@ function KnowledgebaseConceptPatchForm({
           />
         </label>
         <label className="space-y-1.5">
-          <span className="font-mono text-[0.6rem] tracking-[0.16em] uppercase text-[#f3efe3]/42">
+          <span className="font-mono text-[0.6rem] tracking-[0.16em] uppercase text-muted-foreground">
             Definition
           </span>
           <textarea
-            className="min-h-10 w-full resize-y rounded-xl border border-white/10 bg-[#07111b] px-3 py-2 text-sm leading-6 text-[#f3efe3] outline-none transition-colors focus:border-[#53d1cb]/60 disabled:opacity-50"
+            className="min-h-10 w-full resize-y rounded-xl border border-border bg-background px-3 py-2 text-sm leading-6 text-foreground outline-none transition-colors focus:border-brand-accent-border/60 disabled:opacity-50"
             defaultValue={concept.definition}
             disabled={disabled || isPending}
             name="definition"
@@ -949,11 +1476,11 @@ function KnowledgebaseConceptPatchForm({
         </label>
         <div className="grid gap-2">
           <label className="space-y-1.5">
-            <span className="font-mono text-[0.6rem] tracking-[0.16em] uppercase text-[#f3efe3]/42">
+            <span className="font-mono text-[0.6rem] tracking-[0.16em] uppercase text-muted-foreground">
               Difficulty
             </span>
             <select
-              className="h-10 w-full rounded-xl border border-white/10 bg-[#07111b] px-3 text-sm text-[#f3efe3] outline-none transition-colors focus:border-[#53d1cb]/60 disabled:opacity-50"
+              className="h-10 w-full rounded-xl border border-border bg-background px-3 text-sm text-foreground outline-none transition-colors focus:border-brand-accent-border/60 disabled:opacity-50"
               defaultValue={concept.difficulty}
               disabled={disabled || isPending}
               name="difficulty"
@@ -984,8 +1511,8 @@ function KnowledgebaseConceptPatchForm({
 
 function RelationChip({ label }: { label: string }) {
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.03] px-2 py-0.5 text-[0.7rem] text-[#f3efe3]/82">
-      <ArrowRight className="size-3 text-[#53d1cb]" strokeWidth={1.5} />
+    <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card/50 px-2 py-0.5 text-[0.7rem] text-muted-foreground">
+      <ArrowRight className="size-3 text-brand-accent-foreground" strokeWidth={1.5} />
       {label}
     </span>
   );
@@ -1011,16 +1538,171 @@ function ChatPane({
   collapsed,
   items,
   onCollapseToggle,
+  projectId,
+  chatContextConcepts,
+  onRemoveChatContext,
   sourceReady,
   sourceWords,
 }: {
   collapsed: boolean;
   items: ChatItem[];
   onCollapseToggle: () => void;
+  projectId: string;
+  chatContextConcepts: ConceptRow[];
+  onRemoveChatContext: (id: string) => void;
   sourceReady: boolean;
   sourceWords: number;
 }) {
+  const router = useRouter();
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const [messages, setMessages] = useState<ChatItem[]>([]);
+  const [input, setInput] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!input.trim() || isLoading) return;
+
+    const userText = input;
+    setInput('');
+    setIsLoading(true);
+
+    const userMsgId = `user-${Date.now()}`;
+    const agentMsgId = `agent-${Date.now()}`;
+
+    setMessages(prev => [
+      ...prev,
+      { id: userMsgId, kind: 'message', role: 'user', text: userText, streaming: false },
+      { id: agentMsgId, kind: 'message', role: 'agent', text: '', streaming: true },
+    ]);
+
+    try {
+      const payloadMessages = [
+        ...messages.filter(m => m.kind === 'message').map(m => ({
+          role: m.role === 'agent' ? 'assistant' : m.role,
+          content: m.text
+        })),
+        { role: 'user', content: userText }
+      ];
+
+      const response = await fetch(`/api/v1/projects/${projectId}/agent/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          messages: payloadMessages,
+          selectedConcepts: chatContextConcepts.map((concept) => ({
+            id: concept.id,
+            name: concept.name,
+          }))
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Agent request failed');
+      }
+
+      if (!response.body) throw new Error('No stream body returned');
+
+      let displayText = '';
+      let hasAgentMessage = true;
+
+      await consumeUIMessageChunks(response.body, (chunk) => {
+        if (chunk.type === 'data-agent-activity') {
+          const event = chunk.data as StreamEvent;
+          setMessages(prev => {
+            const lastMsg = prev[prev.length - 1];
+            if (lastMsg && lastMsg.kind === 'event' && lastMsg.event.type === 'agent_activity') {
+              const newMessages = [...prev];
+              newMessages[newMessages.length - 1] = { ...lastMsg, event };
+              return newMessages;
+            }
+            return [
+              ...prev,
+              { id: `activity-${Date.now()}-${prev.length}`, kind: 'event', event },
+            ];
+          });
+          return;
+        }
+
+        if (chunk.type === 'text-start') {
+          setMessages(prev => {
+            if (hasAgentMessage) {
+              return prev;
+            }
+
+            hasAgentMessage = true;
+            return [
+              ...prev,
+              { id: agentMsgId, kind: 'message', role: 'agent', text: '', streaming: true },
+            ];
+          });
+          return;
+        }
+
+        if (chunk.type === 'text-delta') {
+          displayText += chunk.delta;
+          setMessages(prev => {
+            if (!hasAgentMessage) {
+              hasAgentMessage = true;
+              return [
+                ...prev,
+                { id: agentMsgId, kind: 'message', role: 'agent', text: displayText, streaming: true },
+              ];
+            }
+
+            return prev.map(m => 
+              m.id === agentMsgId ? { ...m, text: displayText } : m
+            );
+          });
+          return;
+        }
+
+        if (chunk.type === 'text-end' || chunk.type === 'finish') {
+          const finalText = displayText.trim()
+            ? displayText
+            : 'Selesai. Agent tidak mengirim ringkasan teks, tapi event stream sudah selesai.';
+
+          setMessages(prev => {
+            const filtered = prev.filter(m => !(m.kind === 'event' && m.event.type === 'agent_activity'));
+            
+            if (!hasAgentMessage) {
+              hasAgentMessage = true;
+              return [
+                ...filtered,
+                { id: agentMsgId, kind: 'message', role: 'agent', text: finalText, streaming: false },
+              ];
+            }
+
+            return filtered.map(m =>
+              m.id === agentMsgId ? { ...m, text: finalText, streaming: false } : m
+            );
+          });
+        }
+      });
+    } catch (err) {
+      console.error('Chat failed:', err);
+      setMessages(prev => {
+        const filtered = prev.filter(m => !(m.kind === 'event' && m.event.type === 'agent_activity'));
+        const fallbackText = 'Maaf, agent berhenti sebelum selesai. Coba ulangi dengan instruksi yang lebih spesifik.';
+        if (!filtered.some((m) => m.id === agentMsgId)) {
+          return [
+            ...filtered,
+            { id: agentMsgId, kind: 'message', role: 'agent', text: fallbackText, streaming: false },
+          ];
+        }
+
+        return filtered.map(m => 
+          m.id === agentMsgId ? { ...m, text: fallbackText } : m
+        );
+      });
+    } finally {
+      setIsLoading(false);
+      setMessages(prev => prev.map(m => 
+        m.id === agentMsgId ? { ...m, streaming: false } : m
+      ));
+      router.refresh();
+    }
+  };
 
   // Pin the timeline to the latest activity.
   useEffect(() => {
@@ -1029,14 +1711,14 @@ function ChatPane({
     queueMicrotask(() => {
       node.scrollTop = node.scrollHeight;
     });
-  }, [items]);
+  }, [items, messages]);
 
   if (collapsed) {
     return (
       <CollapsedPaneRail
         ariaLabel="Expand refinement"
         eyebrow="Refinement"
-        meta="paused"
+        meta="active"
         onToggle={onCollapseToggle}
         side="right"
         title="Graph agent"
@@ -1045,13 +1727,13 @@ function ChatPane({
   }
 
   return (
-    <aside aria-label="Refinement chat" className="flex min-h-[520px] flex-col bg-[#0a131c] lg:min-h-0">
+    <aside aria-label="Refinement chat" className="flex min-h-[520px] w-full flex-col border-l border-border bg-card lg:min-h-0">
       <PaneHeader
         eyebrow="Refinement"
         meta={
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.03] px-2 py-0.5 font-mono text-[0.62rem] tabular-nums tracking-[0.18em] uppercase">
-            <span aria-hidden className="size-1.5 rounded-full bg-[#f3efe3]/42" />
-            <span className="text-[#f3efe3]/62">paused</span>
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-brand-accent-border/30 bg-brand-accent-surface px-2 py-0.5 font-mono text-[0.62rem] tabular-nums tracking-[0.18em] uppercase text-brand-accent-foreground">
+            <span aria-hidden className="size-1.5 rounded-full bg-brand-accent" />
+            active
           </span>
         }
         onCollapseToggle={onCollapseToggle}
@@ -1059,18 +1741,14 @@ function ChatPane({
         title="Graph agent"
       />
 
-      <div className="border-b border-white/8 px-4 py-3">
-        <p className="text-[0.78rem] leading-5 text-[#f3efe3]/72">
-          Graph rebuilds run automatically when you save a source. Refinement chat is paused until
-          source-driven refinement is reconnected to the ingestion agent.
-        </p>
-        <p className="mt-2.5 flex items-center gap-2 font-mono text-[0.6rem] tabular-nums tracking-[0.16em] uppercase text-[#f3efe3]/42">
-          <FileText className="size-3" strokeWidth={1.5} />
-          <span>Source · {sourceReady ? `${sourceWords} words` : 'empty'}</span>
+      <div className="border-b border-border px-4 py-3">
+        <p className="text-[0.78rem] leading-5 text-muted-foreground">
+          Chat with the agent to modify concepts and relationships directly.
+          Hold <kbd className="font-mono text-[0.65rem] border border-border bg-white/5 rounded px-1">Ctrl/Cmd</kbd> and click concepts to attach them as context.
         </p>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4" ref={scrollRef}>
+      <div className="min-h-0 flex-1 overflow-y-auto p-4" ref={scrollRef}>
         <ol className="space-y-3">
           {items.map((item) => (
             <li key={item.id}>
@@ -1081,15 +1759,53 @@ function ChatPane({
               )}
             </li>
           ))}
+          {messages.map((item) => (
+            <li key={item.id}>
+              {item.kind === 'message' ? (
+                <ChatMessage role={item.role} streaming={item.streaming || false} text={item.text} />
+              ) : (
+                <ChatEvent event={item.event} />
+              )}
+            </li>
+          ))}
         </ol>
       </div>
 
-      <div className="shrink-0 border-t border-white/8 bg-[#0a131c] px-4 py-3">
-        <p className="text-[0.7rem] leading-5 text-[#f3efe3]/52">
-          Edit a source on the left to trigger ingestion. The agent rewrites the knowledgebase from
-          your sources directly; manual refinement chat will return when source-aware refinement is
-          wired in.
-        </p>
+      <div className="shrink-0 border-t border-border bg-card px-4 py-3 flex flex-col gap-2">
+        {chatContextConcepts.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {chatContextConcepts.map(concept => (
+              <span key={concept.id} className="inline-flex items-center gap-1 rounded-full border border-brand-accent-border/30 bg-brand-accent-surface pl-2 pr-1 py-0.5 text-xs text-brand-accent-foreground">
+                {concept.name}
+                <button
+                  type="button"
+                  onClick={() => onRemoveChatContext(concept.id)}
+                  className="rounded-full p-0.5 hover:bg-brand-accent/20 text-brand-accent-foreground/70 hover:text-brand-accent-foreground transition-colors"
+                >
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M9 3L3 9M3 3L9 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                  </svg>
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
+        <form onSubmit={handleSubmit} className="flex gap-2">
+          <input
+            className="flex-1 rounded-md border border-border bg-white/5 px-3 py-2 text-sm text-foreground placeholder:text-foreground/30 focus:border-brand-accent-border focus:outline-none focus:ring-1 focus:ring-[#53d1cb]/50"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder="Instruct the agent..."
+            disabled={isLoading}
+          />
+          <button
+            type="submit"
+            disabled={isLoading || !input.trim()}
+            className="rounded-md bg-brand-accent/20 px-3 py-2 text-sm font-medium text-brand-accent-foreground hover:bg-brand-accent/30 disabled:opacity-50 transition-colors"
+          >
+            Send
+          </button>
+        </form>
       </div>
     </aside>
   );
@@ -1107,7 +1823,7 @@ function ChatMessage({
   if (role === 'user') {
     return (
       <div className="flex justify-end">
-        <p className="max-w-[28ch] rounded-2xl rounded-br-md border border-[#53d1cb]/24 bg-[#53d1cb]/[0.08] px-3.5 py-2 text-sm leading-6 text-[#f3efe3] sm:max-w-[36ch]">
+        <p className="max-w-[28ch] rounded-2xl rounded-br-md border border-brand-accent-border bg-brand-accent/[0.08] px-3.5 py-2 text-sm leading-6 text-foreground sm:max-w-[36ch]">
           {text}
         </p>
       </div>
@@ -1118,16 +1834,90 @@ function ChatMessage({
     <div className="flex items-start gap-2.5">
       <span
         aria-hidden
-        className="mt-0.5 grid size-7 shrink-0 place-items-center rounded-full border border-white/10 bg-[#0d1824] text-[#53d1cb]"
+        className="mt-0.5 grid size-7 shrink-0 place-items-center rounded-full border border-border bg-card text-brand-accent-foreground"
       >
         <Bot className="size-3.5" strokeWidth={1.5} />
       </span>
-      <p className="max-w-[34ch] rounded-2xl rounded-tl-md border border-white/8 bg-white/[0.03] px-3.5 py-2 text-sm leading-6 text-[#f3efe3]/82">
-        {text}
+      <div className="max-w-[34ch] rounded-2xl rounded-tl-md border border-border bg-card/50 px-3.5 py-2 text-sm leading-6 text-muted-foreground">
+        <MarkdownText text={text} />
         {streaming ? (
-          <span aria-hidden className="ml-1 inline-block h-3.5 w-[2px] translate-y-0.5 bg-[#53d1cb] stream-cursor" />
+          <span aria-hidden className="ml-1 inline-block h-3.5 w-[2px] translate-y-0.5 bg-brand-accent stream-cursor" />
         ) : null}
-      </p>
+      </div>
+    </div>
+  );
+}
+
+function MarkdownText({ text }: { text: string }) {
+  if (!text) return null;
+
+  return (
+    <div className="space-y-2.5 break-words">
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        components={{
+          p: ({ node, ...props }) => (
+            <p className="whitespace-pre-wrap text-muted-foreground" {...props} />
+          ),
+          a: ({ node, ...props }) => (
+            <a
+              className="text-[#9de7e2] underline decoration-[#53d1cb]/40 underline-offset-4 transition-colors hover:text-[#c8fffb]"
+              target="_blank"
+              rel="noreferrer"
+              {...props}
+            />
+          ),
+          strong: ({ node, ...props }) => (
+            <strong className="font-semibold text-foreground" {...props} />
+          ),
+          ul: ({ node, ...props }) => (
+            <ul className="list-disc space-y-1 pl-4 text-muted-foreground" {...props} />
+          ),
+          ol: ({ node, ...props }) => (
+            <ol className="list-decimal space-y-1 pl-4 text-muted-foreground" {...props} />
+          ),
+          li: ({ node, ...props }) => (
+            <li {...props} />
+          ),
+          pre: ({ node, ...props }) => (
+            <pre 
+              className="overflow-x-auto rounded-lg border border-border bg-[#050b12] p-3 font-mono text-[0.72rem] leading-5 text-[#d9f7f4] [&>code]:bg-transparent [&>code]:border-0 [&>code]:p-0 [&>code]:text-inherit" 
+              {...props} 
+            />
+          ),
+          code: ({ node, ...props }: any) => (
+            <code
+              className="rounded border border-border bg-muted/50 px-1 py-0.5 font-mono text-[0.78em] text-[#9de7e2]"
+              {...props}
+            />
+          ),
+          h1: ({ node, ...props }) => (
+            <h1 className="mt-4 mb-2 text-lg font-semibold text-foreground" {...props} />
+          ),
+          h2: ({ node, ...props }) => (
+            <h2 className="mt-4 mb-2 text-base font-semibold text-foreground" {...props} />
+          ),
+          h3: ({ node, ...props }) => (
+            <h3 className="mt-3 mb-1.5 text-sm font-semibold text-foreground" {...props} />
+          ),
+          table: ({ node, ...props }) => (
+            <div className="my-2 overflow-x-auto rounded-lg border border-border">
+              <table className="w-full text-left text-sm text-muted-foreground" {...props} />
+            </div>
+          ),
+          th: ({ node, ...props }) => (
+            <th className="border-b border-border bg-card/50 px-3 py-2 font-medium text-foreground" {...props} />
+          ),
+          td: ({ node, ...props }) => (
+            <td className="border-b border-border px-3 py-2 last:border-b-0" {...props} />
+          ),
+          blockquote: ({ node, ...props }) => (
+            <blockquote className="border-l-2 border-brand-accent-border pl-3 italic text-muted-foreground" {...props} />
+          ),
+        }}
+      >
+        {text}
+      </ReactMarkdown>
     </div>
   );
 }
@@ -1148,7 +1938,7 @@ function ChatEvent({ event }: { event: StreamEvent }) {
         <p className={cn('font-mono text-[0.6rem] tabular-nums tracking-[0.18em] uppercase', tone.label)}>
           {tone.title}
         </p>
-        <p className="text-[0.78rem] leading-5 text-[#f3efe3]/82">{tone.copy}</p>
+        <p className="text-[0.78rem] leading-5 text-muted-foreground">{tone.copy}</p>
       </div>
     </div>
   );
@@ -1165,38 +1955,38 @@ function getEventTone(event: StreamEvent): {
   switch (event.type) {
     case 'source_read':
       return {
-        border: 'border-white/8',
+        border: 'border-border',
         copy: event.title ? event.title : `Source · ${event.sourceId}`,
         icon: <FileText className="size-3" strokeWidth={1.6} />,
-        iconBg: 'bg-white/[0.05] text-[#f3efe3]/72',
-        label: 'text-[#f3efe3]/52',
+        iconBg: 'bg-card/50 text-muted-foreground',
+        label: 'text-muted-foreground',
         title: 'Source read',
       };
     case 'concept_proposed':
       return {
-        border: 'border-[#53d1cb]/24',
+        border: 'border-brand-accent-border',
         copy: event.definition ? `${event.name} — ${truncate(event.definition, 90)}` : event.name,
         icon: <Sparkles className="size-3" strokeWidth={1.6} />,
-        iconBg: 'bg-[#53d1cb]/[0.12] text-[#7ceae3]',
-        label: 'text-[#53d1cb]',
+        iconBg: 'bg-brand-accent/[0.12] text-brand-accent',
+        label: 'text-brand-accent-foreground',
         title: 'Concept proposed',
       };
     case 'relationship_proposed':
       return {
-        border: 'border-[#53d1cb]/18',
+        border: 'border-brand-accent-border/18',
         copy: `${event.source} → ${event.target}`,
         icon: <GitBranch className="size-3" strokeWidth={1.6} />,
-        iconBg: 'bg-[#53d1cb]/[0.08] text-[#7ceae3]',
-        label: 'text-[#53d1cb]',
+        iconBg: 'bg-brand-accent/[0.08] text-brand-accent',
+        label: 'text-brand-accent-foreground',
         title: 'Prerequisite link',
       };
     case 'evidence_attached':
       return {
-        border: 'border-white/8',
+        border: 'border-border',
         copy: `${event.concept}${event.location ? ` · §${event.location}` : ''} — ${truncate(event.excerpt, 80)}`,
         icon: <Quote className="size-3" strokeWidth={1.6} />,
-        iconBg: 'bg-white/[0.05] text-[#f3efe3]/82',
-        label: 'text-[#f3efe3]/72',
+        iconBg: 'bg-card/50 text-muted-foreground',
+        label: 'text-muted-foreground',
         title: 'Evidence attached',
       };
     case 'ingestion_complete':
@@ -1208,13 +1998,30 @@ function getEventTone(event: StreamEvent): {
         label: 'text-emerald-300',
         title: 'Ingestion complete',
       };
+    case 'agent_activity':
+      return {
+        border: event.status === 'started' ? 'border-brand-accent-border/18' : 'border-border',
+        copy: event.detail,
+        icon:
+          event.status === 'started' ? (
+            <CircleDashed className="size-3" strokeWidth={1.6} />
+          ) : (
+            <Info className="size-3" strokeWidth={1.6} />
+          ),
+        iconBg:
+          event.status === 'started'
+            ? 'bg-brand-accent/[0.08] text-brand-accent'
+            : 'bg-card/50 text-muted-foreground',
+        label: event.status === 'started' ? 'text-brand-accent-foreground' : 'text-muted-foreground',
+        title: event.label,
+      };
     default:
       return {
-        border: 'border-white/8',
+        border: 'border-border',
         copy: 'Activity',
         icon: <MessageSquareText className="size-3" strokeWidth={1.6} />,
-        iconBg: 'bg-white/[0.04] text-[#f3efe3]/72',
-        label: 'text-[#f3efe3]/52',
+        iconBg: 'bg-card/50 text-muted-foreground',
+        label: 'text-muted-foreground',
         title: 'Event',
       };
   }
@@ -1238,13 +2045,13 @@ function PaneHeader({
   title: string;
 }) {
   return (
-    <header className="flex items-center justify-between gap-3 border-b border-white/8 px-4 py-3.5">
+    <header className="flex items-center justify-between gap-3 border-b border-border px-4 py-3.5">
       <div className="min-w-0 space-y-1">
-        <span className="inline-flex items-center gap-2 font-mono text-[0.62rem] tabular-nums tracking-[0.18em] uppercase text-[#f3efe3]/52">
-          <span aria-hidden className="size-1.5 rounded-full bg-[#53d1cb] pulse-soft" />
+        <span className="inline-flex items-center gap-2 font-mono text-[0.62rem] tabular-nums tracking-[0.18em] uppercase text-muted-foreground">
+          <span aria-hidden className="size-1.5 rounded-full bg-brand-accent pulse-soft" />
           {eyebrow}
         </span>
-        <h2 className="truncate text-sm font-medium tracking-tight text-[#f3efe3]">{title}</h2>
+        <h2 className="truncate text-sm font-medium tracking-tight text-foreground">{title}</h2>
       </div>
       <div className="flex shrink-0 items-center gap-2 text-xs">
         {meta ? <div>{meta}</div> : null}
@@ -1252,7 +2059,7 @@ function PaneHeader({
           <button
             aria-label={side === 'left' ? 'Collapse concept inventory' : 'Collapse refinement'}
             aria-expanded="true"
-            className="inline-flex size-8 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-[#f3efe3]/72 transition-colors hover:border-[#53d1cb]/24 hover:bg-[#53d1cb]/8 hover:text-[#53d1cb]"
+            className="inline-flex size-8 items-center justify-center rounded-xl border border-border bg-card/50 text-muted-foreground transition-colors hover:border-brand-accent-border hover:bg-brand-accent/8 hover:text-brand-accent-foreground"
             onClick={onCollapseToggle}
             type="button"
           >
@@ -1287,14 +2094,14 @@ function CollapsedPaneRail({
     <aside
       aria-label={title}
       className={cn(
-        'flex min-h-16 items-center justify-between gap-3 border-b border-white/8 bg-[#0a131c] px-4 py-3 lg:min-h-0 lg:flex-col lg:justify-start lg:border-b-0 lg:px-2 lg:py-3',
+        'flex min-h-16 items-center justify-between gap-3 border-b border-border bg-card px-4 py-3 lg:min-h-0 lg:flex-col lg:justify-start lg:border-b-0 lg:px-2 lg:py-3',
         side === 'left' ? 'lg:border-r' : 'lg:border-r-0',
       )}
     >
       <button
         aria-label={ariaLabel}
         aria-expanded="false"
-        className="inline-flex size-9 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-[#f3efe3]/72 transition-colors hover:border-[#53d1cb]/24 hover:bg-[#53d1cb]/8 hover:text-[#53d1cb] lg:size-10"
+        className="inline-flex size-9 shrink-0 items-center justify-center rounded-xl border border-border bg-card/50 text-muted-foreground transition-colors hover:border-brand-accent-border hover:bg-brand-accent/8 hover:text-brand-accent-foreground lg:size-10"
         onClick={onToggle}
         type="button"
       >
@@ -1306,16 +2113,16 @@ function CollapsedPaneRail({
       </button>
 
       <div className="flex min-w-0 flex-1 items-center gap-2 lg:min-h-0 lg:flex-none lg:flex-col">
-        <span aria-hidden className="size-1.5 shrink-0 rounded-full bg-[#53d1cb] pulse-soft" />
-        <span className="truncate font-mono text-[0.62rem] tabular-nums tracking-[0.18em] uppercase text-[#f3efe3]/52 lg:[writing-mode:vertical-rl]">
+        <span aria-hidden className="size-1.5 shrink-0 rounded-full bg-brand-accent pulse-soft" />
+        <span className="truncate font-mono text-[0.62rem] tabular-nums tracking-[0.18em] uppercase text-muted-foreground lg:[writing-mode:vertical-rl]">
           {eyebrow}
         </span>
-        <span className="truncate text-sm font-medium tracking-tight text-[#f3efe3] lg:[writing-mode:vertical-rl]">
+        <span className="truncate text-sm font-medium tracking-tight text-foreground lg:[writing-mode:vertical-rl]">
           {title}
         </span>
       </div>
 
-      <span className="shrink-0 font-mono text-[0.62rem] tabular-nums tracking-[0.16em] uppercase text-[#f3efe3]/52 lg:[writing-mode:vertical-rl]">
+      <span className="shrink-0 font-mono text-[0.62rem] tabular-nums tracking-[0.16em] uppercase text-muted-foreground lg:[writing-mode:vertical-rl]">
         {meta}
       </span>
     </aside>
@@ -1346,8 +2153,8 @@ function ConfidencePill({ confidence, muted = false }: { confidence: string; mut
       className={cn(
         'inline-flex h-5 items-center gap-1.5 rounded-full border px-2 font-mono text-[0.62rem] tabular-nums',
         muted
-          ? 'border-white/10 bg-white/[0.03] text-[#f3efe3]/62'
-          : 'border-[#53d1cb]/30 bg-[#53d1cb]/[0.08] text-[#7ceae3]',
+          ? 'border-border bg-card/50 text-muted-foreground'
+          : 'border-brand-accent-border/30 bg-brand-accent/[0.08] text-brand-accent',
       )}
       title="Confidence"
     >
@@ -1362,8 +2169,15 @@ function ConfidencePill({ confidence, muted = false }: { confidence: string; mut
 // ───────────────────────────────────────────────────────────────────────────
 
 type SourceEvidence = {
+  blockId?: string;
   excerpt: string;
   location?: string;
+  sourceId?: string;
+};
+
+type RelationshipEvidenceQuality = {
+  evidenceStrength: string;
+  finalEvidenceScore: number;
 };
 
 function getEvidence(value: unknown): SourceEvidence[] {
@@ -1377,6 +2191,31 @@ function getEvidence(value: unknown): SourceEvidence[] {
       (item as { excerpt: string }).excerpt.trim().length > 0
     );
   });
+}
+
+function getRelationshipEvidenceQuality(value: unknown): RelationshipEvidenceQuality | null {
+  if (!value || typeof value !== 'object') return null;
+  const metadata = value as { evidenceQuality?: unknown };
+  const evidenceQuality = metadata.evidenceQuality;
+  if (!evidenceQuality || typeof evidenceQuality !== 'object') return null;
+
+  const record = evidenceQuality as Record<string, unknown>;
+  if (
+    typeof record.evidenceStrength !== 'string' ||
+    typeof record.finalEvidenceScore !== 'number'
+  ) {
+    return null;
+  }
+
+  return {
+    evidenceStrength: record.evidenceStrength,
+    finalEvidenceScore: record.finalEvidenceScore,
+  };
+}
+
+function shortenBlockId(blockId: string) {
+  const parts = blockId.split(':');
+  return parts.at(-1) ?? blockId;
 }
 
 function formatConfidence(value: string): string {

@@ -19,22 +19,22 @@ export function ProjectChrome({ title }: ProjectChromeProps) {
   return (
     <div className="flex w-full min-w-0 flex-col gap-2 md:gap-1.5">
       <div className="flex min-w-0 items-center gap-2 md:hidden">
-        <span className="size-1.5 shrink-0 rounded-full bg-[#53d1cb] pulse-soft" />
-        <h1 className="min-w-0 truncate text-sm font-medium tracking-tight text-[#f3efe3]">
+        <span className="size-1.5 shrink-0 rounded-full bg-brand-accent pulse-soft" />
+        <h1 className="min-w-0 truncate text-sm font-medium tracking-tight text-foreground">
           {title}
         </h1>
       </div>
       <nav
         aria-label="Breadcrumb"
-        className="hidden min-w-0 items-center gap-2 px-2 font-mono text-[0.6rem] tracking-[0.18em] uppercase text-[#f3efe3]/42 md:flex"
+        className="hidden min-w-0 items-center gap-2 px-2 font-mono text-[0.6rem] tracking-[0.18em] uppercase text-muted-foreground md:flex"
       >
-        <Link className="transition-colors hover:text-[#f3efe3]" href="/dashboard/projects">
+        <Link className="transition-colors hover:text-foreground" href="/dashboard/projects">
           Projects
         </Link>
-        <span aria-hidden className="text-[#f3efe3]/24">
+        <span aria-hidden className="text-muted-foreground/50">
           /
         </span>
-        <span className="truncate normal-case tracking-normal text-[#f3efe3]/72">{title}</span>
+        <span className="truncate normal-case tracking-normal text-foreground/80">{title}</span>
       </nav>
       <ProjectNavigator />
     </div>

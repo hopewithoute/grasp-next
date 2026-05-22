@@ -14,6 +14,12 @@ import {
   deleteProjectDto,
   updateKnowledgebaseConcept,
   updateKnowledgebaseConceptDto,
+  updateKnowledgebaseConceptEvidence,
+  updateKnowledgebaseConceptEvidenceDto,
+  updateKnowledgebaseRelationship,
+  updateKnowledgebaseRelationshipDto,
+  updateKnowledgebaseRelationshipEvidence,
+  updateKnowledgebaseRelationshipEvidenceDto,
   updateProjectSource,
   updateProjectSourceDto,
   updateProjectDetails,
@@ -43,6 +49,16 @@ export type DeleteProjectFormState = {
 };
 
 export type KnowledgebaseConceptFormState = {
+  error: string | null;
+  success: boolean;
+};
+
+export type KnowledgebaseRelationshipFormState = {
+  error: string | null;
+  success: boolean;
+};
+
+export type KnowledgebaseEvidenceFormState = {
   error: string | null;
   success: boolean;
 };
@@ -294,6 +310,160 @@ export async function updateKnowledgebaseConceptFormAction(
   } catch (error) {
     return {
       error: error instanceof Error ? error.message : 'Knowledgebase concept update failed.',
+      success: false,
+    };
+  }
+}
+
+export async function updateKnowledgebaseRelationshipFormAction(
+  _state: KnowledgebaseRelationshipFormState,
+  formData: FormData
+): Promise<KnowledgebaseRelationshipFormState> {
+  const actor = await getActor();
+
+  if (!actor) {
+    return { error: 'Unauthorized.', success: false };
+  }
+
+  const parsed = updateKnowledgebaseRelationshipDto.safeParse({
+    artifactId: formData.get('artifactId')?.toString() ?? '',
+    relationshipId: formData.get('relationshipId')?.toString() ?? '',
+    relationshipType: formData.get('relationshipType')?.toString() ?? '',
+    sourceConceptId: formData.get('sourceConceptId')?.toString() ?? '',
+    targetConceptId: formData.get('targetConceptId')?.toString() ?? '',
+  });
+
+  if (!parsed.success) {
+    return { error: 'Relationship source and target are required.', success: false };
+  }
+
+  try {
+    const artifact = await updateKnowledgebaseRelationship(parsed.data, createProjectDeps(), actor);
+
+    revalidatePath(`/dashboard/projects/${artifact.projectId}`);
+
+    return { error: null, success: true };
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : 'Knowledgebase relationship update failed.',
+      success: false,
+    };
+  }
+}
+
+export async function updateKnowledgebaseEvidenceFormAction(
+  _state: KnowledgebaseEvidenceFormState,
+  formData: FormData
+): Promise<KnowledgebaseEvidenceFormState> {
+  const actor = await getActor();
+
+  if (!actor) {
+    return { error: 'Unauthorized.', success: false };
+  }
+
+  const parsed = updateKnowledgebaseConceptEvidenceDto.safeParse({
+    artifactId: formData.get('artifactId')?.toString() ?? '',
+    blockId: formData.get('blockId')?.toString() ?? '',
+    conceptId: formData.get('conceptId')?.toString() ?? '',
+    locationLabel: formData.get('locationLabel')?.toString() ?? '',
+    originalBlockId: formData.get('originalBlockId')?.toString() ?? '',
+    originalQuote: formData.get('originalQuote')?.toString() ?? '',
+    originalSourceId: formData.get('originalSourceId')?.toString() ?? '',
+    quote: formData.get('quote')?.toString() ?? '',
+    sourceId: formData.get('sourceId')?.toString() ?? '',
+  });
+
+  if (!parsed.success) {
+    return { error: 'Evidence quote, source block, and location are required.', success: false };
+  }
+
+  try {
+    const artifact = await updateKnowledgebaseConceptEvidence(parsed.data, createProjectDeps(), actor);
+
+    revalidatePath(`/dashboard/projects/${artifact.projectId}`);
+
+    return { error: null, success: true };
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : 'Knowledgebase evidence update failed.',
+      success: false,
+    };
+  }
+}
+
+export type ConceptSearchPaginationParams = {
+  projectId: string;
+  query?: string;
+  difficulty?: string;
+  limit?: number;
+  offset?: number;
+};
+
+export async function searchKnowledgebaseConceptsAction(params: ConceptSearchPaginationParams) {
+  const actor = await getActor();
+  
+  if (!actor) {
+    throw new Error('Unauthorized');
+  }
+  
+  const deps = createProjectDeps();
+  const project = await deps.projectRepository.findByIdForOwner(params.projectId, actor.id);
+
+  if (!project) {
+    throw new Error('Unauthorized');
+  }
+
+  return deps.knowledgebaseRepository.searchConceptsWithPagination({
+    projectId: params.projectId,
+    query: params.query,
+    difficulty: params.difficulty,
+    limit: params.limit ?? 20,
+    offset: params.offset ?? 0,
+  });
+}
+
+export async function updateKnowledgebaseRelationshipEvidenceFormAction(
+  _state: KnowledgebaseEvidenceFormState,
+  formData: FormData
+): Promise<KnowledgebaseEvidenceFormState> {
+  const actor = await getActor();
+
+  if (!actor) {
+    return { error: 'Unauthorized.', success: false };
+  }
+
+  const parsed = updateKnowledgebaseRelationshipEvidenceDto.safeParse({
+    artifactId: formData.get('artifactId')?.toString() ?? '',
+    blockId: formData.get('blockId')?.toString() ?? '',
+    locationLabel: formData.get('locationLabel')?.toString() ?? '',
+    originalBlockId: formData.get('originalBlockId')?.toString() ?? '',
+    originalQuote: formData.get('originalQuote')?.toString() ?? '',
+    originalSourceId: formData.get('originalSourceId')?.toString() ?? '',
+    quote: formData.get('quote')?.toString() ?? '',
+    relationshipId: formData.get('relationshipId')?.toString() ?? '',
+    sourceId: formData.get('sourceId')?.toString() ?? '',
+  });
+
+  if (!parsed.success) {
+    return { error: 'Evidence quote, source block, and location are required.', success: false };
+  }
+
+  try {
+    const artifact = await updateKnowledgebaseRelationshipEvidence(
+      parsed.data,
+      createProjectDeps(),
+      actor
+    );
+
+    revalidatePath(`/dashboard/projects/${artifact.projectId}`);
+
+    return { error: null, success: true };
+  } catch (error) {
+    return {
+      error:
+        error instanceof Error
+          ? error.message
+          : 'Knowledgebase relationship evidence update failed.',
       success: false,
     };
   }

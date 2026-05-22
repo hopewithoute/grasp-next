@@ -1,5 +1,6 @@
 'use client';
 
+import { Suspense } from 'react';
 import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
 import {
@@ -34,7 +35,7 @@ const STAGE_ICONS: Record<StudioStage, typeof FileText> = {
  * any data action, so it can mount inside the dashboard shell without
  * depending on per-project loaders.
  */
-export function ProjectNavigator() {
+function ProjectNavigatorContent() {
   const params = useParams<{ projectId?: string }>();
   const searchParams = useSearchParams();
 
@@ -47,7 +48,7 @@ export function ProjectNavigator() {
     <div className="relative min-w-0">
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-y-0 left-0 w-4 bg-gradient-to-r from-[#07111a] to-transparent md:hidden"
+        className="pointer-events-none absolute inset-y-0 left-0 w-4 bg-gradient-to-r from-background to-transparent md:hidden"
       />
       <nav
         aria-label="Project navigator"
@@ -62,10 +63,10 @@ export function ProjectNavigator() {
             <Link
               aria-current={active ? 'page' : undefined}
               className={cn(
-                'group relative inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full px-2.5 text-[0.8rem] transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] active:scale-[0.98] md:gap-2 md:px-3.5 md:text-sm',
+                'group relative inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full border px-2.5 text-[0.8rem] transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] active:scale-[0.98] md:gap-2 md:px-3.5 md:text-sm',
                 active
-                  ? 'bg-[#53d1cb]/10 text-[#f3efe3] shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]'
-                  : 'text-[#f3efe3]/62 hover:bg-white/[0.04] hover:text-[#f3efe3]',
+                  ? 'border-brand-accent-border bg-brand-accent-surface text-brand-accent-foreground shadow-sm'
+                  : 'border-transparent text-muted-foreground hover:bg-muted/50 hover:text-foreground',
               )}
               href={buildStageHref(projectId, stage)}
               key={stage}
@@ -73,7 +74,7 @@ export function ProjectNavigator() {
               <span
                 className={cn(
                   'hidden items-center gap-1.5 font-mono text-[0.65rem] tabular-nums tracking-[0.16em] uppercase md:inline-flex',
-                  active ? 'text-[#53d1cb]' : 'text-[#f3efe3]/42',
+                  active ? 'text-brand-accent-foreground' : 'text-muted-foreground',
                 )}
               >
                 {stageNumber}
@@ -81,7 +82,7 @@ export function ProjectNavigator() {
               <Icon
                 className={cn(
                   'size-3.5 shrink-0',
-                  active ? 'text-[#53d1cb]' : 'text-[#f3efe3]/52 group-hover:text-[#f3efe3]/82',
+                  active ? 'text-brand-accent-foreground' : 'text-muted-foreground group-hover:text-foreground',
                 )}
                 strokeWidth={1.5}
               />
@@ -96,7 +97,7 @@ export function ProjectNavigator() {
               {active ? (
                 <span
                   aria-hidden
-                  className="absolute -bottom-[1px] left-2.5 right-2.5 h-[2px] rounded-full bg-[#53d1cb] md:left-3.5 md:right-3.5"
+                  className="absolute -bottom-[1px] left-2.5 right-2.5 h-[2px] rounded-full bg-brand-accent-foreground md:left-3.5 md:right-3.5"
                 />
               ) : null}
             </Link>
@@ -105,8 +106,16 @@ export function ProjectNavigator() {
       </nav>
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-y-0 right-0 w-5 bg-gradient-to-l from-[#07111a] to-transparent md:hidden"
+        className="pointer-events-none absolute inset-y-0 right-0 w-5 bg-gradient-to-l from-background to-transparent md:hidden"
       />
     </div>
+  );
+}
+
+export function ProjectNavigator() {
+  return (
+    <Suspense fallback={null}>
+      <ProjectNavigatorContent />
+    </Suspense>
   );
 }

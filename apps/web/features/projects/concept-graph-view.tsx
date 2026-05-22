@@ -15,6 +15,7 @@ import {
 } from '@xyflow/react';
 import { Expand, Filter, LayoutGrid, Minus, Plus, Search, Star } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { useTheme } from 'next-themes';
 import { artifactStatusVariant, conceptDifficultyVariants } from './project-style-variants';
 
 export type ConceptRow = {
@@ -28,7 +29,9 @@ export type ConceptRow = {
 
 export type RelationshipRow = {
   id: string;
+  metadata?: unknown;
   relationshipType: string;
+  sourceEvidence?: unknown;
   sourceConceptId: string;
   targetConceptId: string;
 };
@@ -55,6 +58,7 @@ const nodeTypes = {
 };
 
 export function ConceptGraphView({ artifact, concepts, relationships }: ConceptGraphReviewProps) {
+  const { resolvedTheme } = useTheme();
   const [selectedConceptId, setSelectedConceptId] = useState(concepts[0]?.id ?? null);
   const selectedConcept =
     concepts.find((concept) => concept.id === selectedConceptId) ?? concepts[0] ?? null;
@@ -68,25 +72,25 @@ export function ConceptGraphView({ artifact, concepts, relationships }: ConceptG
   return (
     <section className="space-y-5">
       {!concepts.length ? (
-        <div className="rounded-[1.5rem] border border-dashed border-slate-200 bg-white px-4 py-8 text-sm text-slate-500">
+        <div className="rounded-[1.5rem] border border-dashed border-border bg-card px-4 py-8 text-sm text-muted-foreground">
           No concept graph has been generated yet.
         </div>
       ) : hasGraph ? (
         <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
-          <div className="overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white shadow-[0_18px_50px_rgba(15,23,42,0.06)]">
-            <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+          <div className="overflow-hidden rounded-[1.5rem] border border-border bg-card shadow-sm">
+            <div className="flex items-center justify-between border-b border-border px-5 py-4">
               <div className="flex items-center gap-3">
-                <button className="inline-flex h-10 items-center gap-2 rounded-xl border border-slate-200 px-3 text-sm text-slate-600" type="button">
+                <button className="inline-flex h-10 items-center gap-2 rounded-xl border border-border px-3 text-sm text-muted-foreground" type="button">
                   <LayoutGrid className="size-4" />
                   Layout
                 </button>
-                <button className="inline-flex h-10 items-center gap-2 rounded-xl border border-slate-200 px-3 text-sm text-slate-600" type="button">
+                <button className="inline-flex h-10 items-center gap-2 rounded-xl border border-border px-3 text-sm text-muted-foreground" type="button">
                   <Filter className="size-4" />
                   Filter
                 </button>
               </div>
               <div className="flex items-center gap-2">
-                <button className="inline-flex size-10 items-center justify-center rounded-xl border border-slate-200 text-slate-500" type="button">
+                <button className="inline-flex size-10 items-center justify-center rounded-xl border border-border text-muted-foreground" type="button">
                   <Search className="size-4" />
                 </button>
                 {artifact ? (
@@ -97,9 +101,9 @@ export function ConceptGraphView({ artifact, concepts, relationships }: ConceptG
               </div>
             </div>
 
-            <div className="h-[680px] overflow-hidden bg-[radial-gradient(circle_at_top,_rgba(148,163,184,0.08),_transparent_30%),linear-gradient(180deg,_#ffffff,_#f8fafc)]">
+            <div className="h-[680px] overflow-hidden bg-background">
             <ReactFlow
-              colorMode="light"
+              colorMode={resolvedTheme === "dark" ? "dark" : "light"}
               edges={graph.edges}
               fitView
               fitViewOptions={{ padding: 0.18 }}
@@ -110,7 +114,7 @@ export function ConceptGraphView({ artifact, concepts, relationships }: ConceptG
               onNodeClick={(_, node) => setSelectedConceptId(node.id)}
               proOptions={{ hideAttribution: true }}
             >
-              <Background color="#e2e8f0" gap={18} size={1} />
+              <Background gap={18} size={1} />
               <Controls className="!shadow-none" position="bottom-right" showInteractive={false} />
               <FlowToolbar />
             </ReactFlow>
@@ -126,11 +130,10 @@ export function ConceptGraphView({ artifact, concepts, relationships }: ConceptG
       ) : (
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_280px]">
           <ConceptList concepts={concepts} />
-          <aside className="rounded-[1.5rem] border border-slate-200 bg-white p-4">
-            <h3 className="text-sm font-semibold text-slate-900">Prerequisites</h3>
-            <p className="mt-3 text-sm leading-6 text-slate-500">
-              No prerequisite links were generated. This graph can still be reviewed as a flat
-              concept list.
+          <aside className="rounded-[1.5rem] border border-border bg-card p-4">
+            <h3 className="text-sm font-semibold text-foreground">Relationships</h3>
+            <p className="mt-3 text-sm leading-6 text-muted-foreground">
+              No relationship links were generated. This graph can still be reviewed as a flat concept list.
             </p>
           </aside>
         </div>
@@ -141,21 +144,21 @@ export function ConceptGraphView({ artifact, concepts, relationships }: ConceptG
 
 function ConceptNode({ data }: NodeProps<Node<ConceptNodeData, 'concept'>>) {
   return (
-    <div className="w-52 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-[0_8px_24px_rgba(15,23,42,0.08)]">
+    <div className="w-52 rounded-2xl border border-border bg-card px-4 py-3 shadow-sm">
       <Handle
-        className="!h-2.5 !w-2.5 !border-white !bg-[#53d1cb]"
+        className="!h-2.5 !w-2.5 !border-background !bg-brand-accent"
         position={Position.Left}
         type="target"
       />
-      <p className="line-clamp-2 text-sm font-semibold leading-5 text-slate-900">{data.label}</p>
+      <p className="line-clamp-2 text-sm font-semibold leading-5 text-foreground">{data.label}</p>
       <div className="mt-2 flex items-center gap-2">
         <span className={conceptDifficultyVariants({ difficulty: data.difficulty })}>{data.difficulty}</span>
-        <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-medium text-slate-500">
+        <span className="rounded-full bg-muted px-2 py-1 text-xs font-medium text-muted-foreground">
           {formatConfidence(data.confidence)}
         </span>
       </div>
       <Handle
-        className="!h-2.5 !w-2.5 !border-white !bg-[#53d1cb]"
+        className="!h-2.5 !w-2.5 !border-background !bg-brand-accent"
         position={Position.Right}
         type="source"
       />
@@ -184,88 +187,92 @@ export function ConceptDetailPanel({
   );
 
   return (
-    <aside className="space-y-5 rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-[0_18px_50px_rgba(15,23,42,0.06)]">
+    <aside className="space-y-5 rounded-[1.5rem] border border-border bg-card p-5 shadow-sm">
       <div className="space-y-2">
-        <p className="text-sm font-semibold text-slate-900">Detail Konsep</p>
-        <div className="rounded-[1.25rem] border border-slate-200 bg-white p-4">
+        <p className="text-sm font-semibold text-foreground">Detail Konsep</p>
+        <div className="rounded-[1.25rem] border border-border bg-card p-4">
           <div className="flex items-start justify-between gap-3">
-            <h3 className="text-3xl font-semibold tracking-[-0.03em] text-slate-900">
+            <h3 className="text-3xl font-semibold tracking-[-0.03em] text-foreground">
               {concept.name}
             </h3>
-            <button className="inline-flex size-9 items-center justify-center rounded-full bg-[#eef2ff] text-[#4f46e5]" type="button">
+            <button className="inline-flex size-9 items-center justify-center rounded-full bg-brand-accent-surface text-brand-accent-foreground" type="button">
               <Star className="size-4" />
             </button>
           </div>
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <span className={conceptDifficultyVariants({ difficulty: concept.difficulty })}>{concept.difficulty}</span>
-            <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-500">
+            <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
               {formatConfidence(concept.confidence)}
             </span>
           </div>
-          <p className="mt-5 text-sm leading-7 text-slate-600">{concept.definition}</p>
+          <p className="mt-5 text-sm leading-7 text-muted-foreground">{concept.definition}</p>
         </div>
       </div>
 
       <div className="space-y-3">
-        <p className="text-sm font-semibold text-slate-900">
+        <p className="text-sm font-semibold text-foreground">
           Evidence <span className="text-emerald-500">•</span>
         </p>
         <div className="space-y-3">
-          {getEvidence(concept.sourceEvidence).map((evidence, index) => (
+          {getEvidence(concept.sourceEvidence).map((evidence) => (
             <blockquote
-              className="rounded-[1.25rem] border border-emerald-200 bg-emerald-50/40 px-4 py-4 text-sm leading-7 text-slate-600"
-              key={`${concept.id}-${index}`}
+              className="rounded-[1.25rem] border border-emerald-500/20 bg-emerald-500/10 p-4 text-sm leading-7 text-muted-foreground border-l-4 border-l-emerald-500/50"
+              key={`${concept.id}-${evidence.blockId || evidence.excerpt}`}
             >
-              <div className="mb-3 text-3xl leading-none text-emerald-500">“</div>
-              {evidence.excerpt}
-              {evidence.location ? (
-                <cite className="mt-3 block text-xs not-italic text-slate-400">
-                  {evidence.location}
-                </cite>
-              ) : null}
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <div className="text-3xl leading-none text-emerald-500">“</div>
+                <span className="rounded-full bg-card/70 px-2 py-0.5 font-mono text-[0.62rem] tracking-[0.14em] text-muted-foreground uppercase">
+                  {evidence.blockId ? shortenBlockId(evidence.blockId) : 'ref'}
+                </span>
+              </div>
+              <p>{evidence.excerpt}</p>
+              <cite className="mt-3 flex flex-wrap gap-x-2 gap-y-1 text-xs not-italic text-muted-foreground">
+                {evidence.location ? <span>{evidence.location}</span> : null}
+                {evidence.sourceId ? <span>{evidence.sourceId.slice(0, 8)}</span> : null}
+              </cite>
             </blockquote>
           ))}
         </div>
       </div>
 
       <div className="space-y-2">
-        <h4 className="text-sm font-semibold text-slate-900">Prasyarat</h4>
-        <p className="text-sm leading-6 text-slate-500">
+        <h4 className="text-sm font-semibold text-foreground">Relasi</h4>
+        <p className="text-sm leading-6 text-muted-foreground">
           {incoming.length || outgoing.length
-            ? 'Relasi prerequisite terdeteksi dan tercantum di bawah.'
-            : 'Tidak ada prasyarat yang diperlukan.'}
+            ? 'Relasi konsep terdeteksi dan tercantum di bawah.'
+            : 'Belum ada relasi yang terhubung.'}
         </p>
       </div>
 
       <div className="space-y-3">
-        <h4 className="text-sm font-semibold text-slate-900">Terhubung ke</h4>
+        <h4 className="text-sm font-semibold text-foreground">Terhubung ke</h4>
         {incoming.length || outgoing.length ? (
           <ul className="mt-2 space-y-2">
             {incoming.map((relationship) => (
               <li
-                className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600"
+                className="flex items-center justify-between rounded-xl border border-border bg-muted/50 px-3 py-2 text-sm text-muted-foreground"
                 key={`in-${relationship.id}`}
               >
                 <span>{conceptNameById.get(relationship.sourceConceptId) ?? 'Unknown concept'}</span>
-                <span className="rounded-full bg-[#eef2ff] px-2 py-0.5 text-xs text-[#4f46e5]">
-                  before this
+                <span className="rounded-full bg-brand-accent-surface px-2 py-0.5 text-xs text-brand-accent-foreground">
+                  {formatRelationshipType(relationship.relationshipType)}
                 </span>
               </li>
             ))}
             {outgoing.map((relationship) => (
               <li
-                className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600"
+                className="flex items-center justify-between rounded-xl border border-border bg-muted/50 px-3 py-2 text-sm text-muted-foreground"
                 key={`out-${relationship.id}`}
               >
                 <span>{conceptNameById.get(relationship.targetConceptId) ?? 'Unknown concept'}</span>
-                <span className="rounded-full bg-[#eef2ff] px-2 py-0.5 text-xs text-[#4f46e5]">
-                  after this
+                <span className="rounded-full bg-brand-accent-surface px-2 py-0.5 text-xs text-brand-accent-foreground">
+                  {formatRelationshipType(relationship.relationshipType)}
                 </span>
               </li>
             ))}
           </ul>
         ) : (
-          <p className="mt-2 text-sm leading-6 text-slate-500">Belum ada relasi yang terhubung.</p>
+          <p className="mt-2 text-sm leading-6 text-muted-foreground">Belum ada relasi yang terhubung.</p>
         )}
       </div>
     </aside>
@@ -276,29 +283,29 @@ export function ConceptList({ concepts }: { concepts: ConceptRow[] }) {
   return (
     <div className="space-y-3">
       {concepts.map((concept) => (
-        <article className="rounded-[1.25rem] border border-slate-200 bg-white p-4" key={concept.id}>
+        <article className="rounded-[1.25rem] border border-border bg-card p-4" key={concept.id}>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
             <div className="space-y-1">
-              <h3 className="text-base font-semibold text-slate-900">{concept.name}</h3>
-              <p className="text-sm leading-6 text-slate-600">{concept.definition}</p>
+              <h3 className="text-base font-semibold text-foreground">{concept.name}</h3>
+              <p className="text-sm leading-6 text-muted-foreground">{concept.definition}</p>
             </div>
             <div className="flex shrink-0 items-center gap-2">
               <span className={conceptDifficultyVariants({ difficulty: concept.difficulty })}>{concept.difficulty}</span>
-              <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-medium text-slate-500">
+              <span className="rounded-full bg-muted px-2 py-1 text-xs font-medium text-muted-foreground">
                 {formatConfidence(concept.confidence)}
               </span>
             </div>
           </div>
 
           <div className="mt-4 space-y-2">
-            {getEvidence(concept.sourceEvidence).map((evidence, index) => (
+            {getEvidence(concept.sourceEvidence).map((evidence) => (
               <blockquote
-                className="rounded-xl border border-emerald-200 bg-emerald-50/40 px-3 py-3 text-sm leading-6 text-slate-600"
-                key={`${concept.id}-${index}`}
+                className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-3 text-sm leading-6 text-muted-foreground"
+                key={`${concept.id}-${evidence.blockId || evidence.excerpt}`}
               >
                 {evidence.excerpt}
                 {evidence.location ? (
-                  <cite className="mt-1 block text-xs not-italic text-slate-400">
+                  <cite className="mt-1 block text-xs not-italic text-muted-foreground">
                     {evidence.location}
                   </cite>
                 ) : null}
@@ -345,12 +352,12 @@ export function buildConceptGraph(
     animated: false,
     id: relationship.id,
     markerEnd: {
-      color: '#53d1cb',
+      color: 'var(--brand-accent)',
       type: MarkerType.ArrowClosed,
     },
     source: relationship.sourceConceptId,
     style: {
-      stroke: '#53d1cb',
+      stroke: 'var(--brand-accent)',
       strokeWidth: 2,
     },
     target: relationship.targetConceptId,
@@ -386,9 +393,12 @@ function getDepthByConceptId(concepts: ConceptRow[], relationships: Relationship
   }
 
   const depthByConceptId = new Map<string, number>();
-  const queue = concepts
-    .filter((concept) => (incomingCount.get(concept.id) ?? 0) === 0)
-    .map((concept) => concept.id);
+  const queue = concepts.reduce<string[]>((acc, concept) => {
+    if ((incomingCount.get(concept.id) ?? 0) === 0) {
+      acc.push(concept.id);
+    }
+    return acc;
+  }, []);
 
   for (const conceptId of queue) {
     depthByConceptId.set(conceptId, 0);
@@ -420,12 +430,14 @@ function getDepthByConceptId(concepts: ConceptRow[], relationships: Relationship
   return depthByConceptId;
 }
 
-type SourceEvidence = {
+export type SourceEvidence = {
+  blockId?: string;
   excerpt: string;
   location?: string;
+  sourceId?: string;
 };
 
-function getEvidence(value: unknown): SourceEvidence[] {
+export function getEvidence(value: unknown): SourceEvidence[] {
   if (!Array.isArray(value)) {
     return [];
   }
@@ -441,6 +453,11 @@ function getEvidence(value: unknown): SourceEvidence[] {
   });
 }
 
+function shortenBlockId(blockId: string) {
+  const parts = blockId.split(':');
+  return parts.at(-1) ?? blockId;
+}
+
 function formatConfidence(value: string) {
   const confidence = Number(value);
 
@@ -451,28 +468,32 @@ function formatConfidence(value: string) {
   return `${Math.round(confidence * 100)}%`;
 }
 
+export function formatRelationshipType(value: string) {
+  return value.replaceAll('_', ' ');
+}
+
 function FlowToolbar() {
   const { fitView, zoomIn, zoomOut } = useReactFlow();
 
   return (
     <Panel position="top-right">
-      <div className="mr-4 mt-4 flex items-center gap-2 rounded-2xl border border-slate-200 bg-white/92 p-2 shadow-[0_12px_30px_rgba(15,23,42,0.08)] backdrop-blur">
+      <div className="mr-4 mt-4 flex items-center gap-2 rounded-2xl border border-border bg-card/90 p-2 shadow-sm backdrop-blur">
         <button
-          className="inline-flex size-9 items-center justify-center rounded-xl border border-slate-200 text-slate-500"
+          className="inline-flex size-9 items-center justify-center rounded-xl border border-border text-muted-foreground"
           onClick={() => zoomOut()}
           type="button"
         >
           <Minus className="size-4" />
         </button>
         <button
-          className="inline-flex size-9 items-center justify-center rounded-xl border border-slate-200 text-slate-500"
+          className="inline-flex size-9 items-center justify-center rounded-xl border border-border text-muted-foreground"
           onClick={() => zoomIn()}
           type="button"
         >
           <Plus className="size-4" />
         </button>
         <button
-          className="inline-flex size-9 items-center justify-center rounded-xl border border-slate-200 text-slate-500"
+          className="inline-flex size-9 items-center justify-center rounded-xl border border-border text-muted-foreground"
           onClick={() => fitView({ padding: 0.18 })}
           type="button"
         >

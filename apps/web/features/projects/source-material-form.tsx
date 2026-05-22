@@ -25,7 +25,8 @@ type ProjectSourcesPanelProps = {
 };
 
 export function ProjectSourcesPanel({ projectId, sources }: ProjectSourcesPanelProps) {
-  const [selectedSourceId, setSelectedSourceId] = useState(sources[0]?.id ?? null);
+  const defaultSelectedId = sources.length > 0 && sources[0] ? sources[0].id : null;
+  const [selectedSourceId, setSelectedSourceId] = useState(defaultSelectedId);
   const [isAddingNew, setIsAddingNew] = useState(false);
   const selectedSource = !isAddingNew
     ? (sources.find((source) => source.id === selectedSourceId) ?? sources[0])
@@ -33,19 +34,19 @@ export function ProjectSourcesPanel({ projectId, sources }: ProjectSourcesPanelP
   const ingestionPanelRef = useRef<IngestionActivityPanelHandle>(null);
   
   return (
-    <div className="grid max-h-[calc(100vh-16rem)] gap-6 xl:grid-cols-[18rem_minmax(0,1fr)_18rem]">
+    <div className="grid gap-6 xl:h-[calc(100vh-16rem)] xl:grid-cols-[18rem_minmax(0,1fr)_18rem]">
       <aside className="flex min-w-0 flex-col gap-3 overflow-hidden xl:h-full">
         <div className="flex shrink-0 items-center justify-between gap-3">
-          <span className="font-mono text-[0.65rem] tabular-nums tracking-[0.18em] uppercase text-[#f3efe3]/42">
+          <span className="font-mono text-[0.65rem] tabular-nums tracking-[0.18em] uppercase text-muted-foreground">
             Sources
           </span>
-          <span className="font-mono text-[0.65rem] tabular-nums tracking-[0.16em] uppercase text-[#f3efe3]/42">
+          <span className="font-mono text-[0.65rem] tabular-nums tracking-[0.16em] uppercase text-muted-foreground">
             {sources.length} total
           </span>
         </div>
 
         <button
-          className="flex w-full shrink-0 items-center justify-center gap-2 rounded-[1.1rem] border border-dashed border-[#53d1cb]/30 bg-[#53d1cb]/[0.04] px-3 py-2.5 text-xs font-medium text-[#53d1cb] transition hover:border-[#53d1cb]/50 hover:bg-[#53d1cb]/[0.08]"
+          className="flex w-full shrink-0 items-center justify-center gap-2 rounded-[1.1rem] border border-dashed border-brand-accent-border/30 bg-brand-accent/[0.04] px-3 py-2.5 text-xs font-medium text-brand-accent-foreground transition hover:border-brand-accent-border hover:bg-brand-accent/[0.08]"
           onClick={() => setIsAddingNew(true)}
           type="button"
         >
@@ -64,24 +65,24 @@ export function ProjectSourcesPanel({ projectId, sources }: ProjectSourcesPanelP
                   <button
                     className={`w-full rounded-[1.1rem] border px-4 py-3 text-left transition ${
                       selectedSource?.id === source.id
-                        ? 'border-[#53d1cb]/40 bg-[#53d1cb]/10'
-                        : 'border-white/10 bg-white/[0.035] hover:bg-white/[0.06]'
+                        ? 'border-brand-accent-border bg-brand-accent-surface'
+                        : 'border-border bg-white/[0.035] hover:bg-muted/50'
                     }`}
                     onClick={() => { setSelectedSourceId(source.id); setIsAddingNew(false); }}
                     type="button"
                   >
                     <span className="mb-2 flex items-center justify-between gap-2">
-                      <span className="truncate text-sm font-medium text-[#f3efe3]">
+                      <span className="truncate text-sm font-medium text-foreground">
                         {source.title}
                       </span>
-                      <span className="font-mono text-[0.6rem] text-[#f3efe3]/42">
+                      <span className="font-mono text-[0.6rem] text-muted-foreground">
                         {String(index + 1).padStart(2, '0')}
                       </span>
                     </span>
-                    <span className="line-clamp-2 text-xs leading-5 text-[#f3efe3]/52">
+                    <span className="line-clamp-2 text-xs leading-5 text-muted-foreground">
                       {getSourcePreview(source.content)}
                     </span>
-                    <span className="mt-3 flex items-center justify-between font-mono text-[0.6rem] tracking-[0.14em] text-[#f3efe3]/38 uppercase">
+                    <span className="mt-3 flex items-center justify-between font-mono text-[0.6rem] tracking-[0.14em] text-foreground/38 uppercase">
                       <span>{source.type}</span>
                       <span>{counts.words} words</span>
                     </span>
@@ -91,43 +92,45 @@ export function ProjectSourcesPanel({ projectId, sources }: ProjectSourcesPanelP
             })}
           </ul>
         ) : (
-          <div className="rounded-[1.1rem] border border-dashed border-white/12 bg-white/[0.025] px-4 py-5 text-sm leading-6 text-[#f3efe3]/52">
+          <div className="rounded-[1.1rem] border border-dashed border-border bg-card/50 px-4 py-5 text-sm leading-6 text-muted-foreground">
             No sources yet. Add markdown or pasted text above.
           </div>
         )}
         </div>
       </aside>
 
-      <section className="space-y-5 overflow-y-auto rounded-[1.75rem] border border-white/10 bg-white/[0.025] p-6">
-        <div className="flex flex-col gap-3 border-b border-white/8 pb-5 lg:flex-row lg:items-end lg:justify-between">
+      <section className="flex min-w-0 flex-col gap-5 overflow-hidden rounded-[1.75rem] border border-border bg-card/50 p-6 xl:h-full">
+        <div className="flex shrink-0 flex-col gap-3 border-b border-border pb-5 lg:flex-row lg:items-end lg:justify-between">
           <div className="space-y-2">
-            <span className="font-mono text-[0.65rem] tabular-nums tracking-[0.18em] uppercase text-[#53d1cb]">
+            <span className="font-mono text-[0.65rem] tabular-nums tracking-[0.18em] uppercase text-brand-accent-foreground">
               {isAddingNew ? 'new source' : 'source editor'}
             </span>
-            <h3 className="text-xl font-medium tracking-tight text-[#f3efe3]">
+            <h3 className="text-xl font-medium tracking-tight text-foreground">
               {isAddingNew ? 'Add new source' : selectedSource ? selectedSource.title : 'Select a source'}
             </h3>
           </div>
           {selectedSource && !isAddingNew && (
-            <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs text-[#f3efe3]/72">
+            <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card/50 px-3 py-1.5 text-xs text-muted-foreground">
               <FileText className="size-3.5" />
               {getTextCounts(selectedSource.content ?? '').words} words
             </span>
           )}
         </div>
 
-        {isAddingNew ? (
-          <ProjectSourceAddForm projectId={projectId} onIngestionTrigger={(sourceId, title, type, content) => { setIsAddingNew(false); ingestionPanelRef.current?.startIngestion(sourceId, title, type, content); }} />
-        ) : selectedSource ? (
-          <ProjectSourceEditForm key={selectedSource.id} source={selectedSource} onIngestionTrigger={(sourceId, title, type, content) => ingestionPanelRef.current?.startIngestion(sourceId, title, type, content)} />
-        ) : (
-          <p className="py-8 text-center text-sm text-[#f3efe3]/52">
-            Select a source from the left or add a new one.
-          </p>
-        )}
+        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+          {isAddingNew ? (
+            <ProjectSourceAddForm projectId={projectId} onIngestionTrigger={(sourceId, title, type, content) => { setIsAddingNew(false); ingestionPanelRef.current?.startIngestion(sourceId, title, type, content); }} />
+          ) : selectedSource ? (
+            <ProjectSourceEditForm key={selectedSource.id} source={selectedSource} onIngestionTrigger={(sourceId, title, type, content) => ingestionPanelRef.current?.startIngestion(sourceId, title, type, content)} />
+          ) : (
+            <p className="py-8 text-center text-sm text-muted-foreground">
+              Select a source from the left or add a new one.
+            </p>
+          )}
+        </div>
       </section>
 
-      <aside className="h-[480px] min-w-0 overflow-hidden rounded-[1.35rem] border border-white/10 bg-[#0a131c] xl:h-full">
+      <aside className="h-[480px] min-w-0 overflow-hidden rounded-[1.35rem] border border-border bg-card xl:h-full">
         <IngestionActivityPanel projectId={projectId} ref={ingestionPanelRef} />
       </aside>
     </div>
@@ -211,7 +214,7 @@ function ProjectSourceEditForm({ source, onIngestionTrigger }: { source: Project
   }, [state.success, state.sourceId, onIngestionTrigger]);
 
   return (
-    <div className="space-y-4">
+    <div className="flex min-h-full flex-col gap-4">
       <ProjectSourceFields
         action={wrappedAction}
         content={source.content ?? ''}
@@ -225,7 +228,7 @@ function ProjectSourceEditForm({ source, onIngestionTrigger }: { source: Project
         type={source.type}
         extraActions={
           <button
-            className="inline-flex h-9 items-center gap-1.5 rounded-full border border-white/10 bg-transparent px-4 text-xs text-[#f3efe3]/62 transition hover:border-status-danger-border hover:bg-status-danger-surface hover:text-status-danger-foreground disabled:opacity-50"
+            className="inline-flex h-9 items-center gap-1.5 rounded-full border border-border bg-transparent px-4 text-xs text-muted-foreground transition hover:border-status-danger-border hover:bg-status-danger-surface hover:text-status-danger-foreground disabled:opacity-50"
             disabled={isDeleting}
             onClick={() => {
               const formData = new FormData();
@@ -240,7 +243,7 @@ function ProjectSourceEditForm({ source, onIngestionTrigger }: { source: Project
         }
       />
       {deleteState.error ? (
-        <p className="rounded-[1rem] border border-[#e5685b]/30 bg-[#e5685b]/10 px-3 py-2 text-sm text-[#f3efe3]">
+        <p className="rounded-[1rem] border border-[#e5685b]/30 bg-[#e5685b]/10 px-3 py-2 text-sm text-foreground">
           {deleteState.error}
         </p>
       ) : null}
@@ -275,22 +278,23 @@ function ProjectSourceFields({
   title?: string;
   type?: string;
 }) {
-  const [draft, setDraft] = useState(content);
+  const defaultDraft = content ?? '';
+  const [draft, setDraft] = useState(defaultDraft);
   const [mode, setMode] = useState<'edit' | 'preview'>('edit');
   const counts = useMemo(() => getTextCounts(draft), [draft]);
 
   return (
-    <form action={action} className="space-y-4" ref={formRef}>
+    <form action={action} className="flex flex-1 flex-col gap-4" ref={formRef}>
       {projectId ? <input name="projectId" type="hidden" value={projectId} /> : null}
       {sourceId ? <input name="sourceId" type="hidden" value={sourceId} /> : null}
       <input name="type" type="hidden" value={type === 'text' ? 'text' : 'markdown'} />
 
-      <div className="space-y-2">
-        <label className="text-sm font-medium text-[#f3efe3]/82" htmlFor={`${sourceId ?? 'new'}-title`}>
+      <div className="space-y-2 shrink-0">
+        <label className="text-sm font-medium text-muted-foreground" htmlFor={`${sourceId ?? 'new'}-title`}>
           Title
         </label>
         <Input
-          className="h-11 rounded-2xl border-white/10 bg-[#0d1824] px-4 text-sm text-[#f3efe3] placeholder:text-[#f3efe3]/30 shadow-none focus-visible:border-[#53d1cb]/60 focus-visible:ring-[#53d1cb]/20"
+          className="h-11 rounded-2xl border-border bg-card px-4 text-sm text-foreground placeholder:text-foreground/30 shadow-none focus-visible:border-brand-accent-border/60 focus-visible:ring-[#53d1cb]/20"
           defaultValue={title}
           id={`${sourceId ?? 'new'}-title`}
           name="title"
@@ -299,15 +303,15 @@ function ProjectSourceFields({
         />
       </div>
 
-      <div className="space-y-2">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <label className="text-sm font-medium text-[#f3efe3]/82" htmlFor={`${sourceId ?? 'new'}-content`}>
+      <div className="flex min-h-0 flex-1 flex-col gap-2">
+        <div className="flex shrink-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <label className="text-sm font-medium text-muted-foreground" htmlFor={`${sourceId ?? 'new'}-content`}>
             Content
           </label>
-          <div className="flex flex-wrap items-center gap-3 text-xs text-[#f3efe3]/42 sm:justify-end">
+          <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground sm:justify-end">
             <span className="font-mono tabular-nums">{counts.words} words</span>
             <span className="font-mono tabular-nums">{counts.characters} chars</span>
-            <div className="flex rounded-full border border-white/10 bg-white/[0.035] p-0.5">
+            <div className="flex rounded-full border border-border bg-white/[0.035] p-0.5">
               <button
                 className={sourceModeButtonVariants({ active: mode === 'edit' })}
                 onClick={() => setMode('edit')}
@@ -328,7 +332,7 @@ function ProjectSourceFields({
 
         {mode === 'edit' ? (
           <textarea
-            className={sourceTextareaVariants({ compact: false })}
+            className={`${sourceTextareaVariants({ compact: false })} flex-1 resize-none`}
             id={`${sourceId ?? 'new'}-content`}
             name="content"
             onChange={(event) => setDraft(event.target.value)}
@@ -337,28 +341,28 @@ function ProjectSourceFields({
             value={draft}
           />
         ) : (
-          <>
+          <div className="flex min-h-0 flex-1 flex-col">
             <input name="content" type="hidden" value={draft} />
             <SourcePreview value={draft} />
-          </>
+          </div>
         )}
       </div>
 
       {error ? (
-        <p className="rounded-[1rem] border border-[#e5685b]/30 bg-[#e5685b]/10 px-3 py-2 text-sm text-[#f3efe3]">
+        <p className="rounded-[1rem] border border-[#e5685b]/30 bg-[#e5685b]/10 px-3 py-2 text-sm text-foreground">
           {error}
         </p>
       ) : null}
 
       {success ? (
-        <p className="rounded-[1rem] border border-[#00bb7f]/30 bg-[#00bb7f]/10 px-3 py-2 text-sm text-[#f3efe3]">
+        <p className="rounded-[1rem] border border-[#00bb7f]/30 bg-[#00bb7f]/10 px-3 py-2 text-sm text-foreground">
           {success}
         </p>
       ) : null}
 
-      <div className="flex items-center gap-3">
+      <div className="mt-auto flex shrink-0 items-center gap-3 pt-2">
         <Button
-          className="h-9 rounded-full bg-[#53d1cb] px-4 text-[#041018] hover:bg-[#7ceae3]"
+          className="h-9 rounded-full bg-brand-accent px-4 text-[#041018] hover:bg-[#7ceae3]"
           disabled={isPending}
           type="submit"
         >
@@ -372,48 +376,30 @@ function ProjectSourceFields({
 }
 
 function SourcePreview({ value }: { value: string }) {
-  const blocks = value
-    .split(/\n{2,}/)
-    .map((block) => block.trim())
-    .filter(Boolean);
+  const blocks = useMemo(() => {
+    return value
+      .split(/\n{2,}/)
+      .flatMap((block) => {
+        const trimmed = block.trim();
+        return trimmed ? [{ id: crypto.randomUUID(), text: trimmed }] : [];
+      });
+  }, [value]);
 
   if (!blocks.length) {
     return (
-      <div className="min-h-[420px] rounded-[1.25rem] border border-dashed border-white/12 bg-white/[0.025] px-4 py-4 text-sm text-[#f3efe3]/42">
+      <div className="min-h-[420px] flex-1 rounded-[1.25rem] border border-dashed border-border bg-card/50 p-4 text-sm text-muted-foreground">
         Nothing to preview yet.
       </div>
     );
   }
 
   return (
-    <div className="min-h-[420px] space-y-4 rounded-[1.25rem] border border-white/10 bg-[#0d1824] px-4 py-4 text-sm leading-6 text-[#f3efe3]/82 shadow-[inset_3px_0_0_rgba(83,209,203,0.58),inset_0_1px_0_rgba(255,255,255,0.04)]">
-      {blocks.map((block, index) => (
-        <p className="whitespace-pre-wrap" key={`${block}-${index}`}>
-          {block}
+    <div className="min-h-[420px] flex-1 overflow-y-auto space-y-4 rounded-[1.25rem] border border-border bg-card p-4 text-sm leading-6 text-muted-foreground shadow-[inset_3px_0_0_rgba(83,209,203,0.58),inset_0_1px_0_rgba(255,255,255,0.04)]">
+      {blocks.map((block) => (
+        <p className="whitespace-pre-wrap" key={block.id}>
+          {block.text}
         </p>
       ))}
-    </div>
-  );
-}
-
-function SourceStatRow({
-  label,
-  unit,
-  value,
-}: {
-  label: string;
-  unit: string;
-  value: string;
-}) {
-  return (
-    <div className="flex items-center justify-between gap-4 bg-[#0d1824]/70 px-4 py-3">
-      <dt className="text-sm text-[#f3efe3]/62">{label}</dt>
-      <dd className="text-right">
-        <div className="text-lg font-medium text-[#f3efe3]">{value}</div>
-        <div className="font-mono text-[0.6rem] tracking-[0.16em] text-[#f3efe3]/38 uppercase">
-          {unit}
-        </div>
-      </dd>
     </div>
   );
 }

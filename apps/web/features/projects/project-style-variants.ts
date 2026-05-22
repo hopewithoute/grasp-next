@@ -62,7 +62,7 @@ export const conceptDifficultyVariants = cva(
 );
 
 export const sourceTextareaVariants = cva(
-  'w-full resize-y rounded-[1.25rem] border border-white/10 bg-[#0d1824] px-4 py-4 text-sm leading-6 text-[#f3efe3] outline-none shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] placeholder:text-[#f3efe3]/36 focus-visible:border-[#53d1cb]/60 focus-visible:ring-3 focus-visible:ring-[#53d1cb]/18',
+  'w-full resize-y rounded-[1.25rem] border border-border bg-input p-4 text-sm leading-6 text-foreground outline-none shadow-none placeholder:text-muted-foreground/50 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/20',
   {
     variants: {
       compact: {
@@ -79,8 +79,8 @@ export const sourceTextareaVariants = cva(
 export const sourceModeButtonVariants = cva('rounded-full px-2.5 py-1 transition-colors', {
   variants: {
     active: {
-      false: 'text-[#f3efe3]/42 hover:text-[#f3efe3]/72',
-      true: 'bg-[#53d1cb]/10 text-[#f3efe3] shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]',
+      false: 'text-muted-foreground hover:text-foreground',
+      true: 'bg-brand-accent-surface text-brand-accent-foreground border border-brand-accent-border',
     },
   },
   defaultVariants: {
@@ -98,7 +98,7 @@ export const chatMessageVariants = cva('rounded-[1.25rem] px-4 py-3 text-sm lead
 });
 
 export const stageLinkVariants = cva(
-  'group relative flex min-w-[12rem] items-start gap-3 rounded-[1.4rem] border px-4 py-4 transition-all duration-200 hover:border-brand-accent-border hover:bg-brand-accent-surface',
+  'group relative flex min-w-[12rem] items-start gap-3 rounded-[1.4rem] border p-4 transition-all duration-200 hover:border-brand-accent-border hover:bg-brand-accent-surface',
   {
     variants: {
       active: {

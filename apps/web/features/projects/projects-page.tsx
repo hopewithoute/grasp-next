@@ -8,17 +8,17 @@ import { CreateProjectForm } from './create-project-form';
 import { ProjectStatusBadge } from './project-status-badge';
 
 const STATUS_TONE: Record<ProjectStatus, string> = {
-  [PROJECT_STATUS.DRAFT]: 'bg-[#f3efe3]/42',
-  [PROJECT_STATUS.FAILED]: 'bg-[#e5685b]',
-  [PROJECT_STATUS.PROCESSED]: 'bg-emerald-400',
-  [PROJECT_STATUS.PROCESSING]: 'bg-[#f4b860]',
-  [PROJECT_STATUS.REVIEWING]: 'bg-[#53d1cb]',
+  [PROJECT_STATUS.DRAFT]: 'bg-status-neutral-foreground',
+  [PROJECT_STATUS.FAILED]: 'bg-status-danger-foreground',
+  [PROJECT_STATUS.PROCESSED]: 'bg-status-success-foreground',
+  [PROJECT_STATUS.PROCESSING]: 'bg-status-warning-foreground',
+  [PROJECT_STATUS.REVIEWING]: 'bg-status-info-foreground',
 };
 
 function Eyebrow({ children }: { children: React.ReactNode }) {
   return (
-    <span className="inline-flex items-center gap-2 text-[0.7rem] tracking-[0.18em] uppercase text-[#f3efe3]/62">
-      <span className="size-1.5 rounded-full bg-[#53d1cb] pulse-soft" />
+    <span className="inline-flex items-center gap-2 text-[0.7rem] tracking-[0.18em] uppercase text-muted-foreground">
+      <span className="size-1.5 rounded-full bg-brand-accent pulse-soft" />
       <span className="font-mono">{children}</span>
     </span>
   );
@@ -55,7 +55,7 @@ export async function ProjectsPage() {
   const greeting = greet(viewer?.name ?? null);
 
   return (
-    <section className="flex w-full flex-col gap-10 text-[#f3efe3]">
+    <section className="flex w-full flex-col gap-10 text-foreground">
       {/* Header — asymmetric, no card overuse */}
       <header className="grid gap-6 md:grid-cols-[1.4fr_0.6fr] md:items-end">
         <div className="space-y-4">
@@ -63,14 +63,14 @@ export async function ProjectsPage() {
           <h1 className="max-w-[20ch] text-[clamp(2.2rem,4vw,3.6rem)] leading-[1] font-medium tracking-[-0.04em]">
             {greeting}
           </h1>
-          <p className="max-w-[58ch] text-base leading-relaxed text-[#f3efe3]/62">
+          <p className="max-w-[58ch] text-base leading-relaxed text-muted-foreground">
             Continue an open project, or seed a new one with raw source material. The pipeline
             picks up from wherever you left off.
           </p>
         </div>
 
         {/* Right side — counts strip, divide-y not card */}
-        <dl className="grid grid-cols-3 divide-x divide-white/8 rounded-[1.75rem] border border-white/10 bg-white/[0.02] px-1 py-3">
+        <dl className="grid grid-cols-3 divide-x divide-border rounded-[1.75rem] border border-border bg-card/50 px-1 py-3">
           <CountCell label="Total" value={projects.length} />
           <CountCell accent label="In review" value={counts[PROJECT_STATUS.REVIEWING]} />
           <CountCell label="Processing" value={counts[PROJECT_STATUS.PROCESSING]} />
@@ -86,14 +86,14 @@ export async function ProjectsPage() {
               <h2 className="text-2xl leading-tight font-medium tracking-tight md:text-3xl">
                 Open projects
               </h2>
-              <p className="mt-1 text-sm leading-relaxed text-[#f3efe3]/52">
+              <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
                 {projects.length} total · {inFlight} in flight
               </p>
             </div>
 
             <button
               aria-label="Search projects"
-              className="hidden size-10 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-[#f3efe3]/72 transition-colors hover:border-[#53d1cb]/24 hover:bg-[#53d1cb]/8 hover:text-[#53d1cb] active:scale-[0.96] sm:inline-flex"
+              className="hidden size-10 shrink-0 items-center justify-center rounded-xl border border-border bg-card/50 text-muted-foreground transition-colors hover:border-brand-accent-border hover:bg-brand-accent-surface hover:text-brand-accent-foreground active:scale-[0.96] sm:inline-flex"
               type="button"
             >
               <Search className="size-4" strokeWidth={1.5} />
@@ -101,7 +101,7 @@ export async function ProjectsPage() {
           </div>
 
           {projects.length ? (
-            <ol className="divide-y divide-white/8 border-y border-white/8">
+            <ol className="divide-y divide-border border-y border-border">
               {projects.map((project) => {
                 const tone = STATUS_TONE[project.status];
                 const isActive =
@@ -111,7 +111,7 @@ export async function ProjectsPage() {
                 return (
                   <li key={project.id}>
                     <Link
-                      className="group relative grid gap-4 py-5 transition-colors hover:bg-white/[0.02] sm:grid-cols-[16px_1fr_auto] sm:items-start sm:gap-5 sm:px-2"
+                      className="group relative grid gap-4 py-5 transition-colors hover:bg-card/50 sm:grid-cols-[16px_1fr_auto] sm:items-start sm:gap-5 sm:px-2"
                       href={`/dashboard/projects/${project.id}`}
                     >
                       {/* Status ribbon — mirrors evidence-ribbon idiom */}
@@ -124,28 +124,28 @@ export async function ProjectsPage() {
 
                       <div className="min-w-0 space-y-1.5">
                         <div className="flex items-center gap-3">
-                          <h3 className="truncate text-base font-medium tracking-tight text-[#f3efe3] transition-colors group-hover:text-[#f3efe3] md:text-lg">
+                          <h3 className="truncate text-base font-medium tracking-tight text-foreground transition-colors group-hover:text-foreground md:text-lg">
                             {project.title}
                           </h3>
                           <ProjectStatusBadge status={project.status} />
                         </div>
-                        <p className="line-clamp-2 max-w-[68ch] text-sm leading-relaxed text-[#f3efe3]/58">
+                        <p className="line-clamp-2 max-w-[68ch] text-sm leading-relaxed text-muted-foreground">
                           {project.description ??
                             'No description yet. Open the project to add context and continue the workflow.'}
                         </p>
-                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pt-1 font-mono text-[0.7rem] tabular-nums text-[#f3efe3]/42">
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pt-1 font-mono text-[0.7rem] tabular-nums text-muted-foreground">
                           <span className="inline-flex items-center gap-1.5">
                             <History className="size-3" strokeWidth={1.5} />
                             {formatDate(project.createdAt)}
                           </span>
-                          <span className="text-[#f3efe3]/24">·</span>
+                          <span className="text-muted-foreground/40">·</span>
                           <span className="font-mono uppercase tracking-[0.14em]">
                             id {project.id.slice(0, 8)}
                           </span>
                         </div>
                       </div>
 
-                      <span className="flex shrink-0 items-center justify-end pt-1 text-[#f3efe3]/42 transition-colors group-hover:text-[#53d1cb]">
+                      <span className="flex shrink-0 items-center justify-end pt-1 text-muted-foreground transition-colors group-hover:text-brand-accent-foreground">
                         <ArrowUpRight
                           className="size-4 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
                           strokeWidth={1.5}
@@ -157,21 +157,21 @@ export async function ProjectsPage() {
               })}
             </ol>
           ) : (
-            <div className="rounded-[2rem] border border-dashed border-white/12 bg-white/[0.02] p-10">
+            <div className="rounded-[2rem] border border-dashed border-border bg-card/50 p-10">
               <div className="max-w-[44ch] space-y-4">
-                <span className="grid size-12 place-items-center rounded-2xl border border-[#53d1cb]/24 bg-[#53d1cb]/8 text-[#53d1cb]">
+                <span className="grid size-12 place-items-center rounded-2xl border border-brand-accent-border bg-brand-accent-surface text-brand-accent-foreground">
                   <FolderOpen className="size-5" strokeWidth={1.5} />
                 </span>
                 <div className="space-y-2">
                   <h3 className="text-2xl leading-tight font-medium tracking-tight">
                     No projects yet.
                   </h3>
-                  <p className="text-sm leading-relaxed text-[#f3efe3]/58">
+                  <p className="text-sm leading-relaxed text-muted-foreground">
                     Use the composer on the right to create your first project. Paste a chapter,
-                    a markdown export, or notes — the pipeline starts as soon as you save.
+                    a markdown export, or notes: the pipeline starts as soon as you save.
                   </p>
                 </div>
-                <p className="font-mono text-[0.7rem] tracking-[0.14em] uppercase text-[#f3efe3]/42">
+                <p className="font-mono text-[0.7rem] tracking-[0.14em] uppercase text-muted-foreground">
                   Source · Graph · Lesson · Publish
                 </p>
               </div>
@@ -181,27 +181,27 @@ export async function ProjectsPage() {
 
         {/* Composer — sticky on desktop */}
         <aside className="xl:sticky xl:top-24 xl:self-start">
-          <article className="overflow-hidden rounded-[2rem] border border-white/10 bg-[#0d1824]/92 p-6 shadow-[0_24px_80px_rgba(0,0,0,0.32)] backdrop-blur md:p-7">
+          <article className="overflow-hidden rounded-[2rem] border border-border bg-card p-6 shadow-sm md:p-7">
             <header className="flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <span className="grid size-8 place-items-center rounded-xl border border-[#53d1cb]/30 bg-[#53d1cb]/8 text-[#53d1cb]">
+                <span className="grid size-8 place-items-center rounded-xl border border-brand-accent-border bg-brand-accent-surface text-brand-accent-foreground">
                   <Plus className="size-4" strokeWidth={1.5} />
                 </span>
                 <span>
-                  <span className="block font-mono text-[0.65rem] tracking-[0.18em] uppercase text-[#f3efe3]/42">
+                  <span className="block font-mono text-[0.65rem] tracking-[0.18em] uppercase text-muted-foreground">
                     Composer
                   </span>
-                  <span className="block text-sm font-medium tracking-tight text-[#f3efe3]">
+                  <span className="block text-sm font-medium tracking-tight text-foreground">
                     New project
                   </span>
                 </span>
               </div>
-              <span className="font-mono text-[0.65rem] tabular-nums tracking-[0.14em] uppercase text-[#f3efe3]/42">
+              <span className="font-mono text-[0.65rem] tabular-nums tracking-[0.14em] uppercase text-muted-foreground">
                 step 01
               </span>
             </header>
 
-            <p className="mt-5 max-w-[42ch] text-sm leading-relaxed text-[#f3efe3]/62">
+            <p className="mt-5 max-w-[42ch] text-sm leading-relaxed text-muted-foreground">
               Title, optional description, and seed source material. The graph extraction begins
               once you save.
             </p>
@@ -227,12 +227,12 @@ function CountCell({
 }) {
   return (
     <div className="px-4 py-2">
-      <p className="font-mono text-[0.65rem] tabular-nums tracking-[0.16em] uppercase text-[#f3efe3]/42">
+      <p className="font-mono text-[0.65rem] tabular-nums tracking-[0.16em] uppercase text-muted-foreground">
         {label}
       </p>
       <p
         className={`mt-1 font-mono text-2xl font-medium tabular-nums tracking-tight ${
-          accent ? 'text-[#53d1cb]' : 'text-[#f3efe3]'
+          accent ? 'text-brand-accent-foreground' : 'text-foreground'
         }`}
       >
         {String(value).padStart(2, '0')}
@@ -247,8 +247,10 @@ function greet(name: string | null): string {
   return `Welcome back, ${firstName}.`;
 }
 
+const dateFormatter = new Intl.DateTimeFormat('en', {
+  dateStyle: 'medium',
+});
+
 function formatDate(date: Date) {
-  return new Intl.DateTimeFormat('en', {
-    dateStyle: 'medium',
-  }).format(date);
+  return dateFormatter.format(date);
 }
