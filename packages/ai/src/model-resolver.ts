@@ -3,7 +3,7 @@ import { createOpenAI } from '@ai-sdk/openai';
 import { aiProviderConfig } from './model-config';
 
 export type AiModelProvider = 'anthropic' | 'openai' | 'openai-compatible';
-export type AgentModelKey = 'ingestionAgent';
+export type AgentModelKey = 'ingestionAgent' | 'refinementAgent';
 
 export function canUseAgentModel(agent: AgentModelKey, env: NodeJS.ProcessEnv = process.env) {
   const provider = resolveAgentProvider(agent, env);
@@ -28,7 +28,9 @@ export function resolveAgentModel(agent: AgentModelKey, env: NodeJS.ProcessEnv) 
       name: env.OPENAI_COMPATIBLE_PROVIDER_NAME ?? 'openai-compatible',
       baseURL: requireEnv(env.OPENAI_COMPATIBLE_BASE_URL, 'OPENAI_COMPATIBLE_BASE_URL'),
       apiKey: requireEnv(env.OPENAI_COMPATIBLE_API_KEY, 'OPENAI_COMPATIBLE_API_KEY'),
-      fetch: isDeepSeekModel(modelName) ? createDeepSeekReasoningFetch() : undefined,
+      fetch: isDeepSeekModel(modelName)
+        ? createDeepSeekReasoningFetch({ forceJsonResponse: agent === 'ingestionAgent' })
+        : undefined,
     });
 
     return openAICompatible.chat(modelName);
@@ -125,11 +127,17 @@ function isDeepSeekModel(modelName: string) {
   return modelName.toLowerCase().includes('deepseek');
 }
 
-function createDeepSeekReasoningFetch(): typeof fetch {
+function createDeepSeekReasoningFetch({
+  forceJsonResponse,
+}: {
+  forceJsonResponse: boolean;
+}): typeof fetch {
   const reasoningByToolCallId = new Map<string, string>();
 
   return async (input, init) => {
-    const patchedInit = patchDeepSeekReasoningRequest(init, reasoningByToolCallId);
+    const patchedInit = patchDeepSeekReasoningRequest(init, reasoningByToolCallId, {
+      forceJsonResponse,
+    });
     const response = await fetch(input, patchedInit);
 
     if (!isJsonResponse(response)) {
@@ -151,27 +159,50 @@ function createDeepSeekReasoningFetch(): typeof fetch {
   };
 }
 
-function patchDeepSeekReasoningRequest(
+export function patchDeepSeekReasoningRequest(
   init: RequestInit | undefined,
-  reasoningByToolCallId: Map<string, string>
+  reasoningByToolCallId: Map<string, string>,
+  options: { forceJsonResponse?: boolean } = {}
 ): RequestInit | undefined {
   if (!init || typeof init.body !== 'string') {
     return init;
   }
 
   const body = tryParseJson(init.body) as {
+    max_tokens?: number;
     messages?: Array<{
       role?: string;
       reasoning_content?: string;
       tool_calls?: Array<{ id?: string }>;
     }>;
+    response_format?: unknown;
+    thinking?: unknown;
   };
 
-  if (!body || typeof body !== 'object' || !Array.isArray(body.messages)) {
+  if (!body || typeof body !== 'object') {
     return init;
   }
 
   let changed = false;
+  if (options.forceJsonResponse && !body.response_format) {
+    body.response_format = { type: 'json_object' };
+    changed = true;
+  }
+
+  if (!body.thinking) {
+    body.thinking = { type: 'disabled' };
+    changed = true;
+  }
+
+  if (!body.max_tokens) {
+    body.max_tokens = 4096;
+    changed = true;
+  }
+
+  if (!Array.isArray(body.messages)) {
+    return changed ? { ...init, body: JSON.stringify(body) } : init;
+  }
+
   for (const message of body.messages) {
     if (message.role !== 'assistant' || !Array.isArray(message.tool_calls)) {
       continue;

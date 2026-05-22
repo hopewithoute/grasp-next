@@ -8,6 +8,12 @@ export {
   type ExtractChunkResult,
 } from './ingestion';
 export { mastra } from './mastra';
+export {
+  canUseEmbeddingModel,
+  DEFAULT_EMBEDDING_MODEL,
+  embedText,
+  embedTexts,
+} from './embeddings';
 export { aiProviderConfig, type AiProvider } from './model-config';
 export {
   canUseAgentModel,
