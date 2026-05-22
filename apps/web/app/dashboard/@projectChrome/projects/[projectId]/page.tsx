@@ -16,8 +16,7 @@ type ProjectChromePageProps = {
  * route still owns auth redirect / notFound handling.
  */
 export default async function ProjectChromePage({ params }: ProjectChromePageProps) {
-  const { projectId } = await params;
-  const actor = await getActor();
+  const [{ projectId }, actor] = await Promise.all([params, getActor()]);
 
   if (!actor) {
     return null;

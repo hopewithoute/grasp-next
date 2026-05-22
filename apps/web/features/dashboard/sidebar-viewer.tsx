@@ -46,7 +46,7 @@ export function SidebarViewer({ collapsed, email, imageUrl, name, }: SidebarView
       <div className="flex justify-center px-2 py-3">
         <button
           aria-label={`Sign out ${displayName}`}
-          className="group relative inline-flex size-9 items-center justify-center overflow-hidden rounded-full border border-white/10 bg-[#0d1824] text-[0.7rem] font-medium text-[#53d1cb] transition-all hover:border-[#53d1cb]/40 active:scale-[0.96]"
+          className="group relative inline-flex size-9 items-center justify-center overflow-hidden rounded-full border border-border bg-brand-accent-surface text-[0.7rem] font-medium text-brand-accent-foreground transition-all hover:border-brand-accent-border active:scale-[0.96]"
           disabled={isPending}
           onClick={handleSignOut}
           title={`Sign out · ${displayName}`}
@@ -79,14 +79,14 @@ export function SidebarViewer({ collapsed, email, imageUrl, name, }: SidebarView
   }
 
   return (
-    <div className="flex items-center gap-3 px-3 py-3">
-      <span className="relative grid size-9 shrink-0 place-items-center overflow-hidden rounded-full border border-white/10 bg-[#0d1824]">
+    <div className="flex items-center gap-3 p-3">
+      <span className="relative grid size-9 shrink-0 place-items-center overflow-hidden rounded-full border border-border bg-brand-accent-surface">
         {imageUrl ? (
           <Image alt="" className="size-full object-cover" height={36} src={imageUrl} width={36} />
         ) : (
           <span
             aria-hidden
-            className="font-mono text-[0.7rem] font-medium tracking-tight tabular-nums text-[#53d1cb]"
+            className="font-mono text-[0.7rem] font-medium tracking-tight tabular-nums text-brand-accent-foreground"
           >
             {initials}
           </span>
@@ -94,10 +94,10 @@ export function SidebarViewer({ collapsed, email, imageUrl, name, }: SidebarView
       </span>
 
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium tracking-tight text-[#f3efe3]">
+        <p className="truncate text-sm font-medium tracking-tight text-foreground">
           {displayName}
         </p>
-        <p className="truncate font-mono text-[0.65rem] tabular-nums text-[#f3efe3]/52">
+        <p className="truncate font-mono text-[0.65rem] tabular-nums text-muted-foreground">
           {displayEmail}
         </p>
       </div>
@@ -105,8 +105,8 @@ export function SidebarViewer({ collapsed, email, imageUrl, name, }: SidebarView
       <button
         aria-label="Sign out"
         className={cn(
-          'inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/[0.03] text-[#f3efe3]/62 transition-colors hover:border-[#e5685b]/30 hover:bg-[#e5685b]/8 hover:text-[#e5685b] active:scale-[0.96]',
-          isPending && 'pointer-events-none opacity-52',
+          'inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-border bg-card/50 text-muted-foreground transition-colors hover:border-status-danger-border hover:bg-status-danger-surface hover:text-status-danger-foreground active:scale-[0.96]',
+          isPending && 'pointer-events-none opacity-50',
         )}
         disabled={isPending}
         onClick={handleSignOut}
