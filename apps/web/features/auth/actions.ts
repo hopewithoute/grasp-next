@@ -5,6 +5,14 @@ import { redirect } from 'next/navigation';
 import { auth } from '@/server/auth';
 
 export async function signInWithGoogle() {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  if (session) {
+    redirect('/dashboard/projects');
+  }
+
   const response = await auth.api.signInSocial({
     body: {
       callbackURL: '/dashboard/projects',
@@ -23,6 +31,14 @@ export async function signInWithGoogle() {
 }
 
 export async function signOut() {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  if (!session) {
+    redirect('/');
+  }
+  
   await auth.api.signOut({
     headers: await headers(),
   });

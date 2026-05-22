@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { getActor } from '@/server/actor';
 import { signInWithGoogle } from './actions';
 
-type SignInPageProps = {
+export type SignInPageProps = {
   searchParams: Promise<{
     error?: string;
   }>;
@@ -74,36 +74,29 @@ export async function SignInPage({ searchParams }: SignInPageProps) {
 
   return (
     <main
-      className="min-h-[100dvh] w-full overflow-x-hidden bg-[#07111b] text-[#f3efe3]"
+      className="min-h-[100dvh] w-full overflow-x-hidden bg-background text-foreground"
       id="main-content"
     >
-      {/* Ambient — single accent only */}
-      <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 select-none">
-        <div className="ambient-float absolute -top-40 right-[-8rem] h-80 w-80 rounded-full bg-[#53d1cb]/10 blur-3xl" />
-        <div className="ambient-float absolute bottom-[-6rem] left-[-8rem] h-72 w-72 rounded-full bg-[#53d1cb]/[0.06] blur-3xl" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(255,255,255,0.06),_transparent_42%),linear-gradient(180deg,_rgba(3,8,14,0.6),_rgba(3,8,14,0.96))]" />
-      </div>
-
       <div className="relative mx-auto w-full max-w-[1400px] px-4 py-6 md:px-10">
         {/* Nav — slim */}
         <nav
           aria-label="Primary"
-          className="mb-12 flex items-center justify-between rounded-full border border-white/10 bg-white/[0.04] px-4 py-3 backdrop-blur md:mb-20"
+          className="mb-12 flex items-center justify-between rounded-full border border-border bg-background/80 px-4 py-3 backdrop-blur md:mb-20"
         >
           <Link className="flex items-center gap-3" href="/">
-            <span className="grid size-9 place-items-center rounded-full border border-[#53d1cb]/30 bg-[#53d1cb]/8 text-[#53d1cb]">
+            <span className="grid size-9 place-items-center rounded-full border border-brand-accent-border bg-brand-accent-surface text-brand-accent-foreground">
               <BrandMark className="size-5" />
             </span>
             <span>
               <span className="block text-sm font-medium tracking-tight">Adaptive Learning Studio</span>
-              <span className="block text-[0.7rem] tracking-[0.16em] uppercase text-[#f3efe3]/52">
+              <span className="block text-[0.7rem] tracking-[0.16em] uppercase text-muted-foreground">
                 Creator sign-in
               </span>
             </span>
           </Link>
 
           <Link
-            className="inline-flex h-10 items-center gap-2 rounded-full px-4 text-sm text-[#f3efe3]/72 transition-colors hover:text-[#f3efe3]"
+            className="inline-flex h-10 items-center gap-2 rounded-full px-4 text-sm text-muted-foreground transition-colors hover:text-foreground"
             href="/"
           >
             <ArrowLeft className="size-4" strokeWidth={1.5} />
@@ -115,8 +108,8 @@ export async function SignInPage({ searchParams }: SignInPageProps) {
         <section className="grid gap-12 pb-20 md:grid-cols-[1fr_440px] md:gap-16 md:pb-32 lg:grid-cols-[1fr_480px]">
           <div className="flex flex-col justify-between gap-12 md:py-6">
             <div className="space-y-8">
-              <span className="inline-flex items-center gap-2 text-[0.7rem] tracking-[0.18em] uppercase text-[#f3efe3]/62">
-                <span className="size-1.5 rounded-full bg-[#53d1cb] pulse-soft" />
+              <span className="inline-flex items-center gap-2 text-[0.7rem] tracking-[0.18em] uppercase text-muted-foreground">
+                <span className="size-1.5 rounded-full bg-brand-accent pulse-soft" />
                 <span className="font-mono">Step 00 · Authenticate</span>
               </span>
 
@@ -126,13 +119,13 @@ export async function SignInPage({ searchParams }: SignInPageProps) {
                   pipeline
                   <span
                     aria-hidden
-                    className="absolute -bottom-2 left-0 h-[3px] w-full rounded-full bg-[#53d1cb]"
+                    className="absolute -bottom-2 left-0 h-[3px] w-full rounded-full bg-brand-accent"
                   />
                 </span>
                 .
               </h1>
 
-              <p className="max-w-[52ch] text-base leading-relaxed text-[#f3efe3]/68 md:text-lg">
+              <p className="max-w-[52ch] text-base leading-relaxed text-muted-foreground md:text-lg">
                 Adaptive Learning Studio uses a single creator entry. Google handles both
                 first-time registration and returning sessions. There is no password to manage and
                 nothing to verify by email.
@@ -140,30 +133,30 @@ export async function SignInPage({ searchParams }: SignInPageProps) {
             </div>
 
             {/* Trust strip — divide-y, no card overuse */}
-            <ul className="divide-y divide-white/8 border-y border-white/8">
+            <ul className="divide-y divide-border border-y border-border">
               <li className="grid grid-cols-[28px_1fr_auto] items-baseline gap-4 py-4">
-                <ShieldCheck className="size-4 text-[#53d1cb]" strokeWidth={1.5} />
+                <ShieldCheck className="size-4 text-brand-accent" strokeWidth={1.5} />
                 <div>
-                  <p className="text-sm font-medium text-[#f3efe3]">Single creator entry</p>
-                  <p className="mt-1 text-sm leading-relaxed text-[#f3efe3]/58">
+                  <p className="text-sm font-medium text-foreground">Single creator entry</p>
+                  <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
                     Project ownership, source material, and approvals stay tied to your Google
                     identity.
                   </p>
                 </div>
-                <span className="font-mono text-[0.65rem] tabular-nums tracking-[0.16em] uppercase text-[#f3efe3]/42">
+                <span className="font-mono text-[0.65rem] tabular-nums tracking-[0.16em] uppercase text-muted-foreground">
                   PRD §6
                 </span>
               </li>
               <li className="grid grid-cols-[28px_1fr_auto] items-baseline gap-4 py-4">
-                <Quote className="size-4 text-[#53d1cb]" strokeWidth={1.5} />
+                <Quote className="size-4 text-brand-accent" strokeWidth={1.5} />
                 <div>
-                  <p className="text-sm font-medium text-[#f3efe3]">Reviewable by default</p>
-                  <p className="mt-1 text-sm leading-relaxed text-[#f3efe3]/58">
+                  <p className="text-sm font-medium text-foreground">Reviewable by default</p>
+                  <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
                     Nothing publishes without your approval. Every artifact is versioned,
                     grounded, and cited.
                   </p>
                 </div>
-                <span className="font-mono text-[0.65rem] tabular-nums tracking-[0.16em] uppercase text-[#f3efe3]/42">
+                <span className="font-mono text-[0.65rem] tabular-nums tracking-[0.16em] uppercase text-muted-foreground">
                   PRD §7.7
                 </span>
               </li>
@@ -172,27 +165,27 @@ export async function SignInPage({ searchParams }: SignInPageProps) {
 
           {/* Auth card — single accent panel */}
           <aside className="md:sticky md:top-8 md:self-start">
-            <article className="overflow-hidden rounded-[2rem] border border-white/10 bg-[#0d1824]/92 p-7 shadow-[0_40px_120px_rgba(0,0,0,0.42)] backdrop-blur md:p-8">
+            <article className="overflow-hidden rounded-[2rem] border border-border bg-card p-7 shadow-sm md:p-8">
               {/* Panel header */}
               <header className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <span className="size-2 rounded-full bg-[#53d1cb] pulse-soft" />
+                  <span className="size-2 rounded-full bg-brand-accent pulse-soft" />
                   <span className="text-sm font-medium tracking-tight">Creator access</span>
                 </div>
-                <span className="font-mono text-[0.65rem] tabular-nums tracking-[0.16em] uppercase text-[#f3efe3]/42">
+                <span className="font-mono text-[0.65rem] tabular-nums tracking-[0.16em] uppercase text-muted-foreground">
                   oauth/google
                 </span>
               </header>
 
               <div className="mt-7 space-y-5">
                 <div>
-                  <span className="font-mono text-[0.65rem] tracking-[0.18em] uppercase text-[#f3efe3]/42">
+                  <span className="font-mono text-[0.65rem] tracking-[0.18em] uppercase text-muted-foreground">
                     Method
                   </span>
                   <h2 className="mt-2 text-xl leading-tight font-medium tracking-tight">
                     Continue with Google
                   </h2>
-                  <p className="mt-2 max-w-[42ch] text-sm leading-relaxed text-[#f3efe3]/62">
+                  <p className="mt-2 max-w-[42ch] text-sm leading-relaxed text-muted-foreground">
                     Authorize once. We create your account on first sign-in and reuse it on every
                     return.
                   </p>
@@ -200,13 +193,13 @@ export async function SignInPage({ searchParams }: SignInPageProps) {
 
                 {hasError ? (
                   <div
-                    className="flex items-start gap-3 rounded-2xl border border-[#e5685b]/30 bg-[#e5685b]/8 px-4 py-3 text-sm text-[#f4a8a0]"
+                    className="flex items-start gap-3 rounded-2xl border border-status-danger-border bg-status-danger-surface px-4 py-3 text-sm text-status-danger-foreground"
                     role="alert"
                   >
                     <CircleAlert className="size-4 shrink-0 translate-y-0.5" strokeWidth={1.5} />
                     <div>
-                      <p className="font-medium text-[#f4a8a0]">Sign-in could not complete</p>
-                      <p className="mt-1 text-[#f4a8a0]/82">
+                      <p className="font-medium">Sign-in could not complete</p>
+                      <p className="mt-1 opacity-80">
                         Google returned an error. Try again, or check that third-party cookies are
                         allowed.
                       </p>
@@ -217,7 +210,7 @@ export async function SignInPage({ searchParams }: SignInPageProps) {
                 <form action={signInWithGoogle}>
                   <Button
                     aria-label="Continue with Google"
-                    className="group h-12 w-full rounded-full border border-[#53d1cb]/24 bg-[#53d1cb] px-5 text-sm font-medium text-[#041018] transition-all hover:bg-[#7ceae3] active:translate-y-[1px]"
+                    className="group h-12 w-full rounded-full border border-brand-accent-border bg-brand-accent px-5 text-sm font-medium text-[#041018] transition-all hover:opacity-90 active:translate-y-[1px]"
                     type="submit"
                   >
                     <GoogleGlyph className="mr-2 inline-flex size-5 rounded-full bg-white p-0.5" />
@@ -230,17 +223,17 @@ export async function SignInPage({ searchParams }: SignInPageProps) {
                 </form>
 
                 {/* Hairline status strip */}
-                <div className="flex items-center justify-between border-t border-white/8 pt-4 font-mono text-[0.7rem] tabular-nums">
-                  <span className="text-[#f3efe3]/42">session</span>
-                  <span className="flex items-center gap-2 text-[#f3efe3]/72">
-                    <span className="size-1.5 rounded-full bg-[#f3efe3]/42" />
+                <div className="flex items-center justify-between border-t border-border pt-4 font-mono text-[0.7rem] tabular-nums">
+                  <span className="text-muted-foreground">session</span>
+                  <span className="flex items-center gap-2 text-muted-foreground">
+                    <span className="size-1.5 rounded-full bg-muted-foreground" />
                     awaiting
                   </span>
                 </div>
               </div>
             </article>
 
-            <p className="mt-4 px-2 text-center font-mono text-[0.7rem] tracking-[0.14em] uppercase text-[#f3efe3]/42">
+            <p className="mt-4 px-2 text-center font-mono text-[0.7rem] tracking-[0.14em] uppercase text-muted-foreground">
               Better Auth · Google OAuth · MVP
             </p>
           </aside>
