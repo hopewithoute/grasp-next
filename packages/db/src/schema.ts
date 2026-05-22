@@ -13,6 +13,7 @@ import {
   PROJECT_STATUSES,
   PROJECT_STATUS,
 } from '@grasp/domain';
+import { sql } from 'drizzle-orm';
 import {
   boolean,
   index,
@@ -277,6 +278,8 @@ export const wikiConcepts = pgTable(
       table.knowledgebaseId,
       table.conceptKey
     ),
+    index('wiki_concepts_name_trgm_idx').using('gin', sql`${table.name} gin_trgm_ops`),
+    index('wiki_concepts_def_trgm_idx').using('gin', sql`${table.definition} gin_trgm_ops`),
   ]
 );
 
@@ -321,7 +324,9 @@ export const wikiConceptSourceRefs = pgTable('wiki_concept_source_refs', {
     .references(() => sourcePassages.id, { onDelete: 'cascade' }),
   quote: text('quote').notNull(),
   locationLabel: text('location_label').notNull(),
-});
+}, (table) => [
+  index('wiki_concept_refs_quote_trgm_idx').using('gin', sql`${table.quote} gin_trgm_ops`),
+]);
 
 export const wikiRelationshipSourceRefs = pgTable('wiki_relationship_source_refs', {
   id: uuid('id').primaryKey().defaultRandom(),
