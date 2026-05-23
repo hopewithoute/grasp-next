@@ -4,10 +4,11 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import {
   ConceptDetailPanel,
   ConceptList,
-  buildConceptGraph,
+  
   type ConceptRow,
   type RelationshipRow,
 } from './concept-graph-view';
+import { buildConceptGraph } from './concept-graph-utils';
 
 const concepts: ConceptRow[] = [
   {

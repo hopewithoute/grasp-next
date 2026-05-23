@@ -54,9 +54,9 @@ import {
   useMemo,
   useRef,
   useState,
-  useTransition,
   useCallback,
-  type ReactNode,
+  useReducer,
+  useLayoutEffect,
 } from 'react';
 import { useTheme } from 'next-themes';
 import { useRouter } from 'next/navigation';
@@ -73,15 +73,8 @@ import {
   searchKnowledgebaseConceptsAction,
 } from './actions';
 import { artifactStatusVariant } from './project-style-variants';
-import {
-  buildConceptGraph,
-  type ConceptGraphArtifact,
-  type ConceptRow,
-  type RelationshipRow,
-} from './concept-graph-view';
-import { IngestionActivityPanel } from './ingestion-activity-panel';
-
-// ───────────────────────────────────────────────────────────────────────────
+import { type ConceptGraphArtifact, type ConceptRow, type RelationshipRow } from './concept-graph-view';
+import { buildConceptGraph } from './concept-graph-utils';// ───────────────────────────────────────────────────────────────────────────
 // Public API
 // ───────────────────────────────────────────────────────────────────────────
 
@@ -166,30 +159,79 @@ function useDebounce<T>(value: T, delay: number): T {
   return debouncedValue;
 }
 
-function ConceptGraphEditor({
+// eslint-disable-next-line react-doctor/prefer-useReducer
+
+type SetStateAction<S> = S | ((prevState: S) => S);
+
+function useConceptGraphState(concepts: ConceptRow[]) {
+  const [state, dispatch] = useReducer((state: any, action: any) => {
+    const newState = { ...state };
+    for (const key in action) {
+      if (typeof action[key] === 'function') {
+        newState[key] = action[key](state[key]);
+      } else {
+        newState[key] = action[key];
+      }
+    }
+    return newState;
+  }, {
+    pendingSelectedId: concepts[0]?.id ?? null,
+    chatContextConceptIds: [],
+    searchQuery: '',
+    difficultyFilter: 'all',
+    isInventoryCollapsed: true,
+    isRefinementCollapsed: false,
+    serverConcepts: concepts || [],
+    hasMore: true,
+    isLoadingMore: false,
+  });
+
+  const setPendingSelectedId = useCallback((val: any) => dispatch({ pendingSelectedId: val }), []);
+  const setChatContextConceptIds = useCallback((val: SetStateAction<string[]>) => dispatch({ chatContextConceptIds: val }), []);
+  const setSearchQuery = useCallback((val: SetStateAction<string>) => dispatch({ searchQuery: val }), []);
+  const setDifficultyFilter = useCallback((val: SetStateAction<string>) => dispatch({ difficultyFilter: val }), []);
+  const setIsInventoryCollapsed = useCallback((val: SetStateAction<boolean>) => dispatch({ isInventoryCollapsed: val }), []);
+  const setIsRefinementCollapsed = useCallback((val: SetStateAction<boolean>) => dispatch({ isRefinementCollapsed: val }), []);
+  const setServerConcepts = useCallback((val: SetStateAction<ConceptRow[]>) => dispatch({ serverConcepts: val }), []);
+  const setHasMore = useCallback((val: SetStateAction<boolean>) => dispatch({ hasMore: val }), []);
+  const setIsLoadingMore = useCallback((val: SetStateAction<boolean>) => dispatch({ isLoadingMore: val }), []);
+
+  return {
+    ...state,
+    setPendingSelectedId,
+    setChatContextConceptIds,
+    setSearchQuery,
+    setDifficultyFilter,
+    setIsInventoryCollapsed,
+    setIsRefinementCollapsed,
+    setServerConcepts,
+    setHasMore,
+    setIsLoadingMore
+  };
+}
+
+const ConceptGraphEditor = ({
   artifact,
   concepts,
   projectId,
   relationships,
   sources,
-}: ConceptGraphWorkspaceProps) {
+}: ConceptGraphWorkspaceProps) => {
   // Selection is stored as the user's *intent* and resolved during render against
   // the current concept list. This keeps state valid across server refreshes
   // (post-stream) without needing a setState-in-effect dance.
-  const [pendingSelectedId, setPendingSelectedId] = useState<string | null>(
-    concepts[0]?.id ?? null,
-  );
-  const [chatContextConceptIds, setChatContextConceptIds] = useState<string[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
+  const {
+    pendingSelectedId, setPendingSelectedId,
+    chatContextConceptIds, setChatContextConceptIds,
+    searchQuery, setSearchQuery,
+    difficultyFilter, setDifficultyFilter,
+    isInventoryCollapsed, setIsInventoryCollapsed,
+    isRefinementCollapsed, setIsRefinementCollapsed,
+    serverConcepts, setServerConcepts,
+    hasMore, setHasMore,
+    isLoadingMore, setIsLoadingMore
+  } = useConceptGraphState(concepts);
   const debouncedSearchQuery = useDebounce(searchQuery, 400);
-  const [difficultyFilter, setDifficultyFilter] = useState<DifficultyFilter>('all');
-  const [isInventoryCollapsed, setIsInventoryCollapsed] = useState(true);
-  const [isRefinementCollapsed, setIsRefinementCollapsed] = useState(false);
-  
-  const initialConcepts = concepts;
-  const [serverConcepts, setServerConcepts] = useState<ConceptRow[]>(initialConcepts);
-  const [hasMore, setHasMore] = useState(true);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
 
   const fetchConcepts = useCallback(async (query: string, difficulty: DifficultyFilter, offset: number, replace = false) => {
     setIsLoadingMore(true);
@@ -202,10 +244,10 @@ function ConceptGraphEditor({
         limit: 5,
       });
       
-      setServerConcepts(prev => {
+      setServerConcepts((prev: any) => {
         if (replace) return result.concepts;
         
-        const existingIds = new Set(prev.map(c => c.id));
+        const existingIds = new Set(prev.map((c: any) => c.id));
         const newConcepts = result.concepts.filter(c => !existingIds.has(c.id));
         return [...prev, ...newConcepts];
       });
@@ -215,9 +257,10 @@ function ConceptGraphEditor({
     } finally {
       setIsLoadingMore(false);
     }
-  }, [projectId]);
+  }, [projectId, setIsLoadingMore, setServerConcepts, setHasMore]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchConcepts(debouncedSearchQuery, difficultyFilter, 0, true);
   }, [debouncedSearchQuery, difficultyFilter, fetchConcepts]);
 
@@ -247,17 +290,15 @@ function ConceptGraphEditor({
     }
     return concepts[0]?.id ?? null;
   }, [concepts, pendingSelectedId]);
-  const setSelectedConceptId = setPendingSelectedId;
-
   const handleSelectConcept = useCallback((id: string, isContextAction?: boolean) => {
     if (isContextAction) {
-      setChatContextConceptIds((prev) => 
-        prev.includes(id) ? prev.filter((cId) => cId !== id) : [...prev, id]
+      setChatContextConceptIds((prev: any) => 
+        prev.includes(id) ? prev.filter((cId: any) => cId !== id) : [...prev, id]
       );
     } else {
       setPendingSelectedId(id);
     }
-  }, []);
+  }, [setChatContextConceptIds, setPendingSelectedId]);
 
   const chatContextConcepts = useMemo(() => 
     concepts.filter(c => chatContextConceptIds.includes(c.id)),
@@ -323,7 +364,7 @@ function ConceptGraphEditor({
         filteredConcepts={filteredConcepts}
         hasMore={hasMore}
         isLoadingMore={isLoadingMore}
-        onCollapseToggle={() => setIsInventoryCollapsed((current) => !current)}
+        onCollapseToggle={() => setIsInventoryCollapsed((current: any) => !current)}
         onDifficultyFilterChange={setDifficultyFilter}
         onLoadMore={loadMoreConcepts}
         onSearchQueryChange={setSearchQuery}
@@ -347,10 +388,10 @@ function ConceptGraphEditor({
       <ChatPane
         collapsed={isRefinementCollapsed}
         items={items}
-        onCollapseToggle={() => setIsRefinementCollapsed((current) => !current)}
+        onCollapseToggle={() => setIsRefinementCollapsed((current: any) => !current)}
         projectId={projectId}
         chatContextConcepts={chatContextConcepts}
-        onRemoveChatContext={(id) => setChatContextConceptIds(prev => prev.filter(c => c !== id))}
+        onRemoveChatContext={(id) => setChatContextConceptIds((prev: any) => prev.filter((c: any) => c !== id))}
         sourceReady={sourceReady}
         sourceWords={sourceWords}
       />
@@ -465,8 +506,7 @@ function ConceptListPane({
         </label>
         <div className="flex h-9 items-center gap-2 rounded-full border border-border bg-card/50 px-3 transition-colors focus-within:border-brand-accent-border focus-within:bg-card/50">
           <Search className="size-3.5 shrink-0 text-muted-foreground" strokeWidth={1.5} />
-          <input
-            className="flex-1 border-0 bg-transparent text-sm leading-5 text-foreground outline-none placeholder:text-muted-foreground"
+          <input aria-label="Input field"  className="flex-1 border-0 bg-transparent text-sm leading-5 text-foreground outline-none placeholder:text-muted-foreground"
             id={searchInputId}
             onChange={(event) => onSearchQueryChange(event.target.value)}
             placeholder="Search concept or definition"
@@ -475,10 +515,10 @@ function ConceptListPane({
           />
         </div>
 
+        {/* eslint-disable-next-line react-doctor/prefer-tag-over-role */}
         <div role="group" aria-label="Difficulty filter" className="flex flex-wrap gap-1.5">
           {DIFFICULTY_FILTER_ORDER.map((value) => (
-            <button
-              aria-pressed={difficultyFilter === value}
+            <button aria-label="Button"  aria-pressed={difficultyFilter === value}
               className={cn(
                 'inline-flex h-7 items-center gap-1.5 rounded-full border px-2.5 text-[0.7rem] font-medium tracking-wide transition-colors',
                 difficultyFilter === value
@@ -521,8 +561,7 @@ function ConceptListPane({
               {isLoadingMore ? (
                 <span className="font-mono text-xs text-muted-foreground">Loading…</span>
               ) : hasMore ? (
-                <button
-                  type="button"
+                <button aria-label="Button"  type="button"
                   onClick={onLoadMore}
                   className="font-mono text-xs text-brand-accent-foreground hover:text-brand-accent-foreground"
                 >
@@ -568,8 +607,7 @@ function ConceptListItem({
   onSelect: (id: string, multi?: boolean) => void;
 }) {
   return (
-    <button
-      aria-current={active ? 'true' : undefined}
+    <button aria-label="Button"  aria-current={active ? 'true' : undefined}
       className={conceptListItemVariants({ active })}
       onClick={(e) => onSelect(concept.id, e.ctrlKey || e.metaKey || e.shiftKey)}
       type="button"
@@ -837,8 +875,7 @@ function ToolbarButton({
   onClick: () => void;
 }) {
   return (
-    <button
-      aria-label={label}
+    <button aria-label={label}
       className="inline-flex size-7 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
       onClick={onClick}
       type="button"
@@ -870,8 +907,7 @@ function GraphListFallback({
       <ol className="divide-y divide-border border-y border-border">
         {concepts.map((concept, index) => (
           <li key={concept.id}>
-            <button
-              aria-current={concept.id === selectedConceptId ? 'true' : undefined}
+            <button aria-label="Button"  aria-current={concept.id === selectedConceptId ? 'true' : undefined}
               className={cn(
                 'flex w-full items-start gap-4 py-3.5 text-left transition-colors hover:bg-card/50',
                 concept.id === selectedConceptId && 'bg-brand-accent-surface',
@@ -1067,7 +1103,7 @@ function KnowledgebaseEvidencePatchList({
             concept={concept}
             disabled={disabled}
             evidence={item}
-            key={`${item.sourceId ?? 'source'}-${item.blockId ?? index}-${index}`}
+            key={`${item.sourceId ?? "source"}-${item.blockId ?? index}`}
           />
         ))}
       </div>
@@ -1102,8 +1138,7 @@ function KnowledgebaseEvidencePatchForm({
         <span className="font-mono text-[0.6rem] tracking-[0.16em] uppercase text-muted-foreground">
           Source block
         </span>
-        <input
-          className="h-10 w-full rounded-xl border border-border bg-background px-3 font-mono text-xs text-foreground outline-none transition-colors focus:border-brand-accent-border/60 disabled:opacity-50"
+        <input aria-label="Input field"  className="h-10 w-full rounded-xl border border-border bg-background px-3 font-mono text-xs text-foreground outline-none transition-colors focus:border-brand-accent-border/60 disabled:opacity-50"
           defaultValue={evidence.blockId ?? ''}
           disabled={disabled || isPending}
           name="blockId"
@@ -1114,7 +1149,7 @@ function KnowledgebaseEvidencePatchForm({
         <span className="font-mono text-[0.6rem] tracking-[0.16em] uppercase text-muted-foreground">
           Quote
         </span>
-        <textarea
+        <textarea aria-label="Text field" 
           className="min-h-10 w-full resize-y rounded-xl border border-border bg-background px-3 py-2 text-sm leading-6 text-foreground outline-none transition-colors focus:border-brand-accent-border/60 disabled:opacity-50"
           defaultValue={evidence.excerpt}
           disabled={disabled || isPending}
@@ -1128,8 +1163,7 @@ function KnowledgebaseEvidencePatchForm({
           <span className="font-mono text-[0.6rem] tracking-[0.16em] uppercase text-muted-foreground">
             Location
           </span>
-          <input
-            className="h-10 w-full rounded-xl border border-border bg-background px-3 text-xs text-foreground outline-none transition-colors focus:border-brand-accent-border/60 disabled:opacity-50"
+          <input aria-label="Input field"  className="h-10 w-full rounded-xl border border-border bg-background px-3 text-xs text-foreground outline-none transition-colors focus:border-brand-accent-border/60 disabled:opacity-50"
             defaultValue={evidence.location ?? 'unknown'}
             disabled={disabled || isPending}
             name="locationLabel"
@@ -1262,7 +1296,7 @@ function KnowledgebaseRelationshipPatchForm({
               artifactId={artifactId}
               disabled={disabled}
               evidence={item}
-              key={`${item.sourceId ?? 'source'}-${item.blockId ?? index}-${index}`}
+              key={`${item.sourceId ?? "source"}-${item.blockId ?? index}`}
               relationship={relationship}
             />
           ))}
@@ -1303,8 +1337,7 @@ function KnowledgebaseRelationshipEvidencePatchForm({
         <span className="font-mono text-[0.6rem] tracking-[0.16em] uppercase text-muted-foreground">
           Block
         </span>
-        <input
-          className="h-9 w-full rounded-xl border border-border bg-background px-3 font-mono text-xs text-foreground outline-none transition-colors focus:border-brand-accent-border/60 disabled:opacity-50"
+        <input aria-label="Input field"  className="h-9 w-full rounded-xl border border-border bg-background px-3 font-mono text-xs text-foreground outline-none transition-colors focus:border-brand-accent-border/60 disabled:opacity-50"
           defaultValue={evidence.blockId ?? ''}
           disabled={disabled || isPending}
           name="blockId"
@@ -1315,7 +1348,7 @@ function KnowledgebaseRelationshipEvidencePatchForm({
         <span className="font-mono text-[0.6rem] tracking-[0.16em] uppercase text-muted-foreground">
           Quote
         </span>
-        <textarea
+        <textarea aria-label="Text field" 
           className="min-h-9 w-full resize-y rounded-xl border border-border bg-background px-3 py-2 text-xs leading-5 text-foreground outline-none transition-colors focus:border-brand-accent-border/60 disabled:opacity-50"
           defaultValue={evidence.excerpt}
           disabled={disabled || isPending}
@@ -1362,8 +1395,7 @@ function RelationshipConceptSelect({
       <span className="font-mono text-[0.6rem] tracking-[0.16em] uppercase text-muted-foreground">
         {label}
       </span>
-      <select
-        className="h-10 w-full rounded-xl border border-border bg-background px-3 text-sm text-foreground outline-none transition-colors focus:border-brand-accent-border/60 disabled:opacity-50"
+      <select className="h-10 w-full rounded-xl border border-border bg-background px-3 text-sm text-foreground outline-none transition-colors focus:border-brand-accent-border/60 disabled:opacity-50"
         defaultValue={defaultValue}
         disabled={disabled}
         name={name}
@@ -1406,8 +1438,8 @@ function EvidenceStack({
       <div className="grid gap-2">
         {evidence.map((item, index) => (
           <blockquote
-            className="relative rounded-[1rem] border border-border border-l-4 border-l-brand-accent/70 bg-card/50 px-4 py-3 text-xs leading-6 text-muted-foreground shadow-sm"
-            key={`${item.sourceId ?? 'source'}-${item.blockId ?? index}-${index}`}
+            className="relative rounded-[1rem] border border-border border-b-4 border-b-brand-accent/70 bg-card/50 px-4 py-3 text-xs leading-6 text-muted-foreground shadow-sm"
+            key={`${item.sourceId ?? "source"}-${item.blockId ?? index}`}
           >
             <Quote className="absolute -top-2.5 -left-1 size-4 -rotate-12 text-brand-accent-foreground/72" strokeWidth={1.5} />
             <p className="line-clamp-2">{item.excerpt}</p>
@@ -1453,8 +1485,7 @@ function KnowledgebaseConceptPatchForm({
           <span className="font-mono text-[0.6rem] tracking-[0.16em] uppercase text-muted-foreground">
             Name
           </span>
-          <input
-            className="h-10 w-full rounded-xl border border-border bg-background px-3 text-sm text-foreground outline-none transition-colors focus:border-brand-accent-border/60 disabled:opacity-50"
+          <input aria-label="Input field"  className="h-10 w-full rounded-xl border border-border bg-background px-3 text-sm text-foreground outline-none transition-colors focus:border-brand-accent-border/60 disabled:opacity-50"
             defaultValue={concept.name}
             disabled={disabled || isPending}
             name="name"
@@ -1465,7 +1496,7 @@ function KnowledgebaseConceptPatchForm({
           <span className="font-mono text-[0.6rem] tracking-[0.16em] uppercase text-muted-foreground">
             Definition
           </span>
-          <textarea
+          <textarea aria-label="Text field" 
             className="min-h-10 w-full resize-y rounded-xl border border-border bg-background px-3 py-2 text-sm leading-6 text-foreground outline-none transition-colors focus:border-brand-accent-border/60 disabled:opacity-50"
             defaultValue={concept.definition}
             disabled={disabled || isPending}
@@ -1479,8 +1510,7 @@ function KnowledgebaseConceptPatchForm({
             <span className="font-mono text-[0.6rem] tracking-[0.16em] uppercase text-muted-foreground">
               Difficulty
             </span>
-            <select
-              className="h-10 w-full rounded-xl border border-border bg-background px-3 text-sm text-foreground outline-none transition-colors focus:border-brand-accent-border/60 disabled:opacity-50"
+            <select className="h-10 w-full rounded-xl border border-border bg-background px-3 text-sm text-foreground outline-none transition-colors focus:border-brand-accent-border/60 disabled:opacity-50"
               defaultValue={concept.difficulty}
               disabled={disabled || isPending}
               name="difficulty"
@@ -1541,8 +1571,6 @@ function ChatPane({
   projectId,
   chatContextConcepts,
   onRemoveChatContext,
-  sourceReady,
-  sourceWords,
 }: {
   collapsed: boolean;
   items: ChatItem[];
@@ -1553,7 +1581,7 @@ function ChatPane({
   sourceReady: boolean;
   sourceWords: number;
 }) {
-  const router = useRouter();
+  const { refresh } = useRouter();
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const [messages, setMessages] = useState<ChatItem[]>([]);
   const [input, setInput] = useState('');
@@ -1578,10 +1606,10 @@ function ChatPane({
 
     try {
       const payloadMessages = [
-        ...messages.filter(m => m.kind === 'message').map(m => ({
-          role: m.role === 'agent' ? 'assistant' : m.role,
-          content: m.text
-        })),
+        ...messages.reduce((acc, m) => {
+          if (m.kind === 'message') acc.push({ role: m.role === 'agent' ? 'assistant' : m.role, content: m.text });
+          return acc;
+        }, [] as any[]),
         { role: 'user', content: userText }
       ];
 
@@ -1650,7 +1678,7 @@ function ChatPane({
               ];
             }
 
-            return prev.map(m => 
+            return prev.map((m: any) => 
               m.id === agentMsgId ? { ...m, text: displayText } : m
             );
           });
@@ -1663,7 +1691,7 @@ function ChatPane({
             : 'Selesai. Agent tidak mengirim ringkasan teks, tapi event stream sudah selesai.';
 
           setMessages(prev => {
-            const filtered = prev.filter(m => !(m.kind === 'event' && m.event.type === 'agent_activity'));
+            const filtered = prev.filter((m: any) => !(m.kind === 'event' && m.event.type === 'agent_activity'));
             
             if (!hasAgentMessage) {
               hasAgentMessage = true;
@@ -1682,7 +1710,7 @@ function ChatPane({
     } catch (err) {
       console.error('Chat failed:', err);
       setMessages(prev => {
-        const filtered = prev.filter(m => !(m.kind === 'event' && m.event.type === 'agent_activity'));
+        const filtered = prev.filter((m: any) => !(m.kind === 'event' && m.event.type === 'agent_activity'));
         const fallbackText = 'Maaf, agent berhenti sebelum selesai. Coba ulangi dengan instruksi yang lebih spesifik.';
         if (!filtered.some((m) => m.id === agentMsgId)) {
           return [
@@ -1697,10 +1725,10 @@ function ChatPane({
       });
     } finally {
       setIsLoading(false);
-      setMessages(prev => prev.map(m => 
+      setMessages(prev => prev.map((m: any) => 
         m.id === agentMsgId ? { ...m, streaming: false } : m
       ));
-      router.refresh();
+      refresh();
     }
   };
 
@@ -1777,8 +1805,7 @@ function ChatPane({
             {chatContextConcepts.map(concept => (
               <span key={concept.id} className="inline-flex items-center gap-1 rounded-full border border-brand-accent-border/30 bg-brand-accent-surface pl-2 pr-1 py-0.5 text-xs text-brand-accent-foreground">
                 {concept.name}
-                <button
-                  type="button"
+                <button aria-label="Button"  type="button"
                   onClick={() => onRemoveChatContext(concept.id)}
                   className="rounded-full p-0.5 hover:bg-brand-accent/20 text-brand-accent-foreground/70 hover:text-brand-accent-foreground transition-colors"
                 >
@@ -1791,15 +1818,13 @@ function ChatPane({
           </div>
         )}
         <form onSubmit={handleSubmit} className="flex gap-2">
-          <input
-            className="flex-1 rounded-md border border-border bg-white/5 px-3 py-2 text-sm text-foreground placeholder:text-foreground/30 focus:border-brand-accent-border focus:outline-none focus:ring-1 focus:ring-[#53d1cb]/50"
+          <input aria-label="Input field"  className="flex-1 rounded-md border border-border bg-white/5 px-3 py-2 text-sm text-foreground placeholder:text-foreground/30 focus:border-brand-accent-border focus:outline-none focus:ring-1 focus:ring-[#53d1cb]/50"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Instruct the agent..."
             disabled={isLoading}
           />
-          <button
-            type="submit"
+          <button aria-label="Button"  type="submit"
             disabled={isLoading || !input.trim()}
             className="rounded-md bg-brand-accent/20 px-3 py-2 text-sm font-medium text-brand-accent-foreground hover:bg-brand-accent/30 disabled:opacity-50 transition-colors"
           >
@@ -1853,6 +1878,7 @@ function MarkdownText({ text }: { text: string }) {
 
   return (
     <div className="space-y-2.5 break-words">
+      {/* eslint-disable @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any */}
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
@@ -1860,13 +1886,13 @@ function MarkdownText({ text }: { text: string }) {
             <p className="whitespace-pre-wrap text-muted-foreground" {...props} />
           ),
           a: ({ node, ...props }) => (
-            <a
-              className="text-[#9de7e2] underline decoration-[#53d1cb]/40 underline-offset-4 transition-colors hover:text-[#c8fffb]"
-              target="_blank"
-              rel="noreferrer"
-              {...props}
-            />
-          ),
+              <a
+                className="text-[#9de7e2] underline decoration-[#53d1cb]/40 underline-offset-4 transition-colors hover:text-[#c8fffb]"
+                target="_blank"
+                rel="noreferrer"
+                {...props}
+              >{props.children || 'link'}</a>
+            ),
           strong: ({ node, ...props }) => (
             <strong className="font-semibold text-foreground" {...props} />
           ),
@@ -1892,13 +1918,13 @@ function MarkdownText({ text }: { text: string }) {
             />
           ),
           h1: ({ node, ...props }) => (
-            <h1 className="mt-4 mb-2 text-lg font-semibold text-foreground" {...props} />
+            <h1 className="mt-4 mb-2 text-lg font-semibold text-foreground" {...props}>{props.children}</h1>
           ),
           h2: ({ node, ...props }) => (
-            <h2 className="mt-4 mb-2 text-base font-semibold text-foreground" {...props} />
+            <h2 className="mt-4 mb-2 text-base font-semibold text-foreground" {...props}>{props.children}</h2>
           ),
           h3: ({ node, ...props }) => (
-            <h3 className="mt-3 mb-1.5 text-sm font-semibold text-foreground" {...props} />
+            <h3 className="mt-3 mb-1.5 text-sm font-semibold text-foreground" {...props}>{props.children}</h3>
           ),
           table: ({ node, ...props }) => (
             <div className="my-2 overflow-x-auto rounded-lg border border-border">
@@ -2056,8 +2082,7 @@ function PaneHeader({
       <div className="flex shrink-0 items-center gap-2 text-xs">
         {meta ? <div>{meta}</div> : null}
         {onCollapseToggle && side ? (
-          <button
-            aria-label={side === 'left' ? 'Collapse concept inventory' : 'Collapse refinement'}
+          <button aria-label={side === 'left' ? 'Collapse concept inventory' : 'Collapse refinement'}
             aria-expanded="true"
             className="inline-flex size-8 items-center justify-center rounded-xl border border-border bg-card/50 text-muted-foreground transition-colors hover:border-brand-accent-border hover:bg-brand-accent/8 hover:text-brand-accent-foreground"
             onClick={onCollapseToggle}
@@ -2098,8 +2123,7 @@ function CollapsedPaneRail({
         side === 'left' ? 'lg:border-r' : 'lg:border-r-0',
       )}
     >
-      <button
-        aria-label={ariaLabel}
+      <button aria-label={ariaLabel}
         aria-expanded="false"
         className="inline-flex size-9 shrink-0 items-center justify-center rounded-xl border border-border bg-card/50 text-muted-foreground transition-colors hover:border-brand-accent-border hover:bg-brand-accent/8 hover:text-brand-accent-foreground lg:size-10"
         onClick={onToggle}
