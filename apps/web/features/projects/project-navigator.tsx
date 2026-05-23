@@ -38,11 +38,13 @@ const STAGE_ICONS: Record<StudioStage, typeof FileText> = {
 function ProjectNavigatorContent() {
   const params = useParams<{ projectId?: string }>();
   const searchParams = useSearchParams();
+  const { get } = searchParams;
 
   const projectId = params?.projectId;
   if (!projectId) return null;
 
-  const activeStage = resolveStage(searchParams.get('stage'));
+  const stageParam = get ? get.call(searchParams, 'stage') : null;
+  const activeStage = resolveStage(stageParam);
 
   return (
     <div className="relative min-w-0">

@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { LazyMotion, m, domAnimation, AnimatePresence } from 'framer-motion';
 
 export function InfiniteScrollTrack({
   children,
@@ -11,8 +11,9 @@ export function InfiniteScrollTrack({
   speed?: number;
 }) {
   return (
+    <LazyMotion features={domAnimation}>
     <div className="relative flex overflow-hidden w-full">
-      <motion.div
+      <m.div
         className="flex shrink-0 gap-4 pr-4"
         animate={{ x: ['0%', '-100%'] }}
         transition={{
@@ -22,8 +23,8 @@ export function InfiniteScrollTrack({
         }}
       >
         {children}
-      </motion.div>
-      <motion.div
+      </m.div>
+      <m.div
         className="flex shrink-0 gap-4 pr-4"
         animate={{ x: ['0%', '-100%'] }}
         transition={{
@@ -33,20 +34,21 @@ export function InfiniteScrollTrack({
         }}
       >
         {children}
-      </motion.div>
+      </m.div>
     </div>
+    </LazyMotion>
   );
 }
 
 export function PulseBadge({ children }: { children: React.ReactNode }) {
   return (
-    <motion.span
+    <m.span
       animate={{ opacity: [0.6, 1, 0.6] }}
       transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
       className="inline-flex"
     >
       {children}
-    </motion.span>
+    </m.span>
   );
 }
 
@@ -55,7 +57,7 @@ export function IntelligentList({
 }: {
   items: Array<{ id: string; label: string; value: string }>;
 }) {
-  const [data, setData] = React.useState(items);
+  const [data, setData] = React.useState(() => [...items]);
 
   React.useEffect(() => {
     const interval = setInterval(() => {
@@ -73,7 +75,7 @@ export function IntelligentList({
     <div className="flex flex-col gap-2">
       <AnimatePresence mode="popLayout">
         {data.map((item) => (
-          <motion.div
+          <m.div
             key={item.id}
             layout
             layoutId={item.id}
@@ -85,7 +87,7 @@ export function IntelligentList({
           >
             <span className="font-medium text-foreground">{item.label}</span>
             <span className="font-mono text-xs text-brand-accent">{item.value}</span>
-          </motion.div>
+          </m.div>
         ))}
       </AnimatePresence>
     </div>
