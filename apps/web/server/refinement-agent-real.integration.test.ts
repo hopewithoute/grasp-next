@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { describe, it, before, after } from 'node:test';
