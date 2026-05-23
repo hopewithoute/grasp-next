@@ -19,4 +19,4 @@ function Input({ className, type, ...props }: React.ComponentProps<'input'>) {
   );
 }
 
-export { Input, inputVariants };
+export { Input };
