@@ -1,7 +1,6 @@
 import { ArrowUpRight, CheckCircle2, CircleDashed } from 'lucide-react';
 import Link from 'next/link';
 import { statusChipVariants } from '../project-style-variants';
-import type { StudioStage } from '../stages';
 
 export function Eyebrow({ children }: { children: React.ReactNode }) {
   return (
@@ -21,7 +20,7 @@ export function StatusChip({ ready }: { ready: boolean }) {
   );
 }
 
-export function NextActionCell({
+function NextActionCell({
   copy,
   href,
   stageLabel,

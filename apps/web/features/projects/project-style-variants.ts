@@ -88,7 +88,7 @@ export const sourceModeButtonVariants = cva('rounded-full px-2.5 py-1 transition
   },
 });
 
-export const chatMessageVariants = cva('rounded-[1.25rem] px-4 py-3 text-sm leading-7', {
+const chatMessageVariants = cva('rounded-[1.25rem] px-4 py-3 text-sm leading-7', {
   variants: {
     role: {
       agent: 'border border-border bg-card text-card-foreground',
@@ -97,7 +97,7 @@ export const chatMessageVariants = cva('rounded-[1.25rem] px-4 py-3 text-sm lead
   },
 });
 
-export const stageLinkVariants = cva(
+const stageLinkVariants = cva(
   'group relative flex min-w-[12rem] items-start gap-3 rounded-[1.4rem] border p-4 transition-all duration-200 hover:border-brand-accent-border hover:bg-brand-accent-surface',
   {
     variants: {
@@ -112,7 +112,7 @@ export const stageLinkVariants = cva(
   }
 );
 
-export const stageMarkerVariants = cva(
+const stageMarkerVariants = cva(
   'mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-xl border text-xs font-semibold',
   {
     variants: {
@@ -148,6 +148,6 @@ export function artifactStatusVariant(status: string) {
   return statusBadgeVariants({ intent });
 }
 
-export function isArtifactStatus(status: string): status is ArtifactStatus {
+function isArtifactStatus(status: string): status is ArtifactStatus {
   return artifactStatuses.includes(status as ArtifactStatus);
 }

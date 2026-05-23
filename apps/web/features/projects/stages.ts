@@ -10,7 +10,7 @@ export const STAGE_LABELS: Record<StudioStage, string> = {
   source: 'Source',
 };
 
-export const STAGE_DESCRIPTIONS: Record<StudioStage, string> = {
+const STAGE_DESCRIPTIONS: Record<StudioStage, string> = {
   graph: 'Build, refine, and approve the concept graph.',
   lesson: 'Review objectives and lesson blocks when that slice ships.',
   overview: 'Project status, pipeline progress, and next action.',

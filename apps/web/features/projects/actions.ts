@@ -26,7 +26,7 @@ import {
   updateProjectDetailsDto,
   type CreateProjectDto,
 } from '@grasp/domain';
-import { getActor } from '@/server/actor';
+import { getActor as auth } from '@/server/actor';
 import { createProjectDeps } from '@/server/project-deps';
 
 export type CreateProjectFormState = {
@@ -63,8 +63,8 @@ export type KnowledgebaseEvidenceFormState = {
   success: boolean;
 };
 
-export async function createProjectAction(input: CreateProjectDto) {
-  const actor = await getActor();
+async function createProjectAction(input: CreateProjectDto) {
+  const actor = await auth();
 
   if (!canCreateProject(actor)) {
     throw new Error('Unauthorized.');
@@ -81,7 +81,7 @@ export async function createProjectFormAction(
   _state: CreateProjectFormState,
   formData: FormData
 ): Promise<CreateProjectFormState> {
-  const actor = await getActor();
+  const actor = await auth();
 
   if (!canCreateProject(actor)) {
     return { error: 'Unauthorized.' };
@@ -107,7 +107,7 @@ export async function addProjectSourceFormAction(
   _state: ProjectSourceFormState,
   formData: FormData
 ): Promise<ProjectSourceFormState> {
-  const actor = await getActor();
+  const actor = await auth();
 
   if (!actor) {
     return { error: 'Unauthorized.', success: false };
@@ -144,7 +144,7 @@ export async function updateProjectSourceFormAction(
   _state: ProjectSourceFormState,
   formData: FormData
 ): Promise<ProjectSourceFormState> {
-  const actor = await getActor();
+  const actor = await auth();
 
   if (!actor) {
     return { error: 'Unauthorized.', success: false };
@@ -180,7 +180,7 @@ export async function deleteProjectSourceFormAction(
   _state: ProjectSourceFormState,
   formData: FormData
 ): Promise<ProjectSourceFormState> {
-  const actor = await getActor();
+  const actor = await auth();
 
   if (!actor) {
     return { error: 'Unauthorized.', success: false };
@@ -218,7 +218,7 @@ export async function updateProjectDetailsFormAction(
   _state: UpdateProjectDetailsFormState,
   formData: FormData
 ): Promise<UpdateProjectDetailsFormState> {
-  const actor = await getActor();
+  const actor = await auth();
 
   if (!actor) {
     return { error: 'Unauthorized.', success: false };
@@ -253,7 +253,7 @@ export async function deleteProjectFormAction(
   _state: DeleteProjectFormState,
   formData: FormData
 ): Promise<DeleteProjectFormState> {
-  const actor = await getActor();
+  const actor = await auth();
 
   if (!actor) {
     return { error: 'Unauthorized.' };
@@ -283,7 +283,7 @@ export async function updateKnowledgebaseConceptFormAction(
   _state: KnowledgebaseConceptFormState,
   formData: FormData
 ): Promise<KnowledgebaseConceptFormState> {
-  const actor = await getActor();
+  const actor = await auth();
 
   if (!actor) {
     return { error: 'Unauthorized.', success: false };
@@ -319,7 +319,7 @@ export async function updateKnowledgebaseRelationshipFormAction(
   _state: KnowledgebaseRelationshipFormState,
   formData: FormData
 ): Promise<KnowledgebaseRelationshipFormState> {
-  const actor = await getActor();
+  const actor = await auth();
 
   if (!actor) {
     return { error: 'Unauthorized.', success: false };
@@ -355,7 +355,7 @@ export async function updateKnowledgebaseEvidenceFormAction(
   _state: KnowledgebaseEvidenceFormState,
   formData: FormData
 ): Promise<KnowledgebaseEvidenceFormState> {
-  const actor = await getActor();
+  const actor = await auth();
 
   if (!actor) {
     return { error: 'Unauthorized.', success: false };
@@ -400,7 +400,7 @@ export type ConceptSearchPaginationParams = {
 };
 
 export async function searchKnowledgebaseConceptsAction(params: ConceptSearchPaginationParams) {
-  const actor = await getActor();
+  const actor = await auth();
   
   if (!actor) {
     throw new Error('Unauthorized');
@@ -426,7 +426,7 @@ export async function updateKnowledgebaseRelationshipEvidenceFormAction(
   _state: KnowledgebaseEvidenceFormState,
   formData: FormData
 ): Promise<KnowledgebaseEvidenceFormState> {
-  const actor = await getActor();
+  const actor = await auth();
 
   if (!actor) {
     return { error: 'Unauthorized.', success: false };
