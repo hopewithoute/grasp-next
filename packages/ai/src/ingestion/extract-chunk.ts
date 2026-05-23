@@ -66,7 +66,7 @@ export async function extractChunk(input: ExtractChunkInput): Promise<ExtractChu
 
   const MAX_ATTEMPTS = 3;
   let lastError: string | null = null;
-  let thinking = '';
+  const thinking = '';
 
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
     try {

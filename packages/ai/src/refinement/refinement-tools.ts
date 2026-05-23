@@ -151,7 +151,7 @@ export function createRefinementTools(deps: RefinementDependencies) {
           const wikiData = await wikiResponse.json();
           if (wikiData.query && wikiData.query.search) {
              return {
-               results: wikiData.query.search.slice(0, 5).map((r: any) => ({
+               results: wikiData.query.search.slice(0, 5).map((r: { title: string; snippet: string }) => ({
                  title: r.title,
                  description: r.snippet.replace(/<[^>]*>?/gm, ''),
                  url: `https://en.wikipedia.org/wiki/${encodeURIComponent(r.title.replace(/ /g, '_'))}`
