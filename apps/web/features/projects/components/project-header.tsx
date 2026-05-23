@@ -1,7 +1,6 @@
 
 import { ProjectStatusBadge } from '../project-status-badge';
-import { buildStageHref, STAGE_LABELS, type StudioStage } from '../stages';
-import { Eyebrow, NextActionCell, StatusCell } from './project-shared';
+import { StatusCell } from './project-shared';
 
 type ProjectHeaderProps = {
   detail: {
@@ -20,15 +19,9 @@ type ProjectHeaderProps = {
     value: string;
   };
   knowledgebaseGraph: {
-    concepts: any[];
-    relationships: any[];
+    concepts: unknown[];
+    relationships: unknown[];
   };
-  nextAction: {
-    copy: string;
-    stage: StudioStage;
-    title: string;
-  };
-  projectId: string;
   sourceCounts: {
     characters: number;
     words: number;
@@ -41,8 +34,6 @@ export function ProjectHeader({
   graphReady,
   ingestionStatus,
   knowledgebaseGraph,
-  nextAction,
-  projectId,
   sourceCounts,
   sourceReady,
 }: ProjectHeaderProps) {
@@ -56,6 +47,7 @@ export function ProjectHeader({
               {detail.project.title}
             </h1>
             <div className="flex flex-wrap items-center gap-2">
+              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
               <ProjectStatusBadge status={detail.project.status as any} />
               <span className="font-mono text-[0.65rem] tabular-nums tracking-[0.16em] uppercase text-muted-foreground">
                 id {detail.project.id.slice(0, 8)}

@@ -12,8 +12,8 @@ type ProjectPipelineStatusProps = {
     value: string;
   };
   knowledgebaseGraph: {
-    concepts: any[];
-    relationships: any[];
+    concepts: unknown[];
+    relationships: unknown[];
   };
   projectId: string;
   sourceCounts: {

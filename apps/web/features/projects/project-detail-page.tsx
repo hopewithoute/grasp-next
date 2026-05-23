@@ -32,6 +32,8 @@ export async function ProjectDetailPage({ currentStage, projectId }: ProjectDeta
 
   let detail;
 
+  let isNotFound = false;
+
   try {
     detail = await loadProjectDetail(
       { projectId, ownerId: actor.id },
@@ -45,10 +47,14 @@ export async function ProjectDetailPage({ currentStage, projectId }: ProjectDeta
   } catch (error) {
     unstable_rethrow(error);
     if (error instanceof ProjectNotFoundError || error instanceof ProjectForbiddenError) {
-      notFound();
+      isNotFound = true;
+    } else {
+      throw error;
     }
+  }
 
-    throw error;
+  if (isNotFound || !detail) {
+    notFound();
   }
 
   const stage = resolveStage(currentStage);
@@ -69,8 +75,6 @@ export async function ProjectDetailPage({ currentStage, projectId }: ProjectDeta
         graphReady={graphReady}
         ingestionStatus={ingestionStatus}
         knowledgebaseGraph={knowledgebaseGraph}
-        nextAction={nextAction}
-        projectId={projectId}
         sourceCounts={sourceCounts}
         sourceReady={sourceReady}
       />
