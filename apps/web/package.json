@@ -9,12 +9,10 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@ai-sdk/react": "^3.0.192",
     "@base-ui/react": "^1.4.1",
     "@grasp/ai": "workspace:*",
     "@grasp/db": "workspace:*",
     "@grasp/domain": "workspace:*",
-    "@mastra/ai-sdk": "^1.4.3",
     "@tailwindcss/postcss": "^4.3.0",
     "@xyflow/react": "^12.10.2",
     "ai": "^6.0.190",
