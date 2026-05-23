@@ -19,7 +19,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={cn('font-sans', geist.variable)} suppressHydrationWarning>
+    <html lang="en" className={cn('font-sans', geist.variable)} suppressHydrationWarning data-scroll-behavior="smooth">
       <body>
         {process.env.NODE_ENV === 'development' ? (
           <Script id="react-performance-measure-guard" strategy="beforeInteractive">
