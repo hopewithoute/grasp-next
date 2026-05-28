@@ -7,6 +7,7 @@ import {
   type IngestionRelationClaim,
   type IngestionRelationship,
 } from '@grasp/domain';
+import type { MastraDBMessage } from '@mastra/core/agent';
 import { ingestionAgent } from './ingestion-agent';
 import { buildIngestionPrompt } from './ingestion-prompt';
 import type { createIngestionRetrievalTools } from './ingestion-retrieval-tools';
@@ -27,6 +28,10 @@ export type ExtractChunkInput = {
   draftRelationships: IngestionRelationship[];
   retrievedConcepts?: IngestionConceptContext[];
   retrievalTools?: ReturnType<typeof createIngestionRetrievalTools>;
+  memory?: {
+    resource: string;
+    thread: string;
+  };
   onThinking?: (thinking: string) => void;
 };
 
@@ -39,7 +44,27 @@ export type ExtractChunkResult = {
   droppedRefCount: number;
 };
 
+export type IngestionMastraRunArtifact = {
+  messages: MastraDBMessage[];
+  text: string;
+  attempts: number;
+};
+
+export type IngestionChunkAgentRunResult = {
+  domain: ExtractChunkResult;
+  mastra: IngestionMastraRunArtifact;
+};
+
+type IngestionAgentGenerateResponse = Awaited<ReturnType<typeof ingestionAgent.generate>>;
+
 export async function extractChunk(input: ExtractChunkInput): Promise<ExtractChunkResult> {
+  const result = await runIngestionChunkAgent(input);
+  return result.domain;
+}
+
+export async function runIngestionChunkAgent(
+  input: ExtractChunkInput
+): Promise<IngestionChunkAgentRunResult> {
   if (!canUseAgentModel('ingestionAgent', process.env)) {
     throw new Error(
       'No LLM provider configured for ingestionAgent. Set OPENAI_API_KEY, ANTHROPIC_API_KEY, or OPENAI_COMPATIBLE_BASE_URL+OPENAI_COMPATIBLE_API_KEY before running ingestion.'
@@ -66,7 +91,9 @@ export async function extractChunk(input: ExtractChunkInput): Promise<ExtractChu
 
   const MAX_ATTEMPTS = 3;
   let lastError: string | null = null;
-  const thinking = '';
+  let thinking = '';
+  let latestMessages: MastraDBMessage[] = [];
+  let latestText = '';
 
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
     try {
@@ -81,30 +108,54 @@ export async function extractChunk(input: ExtractChunkInput): Promise<ExtractChu
       const response = input.retrievalTools
         ? await ingestionAgent.generate(effectivePrompt, {
             maxSteps: 5,
+            memory: input.memory,
             toolsets: {
               ingestionRetrieval: input.retrievalTools,
             },
+            onIterationComplete: ({ messages }) => {
+              latestMessages = messages;
+            },
           })
-        : await ingestionAgent.generate(effectivePrompt);
+        : await ingestionAgent.generate(effectivePrompt, {
+            memory: input.memory,
+            onIterationComplete: ({ messages }) => {
+              latestMessages = messages;
+            },
+          });
       const text = getGeneratedText(response);
+      const responseWithReasoning = response as { reasoningText?: string };
+      thinking = responseWithReasoning.reasoningText ?? '';
+      if (thinking && input.onThinking) {
+        input.onThinking(thinking);
+      }
+      latestText = text;
+      latestMessages = getMastraMessages(response, latestMessages);
       const parsed = normalizeAgentOutput(parseLooseJsonResponse(text));
       const result = ingestionAgentOutputDto.parse(parsed);
       const validated = validateAgainstBlocks(result, input.blocks);
-      return { ...validated, thinking };
+      return {
+        domain: { ...validated, thinking },
+        mastra: {
+          messages: latestMessages,
+          text,
+          attempts: attempt + 1,
+        },
+      };
     } catch (error) {
       lastError = error instanceof Error ? error.message : String(error);
       if (attempt === MAX_ATTEMPTS - 1) throw error;
     }
   }
 
-  return {
-    concepts: [],
-    relationClaims: [],
-    relationships: [],
-    thinking,
-    droppedConceptKeys: [],
-    droppedRefCount: 0,
-  };
+  throw lastError ? new Error(lastError) : new Error('Ingestion failed after all attempts');
+}
+
+export function getMastraMessages(
+  response: IngestionAgentGenerateResponse,
+  fallback: MastraDBMessage[] = []
+): MastraDBMessage[] {
+  const candidate = (response as { messages?: unknown }).messages;
+  return Array.isArray(candidate) ? (candidate as MastraDBMessage[]) : fallback;
 }
 
 export function normalizeAgentOutput(value: unknown) {

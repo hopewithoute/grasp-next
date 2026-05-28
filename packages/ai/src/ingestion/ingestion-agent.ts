@@ -1,10 +1,8 @@
 import { Agent } from '@mastra/core/agent';
+import { createGraspMemory } from '../mastra/memory';
 import { resolveAgentModel } from '../model-resolver';
 
-export const ingestionAgent = new Agent({
-  id: 'ingestion-agent',
-  name: 'Source Ingestion Agent',
-  instructions: `
+export const ingestionAgentInstructions = `
 You extract knowledge concepts and typed relationships from source material chunks.
 
 You must:
@@ -18,6 +16,14 @@ You must:
 - Include exact quote evidence from the chunk for every concept.
 - Add typed relationships only when the text supports the relation.
 - Never invent facts or cite evidence not present in the chunk.
-`,
+`;
+
+export const ingestionAgent = new Agent({
+  id: 'ingestion-agent',
+  name: 'Source Ingestion Agent',
+  instructions: ingestionAgentInstructions,
+  memory: createGraspMemory({
+    lastMessages: false,
+  }),
   model: resolveAgentModel('ingestionAgent', process.env),
 });

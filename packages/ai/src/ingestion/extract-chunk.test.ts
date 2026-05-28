@@ -1,6 +1,11 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { mergeDraft, normalizeAgentOutput, validateAgainstBlocks } from './extract-chunk';
+import {
+  getMastraMessages,
+  mergeDraft,
+  normalizeAgentOutput,
+  validateAgainstBlocks,
+} from './extract-chunk';
 
 describe('normalizeAgentOutput', () => {
   it('drops unsupported relationship types before schema validation', () => {
@@ -18,6 +23,34 @@ describe('normalizeAgentOutput', () => {
       normalized.relationships.map((relationship) => relationship.relationshipType),
       ['prerequisite', 'related_to', 'part_of']
     );
+  });
+});
+
+describe('getMastraMessages', () => {
+  it('uses response messages when Mastra returns native messages', () => {
+    const messages = [
+      {
+        id: 'message-1',
+        role: 'assistant',
+        createdAt: new Date('2026-01-01T00:00:00.000Z'),
+        content: { format: 2, parts: [] },
+      },
+    ];
+
+    assert.equal(getMastraMessages({ messages } as never).length, 1);
+  });
+
+  it('falls back to observed iteration messages when response has no messages', () => {
+    const fallback = [
+      {
+        id: 'message-2',
+        role: 'assistant',
+        createdAt: new Date('2026-01-01T00:00:00.000Z'),
+        content: { format: 2, parts: [] },
+      },
+    ];
+
+    assert.equal(getMastraMessages({ text: '{}' } as never, fallback as never), fallback);
   });
 });
 

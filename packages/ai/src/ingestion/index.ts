@@ -1,5 +1,14 @@
-export { extractChunk, mergeDraft, type ExtractChunkInput, type ExtractChunkResult } from './extract-chunk';
-export { ingestionAgent } from './ingestion-agent';
+export {
+  extractChunk,
+  getMastraMessages,
+  mergeDraft,
+  runIngestionChunkAgent,
+  type ExtractChunkInput,
+  type ExtractChunkResult,
+  type IngestionChunkAgentRunResult,
+  type IngestionMastraRunArtifact,
+} from './extract-chunk';
+export { ingestionAgent, ingestionAgentInstructions } from './ingestion-agent';
 export { ingestionAgentJsonSchema } from './ingestion-agent-json-schema';
 export {
   createIngestionRetrievalTools,
