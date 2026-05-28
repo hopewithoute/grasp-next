@@ -7,9 +7,9 @@ import {
 } from '@grasp/domain';
 import { getActor } from '@/server/actor';
 import { createProjectDeps } from '@/server/project-deps';
-import { ConceptGraphWorkspace } from './concept-graph-workspace';
+import { ConceptGraphWorkspace } from './concept-graph';
 import { ProjectSourcesPanel } from './source-material-form';
-import { buildStageHref, resolveStage, type StudioStage } from './stages';
+import { buildStageHref, resolveStage } from './stages';
 import { ProjectHeader } from './components/project-header';
 import { ProjectSettings } from './components/project-settings';
 import { ProjectPipelineStatus } from './components/project-pipeline-status';
@@ -63,23 +63,23 @@ export async function ProjectDetailPage({ currentStage, projectId }: ProjectDeta
   const graphReady = sourceReady && knowledgebaseGraph.concepts.length > 0;
   const sourceCounts = getSourceCounts(detail.sources);
   const ingestionStatus = getIngestionStatus(detail.latestIngestionRun);
-  const nextAction = getNextAction({
-    graphReady,
-    sourceReady,
-  });
 
   return (
     <section className="flex w-full flex-col gap-10 text-foreground">
-      <ProjectHeader
-        detail={detail}
-        graphReady={graphReady}
-        ingestionStatus={ingestionStatus}
-        knowledgebaseGraph={knowledgebaseGraph}
-        sourceCounts={sourceCounts}
-        sourceReady={sourceReady}
-      />
+      {stage === 'overview' ? (
+        <>
+          <ProjectHeader
+            detail={detail}
+            graphReady={graphReady}
+            ingestionStatus={ingestionStatus}
+            knowledgebaseGraph={knowledgebaseGraph}
+            sourceCounts={sourceCounts}
+            sourceReady={sourceReady}
+          />
 
-      <ProjectSettings detail={detail} />
+          <ProjectSettings detail={detail} />
+        </>
+      ) : null}
 
       {detail.project.status === PROJECT_STATUS.FAILED && sourceReady ? (
         <section className="rounded-[1.5rem] border border-status-danger-border bg-status-danger-surface p-5">
@@ -127,8 +127,8 @@ export async function ProjectDetailPage({ currentStage, projectId }: ProjectDeta
       ) : null}
 
       {stage === 'source' ? (
-        <div className="flex flex-col gap-8">
-          <header className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+        <div className="flex flex-col gap-6 lg:gap-8">
+          <header className="flex shrink-0 flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
             <div className="space-y-3">
               <Eyebrow>Source workspace</Eyebrow>
               <h2 className="max-w-[28ch] text-balance text-3xl leading-[1.05] font-medium tracking-[-0.03em] text-foreground md:text-4xl">
@@ -145,9 +145,13 @@ export async function ProjectDetailPage({ currentStage, projectId }: ProjectDeta
             </span>
           </header>
 
-          <IngestionStatusPanel status={ingestionStatus} />
+          <div className="shrink-0">
+            <IngestionStatusPanel status={ingestionStatus} />
+          </div>
 
-          <ProjectSourcesPanel projectId={detail.project.id} sources={detail.sources} />
+          <div className="lg:h-[min(calc(90dvh-380px),820px)] lg:min-h-0">
+            <ProjectSourcesPanel projectId={detail.project.id} sources={detail.sources} />
+          </div>
         </div>
       ) : null}
 
@@ -170,11 +174,9 @@ export async function ProjectDetailPage({ currentStage, projectId }: ProjectDeta
             </span>
           </header>
           <ConceptGraphWorkspace
-            artifact={null}
             concepts={knowledgebaseGraph.concepts}
             projectId={detail.project.id}
             relationships={knowledgebaseGraph.relationships}
-            sources={detail.sources}
           />
         </div>
       ) : null}
@@ -278,31 +280,4 @@ const relativeDateFormatter = new Intl.DateTimeFormat('en', {
 
 function formatRelativeDate(value: Date) {
   return relativeDateFormatter.format(value);
-}
-
-function getNextAction(input: {
-  graphReady: boolean;
-  sourceReady: boolean;
-}): { copy: string; stage: StudioStage; title: string } {
-  if (!input.sourceReady) {
-    return {
-      copy: 'Start by adding source text or markdown. The graph workspace depends on that input.',
-      stage: 'source',
-      title: 'Add source material',
-    };
-  }
-
-  if (!input.graphReady) {
-    return {
-      copy: 'The source is ready. Build the first concept graph and inspect the evidence before anything else moves forward.',
-      stage: 'graph',
-      title: 'Generate the concept graph',
-    };
-  }
-
-  return {
-    copy: 'The graph exists. Refine definitions, relationships, and evidence as needed.',
-    stage: 'graph',
-    title: 'Review the graph',
-  };
 }

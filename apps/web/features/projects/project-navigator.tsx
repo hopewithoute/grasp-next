@@ -96,12 +96,6 @@ function ProjectNavigatorContent() {
               >
                 {STAGE_LABELS[stage]}
               </span>
-              {active ? (
-                <span
-                  aria-hidden
-                  className="absolute -bottom-[1px] left-2.5 right-2.5 h-[2px] rounded-full bg-brand-accent-foreground md:left-3.5 md:right-3.5"
-                />
-              ) : null}
             </Link>
           );
         })}
