@@ -24,6 +24,7 @@ type AgentActivityEvent = {
 type ChatRequestBody = {
   messages: ChatMessage[];
   selectedConcepts?: SelectedConcept[];
+  threadId?: string;
 };
 
 type ActivityWriter = (event: AgentActivityEvent) => void;
@@ -34,80 +35,17 @@ function wait(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function readToolName(value: unknown): string | null {
-  if (!value || typeof value !== 'object') {
-    return null;
-  }
-
-  const record = value as Record<string, unknown>;
-  return typeof record.toolName === 'string' ? record.toolName : null;
-}
-
-function readToolCalls(value: unknown): unknown[] {
-  if (!value || typeof value !== 'object') {
-    return [];
-  }
-
-  const record = value as Record<string, unknown>;
-  return Array.isArray(record.toolCalls) ? record.toolCalls : [];
-}
-
-function readString(record: Record<string, unknown>, key: string): string | null {
-  const value = record[key];
-  return typeof value === 'string' && value.trim() ? value.trim() : null;
-}
-
 function describeToolActivity(
   toolName: string,
   input: unknown,
   status: AgentActivityEvent['status']
 ): AgentActivityEvent {
-  const record = input && typeof input === 'object' ? (input as Record<string, unknown>) : {};
-  const concept = readString(record, 'name') ?? readString(record, 'conceptKey');
-  const source = readString(record, 'sourceConceptKey');
-  const target = readString(record, 'targetConceptKey');
-
   switch (toolName) {
     case 'search-wiki-concepts':
       return {
         type: 'agent_activity',
         label: status === 'started' ? 'Checking graph' : 'Checked graph',
         detail: status === 'started' ? 'Looking for matching concepts in this project.' : 'Found the closest existing concepts.',
-        status,
-      };
-    case 'add-concept':
-      return {
-        type: 'agent_activity',
-        label: status === 'started' ? 'Adding concept' : 'Added concept',
-        detail: concept ? `${status === 'started' ? 'Saving' : 'Saved'} ${concept}.` : `${status === 'started' ? 'Saving' : 'Saved'} a new concept.`,
-        status,
-      };
-    case 'update-concept':
-      return {
-        type: 'agent_activity',
-        label: status === 'started' ? 'Updating concept' : 'Updated concept',
-        detail: concept ? `${status === 'started' ? 'Refining' : 'Refined'} ${concept}.` : `${status === 'started' ? 'Refining' : 'Refined'} an existing concept.`,
-        status,
-      };
-    case 'delete-concept':
-      return {
-        type: 'agent_activity',
-        label: status === 'started' ? 'Removing concept' : 'Removed concept',
-        detail: concept ? `${status === 'started' ? 'Removing' : 'Removed'} ${concept}.` : `${status === 'started' ? 'Removing' : 'Removed'} a concept from the graph.`,
-        status,
-      };
-    case 'add-relationship':
-      return {
-        type: 'agent_activity',
-        label: status === 'started' ? 'Linking concepts' : 'Linked concepts',
-        detail: source && target ? `${status === 'started' ? 'Connecting' : 'Connected'} ${source} to ${target}.` : `${status === 'started' ? 'Adding' : 'Added'} a relationship between concepts.`,
-        status,
-      };
-    case 'delete-relationship':
-      return {
-        type: 'agent_activity',
-        label: status === 'started' ? 'Removing link' : 'Removed link',
-        detail: `${status === 'started' ? 'Removing' : 'Removed'} a relationship from the graph.`,
         status,
       };
     case 'search-web-ddg':
@@ -124,11 +62,11 @@ function describeToolActivity(
         detail: `${status === 'started' ? 'Reviewing' : 'Reviewed'} a web page for context.`,
         status,
       };
-    case 'add-evidence':
+    case 'propose-graph-changes':
       return {
         type: 'agent_activity',
-        label: status === 'started' ? 'Attaching evidence' : 'Attached evidence',
-        detail: concept ? `${status === 'started' ? 'Adding' : 'Added'} evidence to ${concept}.` : `${status === 'started' ? 'Adding' : 'Added'} evidence to a concept.`,
+        label: status === 'started' ? 'Preparing proposal' : 'Proposal ready',
+        detail: status === 'started' ? 'Drafting graph changes for your review.' : 'Proposal submitted for approval.',
         status,
       };
     default:
@@ -141,7 +79,7 @@ function describeToolActivity(
   }
 }
 
-function withActivityEvents<T extends Record<string, unknown>>(tools: T, emit: ActivityWriter): T {
+function withActivityEvents<T extends Record<string, unknown>>(tools: T, emitActivity: ActivityWriter, emitProposal: (p: any) => void): T {
   return Object.fromEntries(
     Object.entries(tools).map(([key, tool]) => {
       if (!tool || typeof tool !== 'object' || typeof (tool as { execute?: unknown }).execute !== 'function') {
@@ -154,9 +92,18 @@ function withActivityEvents<T extends Record<string, unknown>>(tools: T, emit: A
         {
           ...toolRecord,
           execute: async (...args: unknown[]) => {
-            emit(describeToolActivity(toolRecord.id ?? key, args[0], 'started'));
+            const toolId = toolRecord.id ?? key;
+            if (toolId === 'propose-graph-changes' || key === 'proposeGraphChangesTool') {
+              emitActivity(describeToolActivity(toolId, args[0], 'started'));
+              emitProposal(args[0]);
+              const result = await toolRecord.execute(...args);
+              emitActivity(describeToolActivity(toolId, args[0], 'completed'));
+              return result;
+            }
+            
+            emitActivity(describeToolActivity(toolId, args[0], 'started'));
             const result = await toolRecord.execute(...args);
-            emit(describeToolActivity(toolRecord.id ?? key, args[0], 'completed'));
+            emitActivity(describeToolActivity(toolId, args[0], 'completed'));
             return result;
           },
         },
@@ -182,7 +129,7 @@ export async function POST(
     return new Response('Project not found.', { status: 404 });
   }
 
-  const { messages, selectedConcepts } = (await request.json()) as ChatRequestBody;
+  const { messages, selectedConcepts, threadId } = (await request.json()) as ChatRequestBody;
 
   if (selectedConcepts && Array.isArray(selectedConcepts) && selectedConcepts.length > 0 && messages.length > 0) {
     const lastMessage = messages[messages.length - 1];
@@ -194,51 +141,25 @@ export async function POST(
 
   try {
     const activityEvents: AgentActivityEvent[] = [];
+    const proposalEvents: any[] = [];
+    
     const tools = withActivityEvents(
       createRefinementTools({
         knowledgebaseRepository: deps.knowledgebaseRepository,
         projectId,
       }),
-      (event) => activityEvents.push(event)
+      (event) => activityEvents.push(event),
+      (proposal) => proposalEvents.push(proposal)
     );
 
-    const result = await refinementAgent.stream(messages, {
+    const agentMessages = messages;
+    const result = await refinementAgent.stream(agentMessages, {
+      memory: {
+        resource: projectId,
+        thread: threadId ?? `refinement:${projectId}:${actor.id}`,
+      },
       toolsets: { refinement: tools },
       maxSteps: 10,
-      onFinish: async (event: unknown) => {
-        let hasMutation = false;
-        const mutationTools = [
-          'add-concept', 'update-concept', 'delete-concept', 
-          'add-relationship', 'delete-relationship', 'add-evidence'
-        ];
-
-        const eventRecord =
-          event && typeof event === 'object' ? (event as Record<string, unknown>) : {};
-        const steps = Array.isArray(eventRecord.steps) ? eventRecord.steps : [];
-        const rootToolCalls = readToolCalls(event);
-
-        if (steps.length > 0) {
-          hasMutation = steps.some((step) =>
-            readToolCalls(step).some((call) => {
-              const toolName = readToolName(call);
-              return toolName ? mutationTools.includes(toolName) : false;
-            })
-          );
-        } else if (rootToolCalls.length > 0) {
-          hasMutation = rootToolCalls.some((call) => {
-            const toolName = readToolName(call);
-            return toolName ? mutationTools.includes(toolName) : false;
-          });
-        }
-
-        if (hasMutation) {
-          console.log(`[Refinement Agent] Mutations detected in chat. Creating snapshot for project ${projectId}`);
-          await deps.knowledgebaseRepository.createSnapshot({
-            projectId,
-            trigger: 'agent_refinement_chat'
-          });
-        }
-      }
     });
 
     const stream = createUIMessageStream({
@@ -255,6 +176,13 @@ export async function POST(
               type: 'data-agent-activity',
               data: activityEvents.shift()!,
               transient: true,
+            });
+          }
+          while (proposalEvents.length > 0) {
+            hasActivity = true;
+            writer.write({
+              type: 'data-agent-proposal',
+              data: proposalEvents.shift()!,
             });
           }
           if (hasActivity && wroteText) {
