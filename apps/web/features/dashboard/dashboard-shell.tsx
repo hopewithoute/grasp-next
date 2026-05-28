@@ -120,7 +120,7 @@ function SidebarBody({
   return (
     <div className="flex h-full flex-col">
       {/* Brand header */}
-      <div className="flex items-center justify-between gap-3 border-b border-sidebar-border p-4">
+      <div className="flex items-center justify-between gap-3 p-4">
         <Link
           aria-label="Adaptive Learning Studio"
           className="flex min-w-0 items-center gap-3"
@@ -191,13 +191,7 @@ function SidebarBody({
                   onClick={onNavigate}
                   title={collapsed ? item.label : undefined}
                 >
-                  {/* Active hairline — mirrors evidence-ribbon idiom */}
-                  {active ? (
-                    <span
-                      aria-hidden
-                      className="absolute top-2 bottom-2 left-0 w-[2px] rounded-full bg-brand-accent"
-                    />
-                  ) : null}
+                  {/* Active hairline removed */}
 
                   <Icon
                     className={cn(
@@ -400,7 +394,7 @@ export function DashboardShell({ children, topBarSlot, viewer }: DashboardShellP
         {hasTopBar ? (
           <header
             aria-label="Top navigation"
-            className="sticky top-0 z-30 flex min-h-20 items-center gap-3 border-b border-border bg-background/86 px-3 py-2 backdrop-blur md:h-20 md:px-6 md:py-0 lg:px-8"
+            className="sticky top-0 z-30 flex min-h-20 items-center gap-3 bg-background/86 px-3 py-2 backdrop-blur md:h-20 md:px-6 md:py-0 lg:px-8"
           >
             <button
               aria-controls="dashboard-sidebar"
