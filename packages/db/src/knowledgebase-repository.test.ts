@@ -367,6 +367,85 @@ describeIfDatabase('createKnowledgebaseRepository', () => {
       await db.delete(projects).where(eq(projects.id, project.id));
     }
   });
+
+  it('fails addRelationship when either endpoint concept is missing', async () => {
+    const project = await projectRepository.create({
+      description: 'Missing relationship endpoint test',
+      ownerId,
+      title: 'Missing relationship endpoint',
+    });
+
+    try {
+      const source = await projectSourceRepository.createForProjectOwner(project.id, ownerId, {
+        content: 'Supply and demand affects pricing.',
+        title: 'Relationship endpoint source',
+        type: 'text',
+      });
+      assert.ok(source);
+
+      await knowledgebaseRepository.replaceVersionFromContent({
+        content: knowledgebaseArtifactContent(source.id),
+        projectId: project.id,
+      });
+
+      await assert.rejects(
+        knowledgebaseRepository.addRelationship({
+          projectId: project.id,
+          relationshipKey: 'market:missing:prerequisite',
+          sourceConceptKey: 'market',
+          targetConceptKey: 'missing',
+          relationshipType: 'prerequisite',
+        }),
+        /target \(missing\) concept not found/
+      );
+
+      const relationships = await db
+        .select()
+        .from(wikiRelationships)
+        .innerJoin(knowledgebases, eq(wikiRelationships.knowledgebaseId, knowledgebases.id))
+        .where(eq(knowledgebases.projectId, project.id));
+
+      assert.equal(relationships.length, 0);
+    } finally {
+      await db.delete(projects).where(eq(projects.id, project.id));
+    }
+  });
+
+  it('fails addConceptEvidence when the target concept is missing', async () => {
+    const project = await projectRepository.create({
+      description: 'Missing evidence concept test',
+      ownerId,
+      title: 'Missing evidence concept',
+    });
+
+    try {
+      const source = await projectSourceRepository.createForProjectOwner(project.id, ownerId, {
+        content: 'Markets coordinate supply and demand.',
+        title: 'Evidence concept source',
+        type: 'text',
+      });
+      assert.ok(source);
+
+      await knowledgebaseRepository.replaceVersionFromContent({
+        content: knowledgebaseArtifactContent(source.id),
+        projectId: project.id,
+      });
+
+      await assert.rejects(
+        knowledgebaseRepository.addConceptEvidence({
+          projectId: project.id,
+          conceptKey: 'missing',
+          sourceType: 'text',
+          title: 'Missing evidence',
+          quote: 'This quote should not be attached.',
+          locationLabel: 'Missing evidence source',
+        }),
+        /concept missing not found/
+      );
+    } finally {
+      await db.delete(projects).where(eq(projects.id, project.id));
+    }
+  });
 });
 
 function knowledgebaseArtifactContent(sourceId: string) {
