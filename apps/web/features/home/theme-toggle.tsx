@@ -5,8 +5,12 @@ import { Moon, Sun } from 'lucide-react';
 import { useTheme } from 'next-themes';
 
 export function ThemeToggle() {
-  const [mounted, setMounted] = React.useState(true);
+  const [mounted, setMounted] = React.useState(false);
   const { setTheme, resolvedTheme } = useTheme();
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
 
   if (!mounted) {
     return (
