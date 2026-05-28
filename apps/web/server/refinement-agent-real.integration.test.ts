@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { describe, it, before, after } from 'node:test';
@@ -14,11 +14,10 @@ const hasLlm = Boolean(
 );
 const shouldRun = hasDatabase && hasLlm;
 
-describe('Refinement Agent - Real Provider (Virtual Sources)', { skip: !shouldRun }, () => {
+describe('Refinement Agent - Real Provider (Graph Proposals)', { skip: !shouldRun }, () => {
   let db: ReturnType<typeof createDbClient>;
   let repo: ReturnType<typeof createKnowledgebaseRepository>;
   let projectId: string;
-  let knowledgebaseId: string;
   let ownerId: string;
 
   before(async () => {
@@ -32,8 +31,7 @@ describe('Refinement Agent - Real Provider (Virtual Sources)', { skip: !shouldRu
     await db.insert(schema.user).values({ id: ownerId, email: `test-refinement-${Date.now()}@example.com`, name: 'Test', createdAt: now, updatedAt: now });
     await db.insert(schema.projects).values({ id: projectId, title: 'Test Project', ownerId, createdAt: now, updatedAt: now });
     
-    const [kb] = await db.insert(schema.knowledgebases).values({ projectId }).returning();
-    knowledgebaseId = kb.id;
+    await db.insert(schema.knowledgebases).values({ projectId });
 
     // Seed a concept
     await repo.addConcept({
@@ -54,114 +52,121 @@ describe('Refinement Agent - Real Provider (Virtual Sources)', { skip: !shouldRu
     }
   });
 
-  it('can process user chat correction as TEXT evidence and snapshot the result', async () => {
-    const tools = createRefinementTools({ knowledgebaseRepository: repo, projectId });
+  it('can process user chat correction as a TEXT evidence proposal', async () => {
+    const proposalCalls: any[] = [];
+    const tools = createRecordingRefinementTools({ repo, projectId, proposalCalls });
 
     const messages = [
-      { role: 'system', content: 'You are an agent. You MUST call the "add-evidence" tool with conceptKey="react", sourceType="text", title="User Chat Correction", quote="React was originally created by Facebook in 2013", locationLabel="Chat Message". Do nothing else.' },
-      { role: 'user', content: 'Please add the evidence now. Output json.' }
+      {
+        role: 'system',
+        content:
+          'You are an agent. You MUST use the "propose-graph-changes" tool. Propose exactly one add_evidence action with conceptKey="react", sourceType="text", title="User Chat Correction", evidenceText="React was originally created by Facebook in 2013", and rationale explaining that the quote identifies React origin. Do not use any direct mutation tool.',
+      },
+      { role: 'user', content: 'Please draft the evidence proposal now.' },
     ];
-
-    let hasMutation = false;
 
     const result = await refinementAgent.stream(messages, {
       toolsets: { refinement: tools },
       maxSteps: 5,
-      onFinish: async (event: any) => {
-        const mutationTools = ['add-concept', 'update-concept', 'delete-concept', 'add-relationship', 'delete-relationship', 'add-evidence'];
-        if (event.steps) {
-          hasMutation = event.steps.some((step: any) => 
-            step.toolCalls?.some((call: any) => mutationTools.includes(call.toolName))
-          );
-        } else if (event.toolCalls) {
-          hasMutation = event.toolCalls.some((call: any) => mutationTools.includes(call.toolName));
-        }
-
-        if (hasMutation) {
-          await repo.createSnapshot({ projectId, trigger: 'agent_refinement_chat' });
-        }
-      }
     });
 
-    for await (const _ of result.textStream) { }
-    await new Promise(res => setTimeout(res, 500));
-
-    // Fallback if LLM is too weak to call tools in CI
-    if (!hasMutation) {
-      console.log('LLM failed to call tool, manually testing the tool execution to prove DB flow');
-      await (tools.addEvidenceTool as any).execute({ conceptKey: 'react', sourceType: 'text', title: 'User Chat Correction', quote: 'React was originally created by Facebook in 2013', locationLabel: 'Chat Message' });
-      await repo.createSnapshot({ projectId, trigger: 'agent_refinement_chat' });
-      hasMutation = true;
+    for await (const chunk of result.textStream) {
+      if (chunk) {
+        continue;
+      }
     }
 
-    assert.equal(hasMutation, true, 'Expected agent to call a mutation tool');
-
-    // Verify DB
-    const sources = await db.select().from(schema.projectSources).where(eq(schema.projectSources.projectId, projectId));
-    assert.equal(sources.length, 1);
-    assert.equal(sources[0].type, 'text');
-    assert.equal(sources[0].title, 'User Chat Correction');
-
-    const passages = await db.select().from(schema.sourcePassages).where(eq(schema.sourcePassages.projectId, projectId));
-    const refs = await db.select().from(schema.wikiConceptSourceRefs).where(eq(schema.wikiConceptSourceRefs.sourcePassageId, passages[0].id));
-    assert.equal(refs.length, 1);
-    assert.ok(refs[0].quote.includes('Facebook'));
-
-    const versions = await db.select().from(schema.knowledgebaseVersions).where(eq(schema.knowledgebaseVersions.knowledgebaseId, knowledgebaseId));
-    assert.equal(versions.length, 1, 'Snapshot should have been created');
+    assertAddEvidenceProposal(proposalCalls, {
+      conceptKey: 'react',
+      sourceType: 'text',
+      title: 'User Chat Correction',
+      evidenceText: /Facebook in 2013/i,
+    });
   });
 
-  it('can process web URL as WEB evidence', async () => {
-    const tools = createRefinementTools({ knowledgebaseRepository: repo, projectId });
+  it('can process web URL as a WEB evidence proposal', async () => {
+    const proposalCalls: any[] = [];
+    const tools = createRecordingRefinementTools({ repo, projectId, proposalCalls });
 
     const messages = [
-      { role: 'system', content: 'You are an agent. You MUST call the "add-evidence" tool with conceptKey="react", sourceType="web", url="https://react.dev", title="React Official Site", quote="The library for web and native user interfaces", locationLabel="Homepage Header". Do nothing else.' },
-      { role: 'user', content: 'Please add the evidence now. Output json.' }
+      {
+        role: 'system',
+        content:
+          'You are an agent. You MUST use the "propose-graph-changes" tool. Propose exactly one add_evidence action with conceptKey="react", sourceType="web", url="https://react.dev", title="React Official Site", evidenceText="The library for web and native user interfaces", and rationale explaining that this supports React as a UI library. Do not use any direct mutation tool.',
+      },
+      { role: 'user', content: 'Please draft the web evidence proposal now.' },
     ];
-
-    let hasMutation = false;
 
     const result = await refinementAgent.stream(messages, {
       toolsets: { refinement: tools },
       maxSteps: 5,
-      onFinish: async (event: any) => {
-        const mutationTools = ['add-concept', 'update-concept', 'delete-concept', 'add-relationship', 'delete-relationship', 'add-evidence'];
-        if (event.steps) {
-          hasMutation = event.steps.some((step: any) => 
-            step.toolCalls?.some((call: any) => mutationTools.includes(call.toolName))
-          );
-        } else if (event.toolCalls) {
-          hasMutation = event.toolCalls.some((call: any) => mutationTools.includes(call.toolName));
-        }
-
-        if (hasMutation) {
-          await repo.createSnapshot({ projectId, trigger: 'agent_refinement_web' });
-        }
-      }
     });
 
-    for await (const _ of result.textStream) { }
-    await new Promise(res => setTimeout(res, 500));
-
-    if (!hasMutation) {
-      console.log('LLM failed to call tool, manually testing the tool execution to prove DB flow');
-      await (tools.addEvidenceTool as any).execute({ conceptKey: 'react', sourceType: 'web', url: 'https://react.dev', title: 'React Official Site', quote: 'The library for web and native user interfaces', locationLabel: 'Homepage Header' });
-      await repo.createSnapshot({ projectId, trigger: 'agent_refinement_web' });
-      hasMutation = true;
+    for await (const chunk of result.textStream) {
+      if (chunk) {
+        continue;
+      }
     }
 
-    assert.equal(hasMutation, true, 'Expected agent to call a mutation tool');
-
-    // Verify DB
-    const sources = await db.select().from(schema.projectSources).where(eq(schema.projectSources.projectId, projectId));
-    // Should be 2 sources now (1 text from previous test, 1 web)
-    assert.equal(sources.length, 2);
-    
-    const webSource = sources.find(s => s.type === 'web');
-    assert.ok(webSource);
-    assert.equal(webSource.fileRef, 'https://react.dev');
-    
-    const versions = await db.select().from(schema.knowledgebaseVersions).where(eq(schema.knowledgebaseVersions.knowledgebaseId, knowledgebaseId));
-    assert.equal(versions.length, 2, 'A second snapshot should have been created');
+    assertAddEvidenceProposal(proposalCalls, {
+      conceptKey: 'react',
+      sourceType: 'web',
+      title: 'React Official Site',
+      url: 'https://react.dev',
+      evidenceText: /web and native user interfaces/i,
+    });
   });
 });
+
+function createRecordingRefinementTools({
+  repo,
+  projectId,
+  proposalCalls,
+}: {
+  repo: ReturnType<typeof createKnowledgebaseRepository>;
+  projectId: string;
+  proposalCalls: any[];
+}) {
+  const tools = createRefinementTools({ knowledgebaseRepository: repo, projectId }) as any;
+  const proposalTool = tools['propose-graph-changes'];
+  const originalExecute = proposalTool.execute.bind(proposalTool);
+
+  tools['propose-graph-changes'] = {
+    ...proposalTool,
+    execute: async (...args: any[]) => {
+      proposalCalls.push(args[0]);
+      return originalExecute(...args);
+    },
+  };
+  tools.proposeGraphChangesTool = tools['propose-graph-changes'];
+
+  return tools;
+}
+
+function assertAddEvidenceProposal(
+  proposalCalls: any[],
+  expected: {
+    conceptKey: string;
+    evidenceText: RegExp;
+    sourceType: string;
+    title: string;
+    url?: string;
+  }
+) {
+  assert.ok(proposalCalls.length > 0, 'Expected agent to call propose-graph-changes');
+  const proposal = proposalCalls.at(-1);
+  assert.ok(typeof proposal.rationale === 'string' && proposal.rationale.length > 0);
+
+  const evidenceActions = proposal.actions.filter((action: any) => action.type === 'add_evidence');
+  assert.equal(evidenceActions.length, 1, 'Expected exactly one add_evidence action');
+
+  const payload = evidenceActions[0].payload;
+  assert.equal(payload.conceptKey, expected.conceptKey);
+  assert.equal(payload.sourceType, expected.sourceType);
+  assert.equal(payload.title, expected.title);
+  assert.match(payload.evidenceText, expected.evidenceText);
+
+  if (expected.url) {
+    assert.equal(payload.url, expected.url);
+  }
+}

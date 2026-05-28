@@ -10,7 +10,7 @@ export type RefinementDependencies = {
 export function createRefinementTools(deps: RefinementDependencies) {
   const searchWikiConceptsTool = createTool({
     id: 'search-wiki-concepts',
-    description: 'Search existing knowledgebase concepts to find what currently exists.',
+    description: 'Search the concept graph to find existing nodes. You MUST use this tool before modifying, adding, or deleting concepts to retrieve their exact conceptKey and prevent duplicates.',
     inputSchema: z.object({
       limit: z.number().int().min(1).max(20).default(10),
       query: z.string().trim().min(1),
@@ -24,6 +24,13 @@ export function createRefinementTools(deps: RefinementDependencies) {
           difficulty: z.string(),
           evidenceCount: z.number(),
           name: z.string(),
+          evidence: z.array(z.object({
+            id: z.string(),
+            blockId: z.string().nullable(),
+            excerpt: z.string(),
+            location: z.string().nullable(),
+            sourceId: z.string()
+          })).optional()
         })
       ),
     }),
@@ -37,91 +44,87 @@ export function createRefinementTools(deps: RefinementDependencies) {
     },
   });
 
-  const addConceptTool = createTool({
-    id: 'add-concept',
-    description: 'Add a new concept to the knowledge base.',
+  const proposeGraphChangesTool = createTool({
+    id: 'propose-graph-changes',
+    description: 'Propose structural changes to the graph. You MUST use this tool to execute any CREATE, UPDATE, or DELETE intent from the user. You are fully authorized to delete data this way. The changes only take effect after user approval.',
     inputSchema: z.object({
-      conceptKey: z.string().describe('A unique, slugified identifier for the concept.'),
-      name: z.string(),
-      definition: z.string(),
-      difficulty: z.enum(['beginner', 'intermediate', 'advanced']),
-      confidence: z.number().min(0).max(1),
+      rationale: z.string().describe('A short message explaining what you are changing and why.'),
+      actions: z.array(
+        z.discriminatedUnion('type', [
+          z.object({
+            type: z.literal('add_concept'),
+            payload: z.object({
+              conceptKey: z.string().describe('Exact URL-friendly unique key (kebab-case).'),
+              name: z.string().describe('Human readable name of the concept.'),
+              definition: z.string().describe('Clear, concise definition of the concept.'),
+              difficulty: z.string().describe('Must be: beginner, intermediate, or advanced.'),
+              confidence: z.union([z.number(), z.string()]).describe('Confidence score between 0.0 and 1.0.'),
+            }),
+          }),
+          z.object({
+            type: z.literal('update_concept'),
+            payload: z.object({
+              conceptKey: z.string().describe('The EXACT key of the existing concept to update. For multiple updates, create multiple update_concept actions.'),
+              name: z.string().optional(),
+              definition: z.string().optional(),
+              difficulty: z.string().optional(),
+              confidence: z.union([z.number(), z.string()]).optional().describe('Confidence score between 0.0 and 1.0.'),
+              metadata: z.record(z.string(), z.unknown()).optional().describe('Arbitrary key-value metadata for the concept.'),
+            }),
+          }),
+          z.object({
+            type: z.literal('delete_concept'),
+            payload: z.object({ conceptKey: z.string().describe('The EXACT key of the concept to delete. To delete multiple concepts, create multiple separate delete_concept actions.') }),
+          }),
+          z.object({
+            type: z.literal('add_relationship'),
+            payload: z.object({
+              sourceConceptKey: z.string().describe('The EXACT key of the source concept.'),
+              targetConceptKey: z.string().describe('The EXACT key of the target concept.'),
+              relationshipType: z.string().describe('Must be: prerequisite, part_of, related_to, or explains.'),
+              rationale: z.string().describe('Explanation of why this relationship exists.'),
+            }),
+          }),
+          z.object({
+            type: z.literal('delete_relationship'),
+            payload: z.object({ 
+              sourceConceptKey: z.string().describe('The EXACT key of the source concept.'), 
+              targetConceptKey: z.string().describe('The EXACT key of the target concept.'),
+              relationshipType: z.string().describe('Must be: prerequisite, part_of, related_to, or explains.'),
+            }),
+          }),
+          z.object({
+            type: z.literal('add_evidence'),
+            payload: z.object({
+              conceptKey: z.string().describe('The EXACT key of the concept this evidence supports.'),
+              evidenceText: z.string().describe('A direct quote or factual statement extracted from the source.'),
+              rationale: z.string().describe('Why this evidence proves the concept.'),
+              url: z.string().optional().describe('Source URL if available.'),
+              title: z.string().optional().describe('Title of the source document or webpage.'),
+              sourceType: z.string().optional().describe('Must be "web" or "text".'),
+            }),
+          }),
+          z.object({
+            type: z.literal('update_evidence'),
+            payload: z.object({
+              evidenceId: z.string().describe('The EXACT ID of the evidence to update.'),
+              evidenceText: z.string().optional().describe('A direct quote or factual statement extracted from the source.'),
+              rationale: z.string().optional().describe('Why this evidence proves the concept.'),
+            }),
+          }),
+          z.object({
+            type: z.literal('delete_evidence'),
+            payload: z.object({
+              evidenceId: z.string().describe('The EXACT ID of the evidence to delete. To delete multiple, create separate delete_evidence actions.'),
+            }),
+          }),
+        ])
+      )
     }),
     execute: async (input) => {
-      await deps.knowledgebaseRepository.addConcept({
-        projectId: deps.projectId,
-        ...input,
-      });
-      return { success: true, message: `Concept ${input.conceptKey} added.` };
-    },
-  });
-
-  const updateConceptTool = createTool({
-    id: 'update-concept',
-    description: 'Update an existing concept in the knowledge base.',
-    inputSchema: z.object({
-      conceptKey: z.string(),
-      name: z.string().optional(),
-      definition: z.string().optional(),
-      difficulty: z.enum(['beginner', 'intermediate', 'advanced']).optional(),
-      confidence: z.number().min(0).max(1).optional(),
-    }),
-    execute: async (input) => {
-      await deps.knowledgebaseRepository.updateConcept({
-        projectId: deps.projectId,
-        ...input,
-      });
-      return { success: true, message: `Concept ${input.conceptKey} updated.` };
-    },
-  });
-
-  const deleteConceptTool = createTool({
-    id: 'delete-concept',
-    description: 'Delete a concept from the knowledge base.',
-    inputSchema: z.object({
-      conceptKey: z.string(),
-    }),
-    execute: async ({ conceptKey }) => {
-      await deps.knowledgebaseRepository.deleteConcept({
-        projectId: deps.projectId,
-        conceptKey,
-      });
-      return { success: true, message: `Concept ${conceptKey} deleted.` };
-    },
-  });
-
-  const addRelationshipTool = createTool({
-    id: 'add-relationship',
-    description: 'Add a relationship between two existing concepts.',
-    inputSchema: z.object({
-      relationshipKey: z.string().describe('A unique identifier for this relationship (e.g. sourceKey-type-targetKey)'),
-      sourceConceptKey: z.string(),
-      targetConceptKey: z.string(),
-      relationshipType: z.enum(['prerequisite', 'part_of', 'related_to', 'explains']),
-      rationale: z.string().optional(),
-    }),
-    execute: async (input) => {
-      await deps.knowledgebaseRepository.addRelationship({
-        projectId: deps.projectId,
-        ...input,
-      });
-      return { success: true, message: `Relationship ${input.relationshipKey} added.` };
-    },
-  });
-
-  const deleteRelationshipTool = createTool({
-    id: 'delete-relationship',
-    description: 'Delete a relationship between two concepts.',
-    inputSchema: z.object({
-      relationshipKey: z.string(),
-    }),
-    execute: async ({ relationshipKey }) => {
-      await deps.knowledgebaseRepository.deleteRelationship({
-        projectId: deps.projectId,
-        relationshipKey,
-      });
-      return { success: true, message: `Relationship ${relationshipKey} deleted.` };
-    },
+      // Return the proposal directly. We do not save to DB here. The frontend intercepts this.
+      return { status: 'proposal_submitted', proposal: input };
+    }
   });
 
   const searchWebTool = createTool({
@@ -132,10 +135,8 @@ export function createRefinementTools(deps: RefinementDependencies) {
     }),
     execute: async ({ query }) => {
       try {
-        // Import dynamically to avoid top-level issues if any
         const { search, SafeSearchType } = await import('duck-duck-scrape');
         const searchResults = await search(query, { safeSearch: SafeSearchType.MODERATE });
-        
         return {
           results: searchResults.results.slice(0, 5).map(r => ({
             title: r.title,
@@ -145,7 +146,6 @@ export function createRefinementTools(deps: RefinementDependencies) {
         };
       } catch (error) {
         console.warn('DDG Search failed, falling back to Wikipedia:', error);
-        
         try {
           const wikiResponse = await fetch(`https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&utf8=&format=json`);
           const wikiData = await wikiResponse.json();
@@ -161,9 +161,8 @@ export function createRefinementTools(deps: RefinementDependencies) {
         } catch (wikiError) {
           console.warn('Wiki Search failed:', wikiError);
         }
-
         return {
-          error: "Search engines are currently unavailable due to rate limits. Please inform the user or use alternative tools."
+          error: "Search engines are currently unavailable due to rate limits."
         };
       }
     },
@@ -181,44 +180,23 @@ export function createRefinementTools(deps: RefinementDependencies) {
         throw new Error(`Failed to fetch URL: ${response.statusText}`);
       }
       const html = await response.text();
-      
       const { compile } = await import('html-to-text');
       const convert = compile({ wordwrap: 130 });
       const text = convert(html);
-      
-      return { text: text.substring(0, 10000) }; // limit to 10k chars to avoid token explosion
-    },
-  });
-
-  const addEvidenceTool = createTool({
-    id: 'add-evidence',
-    description: 'Add evidence to a concept from an external source (like a Web Search or a User Chat Correction).',
-    inputSchema: z.object({
-      conceptKey: z.string(),
-      sourceType: z.enum(['web', 'text']).describe('Use "web" if the evidence comes from a URL, or "text" if it comes directly from a user chat message.'),
-      url: z.string().url().optional().describe('Required if sourceType is web'),
-      title: z.string().describe('Title of the source. For chat messages, you can just use "User Chat Correction".'),
-      quote: z.string().describe('The exact quote or text that provides the evidence.'),
-      locationLabel: z.string().describe('E.g. "Paragraph 1" or "Chat Message"'),
-    }),
-    execute: async (input) => {
-      await deps.knowledgebaseRepository.addConceptEvidence({
-        projectId: deps.projectId,
-        ...input,
-      });
-      return { success: true, message: `Evidence added to concept ${input.conceptKey}.` };
+      return { text: text.substring(0, 10000) };
     },
   });
 
   return {
+    'search-wiki-concepts': searchWikiConceptsTool,
+    'propose-graph-changes': proposeGraphChangesTool,
+    'search-web-ddg': searchWebTool,
+    'read-webpage': readWebpageTool,
+    
+    // Legacy exports for tests
     searchWikiConceptsTool,
-    addConceptTool,
-    updateConceptTool,
-    deleteConceptTool,
-    addRelationshipTool,
-    deleteRelationshipTool,
     searchWebTool,
     readWebpageTool,
-    addEvidenceTool,
+    proposeGraphChangesTool,
   };
 }
