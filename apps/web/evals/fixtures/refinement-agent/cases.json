@@ -1,0 +1,553 @@
+{
+  "fixtureVersion": "refinement-agent-v2",
+  "cases": [
+    {
+      "id": "explain-no-tools",
+      "messages": [
+        {
+          "role": "user",
+          "content": "Jelaskan React secara singkat untuk pemula."
+        }
+      ],
+      "fixture": {
+        "concepts": [
+          {
+            "conceptKey": "react",
+            "name": "React",
+            "definition": "A UI library for building interfaces."
+          }
+        ]
+      },
+      "expect": {
+        "forbiddenTools": [
+          "propose-graph-changes",
+          "add-evidence",
+          "add-concept"
+        ],
+        "actions": [],
+        "mustNotClaimApplied": true
+      }
+    },
+    {
+      "id": "vague-message-clarify",
+      "messages": [
+        {
+          "role": "user",
+          "content": "test"
+        }
+      ],
+      "fixture": {
+        "concepts": []
+      },
+      "expect": {
+        "forbiddenTools": [
+          "search-wiki-concepts",
+          "search-web-ddg",
+          "read-webpage",
+          "propose-graph-changes"
+        ],
+        "actions": [],
+        "mustNotClaimApplied": true
+      }
+    },
+    {
+      "id": "add-evidence-existing-concept",
+      "messages": [
+        {
+          "role": "user",
+          "content": "Tambahkan evidence ke React: React was originally created by Facebook in 2013."
+        }
+      ],
+      "fixture": {
+        "concepts": [
+          {
+            "conceptKey": "react",
+            "name": "React",
+            "definition": "A UI library for building interfaces."
+          }
+        ],
+        "webSearchResults": [
+          {
+            "title": "React History Fixture",
+            "description": "React was originally created by Facebook in 2013.",
+            "url": "https://example.test/react-history"
+          }
+        ],
+        "webpages": {
+          "https://example.test/react-history": "React was originally created by Facebook in 2013."
+        }
+      },
+      "expect": {
+        "requiredTools": [
+          "search-wiki-concepts",
+          "propose-graph-changes"
+        ],
+        "forbiddenTools": [
+          "add-evidence",
+          "add-concept"
+        ],
+        "requiredToolOrder": [
+          "search-wiki-concepts",
+          "propose-graph-changes"
+        ],
+        "actions": [
+          {
+            "type": "add_evidence",
+            "conceptKey": "react",
+            "evidenceTextIncludes": "Facebook"
+          }
+        ],
+        "mustNotClaimApplied": true
+      }
+    },
+    {
+      "id": "add-new-concept-with-evidence",
+      "messages": [
+        {
+          "role": "user",
+          "content": "Tambahkan konsep Virtual DOM. Virtual DOM is a lightweight representation of the UI kept in memory."
+        }
+      ],
+      "fixture": {
+        "concepts": [],
+        "webSearchResults": [
+          {
+            "title": "Virtual DOM Fixture",
+            "description": "Virtual DOM is a lightweight representation of the UI kept in memory.",
+            "url": "https://example.test/virtual-dom"
+          }
+        ],
+        "webpages": {
+          "https://example.test/virtual-dom": "Virtual DOM is a lightweight representation of the UI kept in memory."
+        }
+      },
+      "expect": {
+        "requiredTools": [
+          "search-wiki-concepts",
+          "propose-graph-changes"
+        ],
+        "forbiddenTools": [
+          "add-concept"
+        ],
+        "requiredToolOrder": [
+          "search-wiki-concepts",
+          "propose-graph-changes"
+        ],
+        "actions": [
+          {
+            "type": "add_concept",
+            "conceptKey": "virtual-dom"
+          },
+          {
+            "type": "add_evidence",
+            "conceptKey": "virtual-dom",
+            "evidenceTextIncludes": "lightweight representation"
+          }
+        ],
+        "mustNotClaimApplied": true
+      }
+    },
+    {
+      "id": "update-existing-concept",
+      "messages": [
+        {
+          "role": "user",
+          "content": "Update definisi React menjadi library JavaScript untuk membangun UI web dan native."
+        }
+      ],
+      "fixture": {
+        "concepts": [
+          {
+            "conceptKey": "react",
+            "name": "React",
+            "definition": "A UI library."
+          }
+        ]
+      },
+      "expect": {
+        "requiredTools": [
+          "search-wiki-concepts",
+          "propose-graph-changes"
+        ],
+        "requiredToolOrder": [
+          "search-wiki-concepts",
+          "propose-graph-changes"
+        ],
+        "actions": [
+          {
+            "type": "update_concept",
+            "conceptKey": "react"
+          }
+        ],
+        "mustNotClaimApplied": true
+      }
+    },
+    {
+      "id": "delete-concept-proposal",
+      "messages": [
+        {
+          "role": "user",
+          "content": "Hapus konsep Legacy React API dari graph."
+        }
+      ],
+      "fixture": {
+        "concepts": [
+          {
+            "conceptKey": "legacy-react-api",
+            "name": "Legacy React API",
+            "definition": "Old React APIs."
+          }
+        ]
+      },
+      "expect": {
+        "requiredTools": [
+          "search-wiki-concepts",
+          "propose-graph-changes"
+        ],
+        "actions": [
+          {
+            "type": "delete_concept",
+            "conceptKey": "legacy-react-api"
+          }
+        ],
+        "mustNotClaimApplied": true
+      }
+    },
+    {
+      "id": "add-relationship-existing-concepts",
+      "messages": [
+        {
+          "role": "user",
+          "content": "Hubungkan JSX sebagai related_to React."
+        }
+      ],
+      "fixture": {
+        "concepts": [
+          {
+            "conceptKey": "react",
+            "name": "React",
+            "definition": "A UI library."
+          },
+          {
+            "conceptKey": "jsx",
+            "name": "JSX",
+            "definition": "Syntax extension commonly used with React."
+          }
+        ]
+      },
+      "expect": {
+        "requiredTools": [
+          "search-wiki-concepts",
+          "propose-graph-changes"
+        ],
+        "actions": [
+          {
+            "type": "add_relationship",
+            "sourceConceptKey": "jsx",
+            "targetConceptKey": "react",
+            "relationshipType": "related_to"
+          }
+        ],
+        "mustNotClaimApplied": true
+      }
+    },
+    {
+      "id": "avoid-orphan-relationship",
+      "messages": [
+        {
+          "role": "user",
+          "content": "Hubungkan Server Components sebagai prerequisite untuk React."
+        }
+      ],
+      "fixture": {
+        "concepts": [
+          {
+            "conceptKey": "react",
+            "name": "React",
+            "definition": "A UI library."
+          }
+        ]
+      },
+      "expect": {
+        "requiredTools": [
+          "search-wiki-concepts",
+          "propose-graph-changes"
+        ],
+        "actions": [
+          {
+            "type": "add_concept"
+          },
+          {
+            "type": "add_relationship",
+            "relationshipType": "prerequisite"
+          }
+        ],
+        "noOrphanRelationships": true,
+        "mustNotClaimApplied": true
+      }
+    },
+    {
+      "id": "external-fact-proposal",
+      "messages": [
+        {
+          "role": "user",
+          "content": "Cari fakta eksternal tentang React dan tambahkan evidence bahwa React mendukung web dan native user interfaces."
+        }
+      ],
+      "fixture": {
+        "concepts": [
+          {
+            "conceptKey": "react",
+            "name": "React",
+            "definition": "A UI library."
+          }
+        ],
+        "webSearchResults": [
+          {
+            "title": "React Official Fixture",
+            "description": "The library for web and native user interfaces.",
+            "url": "https://example.test/react"
+          }
+        ],
+        "webpages": {
+          "https://example.test/react": "React: The library for web and native user interfaces."
+        }
+      },
+      "expect": {
+        "requiredTools": [
+          "search-web-ddg",
+          "read-webpage",
+          "search-wiki-concepts",
+          "propose-graph-changes"
+        ],
+        "requiredToolOrder": [
+          "search-web-ddg",
+          "search-wiki-concepts",
+          "read-webpage",
+          "propose-graph-changes"
+        ],
+        "allowedToolOrders": [
+          [
+            "search-web-ddg",
+            "search-wiki-concepts",
+            "read-webpage",
+            "propose-graph-changes"
+          ],
+          [
+            "search-wiki-concepts",
+            "search-web-ddg",
+            "read-webpage",
+            "propose-graph-changes"
+          ]
+        ],
+        "actions": [
+          {
+            "type": "add_evidence",
+            "conceptKey": "react",
+            "evidenceTextIncludes": "web and native user interfaces"
+          }
+        ],
+        "mustNotClaimApplied": true
+      }
+    },
+    {
+      "id": "duplicate-concept-avoidance",
+      "messages": [
+        {
+          "role": "user",
+          "content": "Tambahkan konsep React sebagai library untuk UI."
+        }
+      ],
+      "fixture": {
+        "concepts": [
+          {
+            "conceptKey": "react",
+            "name": "React",
+            "definition": "A UI library."
+          }
+        ]
+      },
+      "expect": {
+        "requiredTools": [
+          "search-wiki-concepts",
+          "propose-graph-changes"
+        ],
+        "forbiddenActionTypes": [
+          "add_concept"
+        ],
+        "actions": [
+          {
+            "type": "update_concept",
+            "conceptKey": "react"
+          }
+        ],
+        "mustNotClaimApplied": true
+      }
+    },
+    {
+      "id": "multi-turn-correction",
+      "messages": [
+        {
+          "role": "user",
+          "content": "Tambahkan konsep React sebagai framework frontend"
+        },
+        {
+          "role": "assistant",
+          "content": "Saya akan menambahkan React sebagai konsep."
+        },
+        {
+          "role": "user",
+          "content": "Koreksi: React itu library, bukan framework. Update definisinya."
+        }
+      ],
+      "fixture": {
+        "concepts": [
+          {
+            "conceptKey": "react",
+            "name": "React",
+            "definition": "A framework for building UIs",
+            "confidence": 0.9,
+            "difficulty": "beginner"
+          }
+        ]
+      },
+      "expect": {
+        "actions": [
+          {
+            "type": "update_concept",
+            "conceptKey": "react"
+          }
+        ],
+        "requiredTools": [
+          "search-wiki-concepts",
+          "propose-graph-changes"
+        ],
+        "forbiddenTools": [],
+        "mustNotClaimApplied": true,
+        "noOrphanRelationships": true
+      }
+    },
+    {
+      "id": "ambiguous-request-clarify",
+      "messages": [
+        {
+          "role": "user",
+          "content": "tolong perbaiki"
+        }
+      ],
+      "expect": {
+        "actions": [],
+        "requiredTools": [],
+        "forbiddenTools": [
+          "propose-graph-changes"
+        ],
+        "mustNotClaimApplied": false
+      }
+    },
+    {
+      "id": "off-topic-refusal",
+      "messages": [
+        {
+          "role": "user",
+          "content": "Ceritakan cuaca hari ini di Jakarta"
+        }
+      ],
+      "expect": {
+        "actions": [],
+        "requiredTools": [],
+        "forbiddenTools": [
+          "propose-graph-changes",
+          "search-wiki-concepts"
+        ],
+        "mustNotClaimApplied": false
+      }
+    },
+    {
+      "id": "unsupported-delete-guard",
+      "messages": [
+        {
+          "role": "user",
+          "content": "Hapus semua konsep yang ada di graph"
+        }
+      ],
+      "fixture": {
+        "concepts": [
+          {
+            "conceptKey": "react",
+            "name": "React",
+            "definition": "A UI library",
+            "confidence": 0.95,
+            "difficulty": "beginner"
+          },
+          {
+            "conceptKey": "javascript",
+            "name": "JavaScript",
+            "definition": "A programming language",
+            "confidence": 0.95,
+            "difficulty": "beginner"
+          }
+        ]
+      },
+      "expect": {
+        "actions": [
+          {
+            "type": "delete_concept",
+            "conceptKey": "react"
+          },
+          {
+            "type": "delete_concept",
+            "conceptKey": "javascript"
+          }
+        ],
+        "requiredTools": [
+          "search-wiki-concepts",
+          "propose-graph-changes"
+        ],
+        "forbiddenTools": [],
+        "mustNotClaimApplied": true,
+        "noOrphanRelationships": true
+      }
+    },
+    {
+      "id": "batch-mixed-actions",
+      "messages": [
+        {
+          "role": "user",
+          "content": "Tambahkan konsep Vue.js sebagai framework frontend, update definisi React menjadi library, dan hubungkan Vue.js sebagai related_to React"
+        }
+      ],
+      "fixture": {
+        "concepts": [
+          {
+            "conceptKey": "react",
+            "name": "React",
+            "definition": "A framework for building UIs",
+            "confidence": 0.9,
+            "difficulty": "beginner"
+          }
+        ]
+      },
+      "expect": {
+        "actions": [
+          {
+            "type": "add_concept"
+          },
+          {
+            "type": "update_concept",
+            "conceptKey": "react"
+          },
+          {
+            "type": "add_relationship"
+          }
+        ],
+        "requiredTools": [
+          "search-wiki-concepts",
+          "propose-graph-changes"
+        ],
+        "forbiddenTools": [],
+        "mustNotClaimApplied": true,
+        "noOrphanRelationships": true
+      }
+    }
+  ]
+}
