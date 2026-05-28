@@ -34,7 +34,7 @@ export function ProjectSourcesPanel({ projectId, sources }: ProjectSourcesPanelP
   const ingestionPanelRef = useRef<IngestionActivityPanelHandle>(null);
   
   return (
-    <div className="grid gap-6 xl:h-[calc(100vh-16rem)] xl:grid-cols-[18rem_minmax(0,1fr)_18rem]">
+    <div className="grid gap-6 h-full xl:grid-cols-[18rem_minmax(0,1fr)_18rem]">
       <aside className="flex min-w-0 flex-col gap-3 overflow-hidden xl:h-full">
         <div className="flex shrink-0 items-center justify-between gap-3">
           <span className="font-mono text-[0.65rem] tabular-nums tracking-[0.18em] uppercase text-muted-foreground">

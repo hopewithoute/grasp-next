@@ -9,8 +9,8 @@ import {
 import {
   createIngestionRetrievalTools,
   buildLinkCandidates,
-  extractChunk,
   mergeDraft,
+  runIngestionChunkAgent,
   sourceLinkingWorkflow,
 } from '@grasp/ai/ingestion';
 import { canUseEmbeddingModel, embedText, embedTexts } from '@grasp/ai/embeddings';
@@ -94,8 +94,18 @@ export async function runSourceIngestion(
   deps: ProjectDeps
 ) {
   const emit = input.onEvent ?? (() => {});
+  const mastraMemory = {
+    resource: input.projectId,
+    threadPrefix: `ingestion:${input.sourceId}`,
+  };
 
   const ingestionRun = await deps.ingestionRunRepository.create({
+    metadata: {
+      mastra: {
+        resourceId: mastraMemory.resource,
+        threadPrefix: mastraMemory.threadPrefix,
+      },
+    },
     projectId: input.projectId,
     sourceId: input.sourceId,
   });
@@ -168,17 +178,23 @@ export async function runSourceIngestion(
         deps,
       });
 
-      const result = await extractChunk({
+      const runResult = await runIngestionChunkAgent({
         blocks: chunk.blocks.map((block) => ({ id: block.id, text: block.text })),
         chunkIndex: chunk.chunkIndex,
         draftConcepts: draft.concepts,
         draftRelationships: draft.relationships,
+        memory: {
+          resource: mastraMemory.resource,
+          thread: `${mastraMemory.threadPrefix}:chunk:${chunk.chunkIndex}`,
+        },
         retrievedConcepts,
         retrievalTools,
         sourceId: input.sourceId,
         totalChunks: chunks.length,
-        onThinking: (thinking) => emit({ type: 'agent_thinking', chunkIndex: chunk.chunkIndex, thinking }),
+        onThinking: (thinking) =>
+          emit({ type: 'agent_thinking', chunkIndex: chunk.chunkIndex, thinking }),
       });
+      const result = runResult.domain;
 
       if (result.droppedRefCount > 0 || result.droppedConceptKeys.length > 0) {
         totalDroppedRefs += result.droppedRefCount;
@@ -323,13 +339,24 @@ export async function runSourceIngestion(
       },
       linking: linkingResult.result?.trace ?? null,
       relationshipCount: draft.relationships.length,
+      mastra: {
+        resourceId: mastraMemory.resource,
+        threadPrefix: mastraMemory.threadPrefix,
+        chunkThreads: chunks.map((chunk) => `${mastraMemory.threadPrefix}:chunk:${chunk.chunkIndex}`),
+      },
     });
 
     emit({ type: 'ingestion_complete', conceptCount: draft.concepts.length, relationshipCount: draft.relationships.length });
   } catch (error) {
     await deps.ingestionRunRepository.markFailed(
       ingestionRun.id,
-      error instanceof Error ? error.message : 'ingestion_failed'
+      error instanceof Error ? error.message : 'ingestion_failed',
+      {
+        mastra: {
+          resourceId: mastraMemory.resource,
+          threadPrefix: mastraMemory.threadPrefix,
+        },
+      }
     );
     emit({ type: 'ingestion_failed', reason: error instanceof Error ? error.message : 'ingestion_failed' });
     throw error;
