@@ -10,3 +10,13 @@ coverage
 
 .env
 .env*.local
+# Tool configs
+.claude/
+.kiro/
+.rtk/
+CLAUDE.md
+# Debug / throwaway files
+debug-evidence.log
+test-query.mjs
+test-query.ts
+packages/db/test-evidence.ts

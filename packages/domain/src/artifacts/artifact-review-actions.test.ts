@@ -617,6 +617,8 @@ function createDeps(
 function createKnowledgebaseRepository(state: TestState): KnowledgebaseRepository {
   return {
     async addConceptEvidence() {},
+    async updateConceptEvidence() {},
+    async deleteConceptEvidence() {},
     async createSnapshot() { return null; },
     async addConcept() {},
     async updateConcept() {},
@@ -624,7 +626,13 @@ function createKnowledgebaseRepository(state: TestState): KnowledgebaseRepositor
     async addRelationship() {},
     async deleteRelationship() {},
     async findCurrentGraphByProject() {
-      throw new Error('Not needed for this test.');
+      return null;
+    },
+    async findConceptEvidence() {
+      return [];
+    },
+    async findRelationshipEvidence() {
+      return [];
     },
     async searchConceptsForIngestion() {
       return [];
