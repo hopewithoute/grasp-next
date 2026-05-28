@@ -29,7 +29,8 @@ export type KnowledgebaseGraphConceptReadModel = {
   definition: string;
   difficulty: ConceptDifficultyDto;
   confidence: string;
-  sourceEvidence: unknown;
+  sourceEvidence?: unknown;
+  evidenceCount?: number;
 };
 
 export type KnowledgebaseGraphRelationshipReadModel = {

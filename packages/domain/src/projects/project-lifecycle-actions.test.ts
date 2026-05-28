@@ -368,6 +368,8 @@ function createIngestionRunRepository(
 function createKnowledgebaseRepository(): KnowledgebaseRepository {
   return {
     async addConceptEvidence() {},
+    async updateConceptEvidence() {},
+    async deleteConceptEvidence() {},
     async createSnapshot() { return null; },
     async addConcept() {},
     async updateConcept() {},
@@ -395,6 +397,12 @@ function createKnowledgebaseRepository(): KnowledgebaseRepository {
         ],
         relationships: [],
       };
+    },
+    async findConceptEvidence() {
+      return [];
+    },
+    async findRelationshipEvidence() {
+      return [];
     },
     async replaceVersionFromContent() {
       throw new Error('Not needed for this test.');

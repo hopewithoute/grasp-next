@@ -24,6 +24,16 @@ import {
   updateProjectSourceDto,
   updateProjectDetails,
   updateProjectDetailsDto,
+  loadConceptEvidence,
+  loadRelationshipEvidence,
+  addConceptProposalDto,
+  updateConceptProposalDto,
+  deleteConceptProposalDto,
+  addRelationshipProposalDto,
+  deleteRelationshipProposalDto,
+  addEvidenceProposalDto,
+  updateEvidenceProposalDto,
+  deleteEvidenceProposalDto,
   type CreateProjectDto,
 } from '@grasp/domain';
 import { getActor as auth } from '@/server/actor';
@@ -467,4 +477,151 @@ export async function updateKnowledgebaseRelationshipEvidenceFormAction(
       success: false,
     };
   }
+}
+
+export async function getConceptEvidence(projectId: string, conceptId: string) {
+  const actor = await auth();
+
+  if (!actor) {
+    redirect('/sign-in');
+  }
+
+  const deps = createProjectDeps();
+
+  try {
+    const project = await deps.projectRepository.findByIdForOwner(projectId, actor.id);
+
+    if (!project) {
+      throw new Error('Unauthorized');
+    }
+
+    const evidence = await loadConceptEvidence(
+      { conceptId, projectId, ownerId: actor.id },
+      { knowledgebaseRepository: deps.knowledgebaseRepository }
+    );
+    return evidence;
+  } catch (error) {
+    console.error('Failed to load concept evidence', error);
+    return [];
+  }
+}
+
+export async function getRelationshipEvidence(projectId: string, relationshipId: string) {
+  const actor = await auth();
+
+  if (!actor) {
+    redirect('/sign-in');
+  }
+
+  const deps = createProjectDeps();
+
+  try {
+    const project = await deps.projectRepository.findByIdForOwner(projectId, actor.id);
+
+    if (!project) {
+      throw new Error('Unauthorized');
+    }
+
+    const evidence = await loadRelationshipEvidence(
+      { relationshipId, projectId, ownerId: actor.id },
+      { knowledgebaseRepository: deps.knowledgebaseRepository }
+    );
+    return evidence;
+  } catch (error) {
+    console.error('Failed to load relationship evidence', error);
+    return [];
+  }
+}
+
+export async function executeGraphProposalAction(
+  projectId: string,
+  actions: { type: string; payload: Record<string, unknown> }[]
+) {
+  const actor = await auth();
+  if (!actor) throw new Error('Unauthorized');
+
+  const deps = createProjectDeps();
+  const project = await deps.projectRepository.findByIdForOwner(projectId, actor.id);
+
+  if (!project) {
+    throw new Error('Unauthorized');
+  }
+
+  for (const action of actions) {
+    switch (action.type) {
+      case 'add_concept': {
+        const payload = addConceptProposalDto.parse(action.payload);
+        await deps.knowledgebaseRepository.addConcept({ projectId, ...payload });
+        break;
+      }
+      case 'update_concept': {
+        const payload = updateConceptProposalDto.parse(action.payload);
+        await deps.knowledgebaseRepository.updateConcept({ projectId, ...payload });
+        break;
+      }
+      case 'delete_concept': {
+        const payload = deleteConceptProposalDto.parse(action.payload);
+        await deps.knowledgebaseRepository.deleteConcept({ projectId, conceptKey: payload.conceptKey });
+        break;
+      }
+      case 'add_relationship': {
+        const payload = addRelationshipProposalDto.parse(action.payload);
+        await deps.knowledgebaseRepository.addRelationship({
+          projectId,
+          relationshipKey: `${payload.sourceConceptKey}:${payload.targetConceptKey}:${payload.relationshipType}`,
+          ...payload
+        });
+        break;
+      }
+      case 'delete_relationship': {
+        const payload = deleteRelationshipProposalDto.parse(action.payload);
+        await deps.knowledgebaseRepository.deleteRelationship({
+          projectId,
+          relationshipKey: `${payload.sourceConceptKey}:${payload.targetConceptKey}:${payload.relationshipType}`
+        });
+        break;
+      }
+      case 'add_evidence': {
+        const payload = addEvidenceProposalDto.parse(action.payload);
+        await deps.knowledgebaseRepository.addConceptEvidence({
+          projectId,
+          conceptKey: payload.conceptKey,
+          sourceType: (payload.sourceType === 'text' ? 'text' : 'web'),
+          title: payload.title || 'Agent Search Result',
+          url: payload.url,
+          quote: payload.evidenceText,
+          locationLabel: 'AI Extracted'
+        });
+        break;
+      }
+      case 'update_evidence': {
+        const payload = updateEvidenceProposalDto.parse(action.payload);
+        await deps.knowledgebaseRepository.updateConceptEvidence({
+          projectId,
+          evidenceId: payload.evidenceId,
+          quote: payload.evidenceText,
+        });
+        break;
+      }
+      case 'delete_evidence': {
+        const payload = deleteEvidenceProposalDto.parse(action.payload);
+        await deps.knowledgebaseRepository.deleteConceptEvidence({
+          projectId,
+          evidenceId: payload.evidenceId,
+        });
+        break;
+      }
+      default:
+        throw new Error(`Unknown action type: ${action.type}`);
+    }
+  }
+
+  await deps.knowledgebaseRepository.createSnapshot({
+    projectId,
+    trigger: 'agent_refinement_proposal_approval',
+  });
+
+  revalidatePath(`/dashboard/projects/${projectId}`);
+
+  return { success: true, applied: actions.length };
 }
