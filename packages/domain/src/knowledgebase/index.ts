@@ -18,6 +18,9 @@ export {
   type KnowledgebaseRelationshipTypeDto,
   type SourceReferenceDto,
 } from './knowledgebase.dto';
+
+export * from './load-concept-evidence.action';
+export * from './load-relationship-evidence.action';
 export type {
   ExistingConceptSummary,
   IngestionConceptContext,

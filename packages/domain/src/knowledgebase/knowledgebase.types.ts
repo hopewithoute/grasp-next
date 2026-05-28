@@ -48,14 +48,16 @@ export type KnowledgebaseGraphConceptRecord = {
   definition: string;
   difficulty: ConceptDifficultyDto;
   confidence: string;
-  sourceEvidence: unknown;
+  sourceEvidence?: unknown;
+  evidenceCount?: number;
 };
 
 export type KnowledgebaseGraphRelationshipRecord = {
   id: string;
   metadata: unknown;
   sourceConceptId: string;
-  sourceEvidence: unknown;
+  sourceEvidence?: unknown;
+  evidenceCount?: number;
   targetConceptId: string;
   relationshipType: string;
 };
@@ -112,13 +114,16 @@ export type ConceptSearchPaginationResult = {
     definition: string;
     difficulty: 'advanced' | 'beginner' | 'intermediate';
     confidence: string;
-    sourceEvidence: unknown;
+    sourceEvidence?: unknown;
+    evidenceCount?: number;
   }[];
   totalCount: number;
 };
 
 export type KnowledgebaseRepository = {
   findCurrentGraphByProject(projectId: string): Promise<KnowledgebaseGraphProjectionRecord | null>;
+  findConceptEvidence(input: { conceptKey: string; projectId: string }): Promise<unknown[]>;
+  findRelationshipEvidence(input: { projectId: string; relationshipKey: string }): Promise<unknown[]>;
   searchConceptsForIngestion(input: {
     embedding?: number[];
     limit?: number;
@@ -186,6 +191,10 @@ export type KnowledgebaseRepository = {
     relationshipKey: string;
   }): Promise<void>;
   
+  updateConceptEvidence(input: { projectId: string; evidenceId: string; quote?: string; locationLabel?: string; }): Promise<void>;
+
+  deleteConceptEvidence(input: { projectId: string; evidenceId: string; }): Promise<void>;
+
   addConceptEvidence(input: {
     projectId: string;
     conceptKey: string;
