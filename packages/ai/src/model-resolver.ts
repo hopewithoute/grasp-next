@@ -171,6 +171,7 @@ export function patchDeepSeekReasoningRequest(
   const body = tryParseJson(init.body) as {
     max_tokens?: number;
     messages?: Array<{
+      content?: string;
       role?: string;
       reasoning_content?: string;
       tool_calls?: Array<{ id?: string }>;
@@ -184,9 +185,46 @@ export function patchDeepSeekReasoningRequest(
   }
 
   let changed = false;
+
+  // DeepSeek supports json_object but not json_schema response_format.
+  // Downgrade json_schema to json_object for compatibility with prebuilt scorers.
+  // DeepSeek also requires the word 'json' in the prompt when using json_object.
+  const needsJsonInjection =
+    body.response_format &&
+    typeof body.response_format === 'object' &&
+    (body.response_format as { type?: string }).type === 'json_schema';
+
+  if (needsJsonInjection) {
+    body.response_format = { type: 'json_object' };
+    changed = true;
+  }
+
   if (options.forceJsonResponse && !body.response_format) {
     body.response_format = { type: 'json_object' };
     changed = true;
+  }
+
+  // Ensure 'json' appears in messages for DeepSeek json_object mode
+  if (body.response_format && (body.response_format as { type?: string }).type === 'json_object') {
+    if (Array.isArray(body.messages)) {
+      const hasJson = body.messages.some(
+        (message) =>
+          typeof message.content === 'string' && message.content.toLowerCase().includes('json')
+      );
+      if (!hasJson) {
+        // Append 'json' instruction to the last user or system message
+        for (let i = body.messages.length - 1; i >= 0; i--) {
+          const msg = body.messages[i];
+          if (msg.role === 'user' || msg.role === 'system') {
+            if (typeof msg.content === 'string') {
+              msg.content += '\n\nRespond with valid JSON.';
+            }
+            changed = true;
+            break;
+          }
+        }
+      }
+    }
   }
 
   if (!body.thinking) {
