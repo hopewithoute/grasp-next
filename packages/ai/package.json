@@ -7,14 +7,15 @@
     "./embeddings": "./src/embeddings.ts",
     "./ingestion": "./src/ingestion/index.ts",
     "./refinement": "./src/refinement/index.ts",
-    "./model-resolver": "./src/model-resolver.ts"
+    "./model-resolver": "./src/model-resolver.ts",
+    "./evals": "./src/evals.ts"
   },
   "scripts": {
     "build": "tsc --noEmit",
     "studio": "mastra dev",
     "lint": "eslint . --max-warnings=0",
     "mastra:build": "mastra build",
-    "test": "tsx --test src/**/*.test.ts",
+    "test": "node --env-file=../../.env --import tsx/esm --test src/**/*.test.ts",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
@@ -31,6 +32,8 @@
     "@ai-sdk/openai": "^3.0.63",
     "@grasp/domain": "workspace:*",
     "@mastra/core": "^1.33.0",
+    "@mastra/evals": "^1.2.3",
+    "@mastra/memory": "1.19.0",
     "@mastra/pg": "^1.10.1",
     "duck-duck-scrape": "^2.2.7",
     "html-to-text": "^10.0.0",

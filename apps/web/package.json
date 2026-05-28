@@ -4,9 +4,15 @@
   "scripts": {
     "build": "next build --turbopack",
     "dev": "next dev --turbopack",
+    "eval:agents": "pnpm eval:refinement && pnpm eval:ingestion",
+    "eval:ingestion": "tsx evals/ingestion-agent.eval.ts",
+    "eval:refinement": "tsx evals/refinement-agent.eval.ts",
     "lint": "eslint . --max-warnings=0",
     "test": "tsx --test features/**/*.test.tsx",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "eval:ingestion:mastra": "tsx evals/mastra/ingestion.eval.ts",
+    "eval:refinement:mastra": "tsx evals/mastra/refinement.eval.ts",
+    "eval:agents:mastra": "pnpm eval:refinement:mastra && pnpm eval:ingestion:mastra"
   },
   "dependencies": {
     "@base-ui/react": "^1.4.1",
