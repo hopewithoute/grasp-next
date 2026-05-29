@@ -1,10 +1,5 @@
 import { canEditOwnedProject, type Actor } from '../projects/project.policy';
-import {
-  ARTIFACT_STATUS,
-  ARTIFACT_TYPE,
-  AUDIT_ACTION,
-  AUDIT_ENTITY_TYPE,
-} from '../constants';
+import { ARTIFACT_STATUS, ARTIFACT_TYPE, AUDIT_ACTION, AUDIT_ENTITY_TYPE } from '../constants';
 import {
   knowledgebaseArtifactContentDto,
   projectKnowledgebaseGraph,
@@ -114,7 +109,10 @@ export async function updateKnowledgebaseRelationship(
   return updatedArtifact;
 }
 
-async function findCurrentVersion(artifactRepository: ArtifactRepository, artifact: ArtifactRecord) {
+async function findCurrentVersion(
+  artifactRepository: ArtifactRepository,
+  artifact: ArtifactRecord
+) {
   const versions = await artifactRepository.listVersions(artifact.id);
   const currentVersion = versions.find((version) => version.id === artifact.currentVersionId);
 

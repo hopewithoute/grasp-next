@@ -13,11 +13,7 @@ export type ProjectRecord = {
 };
 
 export type ProjectRepository = {
-  create(input: {
-    ownerId: string;
-    title: string;
-    description?: string;
-  }): Promise<ProjectRecord>;
+  create(input: { ownerId: string; title: string; description?: string }): Promise<ProjectRecord>;
   findById(projectId: string): Promise<ProjectRecord | null>;
   findByIdForOwner(projectId: string, ownerId: string): Promise<ProjectRecord | null>;
   listByOwner(ownerId: string): Promise<ProjectRecord[]>;

@@ -30,8 +30,4 @@ export {
   type LoadProjectDetailInput,
   type LoadProjectDetailResult,
 } from './load-project-detail.action';
-export type {
-  AuditLogRepository,
-  ProjectRecord,
-  ProjectRepository,
-} from './project.types';
+export type { AuditLogRepository, ProjectRecord, ProjectRepository } from './project.types';

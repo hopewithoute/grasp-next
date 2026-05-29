@@ -6,10 +6,7 @@ import {
   AUDIT_ACTION,
   AUDIT_ENTITY_TYPE,
 } from '../constants';
-import type {
-  AuditLogRepository,
-  ProjectRepository,
-} from '../projects/project.types';
+import type { AuditLogRepository, ProjectRepository } from '../projects/project.types';
 import type {
   ArtifactRecord,
   ArtifactRepository,

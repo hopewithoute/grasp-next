@@ -93,12 +93,8 @@
           "name": "account_user_id_user_id_fk",
           "tableFrom": "account",
           "tableTo": "user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -207,12 +203,8 @@
           "name": "artifact_review_runs_artifact_id_artifacts_id_fk",
           "tableFrom": "artifact_review_runs",
           "tableTo": "artifacts",
-          "columnsFrom": [
-            "artifact_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["artifact_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -220,12 +212,8 @@
           "name": "artifact_review_runs_artifact_version_id_artifact_versions_id_fk",
           "tableFrom": "artifact_review_runs",
           "tableTo": "artifact_versions",
-          "columnsFrom": [
-            "artifact_version_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["artifact_version_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -314,12 +302,8 @@
           "name": "artifact_versions_artifact_id_artifacts_id_fk",
           "tableFrom": "artifact_versions",
           "tableTo": "artifacts",
-          "columnsFrom": [
-            "artifact_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["artifact_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -411,12 +395,8 @@
           "name": "artifacts_project_id_projects_id_fk",
           "tableFrom": "artifacts",
           "tableTo": "projects",
-          "columnsFrom": [
-            "project_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["project_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -577,12 +557,8 @@
           "name": "ingestion_runs_project_id_projects_id_fk",
           "tableFrom": "ingestion_runs",
           "tableTo": "projects",
-          "columnsFrom": [
-            "project_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["project_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -590,12 +566,8 @@
           "name": "ingestion_runs_source_id_project_sources_id_fk",
           "tableFrom": "ingestion_runs",
           "tableTo": "project_sources",
-          "columnsFrom": [
-            "source_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["source_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -685,12 +657,8 @@
           "name": "knowledgebase_versions_knowledgebase_id_knowledgebases_id_fk",
           "tableFrom": "knowledgebase_versions",
           "tableTo": "knowledgebases",
-          "columnsFrom": [
-            "knowledgebase_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["knowledgebase_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -698,12 +666,8 @@
           "name": "knowledgebase_versions_artifact_version_id_artifact_versions_id_fk",
           "tableFrom": "knowledgebase_versions",
           "tableTo": "artifact_versions",
-          "columnsFrom": [
-            "artifact_version_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["artifact_version_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -780,12 +744,8 @@
           "name": "knowledgebases_project_id_projects_id_fk",
           "tableFrom": "knowledgebases",
           "tableTo": "projects",
-          "columnsFrom": [
-            "project_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["project_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -793,12 +753,8 @@
           "name": "knowledgebases_artifact_id_artifacts_id_fk",
           "tableFrom": "knowledgebases",
           "tableTo": "artifacts",
-          "columnsFrom": [
-            "artifact_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["artifact_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -878,12 +834,8 @@
           "name": "project_sources_project_id_projects_id_fk",
           "tableFrom": "project_sources",
           "tableTo": "projects",
-          "columnsFrom": [
-            "project_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["project_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -952,12 +904,8 @@
           "name": "projects_owner_id_user_id_fk",
           "tableFrom": "projects",
           "tableTo": "user",
-          "columnsFrom": [
-            "owner_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["owner_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1027,12 +975,8 @@
           "name": "session_user_id_user_id_fk",
           "tableFrom": "session",
           "tableTo": "user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1042,9 +986,7 @@
         "session_token_unique": {
           "name": "session_token_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "token"
-          ]
+          "columns": ["token"]
         }
       },
       "policies": {},
@@ -1174,12 +1116,8 @@
           "name": "source_passages_project_id_projects_id_fk",
           "tableFrom": "source_passages",
           "tableTo": "projects",
-          "columnsFrom": [
-            "project_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["project_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1187,12 +1125,8 @@
           "name": "source_passages_source_id_project_sources_id_fk",
           "tableFrom": "source_passages",
           "tableTo": "project_sources",
-          "columnsFrom": [
-            "source_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["source_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1258,9 +1192,7 @@
         "user_email_unique": {
           "name": "user_email_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "email"
-          ]
+          "columns": ["email"]
         }
       },
       "policies": {},
@@ -1374,12 +1306,8 @@
           "name": "wiki_concept_source_refs_concept_id_wiki_concepts_id_fk",
           "tableFrom": "wiki_concept_source_refs",
           "tableTo": "wiki_concepts",
-          "columnsFrom": [
-            "concept_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["concept_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1387,12 +1315,8 @@
           "name": "wiki_concept_source_refs_source_passage_id_source_passages_id_fk",
           "tableFrom": "wiki_concept_source_refs",
           "tableTo": "source_passages",
-          "columnsFrom": [
-            "source_passage_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["source_passage_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1556,12 +1480,8 @@
           "name": "wiki_concepts_knowledgebase_id_knowledgebases_id_fk",
           "tableFrom": "wiki_concepts",
           "tableTo": "knowledgebases",
-          "columnsFrom": [
-            "knowledgebase_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["knowledgebase_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1569,12 +1489,8 @@
           "name": "wiki_concepts_knowledgebase_version_id_knowledgebase_versions_id_fk",
           "tableFrom": "wiki_concepts",
           "tableTo": "knowledgebase_versions",
-          "columnsFrom": [
-            "knowledgebase_version_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["knowledgebase_version_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1627,12 +1543,8 @@
           "name": "wiki_relationship_source_refs_relationship_id_wiki_relationships_id_fk",
           "tableFrom": "wiki_relationship_source_refs",
           "tableTo": "wiki_relationships",
-          "columnsFrom": [
-            "relationship_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["relationship_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1640,12 +1552,8 @@
           "name": "wiki_relationship_source_refs_source_passage_id_source_passages_id_fk",
           "tableFrom": "wiki_relationship_source_refs",
           "tableTo": "source_passages",
-          "columnsFrom": [
-            "source_passage_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["source_passage_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1773,12 +1681,8 @@
           "name": "wiki_relationships_knowledgebase_id_knowledgebases_id_fk",
           "tableFrom": "wiki_relationships",
           "tableTo": "knowledgebases",
-          "columnsFrom": [
-            "knowledgebase_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["knowledgebase_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1786,12 +1690,8 @@
           "name": "wiki_relationships_knowledgebase_version_id_knowledgebase_versions_id_fk",
           "tableFrom": "wiki_relationships",
           "tableTo": "knowledgebase_versions",
-          "columnsFrom": [
-            "knowledgebase_version_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["knowledgebase_version_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1799,12 +1699,8 @@
           "name": "wiki_relationships_source_concept_id_wiki_concepts_id_fk",
           "tableFrom": "wiki_relationships",
           "tableTo": "wiki_concepts",
-          "columnsFrom": [
-            "source_concept_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["source_concept_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1812,12 +1708,8 @@
           "name": "wiki_relationships_target_concept_id_wiki_concepts_id_fk",
           "tableFrom": "wiki_relationships",
           "tableTo": "wiki_concepts",
-          "columnsFrom": [
-            "target_concept_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["target_concept_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1833,12 +1725,7 @@
     "public.artifact_review_run_status": {
       "name": "artifact_review_run_status",
       "schema": "public",
-      "values": [
-        "suspended",
-        "resumed",
-        "completed",
-        "failed"
-      ]
+      "values": ["suspended", "resumed", "completed", "failed"]
     },
     "public.artifact_status": {
       "name": "artifact_status",
@@ -1857,51 +1744,27 @@
     "public.artifact_type": {
       "name": "artifact_type",
       "schema": "public",
-      "values": [
-        "concept_graph",
-        "learning_objectives",
-        "lesson_draft"
-      ]
+      "values": ["concept_graph", "learning_objectives", "lesson_draft"]
     },
     "public.ingestion_run_status": {
       "name": "ingestion_run_status",
       "schema": "public",
-      "values": [
-        "ingesting",
-        "completed",
-        "failed"
-      ]
+      "values": ["ingesting", "completed", "failed"]
     },
     "public.knowledgebase_version_status": {
       "name": "knowledgebase_version_status",
       "schema": "public",
-      "values": [
-        "generated",
-        "approved",
-        "needs_revision"
-      ]
+      "values": ["generated", "approved", "needs_revision"]
     },
     "public.project_source_type": {
       "name": "project_source_type",
       "schema": "public",
-      "values": [
-        "markdown",
-        "text",
-        "pdf",
-        "video",
-        "web"
-      ]
+      "values": ["markdown", "text", "pdf", "video", "web"]
     },
     "public.project_status": {
       "name": "project_status",
       "schema": "public",
-      "values": [
-        "draft",
-        "processing",
-        "reviewing",
-        "processed",
-        "failed"
-      ]
+      "values": ["draft", "processing", "reviewing", "processed", "failed"]
     }
   },
   "schemas": {},

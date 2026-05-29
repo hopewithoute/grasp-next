@@ -1,7 +1,4 @@
-export {
-  chunkNormalizedBlocks,
-  type IngestionChunk,
-} from './chunk-normalized-blocks';
+export { chunkNormalizedBlocks, type IngestionChunk } from './chunk-normalized-blocks';
 export {
   ingestionAgentOutputDto,
   ingestionConceptDto,

@@ -3,10 +3,12 @@ import { conceptDifficultyDto } from '../concepts';
 import { knowledgebaseRelationshipTypeDto } from '../knowledgebase';
 
 // Preprocessor for difficulty to handle case and defaults
-export const proposalDifficultyDto = z.preprocess((val) => {
-  if (typeof val === 'string') return val.toLowerCase();
-  return val;
-}, conceptDifficultyDto).default('beginner');
+export const proposalDifficultyDto = z
+  .preprocess((val) => {
+    if (typeof val === 'string') return val.toLowerCase();
+    return val;
+  }, conceptDifficultyDto)
+  .default('beginner');
 
 // Preprocessor for confidence to handle strings like 'HIGH', '0.85', and defaulting
 export const proposalConfidenceDto = z.preprocess((val) => {
@@ -57,24 +59,28 @@ export const deleteRelationshipProposalDto = z.object({
   relationshipType: knowledgebaseRelationshipTypeDto,
 });
 
-export const addEvidenceProposalDto = z.preprocess((val: any) => {
-  if (val && typeof val === 'object') {
-    if (!val.evidenceText && val.excerpt) {
-      val.evidenceText = val.excerpt;
+export const addEvidenceProposalDto = z.preprocess(
+  (val: unknown) => {
+    if (val && typeof val === 'object') {
+      const obj = val as Record<string, unknown>;
+      if (!obj.evidenceText && obj.excerpt) {
+        obj.evidenceText = obj.excerpt;
+      }
+      if (!obj.rationale && obj.reasoning) {
+        obj.rationale = obj.reasoning;
+      }
     }
-    if (!val.rationale && val.reasoning) {
-      val.rationale = val.reasoning;
-    }
-  }
-  return val;
-}, z.object({
-  conceptKey: z.string().trim().min(1),
-  evidenceText: z.string().trim().min(1).default('AI extracted evidence'),
-  rationale: z.string().trim().min(1).default('AI extracted rationale'),
-  url: z.string().trim().optional(),
-  title: z.string().trim().min(1).default('AI Search Result').optional(),
-  sourceType: z.string().trim().optional(),
-}));
+    return val;
+  },
+  z.object({
+    conceptKey: z.string().trim().min(1),
+    evidenceText: z.string().trim().min(1).default('AI extracted evidence'),
+    rationale: z.string().trim().min(1).default('AI extracted rationale'),
+    url: z.string().trim().optional(),
+    title: z.string().trim().min(1).default('AI Search Result').optional(),
+    sourceType: z.string().trim().optional(),
+  })
+);
 
 export const updateEvidenceProposalDto = z.object({
   evidenceId: z.string().trim().min(1),

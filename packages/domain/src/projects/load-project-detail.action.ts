@@ -73,10 +73,8 @@ export async function loadProjectDetail(
     deps.projectSourceRepository.listByProject(project.id),
   ]);
   const hasUsableSource = sources.some((source) => source.content?.trim());
-  const graphIsCurrentForSources = hasUsableSource && isIngestionCurrentForSources(
-    latestIngestionRun,
-    sources
-  );
+  const graphIsCurrentForSources =
+    hasUsableSource && isIngestionCurrentForSources(latestIngestionRun, sources);
 
   const relationalReadModel = deps.knowledgebaseRepository
     ? graphIsCurrentForSources

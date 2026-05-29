@@ -16,13 +16,14 @@ describe('buildKnowledgebaseArtifactContent', () => {
     assert.ok(!('conceptGraph' in content));
     assert.ok(!('learningWiki' in content));
     assert.equal(content.knowledgebase.concepts[0]?.id, 'market');
-    assert.deepEqual(content.graphProjection.nodes.map((node) => node.conceptId), [
-      'market',
-      'demand',
-    ]);
-    assert.deepEqual(content.graphProjection.edges.map((edge) => edge.relationshipId), [
-      'relationship-0001',
-    ]);
+    assert.deepEqual(
+      content.graphProjection.nodes.map((node) => node.conceptId),
+      ['market', 'demand']
+    );
+    assert.deepEqual(
+      content.graphProjection.edges.map((edge) => edge.relationshipId),
+      ['relationship-0001']
+    );
   });
 });
 

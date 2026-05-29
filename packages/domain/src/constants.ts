@@ -83,10 +83,7 @@ export const EXTRACTION_MODE = {
   LLM_JSON: 'llm_json',
 } as const;
 
-export const EXTRACTION_MODES = [
-  EXTRACTION_MODE.LLM_STRICT,
-  EXTRACTION_MODE.LLM_JSON,
-] as const;
+export const EXTRACTION_MODES = [EXTRACTION_MODE.LLM_STRICT, EXTRACTION_MODE.LLM_JSON] as const;
 
 export const INGESTION_RUN_STATUS = {
   INGESTING: 'ingesting',

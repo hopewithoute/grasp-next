@@ -362,7 +362,6 @@ describeIfDatabase('createKnowledgebaseRepository', () => {
 
       assert.equal(resultWithQuery.totalCount, 1);
       assert.equal(resultWithQuery.concepts[0]?.name, 'Concept Two');
-
     } finally {
       await db.delete(projects).where(eq(projects.id, project.id));
     }

@@ -15,7 +15,4 @@ export {
   updateProjectSource,
   type ProjectSourceActionDeps,
 } from './project-source.actions';
-export type {
-  ProjectSourceRecord,
-  ProjectSourceRepository,
-} from './project-source.types';
+export type { ProjectSourceRecord, ProjectSourceRepository } from './project-source.types';

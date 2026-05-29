@@ -218,15 +218,12 @@ export const knowledgebases = pgTable(
     projectId: uuid('project_id')
       .notNull()
       .references(() => projects.id, { onDelete: 'cascade' }),
-    artifactId: uuid('artifact_id')
-      .references(() => artifacts.id, { onDelete: 'set null' }),
+    artifactId: uuid('artifact_id').references(() => artifacts.id, { onDelete: 'set null' }),
     currentVersionId: uuid('current_version_id'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
-  (table) => [
-    uniqueIndex('knowledgebases_project_unique').on(table.projectId),
-  ]
+  (table) => [uniqueIndex('knowledgebases_project_unique').on(table.projectId)]
 );
 
 export const knowledgebaseVersions = pgTable(
@@ -236,8 +233,9 @@ export const knowledgebaseVersions = pgTable(
     knowledgebaseId: uuid('knowledgebase_id')
       .notNull()
       .references(() => knowledgebases.id, { onDelete: 'cascade' }),
-    artifactVersionId: uuid('artifact_version_id')
-      .references(() => artifactVersions.id, { onDelete: 'set null' }),
+    artifactVersionId: uuid('artifact_version_id').references(() => artifactVersions.id, {
+      onDelete: 'set null',
+    }),
     versionNumber: integer('version_number').notNull(),
     status: knowledgebaseVersionStatus('status')
       .notNull()
@@ -260,8 +258,10 @@ export const wikiConcepts = pgTable(
     knowledgebaseId: uuid('knowledgebase_id')
       .notNull()
       .references(() => knowledgebases.id, { onDelete: 'cascade' }),
-    knowledgebaseVersionId: uuid('knowledgebase_version_id')
-      .references(() => knowledgebaseVersions.id, { onDelete: 'cascade' }),
+    knowledgebaseVersionId: uuid('knowledgebase_version_id').references(
+      () => knowledgebaseVersions.id,
+      { onDelete: 'cascade' }
+    ),
     conceptKey: text('concept_key').notNull(),
     name: text('name').notNull(),
     definition: text('definition').notNull(),
@@ -274,10 +274,7 @@ export const wikiConcepts = pgTable(
   },
   (table) => [
     index('wiki_concepts_knowledgebase_idx').on(table.knowledgebaseId),
-    uniqueIndex('wiki_concepts_kb_key_unique').on(
-      table.knowledgebaseId,
-      table.conceptKey
-    ),
+    uniqueIndex('wiki_concepts_kb_key_unique').on(table.knowledgebaseId, table.conceptKey),
     index('wiki_concepts_name_trgm_idx').using('gin', sql`${table.name} gin_trgm_ops`),
     index('wiki_concepts_def_trgm_idx').using('gin', sql`${table.definition} gin_trgm_ops`),
   ]
@@ -290,8 +287,10 @@ export const wikiRelationships = pgTable(
     knowledgebaseId: uuid('knowledgebase_id')
       .notNull()
       .references(() => knowledgebases.id, { onDelete: 'cascade' }),
-    knowledgebaseVersionId: uuid('knowledgebase_version_id')
-      .references(() => knowledgebaseVersions.id, { onDelete: 'cascade' }),
+    knowledgebaseVersionId: uuid('knowledgebase_version_id').references(
+      () => knowledgebaseVersions.id,
+      { onDelete: 'cascade' }
+    ),
     relationshipKey: text('relationship_key').notNull(),
     sourceConceptId: uuid('source_concept_id')
       .notNull()
@@ -314,19 +313,23 @@ export const wikiRelationships = pgTable(
   ]
 );
 
-export const wikiConceptSourceRefs = pgTable('wiki_concept_source_refs', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  conceptId: uuid('concept_id')
-    .notNull()
-    .references(() => wikiConcepts.id, { onDelete: 'cascade' }),
-  sourcePassageId: uuid('source_passage_id')
-    .notNull()
-    .references(() => sourcePassages.id, { onDelete: 'cascade' }),
-  quote: text('quote').notNull(),
-  locationLabel: text('location_label').notNull(),
-}, (table) => [
-  index('wiki_concept_refs_quote_trgm_idx').using('gin', sql`${table.quote} gin_trgm_ops`),
-]);
+export const wikiConceptSourceRefs = pgTable(
+  'wiki_concept_source_refs',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    conceptId: uuid('concept_id')
+      .notNull()
+      .references(() => wikiConcepts.id, { onDelete: 'cascade' }),
+    sourcePassageId: uuid('source_passage_id')
+      .notNull()
+      .references(() => sourcePassages.id, { onDelete: 'cascade' }),
+    quote: text('quote').notNull(),
+    locationLabel: text('location_label').notNull(),
+  },
+  (table) => [
+    index('wiki_concept_refs_quote_trgm_idx').using('gin', sql`${table.quote} gin_trgm_ops`),
+  ]
+);
 
 export const wikiRelationshipSourceRefs = pgTable('wiki_relationship_source_refs', {
   id: uuid('id').primaryKey().defaultRandom(),

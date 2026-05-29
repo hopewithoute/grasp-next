@@ -1,4 +1,1 @@
-export {
-  conceptDifficultyDto,
-  type ConceptDifficultyDto,
-} from './concept.dto';
+export { conceptDifficultyDto, type ConceptDifficultyDto } from './concept.dto';

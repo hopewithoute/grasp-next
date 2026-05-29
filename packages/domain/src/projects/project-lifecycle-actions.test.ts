@@ -271,7 +271,7 @@ function createTestState(): TestState {
   };
 }
 
-function requireProject(state: TestState) {
+function requireProject(state: TestState): ProjectRecord {
   assert.ok(state.project);
 
   return state.project;
@@ -370,7 +370,9 @@ function createKnowledgebaseRepository(): KnowledgebaseRepository {
     async addConceptEvidence() {},
     async updateConceptEvidence() {},
     async deleteConceptEvidence() {},
-    async createSnapshot() { return null; },
+    async createSnapshot() {
+      return null;
+    },
     async addConcept() {},
     async updateConcept() {},
     async deleteConcept() {},

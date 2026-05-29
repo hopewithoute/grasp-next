@@ -179,7 +179,10 @@ describe('updateKnowledgebaseConcept', () => {
 
     const content = state.versions[1]?.content as KnowledgebaseArtifactContentDto;
     assert.equal(content.knowledgebase.concepts[0]?.name, 'Atomic Structure');
-    assert.equal(content.knowledgebase.concepts[0]?.definition, 'A corrected definition for atoms.');
+    assert.equal(
+      content.knowledgebase.concepts[0]?.definition,
+      'A corrected definition for atoms.'
+    );
     assert.equal(content.knowledgebase.concepts[0]?.difficulty, 'intermediate');
     assert.equal(content.graphProjection.nodes[0]?.conceptId, 'atom');
     assert.equal(content.graphProjection.nodes[0]?.label, 'Atomic Structure');
@@ -305,10 +308,7 @@ describe('updateKnowledgebaseConceptEvidence', () => {
 
     const content = state.versions[1]?.content as KnowledgebaseArtifactContentDto;
     assert.equal(content.knowledgebase.concepts[0]?.sourceRefs[0]?.quote, 'basic units of matter');
-    assert.equal(
-      content.knowledgebase.concepts[0]?.sourceRefs[0]?.blockId,
-      'source-1:block-0001'
-    );
+    assert.equal(content.knowledgebase.concepts[0]?.sourceRefs[0]?.blockId, 'source-1:block-0001');
     assert.deepEqual(state.knowledgebaseWrites[0], {
       projectId: state.artifact.projectId,
     });
@@ -363,7 +363,10 @@ describe('updateKnowledgebaseConceptEvidence', () => {
       nextContent.knowledgebase.concepts[0]?.sourceRefs[0]?.quote,
       'Atoms are the basic units of matter.'
     );
-    assert.equal(nextContent.knowledgebase.concepts[0]?.sourceRefs[1]?.quote, 'join into molecules');
+    assert.equal(
+      nextContent.knowledgebase.concepts[0]?.sourceRefs[1]?.quote,
+      'join into molecules'
+    );
   });
 
   it('rejects evidence quotes that are not exact source block substrings', async () => {
@@ -427,7 +430,10 @@ describe('updateKnowledgebaseRelationshipEvidence', () => {
       content.knowledgebase.relationships[0]?.sourceRefs[0]?.quote,
       'Atoms are the basic units'
     );
-    assert.equal(state.auditLogs[0]?.action, 'artifact.knowledgebase_relationship_evidence.updated');
+    assert.equal(
+      state.auditLogs[0]?.action,
+      'artifact.knowledgebase_relationship_evidence.updated'
+    );
   });
 
   it('patches relationship evidence by original source ref identity instead of rendered index', async () => {
@@ -619,7 +625,9 @@ function createKnowledgebaseRepository(state: TestState): KnowledgebaseRepositor
     async addConceptEvidence() {},
     async updateConceptEvidence() {},
     async deleteConceptEvidence() {},
-    async createSnapshot() { return null; },
+    async createSnapshot() {
+      return null;
+    },
     async addConcept() {},
     async updateConcept() {},
     async deleteConcept() {},

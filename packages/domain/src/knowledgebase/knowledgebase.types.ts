@@ -24,10 +24,7 @@ export type IngestionRunRepository = {
     sourceId?: string | null;
   }): Promise<IngestionRunRecord>;
   findLatestByProject(projectId: string): Promise<IngestionRunRecord | null>;
-  markCompleted(
-    ingestionRunId: string,
-    metadata?: unknown
-  ): Promise<IngestionRunRecord | null>;
+  markCompleted(ingestionRunId: string, metadata?: unknown): Promise<IngestionRunRecord | null>;
   markFailed(
     ingestionRunId: string,
     failureReason: string,
@@ -123,7 +120,10 @@ export type ConceptSearchPaginationResult = {
 export type KnowledgebaseRepository = {
   findCurrentGraphByProject(projectId: string): Promise<KnowledgebaseGraphProjectionRecord | null>;
   findConceptEvidence(input: { conceptKey: string; projectId: string }): Promise<unknown[]>;
-  findRelationshipEvidence(input: { projectId: string; relationshipKey: string }): Promise<unknown[]>;
+  findRelationshipEvidence(input: {
+    projectId: string;
+    relationshipKey: string;
+  }): Promise<unknown[]>;
   searchConceptsForIngestion(input: {
     embedding?: number[];
     limit?: number;
@@ -145,16 +145,15 @@ export type KnowledgebaseRepository = {
     projectId: string;
     sourceId: string;
   }): Promise<void>;
-  cleanupDeletedSource(input: {
-    projectId: string;
-    sourceId: string;
-  }): Promise<void>;
+  cleanupDeletedSource(input: { projectId: string; sourceId: string }): Promise<void>;
   replaceVersionFromContent(input: {
     content: KnowledgebaseArtifactContentDto;
     projectId: string;
   }): Promise<KnowledgebaseVersionRecord>;
-  searchConceptsWithPagination(input: ConceptSearchPaginationInput): Promise<ConceptSearchPaginationResult>;
-  
+  searchConceptsWithPagination(
+    input: ConceptSearchPaginationInput
+  ): Promise<ConceptSearchPaginationResult>;
+
   addConcept(input: {
     projectId: string;
     conceptKey: string;
@@ -173,10 +172,7 @@ export type KnowledgebaseRepository = {
     confidence?: number;
     metadata?: unknown;
   }): Promise<void>;
-  deleteConcept(input: {
-    projectId: string;
-    conceptKey: string;
-  }): Promise<void>;
+  deleteConcept(input: { projectId: string; conceptKey: string }): Promise<void>;
   addRelationship(input: {
     projectId: string;
     relationshipKey: string;
@@ -186,14 +182,16 @@ export type KnowledgebaseRepository = {
     rationale?: string;
     metadata?: unknown;
   }): Promise<void>;
-  deleteRelationship(input: {
-    projectId: string;
-    relationshipKey: string;
-  }): Promise<void>;
-  
-  updateConceptEvidence(input: { projectId: string; evidenceId: string; quote?: string; locationLabel?: string; }): Promise<void>;
+  deleteRelationship(input: { projectId: string; relationshipKey: string }): Promise<void>;
 
-  deleteConceptEvidence(input: { projectId: string; evidenceId: string; }): Promise<void>;
+  updateConceptEvidence(input: {
+    projectId: string;
+    evidenceId: string;
+    quote?: string;
+    locationLabel?: string;
+  }): Promise<void>;
+
+  deleteConceptEvidence(input: { projectId: string; evidenceId: string }): Promise<void>;
 
   addConceptEvidence(input: {
     projectId: string;

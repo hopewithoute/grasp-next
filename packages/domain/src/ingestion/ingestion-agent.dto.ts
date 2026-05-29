@@ -28,7 +28,10 @@ export const ingestionConceptDto = z.object({
   difficulty: conceptDifficultyDto,
   confidence: z.number().min(0).max(1),
   sourceRefs: z.array(ingestionSourceRefDto).min(1),
-  mergesWith: z.string().trim().min(1).nullish().transform((v) => v ?? undefined),
+  mergesWith: z
+    .any()
+    .nullish()
+    .transform((v) => (typeof v === 'string' && v.trim() !== '' ? v.trim() : undefined)),
 });
 
 export const ingestionRelationshipDto = z.object({
@@ -57,7 +60,7 @@ export const ingestionRelationClaimDto = z.object({
 });
 
 export const ingestionAgentOutputDto = z.object({
-  concepts: z.array(ingestionConceptDto).min(1),
+  concepts: z.array(ingestionConceptDto).default([]),
   relationClaims: z.array(ingestionRelationClaimDto).default([]),
   relationships: z.array(ingestionRelationshipDto).default([]),
 });
