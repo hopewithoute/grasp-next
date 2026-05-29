@@ -1,4 +1,3 @@
-import { getGeneratedText, parseLooseJsonResponse } from './response-helpers';
 import {
   reviewLinksDeterministically,
   linkCandidateDto,
@@ -7,7 +6,7 @@ import {
   type ReviewedLink,
 } from './linking';
 import { linkAdjudicatorAgent } from './link-adjudicator-agent';
-import { canUseAgentModel } from '../model-resolver';
+
 import { z } from 'zod';
 
 export async function adjudicateLinks(input: {
@@ -18,7 +17,7 @@ export async function adjudicateLinks(input: {
     return [];
   }
 
-  if (input.useModel === false || !canUseAgentModel('ingestionAgent', process.env)) {
+  if (input.useModel === false) {
     return reviewLinksDeterministically(input.candidates);
   }
 
@@ -27,10 +26,13 @@ export async function adjudicateLinks(input: {
   for (let attempt = 0; attempt < 2; attempt += 1) {
     try {
       const response = await linkAdjudicatorAgent.generate(
-        buildReviewPrompt(input.candidates, attempt)
+        buildReviewPrompt(input.candidates, attempt),
+        { structuredOutput: { schema: z.object({ links: z.array(linkDecisionDto) }) } }
       );
-      const parsed = parseLooseJsonResponse(getGeneratedText(response));
-      const result = parseReviewedLinkList(parsed, input.candidates);
+      const result = parseReviewedLinkList(
+        response.object as { links: Array<z.infer<typeof linkDecisionDto>> },
+        input.candidates
+      );
 
       return result.links;
     } catch (error) {
@@ -42,49 +44,36 @@ export async function adjudicateLinks(input: {
 }
 
 export function parseReviewedLinkList(
-  value: unknown,
+  record: { links: Array<z.infer<typeof linkDecisionDto>> },
   candidates: LinkCandidate[]
 ) {
-  const record = value as { links?: unknown };
-  if (!Array.isArray(record?.links)) {
-    throw new Error('link_adjudicator_invalid_json');
-  }
-
-  const candidatesById = new Map(
-    candidates.map((candidate) => [candidate.candidateId, candidate])
-  );
+  const candidatesById = new Map(candidates.map((candidate) => [candidate.candidateId, candidate]));
   const seenCandidateIds = new Set<string>();
   const links: ReviewedLink[] = [];
 
-  for (const link of record.links) {
-    const parsed = linkDecisionDto.safeParse(link);
-
-    if (!parsed.success) {
-      throw new Error('link_adjudicator_invalid_decision');
-    }
-
-    const candidate = candidatesById.get(parsed.data.candidateId);
+  for (const parsed of record.links) {
+    const candidate = candidatesById.get(parsed.candidateId);
     if (!candidate) {
       throw new Error('link_adjudicator_unknown_candidate');
     }
 
-    if (seenCandidateIds.has(parsed.data.candidateId)) {
+    if (seenCandidateIds.has(parsed.candidateId)) {
       throw new Error('link_adjudicator_duplicate_candidate');
     }
 
-    seenCandidateIds.add(parsed.data.candidateId);
+    seenCandidateIds.add(parsed.candidateId);
     links.push({
       ...candidate,
-      confidence: parsed.data.semanticSupportConfidence,
-      decision: parsed.data.decision,
+      confidence: parsed.semanticSupportConfidence,
+      decision: parsed.decision,
       evidenceQuality: scoreLinkEvidence({
         quote: candidate.evidence.quote,
         relationshipType: candidate.relationshipType,
-        relationshipTypeConfidence: parsed.data.relationshipTypeConfidence,
-        semanticSupportConfidence: parsed.data.semanticSupportConfidence,
-        suggestedRelationshipType: parsed.data.suggestedRelationshipType,
+        relationshipTypeConfidence: parsed.relationshipTypeConfidence,
+        semanticSupportConfidence: parsed.semanticSupportConfidence,
+        suggestedRelationshipType: parsed.suggestedRelationshipType,
       }),
-      rationale: parsed.data.rationale,
+      rationale: parsed.rationale,
     });
   }
 
@@ -112,28 +101,25 @@ const linkDecisionDto = z
 
     return {
       ...decision,
-      relationshipTypeConfidence:
-        decision.relationshipTypeConfidence ?? fallbackConfidence,
-      semanticSupportConfidence:
-        decision.semanticSupportConfidence ?? fallbackConfidence,
+      relationshipTypeConfidence: decision.relationshipTypeConfidence ?? fallbackConfidence,
+      semanticSupportConfidence: decision.semanticSupportConfidence ?? fallbackConfidence,
     };
   })
   .refine(
-    (decision) =>
-      decision.relationshipTypeConfidence > 0 && decision.semanticSupportConfidence > 0,
+    (decision) => decision.relationshipTypeConfidence > 0 && decision.semanticSupportConfidence > 0,
     'semanticSupportConfidence and relationshipTypeConfidence are required'
   );
 
-function buildReviewPrompt(candidates: LinkCandidate[], attempt = 0) {
-  const compactCandidates = candidates.map((candidate) =>
-    linkCandidateDto.parse(candidate)
-  );
+import { PromptTemplate } from '../utils/prompt-template';
 
-  return `Review these link candidates.
+type LinkReviewPromptVars = {
+  retryInstructions: string;
+  candidatesJson: string;
+};
 
-${attempt > 0 ? 'Previous response failed validation. Return one valid link decision for every candidateId and no extra candidateIds.' : ''}
+const LINK_REVIEW_PROMPT = new PromptTemplate<LinkReviewPromptVars>(`Review these link candidates.
 
-Return only JSON:
+{{retryInstructions}}Return only JSON:
 {
   "links": [
     {
@@ -148,5 +134,14 @@ Return only JSON:
 }
 
 Candidates:
-${JSON.stringify(compactCandidates)}`;
+{{candidatesJson}}`);
+
+function buildReviewPrompt(candidates: LinkCandidate[], attempt = 0) {
+  const compactCandidates = candidates.map((candidate) => linkCandidateDto.parse(candidate));
+  const retryInstructions = attempt > 0 ? 'Previous response failed validation. Return one valid link decision for every candidateId and no extra candidateIds.\n\n' : '';
+
+  return LINK_REVIEW_PROMPT.format({
+    retryInstructions,
+    candidatesJson: JSON.stringify(compactCandidates),
+  });
 }

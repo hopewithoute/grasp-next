@@ -1,6 +1,6 @@
 import { createStep, createWorkflow } from '@mastra/core/workflows';
 import { z } from 'zod';
-import type { IngestionAgentOutput } from '@grasp/domain';
+import { ingestionAgentOutputDto } from '@grasp/domain';
 import {
   applyAcceptedLinks,
   applyLinkPolicy,
@@ -14,14 +14,14 @@ import { adjudicateLinks } from './adjudicate-links';
 
 const linkingWorkflowInputDto = z.object({
   candidates: z.array(linkCandidateDto),
-  extraction: z.custom<IngestionAgentOutput>(),
+  extraction: ingestionAgentOutputDto as unknown as z.ZodTypeAny,
   useModel: z.boolean().default(true),
 });
 
 const linkingWorkflowOutputDto = z.object({
   acceptedLinks: z.array(reviewedLinkDto),
   candidates: z.array(linkCandidateDto),
-  patchedExtraction: z.custom<IngestionAgentOutput>(),
+  patchedExtraction: ingestionAgentOutputDto as unknown as z.ZodTypeAny,
   policyResults: z.array(linkPolicyResultDto),
   rejectedLinks: z.array(reviewedLinkDto),
   reviewedLinks: z.array(reviewedLinkDto),
@@ -63,7 +63,7 @@ const linkPolicyOutputDto = linkingWorkflowInputDto.extend({
 
 const linkAppliedOutputDto = linkPolicyOutputDto.extend({
   acceptedLinks: z.array(reviewedLinkDto),
-  patchedExtraction: z.custom<IngestionAgentOutput>(),
+  patchedExtraction: ingestionAgentOutputDto as unknown as z.ZodTypeAny,
   rejectedLinks: z.array(reviewedLinkDto),
 });
 
@@ -85,12 +85,8 @@ const applyReviewedLinksStep = createStep({
   inputSchema: linkPolicyOutputDto,
   outputSchema: linkAppliedOutputDto,
   execute: async ({ inputData }) => {
-    const acceptedLinks = inputData.reviewedLinks.filter(
-      (link) => link.decision === 'accept'
-    );
-    const rejectedLinks = inputData.reviewedLinks.filter(
-      (link) => link.decision === 'reject'
-    );
+    const acceptedLinks = (inputData.reviewedLinks || []).filter((link) => link.decision === 'accept');
+    const rejectedLinks = (inputData.reviewedLinks || []).filter((link) => link.decision === 'reject');
 
     return {
       acceptedLinks,

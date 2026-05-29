@@ -16,10 +16,7 @@ const sourceA = readFileSync(resolve(DOCS_DIR, 'source-a-economics-basics.md'), 
 const sourceB = readFileSync(resolve(DOCS_DIR, 'source-b-elasticity.md'), 'utf-8');
 
 const hasLlm = Boolean(
-  process.env.OPENAI_API_KEY ||
-  process.env.ANTHROPIC_API_KEY ||
-  process.env.ANTHROPIC_AUTH_TOKEN ||
-  (process.env.OPENAI_COMPATIBLE_BASE_URL && process.env.OPENAI_COMPATIBLE_API_KEY)
+  process.env.OPENAI_API_KEY || process.env.ANTHROPIC_API_KEY || process.env.XIAOMI_API_KEY
 );
 
 const describeIfLlm = hasLlm ? describe : describe.skip;
@@ -58,7 +55,10 @@ describeIfLlm('ingestion extraction (real agent)', () => {
     assert.ok(parsed.success, `Output failed validation: ${JSON.stringify(parsed.error?.issues)}`);
 
     // Verify concepts were extracted
-    assert.ok(draft.concepts.length >= 2, `Expected at least 2 concepts, got ${draft.concepts.length}`);
+    assert.ok(
+      draft.concepts.length >= 2,
+      `Expected at least 2 concepts, got ${draft.concepts.length}`
+    );
 
     // Verify each concept has required fields
     for (const concept of draft.concepts) {
@@ -77,7 +77,10 @@ describeIfLlm('ingestion extraction (real agent)', () => {
       for (const ref of concept.sourceRefs) {
         assert.ok(ref.blockId, `sourceRef missing blockId for concept ${concept.conceptKey}`);
         assert.ok(ref.quote, `sourceRef missing quote for concept ${concept.conceptKey}`);
-        assert.ok(ref.locationLabel, `sourceRef missing locationLabel for concept ${concept.conceptKey}`);
+        assert.ok(
+          ref.locationLabel,
+          `sourceRef missing locationLabel for concept ${concept.conceptKey}`
+        );
       }
     }
 
@@ -148,7 +151,10 @@ describeIfLlm('ingestion extraction (real agent)', () => {
     assert.ok(parsed.success, `Output failed validation: ${JSON.stringify(parsed.error?.issues)}`);
 
     // Verify new concepts were extracted
-    assert.ok(draftB.concepts.length >= 1, `Expected at least 1 concept, got ${draftB.concepts.length}`);
+    assert.ok(
+      draftB.concepts.length >= 1,
+      `Expected at least 1 concept, got ${draftB.concepts.length}`
+    );
 
     // This direct test has no retrieval tools, so compare with source A only for reporting.
     const existingKeys = new Set(draftA.concepts.map((c) => c.conceptKey));
@@ -166,7 +172,9 @@ describeIfLlm('ingestion extraction (real agent)', () => {
     console.log(`Concepts from B: ${draftB.concepts.length}`);
     console.log(`  Reused/merged: ${reusedKeys.length}`);
     for (const c of reusedKeys) {
-      console.log(`    [${c.conceptKey}]${c.mergesWith ? ` (mergesWith: ${c.mergesWith})` : ''} ${c.name}`);
+      console.log(
+        `    [${c.conceptKey}]${c.mergesWith ? ` (mergesWith: ${c.mergesWith})` : ''} ${c.name}`
+      );
     }
     console.log(`  New: ${newKeys.length}`);
     for (const c of newKeys) {

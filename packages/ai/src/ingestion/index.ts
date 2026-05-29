@@ -1,6 +1,5 @@
 export {
   extractChunk,
-  getMastraMessages,
   mergeDraft,
   runIngestionChunkAgent,
   type ExtractChunkInput,
@@ -9,7 +8,7 @@ export {
   type IngestionMastraRunArtifact,
 } from './extract-chunk';
 export { ingestionAgent, ingestionAgentInstructions } from './ingestion-agent';
-export { ingestionAgentJsonSchema } from './ingestion-agent-json-schema';
+
 export {
   createIngestionRetrievalTools,
   type IngestionRetrieval,
@@ -31,11 +30,8 @@ export {
   type LinkTrace,
   type ReviewedLink,
 } from './linking';
-export { buildIngestionPrompt } from './ingestion-prompt';
+export { buildIngestionPrompt } from './ingestion-agent';
 export { linkAdjudicatorAgent } from './link-adjudicator-agent';
 export { adjudicateLinks } from './adjudicate-links';
 export { sourceLinkingWorkflow } from './source-linking-workflow';
-export {
-  validateAndAnchorSourceRefs,
-  type SourceBlockForValidation,
-} from './validate-source-refs';
+export { validateAndAnchorSourceRefs, type SourceBlockForValidation } from './validate-source-refs';

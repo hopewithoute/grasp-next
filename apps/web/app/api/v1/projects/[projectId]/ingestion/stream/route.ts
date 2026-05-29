@@ -1,10 +1,7 @@
 import { revalidatePath } from 'next/cache';
 import { createUIMessageStream, createUIMessageStreamResponse } from 'ai';
 import { getActor } from '@/server/actor';
-import {
-  runSourceIngestion,
-  type IngestionStreamEvent,
-} from '@/server/source-ingestion-runner';
+import { runSourceIngestion, type IngestionStreamEvent } from '@/server/source-ingestion-runner';
 import { createProjectDeps } from '@/server/project-deps';
 
 type RouteContext = {

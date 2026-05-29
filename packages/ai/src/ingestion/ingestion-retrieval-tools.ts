@@ -1,9 +1,6 @@
 import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
-import type {
-  IngestionConceptContext,
-  IngestionConceptSearchResult,
-} from '@grasp/domain';
+import type { IngestionConceptContext, IngestionConceptSearchResult } from '@grasp/domain';
 
 export type IngestionRetrieval = {
   getConceptContext(conceptKey: string): Promise<IngestionConceptContext | null>;
@@ -22,13 +19,13 @@ export function createIngestionRetrievalTools(retrieval: IngestionRetrieval) {
     outputSchema: z.object({
       concepts: z.array(
         z.object({
-                  conceptKey: z.string(),
-                  confidence: z.number(),
-                  definition: z.string(),
-                  distance: z.number().optional(),
-                  difficulty: z.string(),
-                  evidenceCount: z.number(),
-                  name: z.string(),
+          conceptKey: z.string(),
+          confidence: z.number(),
+          definition: z.string(),
+          distance: z.number().optional(),
+          difficulty: z.string(),
+          evidenceCount: z.number(),
+          name: z.string(),
         })
       ),
     }),

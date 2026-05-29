@@ -207,10 +207,7 @@ export function buildLinkTrace(input: {
   rejectedLinks: ReviewedLink[];
   reviewedLinks: ReviewedLink[];
 }): LinkTrace {
-  const acceptedConfidenceSum = input.acceptedLinks.reduce(
-    (sum, link) => sum + link.confidence,
-    0
-  );
+  const acceptedConfidenceSum = input.acceptedLinks.reduce((sum, link) => sum + link.confidence, 0);
   const acceptedEvidenceScoreSum = input.acceptedLinks.reduce(
     (sum, link) => sum + link.evidenceQuality.finalEvidenceScore,
     0
@@ -258,10 +255,7 @@ export function applyAcceptedLinks(
   reviewedLinks: ReviewedLink[]
 ): IngestionAgentOutput {
   const relationshipsByKey = new Map(
-    extraction.relationships.map((relationship) => [
-      relationshipKey(relationship),
-      relationship,
-    ])
+    extraction.relationships.map((relationship) => [relationshipKey(relationship), relationship])
   );
 
   for (const link of reviewedLinks) {
@@ -286,9 +280,7 @@ export function applyAcceptedLinks(
   };
 }
 
-export function reviewLinksDeterministically(
-  candidates: LinkCandidate[]
-): ReviewedLink[] {
+export function reviewLinksDeterministically(candidates: LinkCandidate[]): ReviewedLink[] {
   return candidates.map((candidate) => {
     const evidenceQuality = scoreLinkEvidence({
       relationshipType: candidate.relationshipType,
@@ -401,7 +393,12 @@ function inferRelationClaimsFromConceptEvidence(
   return claims;
 }
 
-function relationshipKey(relationship: Pick<IngestionRelationship, 'relationshipType' | 'sourceConceptKey' | 'targetConceptKey'>) {
+function relationshipKey(
+  relationship: Pick<
+    IngestionRelationship,
+    'relationshipType' | 'sourceConceptKey' | 'targetConceptKey'
+  >
+) {
   return `${relationship.sourceConceptKey}:${relationship.targetConceptKey}:${relationship.relationshipType}`;
 }
 
@@ -447,7 +444,10 @@ function linkPolicyRejectionReason(
 }
 
 function normalizeText(value: string) {
-  return value.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
 }
 
 function rejectedEvidenceQuality(
@@ -528,10 +528,7 @@ function clampScore(value: number) {
   return Math.max(0, Math.min(1, value));
 }
 
-function isExactConceptMatch(
-  query: string,
-  concept: { conceptKey: string; name: string }
-) {
+function isExactConceptMatch(query: string, concept: { conceptKey: string; name: string }) {
   const normalizedQuery = normalizeText(query);
 
   return (

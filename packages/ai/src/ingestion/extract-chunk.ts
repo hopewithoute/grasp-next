@@ -1,6 +1,5 @@
 import {
   ingestionAgentOutputDto,
-  knowledgebaseRelationshipTypeDto,
   type IngestionConceptContext,
   type IngestionAgentOutput,
   type IngestionConcept,
@@ -9,14 +8,10 @@ import {
 } from '@grasp/domain';
 import type { MastraDBMessage } from '@mastra/core/agent';
 import { ingestionAgent } from './ingestion-agent';
-import { buildIngestionPrompt } from './ingestion-prompt';
+import { buildIngestionPrompt } from './ingestion-agent';
 import type { createIngestionRetrievalTools } from './ingestion-retrieval-tools';
-import { canUseAgentModel } from '../model-resolver';
-import { getGeneratedText, parseLooseJsonResponse } from './response-helpers';
-import {
-  validateAndAnchorSourceRefs,
-  type SourceBlockForValidation,
-} from './validate-source-refs';
+
+import { validateAndAnchorSourceRefs, type SourceBlockForValidation } from './validate-source-refs';
 import { scoreLinkEvidence } from './linking';
 
 export type ExtractChunkInput = {
@@ -55,8 +50,6 @@ export type IngestionChunkAgentRunResult = {
   mastra: IngestionMastraRunArtifact;
 };
 
-type IngestionAgentGenerateResponse = Awaited<ReturnType<typeof ingestionAgent.generate>>;
-
 export async function extractChunk(input: ExtractChunkInput): Promise<ExtractChunkResult> {
   const result = await runIngestionChunkAgent(input);
   return result.domain;
@@ -65,12 +58,6 @@ export async function extractChunk(input: ExtractChunkInput): Promise<ExtractChu
 export async function runIngestionChunkAgent(
   input: ExtractChunkInput
 ): Promise<IngestionChunkAgentRunResult> {
-  if (!canUseAgentModel('ingestionAgent', process.env)) {
-    throw new Error(
-      'No LLM provider configured for ingestionAgent. Set OPENAI_API_KEY, ANTHROPIC_API_KEY, or OPENAI_COMPATIBLE_BASE_URL+OPENAI_COMPATIBLE_API_KEY before running ingestion.'
-    );
-  }
-
   const prompt = buildIngestionPrompt({
     blocks: input.blocks,
     chunkIndex: input.chunkIndex,
@@ -97,47 +84,43 @@ export async function runIngestionChunkAgent(
 
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
     try {
-      let effectivePrompt: string;
-
-      if (attempt === 0) {
-        effectivePrompt = prompt;
-      } else {
-        effectivePrompt = `${prompt}\n\n## CORRECTION REQUIRED (attempt ${attempt + 1}/${MAX_ATTEMPTS})\n\nYour previous response had an error:\n\`\`\`\n${lastError}\n\`\`\`\n\nFix this. Return compact complete JSON only. Use at most 4 concepts and at most 3 typed relationships. Ensure your JSON has all closing brackets/braces. Do not include markdown fences, prose, or separate reasoning text. Do not truncate.`;
-      }
+      const effectivePrompt =
+        attempt === 0
+          ? prompt
+          : `${prompt}\n\n## RETRY (attempt ${attempt + 1}/${MAX_ATTEMPTS})\n\nPrevious attempt failed with error:\n\`\`\`\n${lastError}\n\`\`\`\n\nPlease try again.`;
 
       const response = input.retrievalTools
         ? await ingestionAgent.generate(effectivePrompt, {
+            structuredOutput: { schema: ingestionAgentOutputDto },
             maxSteps: 5,
             memory: input.memory,
             toolsets: {
               ingestionRetrieval: input.retrievalTools,
             },
-            onIterationComplete: ({ messages }) => {
+            onIterationComplete: ({ messages }: { messages: MastraDBMessage[] }) => {
               latestMessages = messages;
             },
           })
         : await ingestionAgent.generate(effectivePrompt, {
+            structuredOutput: { schema: ingestionAgentOutputDto },
             memory: input.memory,
-            onIterationComplete: ({ messages }) => {
+            onIterationComplete: ({ messages }: { messages: MastraDBMessage[] }) => {
               latestMessages = messages;
             },
           });
-      const text = getGeneratedText(response);
-      const responseWithReasoning = response as { reasoningText?: string };
-      thinking = responseWithReasoning.reasoningText ?? '';
+
+      latestText = JSON.stringify(response.object);
+      thinking = response.reasoningText ?? '';
       if (thinking && input.onThinking) {
         input.onThinking(thinking);
       }
-      latestText = text;
-      latestMessages = getMastraMessages(response, latestMessages);
-      const parsed = normalizeAgentOutput(parseLooseJsonResponse(text));
-      const result = ingestionAgentOutputDto.parse(parsed);
+      const result = response.object as IngestionAgentOutput;
       const validated = validateAgainstBlocks(result, input.blocks);
       return {
         domain: { ...validated, thinking },
         mastra: {
           messages: latestMessages,
-          text,
+          text: latestText,
           attempts: attempt + 1,
         },
       };
@@ -148,39 +131,6 @@ export async function runIngestionChunkAgent(
   }
 
   throw lastError ? new Error(lastError) : new Error('Ingestion failed after all attempts');
-}
-
-export function getMastraMessages(
-  response: IngestionAgentGenerateResponse,
-  fallback: MastraDBMessage[] = []
-): MastraDBMessage[] {
-  const candidate = (response as { messages?: unknown }).messages;
-  return Array.isArray(candidate) ? (candidate as MastraDBMessage[]) : fallback;
-}
-
-export function normalizeAgentOutput(value: unknown) {
-  if (!value || typeof value !== 'object') {
-    return value;
-  }
-
-  const record = value as Record<string, unknown>;
-
-  if (!Array.isArray(record.relationships)) {
-    return value;
-  }
-
-  return {
-    ...record,
-    relationships: record.relationships.filter((relationship) => {
-      return (
-        relationship &&
-        typeof relationship === 'object' &&
-        knowledgebaseRelationshipTypeDto.safeParse(
-          (relationship as Record<string, unknown>).relationshipType
-        ).success
-      );
-    }),
-  };
 }
 
 export function validateAgainstBlocks(
@@ -345,7 +295,9 @@ export function mergeDraft(
   }
 
   const relKeySet = new Set<string>(
-    draft.relationships.map((r) => `${r.sourceConceptKey}:${r.targetConceptKey}:${r.relationshipType}`)
+    draft.relationships.map(
+      (r) => `${r.sourceConceptKey}:${r.targetConceptKey}:${r.relationshipType}`
+    )
   );
   const newRelationships: IngestionRelationship[] = [...draft.relationships];
 

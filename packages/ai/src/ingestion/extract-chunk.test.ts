@@ -1,59 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import {
-  getMastraMessages,
-  mergeDraft,
-  normalizeAgentOutput,
-  validateAgainstBlocks,
-} from './extract-chunk';
-
-describe('normalizeAgentOutput', () => {
-  it('drops unsupported relationship types before schema validation', () => {
-    const normalized = normalizeAgentOutput({
-      concepts: [],
-      relationships: [
-        { relationshipType: 'prerequisite', sourceConceptKey: 'a', targetConceptKey: 'b' },
-        { relationshipType: 'related_to', sourceConceptKey: 'a', targetConceptKey: 'c' },
-        { relationshipType: 'part_of', sourceConceptKey: 'a', targetConceptKey: 'd' },
-        { relationshipType: 'supports', sourceConceptKey: 'a', targetConceptKey: 'e' },
-      ],
-    }) as { relationships: Array<{ relationshipType: string }> };
-
-    assert.deepEqual(
-      normalized.relationships.map((relationship) => relationship.relationshipType),
-      ['prerequisite', 'related_to', 'part_of']
-    );
-  });
-});
-
-describe('getMastraMessages', () => {
-  it('uses response messages when Mastra returns native messages', () => {
-    const messages = [
-      {
-        id: 'message-1',
-        role: 'assistant',
-        createdAt: new Date('2026-01-01T00:00:00.000Z'),
-        content: { format: 2, parts: [] },
-      },
-    ];
-
-    assert.equal(getMastraMessages({ messages } as never).length, 1);
-  });
-
-  it('falls back to observed iteration messages when response has no messages', () => {
-    const fallback = [
-      {
-        id: 'message-2',
-        role: 'assistant',
-        createdAt: new Date('2026-01-01T00:00:00.000Z'),
-        content: { format: 2, parts: [] },
-      },
-    ];
-
-    assert.equal(getMastraMessages({ text: '{}' } as never, fallback as never), fallback);
-  });
-});
-
+import { mergeDraft, validateAgainstBlocks } from './extract-chunk';
 describe('mergeDraft', () => {
   it('deduplicates relationships by source, target, and type', () => {
     const merged = mergeDraft(
@@ -154,8 +101,7 @@ describe('validateAgainstBlocks', () => {
         { id: 'block-1', text: 'Law of Demand' },
         {
           id: 'block-2',
-          text:
-            'As the price of a good increases, the quantity demanded decreases, all else being equal.',
+          text: 'As the price of a good increases, the quantity demanded decreases, all else being equal.',
         },
       ]
     );
@@ -226,8 +172,7 @@ describe('validateAgainstBlocks', () => {
         { id: 'block-1', text: 'Law of Demand' },
         {
           id: 'block-2',
-          text:
-            'As the price of a good increases, the quantity demanded decreases, all else being equal.',
+          text: 'As the price of a good increases, the quantity demanded decreases, all else being equal.',
         },
       ]
     );

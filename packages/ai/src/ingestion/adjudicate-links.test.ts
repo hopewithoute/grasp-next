@@ -21,8 +21,8 @@ describe('parseReviewedLinkList', () => {
     type: 'add_relationship',
   };
   const reviewed = {
-    ...candidate,
-    decision: 'accept',
+    candidateId: candidate.candidateId,
+    decision: 'accept' as const,
     relationshipTypeConfidence: 0.88,
     rationale: 'The source directly states the prerequisite.',
     semanticSupportConfidence: 0.9,
@@ -41,16 +41,7 @@ describe('parseReviewedLinkList', () => {
         links: [
           {
             ...reviewed,
-            evidence: {
-              blockId: 'mutated-block',
-              locationLabel: 'Mutated',
-              quote: 'Unsupported mutated quote.',
-            },
-            relationshipType: 'related_to',
-            sourceConceptKey: 'mutated-source',
-            sourceConceptName: 'Mutated Source',
-            targetConceptKey: 'mutated-target',
-            targetConceptName: 'Mutated Target',
+            rationale: 'Something else',
           },
         ],
       },
@@ -77,10 +68,9 @@ describe('parseReviewedLinkList', () => {
   it('fails when the model returns an unknown candidate', () => {
     assert.throws(
       () =>
-        parseReviewedLinkList(
-          { links: [{ ...reviewed, candidateId: 'candidate:unknown' }] },
-          [candidate]
-        ),
+        parseReviewedLinkList({ links: [{ ...reviewed, candidateId: 'candidate:unknown' }] }, [
+          candidate,
+        ]),
       /link_adjudicator_unknown_candidate/
     );
   });

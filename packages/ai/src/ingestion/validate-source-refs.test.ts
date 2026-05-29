@@ -83,9 +83,6 @@ describe('validateAndAnchorSourceRefs', () => {
     );
 
     assert.equal(result.length, 1);
-    assert.equal(
-      result[0]?.quote,
-      'Markets coordinate buyers and sellers through prices.'
-    );
+    assert.equal(result[0]?.quote, 'Markets coordinate buyers and sellers through prices.');
   });
 });

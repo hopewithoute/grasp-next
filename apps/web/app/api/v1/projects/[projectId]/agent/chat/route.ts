@@ -1,7 +1,8 @@
 import { getActor } from '@/server/actor';
 import { createProjectDeps } from '@/server/project-deps';
 import { readMastraTextDelta } from '@/server/refinement-chat-stream';
-import { refinementAgent, createRefinementTools } from '@grasp/ai/refinement';
+import { refinementAgent, createRefinementTools, type GraphProposalPayload } from '@grasp/ai/refinement';
+import { robustStream } from '@grasp/ai/mastra';
 import { createUIMessageStream, createUIMessageStreamResponse } from 'ai';
 
 type ChatMessage = {
@@ -45,14 +46,18 @@ function describeToolActivity(
       return {
         type: 'agent_activity',
         label: status === 'started' ? 'Checking graph' : 'Checked graph',
-        detail: status === 'started' ? 'Looking for matching concepts in this project.' : 'Found the closest existing concepts.',
+        detail:
+          status === 'started'
+            ? 'Looking for matching concepts in this project.'
+            : 'Found the closest existing concepts.',
         status,
       };
     case 'search-web-ddg':
       return {
         type: 'agent_activity',
         label: status === 'started' ? 'Checking web' : 'Checked web',
-        detail: status === 'started' ? 'Looking up supporting information.' : 'Reviewed search results.',
+        detail:
+          status === 'started' ? 'Looking up supporting information.' : 'Reviewed search results.',
         status,
       };
     case 'read-webpage':
@@ -66,23 +71,35 @@ function describeToolActivity(
       return {
         type: 'agent_activity',
         label: status === 'started' ? 'Preparing proposal' : 'Proposal ready',
-        detail: status === 'started' ? 'Drafting graph changes for your review.' : 'Proposal submitted for approval.',
+        detail:
+          status === 'started'
+            ? 'Drafting graph changes for your review.'
+            : 'Proposal submitted for approval.',
         status,
       };
     default:
       return {
         type: 'agent_activity',
         label: status === 'started' ? 'Working on graph' : 'Updated graph',
-        detail: status === 'started' ? 'Updating the project context.' : 'Updated the project context.',
+        detail:
+          status === 'started' ? 'Updating the project context.' : 'Updated the project context.',
         status,
       };
   }
 }
 
-function withActivityEvents<T extends Record<string, unknown>>(tools: T, emitActivity: ActivityWriter, emitProposal: (p: any) => void): T {
+function withActivityEvents<T extends Record<string, unknown>>(
+  tools: T,
+  emitActivity: ActivityWriter,
+  emitProposal: (p: GraphProposalPayload) => void
+): T {
   return Object.fromEntries(
     Object.entries(tools).map(([key, tool]) => {
-      if (!tool || typeof tool !== 'object' || typeof (tool as { execute?: unknown }).execute !== 'function') {
+      if (
+        !tool ||
+        typeof tool !== 'object' ||
+        typeof (tool as { execute?: unknown }).execute !== 'function'
+      ) {
         return [key, tool];
       }
 
@@ -95,12 +112,12 @@ function withActivityEvents<T extends Record<string, unknown>>(tools: T, emitAct
             const toolId = toolRecord.id ?? key;
             if (toolId === 'propose-graph-changes' || key === 'proposeGraphChangesTool') {
               emitActivity(describeToolActivity(toolId, args[0], 'started'));
-              emitProposal(args[0]);
+              emitProposal(args[0] as never);
               const result = await toolRecord.execute(...args);
               emitActivity(describeToolActivity(toolId, args[0], 'completed'));
               return result;
             }
-            
+
             emitActivity(describeToolActivity(toolId, args[0], 'started'));
             const result = await toolRecord.execute(...args);
             emitActivity(describeToolActivity(toolId, args[0], 'completed'));
@@ -131,18 +148,25 @@ export async function POST(
 
   const { messages, selectedConcepts, threadId } = (await request.json()) as ChatRequestBody;
 
-  if (selectedConcepts && Array.isArray(selectedConcepts) && selectedConcepts.length > 0 && messages.length > 0) {
+  if (
+    selectedConcepts &&
+    Array.isArray(selectedConcepts) &&
+    selectedConcepts.length > 0 &&
+    messages.length > 0
+  ) {
     const lastMessage = messages[messages.length - 1];
     if (lastMessage.role === 'user') {
-      const conceptsList = selectedConcepts.map((c) => `${c.name} (conceptKey: ${c.id})`).join(', ');
+      const conceptsList = selectedConcepts
+        .map((c) => `${c.name} (conceptKey: ${c.id})`)
+        .join(', ');
       lastMessage.content += `\n\n[System Note: The user has explicitly attached the following concepts to this message as context: ${conceptsList}. Reason over these concepts when responding.]`;
     }
   }
 
   try {
     const activityEvents: AgentActivityEvent[] = [];
-    const proposalEvents: any[] = [];
-    
+    const proposalEvents: GraphProposalPayload[] = [];
+
     const tools = withActivityEvents(
       createRefinementTools({
         knowledgebaseRepository: deps.knowledgebaseRepository,
@@ -153,7 +177,7 @@ export async function POST(
     );
 
     const agentMessages = messages;
-    const result = await refinementAgent.stream(agentMessages, {
+    const result = await robustStream(refinementAgent, agentMessages, {
       memory: {
         resource: projectId,
         thread: threadId ?? `refinement:${projectId}:${actor.id}`,
@@ -213,7 +237,10 @@ export async function POST(
             }
 
             const chunk = next.value;
-            const text = typeof chunk === 'string' ? chunk : readMastraTextDelta(chunk as Parameters<typeof readMastraTextDelta>[0]);
+            const text =
+              typeof chunk === 'string'
+                ? chunk
+                : readMastraTextDelta(chunk as Parameters<typeof readMastraTextDelta>[0]);
 
             if (text) {
               if (needsNewline) {
@@ -259,6 +286,8 @@ export async function POST(
     });
   } catch (error: unknown) {
     console.error('Chat API Error:', error);
-    return new Response(`Server error: ${error instanceof Error ? error.message : String(error)}`, { status: 500 });
+    return new Response(`Server error: ${error instanceof Error ? error.message : String(error)}`, {
+      status: 500,
+    });
   }
 }
