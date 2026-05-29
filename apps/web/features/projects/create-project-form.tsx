@@ -46,7 +46,10 @@ export function CreateProjectForm() {
           className="flex items-start gap-2 rounded-2xl border border-status-danger-border bg-status-danger-surface px-4 py-3 text-sm text-status-danger-foreground"
           role="alert"
         >
-          <span aria-hidden className="mt-0.5 size-1.5 shrink-0 rounded-full bg-status-danger-foreground" />
+          <span
+            aria-hidden
+            className="mt-0.5 size-1.5 shrink-0 rounded-full bg-status-danger-foreground"
+          />
           <span>{state.error}</span>
         </div>
       ) : null}

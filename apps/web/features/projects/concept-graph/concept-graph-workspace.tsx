@@ -24,18 +24,20 @@ export function ConceptGraphWorkspace(props: ConceptGraphWorkspaceProps) {
   );
 }
 
-const ConceptGraphEditor = ({
-  concepts,
-  projectId,
-  relationships,
-}: ConceptGraphWorkspaceProps) => {
+const ConceptGraphEditor = ({ concepts, projectId, relationships }: ConceptGraphWorkspaceProps) => {
   const {
-    pendingSelectedId, setPendingSelectedId,
-    chatContextConceptIds, setChatContextConceptIds,
-    isInventoryCollapsed, setIsInventoryCollapsed,
-    isRefinementCollapsed, setIsRefinementCollapsed,
-    hoveredChatConceptId, setHoveredChatConceptId,
-    pendingProposals, setPendingProposals,
+    pendingSelectedId,
+    setPendingSelectedId,
+    chatContextConceptIds,
+    setChatContextConceptIds,
+    isInventoryCollapsed,
+    setIsInventoryCollapsed,
+    isRefinementCollapsed,
+    setIsRefinementCollapsed,
+    hoveredChatConceptId,
+    setHoveredChatConceptId,
+    pendingProposals,
+    setPendingProposals,
   } = useConceptGraphState(concepts);
 
   const items = useMemo<ChatItem[]>(
@@ -49,12 +51,12 @@ const ConceptGraphEditor = ({
           : 'Add a source on the left to build the concept graph. Ingestion runs automatically when you save a source.',
       },
     ],
-    [concepts.length],
+    [concepts.length]
   );
 
   const conceptById = useMemo(
     () => new Map(concepts.map((concept) => [concept.id, concept])),
-    [concepts],
+    [concepts]
   );
 
   const selectedConceptId = useMemo(() => {
@@ -65,15 +67,18 @@ const ConceptGraphEditor = ({
     return concepts[0]?.id ?? null;
   }, [conceptById, concepts, pendingSelectedId]);
 
-  const handleSelectConcept = useCallback((id: string, isContextAction?: boolean) => {
-    if (isContextAction) {
-      setChatContextConceptIds((prev: string[]) => 
-        prev.includes(id) ? prev.filter((cId: string) => cId !== id) : [...prev, id]
-      );
-    } else {
-      setPendingSelectedId(id);
-    }
-  }, [setChatContextConceptIds, setPendingSelectedId]);
+  const handleSelectConcept = useCallback(
+    (id: string, isContextAction?: boolean) => {
+      if (isContextAction) {
+        setChatContextConceptIds((prev: string[]) =>
+          prev.includes(id) ? prev.filter((cId: string) => cId !== id) : [...prev, id]
+        );
+      } else {
+        setPendingSelectedId(id);
+      }
+    },
+    [setChatContextConceptIds, setPendingSelectedId]
+  );
 
   const chatContextConcepts = useMemo(() => {
     const contextIds = new Set(chatContextConceptIds);
@@ -82,12 +87,12 @@ const ConceptGraphEditor = ({
 
   const conceptNameById = useMemo(
     () => new Map(concepts.map((concept) => [concept.id, concept.name])),
-    [concepts],
+    [concepts]
   );
 
   const selectedConcept = useMemo(
-    () => (selectedConceptId ? conceptById.get(selectedConceptId) ?? null : null),
-    [conceptById, selectedConceptId],
+    () => (selectedConceptId ? (conceptById.get(selectedConceptId) ?? null) : null),
+    [conceptById, selectedConceptId]
   );
 
   const proposalCount = pendingProposals.length;
@@ -99,9 +104,14 @@ const ConceptGraphEditor = ({
   const handleRefinementCollapseToggle = useCallback(() => {
     setIsRefinementCollapsed((current: boolean) => !current);
   }, [setIsRefinementCollapsed]);
-  const handleRemoveChatContext = useCallback((id: string) => {
-    setChatContextConceptIds((current: string[]) => current.filter((conceptId) => conceptId !== id));
-  }, [setChatContextConceptIds]);
+  const handleRemoveChatContext = useCallback(
+    (id: string) => {
+      setChatContextConceptIds((current: string[]) =>
+        current.filter((conceptId) => conceptId !== id)
+      );
+    },
+    [setChatContextConceptIds]
+  );
 
   return (
     <section
@@ -117,9 +127,7 @@ const ConceptGraphEditor = ({
         !isInventoryCollapsed &&
           isRefinementCollapsed &&
           'lg:grid-cols-[20rem_minmax(0,1fr)_4rem] xl:grid-cols-[22rem_minmax(0,1fr)_4rem]',
-        isInventoryCollapsed &&
-          isRefinementCollapsed &&
-          'lg:grid-cols-[4rem_minmax(0,1fr)_4rem]',
+        isInventoryCollapsed && isRefinementCollapsed && 'lg:grid-cols-[4rem_minmax(0,1fr)_4rem]'
       )}
     >
       <ConceptListPane
@@ -158,4 +166,4 @@ const ConceptGraphEditor = ({
       />
     </section>
   );
-}
+};

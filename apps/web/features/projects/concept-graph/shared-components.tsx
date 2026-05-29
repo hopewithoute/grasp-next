@@ -29,7 +29,8 @@ export function PaneHeader({
       <div className="flex shrink-0 items-center gap-2 text-xs">
         {meta ? <div>{meta}</div> : null}
         {onCollapseToggle && side ? (
-          <button aria-label={side === 'left' ? 'Collapse concept inventory' : 'Collapse refinement'}
+          <button
+            aria-label={side === 'left' ? 'Collapse concept inventory' : 'Collapse refinement'}
             aria-expanded="true"
             className="inline-flex size-8 items-center justify-center rounded-xl border border-border bg-card/50 text-muted-foreground transition-colors hover:border-brand-accent-border hover:bg-brand-accent/8 hover:text-brand-accent-foreground"
             onClick={onCollapseToggle}
@@ -67,10 +68,11 @@ export function CollapsedPaneRail({
       aria-label={title}
       className={cn(
         'flex min-h-16 items-center justify-between gap-3 border-b border-border bg-card px-4 py-3 lg:min-h-0 lg:flex-col lg:justify-start lg:border-b-0 lg:px-2 lg:py-3',
-        side === 'left' ? 'lg:border-r' : 'lg:border-r-0',
+        side === 'left' ? 'lg:border-r' : 'lg:border-r-0'
       )}
     >
-      <button aria-label={ariaLabel}
+      <button
+        aria-label={ariaLabel}
         aria-expanded="false"
         className="inline-flex size-9 shrink-0 items-center justify-center rounded-xl border border-border bg-card/50 text-muted-foreground transition-colors hover:border-brand-accent-border hover:bg-brand-accent/8 hover:text-brand-accent-foreground lg:size-10"
         onClick={onToggle}
@@ -105,19 +107,28 @@ const difficultyChipVariants = cva(
   {
     variants: {
       difficulty: {
-        advanced: 'border-status-warning-border bg-status-warning-surface text-status-warning-foreground',
-        beginner: 'border-status-success-border bg-status-success-surface text-status-success-foreground',
-        intermediate: 'border-status-info-border bg-status-info-surface text-status-info-foreground',
+        advanced:
+          'border-status-warning-border bg-status-warning-surface text-status-warning-foreground',
+        beginner:
+          'border-status-success-border bg-status-success-surface text-status-success-foreground',
+        intermediate:
+          'border-status-info-border bg-status-info-surface text-status-info-foreground',
       },
     },
-  },
+  }
 );
 
 export function DifficultyChip({ difficulty }: { difficulty: ConceptRow['difficulty'] }) {
   return <span className={difficultyChipVariants({ difficulty })}>{difficulty}</span>;
 }
 
-export function ConfidencePill({ confidence, muted = false }: { confidence: string; muted?: boolean }) {
+export function ConfidencePill({
+  confidence,
+  muted = false,
+}: {
+  confidence: string;
+  muted?: boolean;
+}) {
   const formatted = formatConfidence(confidence);
   return (
     <span
@@ -125,7 +136,7 @@ export function ConfidencePill({ confidence, muted = false }: { confidence: stri
         'inline-flex h-5 items-center gap-1.5 rounded-full border px-2 font-mono text-[0.62rem] tabular-nums',
         muted
           ? 'border-border bg-card/50 text-muted-foreground'
-          : 'border-brand-accent-border/30 bg-brand-accent/[0.08] text-brand-accent',
+          : 'border-brand-accent-border/30 bg-brand-accent/[0.08] text-brand-accent'
       )}
       title="Confidence"
     >

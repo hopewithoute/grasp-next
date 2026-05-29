@@ -12,7 +12,10 @@ export function ProjectStatusBadge({ status }: { status: ProjectStatus }) {
   };
 
   return (
-    <Badge className={statusBadgeVariants({ intent: projectStatusIntent(status) })} variant="secondary">
+    <Badge
+      className={statusBadgeVariants({ intent: projectStatusIntent(status) })}
+      variant="secondary"
+    >
       {labelByStatus[status]}
     </Badge>
   );

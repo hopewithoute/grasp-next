@@ -1,5 +1,3 @@
-
-
 export type DifficultyFilter = 'all' | ConceptRow['difficulty'];
 
 export type WorkspaceEvent =

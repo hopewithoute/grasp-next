@@ -45,34 +45,37 @@ export const ConceptListPane = memo(function ConceptListPane({
 
   const debouncedSearchQuery = useDebounce(searchQuery, 400);
 
-  const fetchConcepts = useCallback(async (query: string, difficulty: string, offset: number, replace = false) => {
-    await Promise.resolve();
-    setIsLoadingMore(true);
-    try {
-      const result = await searchKnowledgebaseConceptsAction({
-        projectId,
-        query,
-        difficulty: difficulty === 'all' ? undefined : difficulty as ConceptRow['difficulty'],
-        offset,
-        limit: 5,
-      });
-      
-      setInventoryConcepts((prev: ConceptRow[]) => {
-        const concepts = result.concepts as ConceptRow[];
-        if (replace) return concepts;
+  const fetchConcepts = useCallback(
+    async (query: string, difficulty: string, offset: number, replace = false) => {
+      await Promise.resolve();
+      setIsLoadingMore(true);
+      try {
+        const result = await searchKnowledgebaseConceptsAction({
+          projectId,
+          query,
+          difficulty: difficulty === 'all' ? undefined : (difficulty as ConceptRow['difficulty']),
+          offset,
+          limit: 5,
+        });
 
-        const existingIds = new Set(prev.map((c: ConceptRow) => c.id));
-        const newConcepts = concepts.filter((c: ConceptRow) => !existingIds.has(c.id));
-        return [...prev, ...newConcepts];
-      });
-      const nextLength = replace ? result.concepts.length : offset + result.concepts.length;
-      setHasMore(nextLength < result.totalCount);
-    } catch (error) {
-      console.error('Failed to fetch concepts', error);
-    } finally {
-      setIsLoadingMore(false);
-    }
-  }, [projectId]);
+        setInventoryConcepts((prev: ConceptRow[]) => {
+          const concepts = result.concepts as ConceptRow[];
+          if (replace) return concepts;
+
+          const existingIds = new Set(prev.map((c: ConceptRow) => c.id));
+          const newConcepts = concepts.filter((c: ConceptRow) => !existingIds.has(c.id));
+          return [...prev, ...newConcepts];
+        });
+        const nextLength = replace ? result.concepts.length : offset + result.concepts.length;
+        setHasMore(nextLength < result.totalCount);
+      } catch (error) {
+        console.error('Failed to fetch concepts', error);
+      } finally {
+        setIsLoadingMore(false);
+      }
+    },
+    [projectId]
+  );
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -85,7 +88,14 @@ export const ConceptListPane = memo(function ConceptListPane({
   const loadMoreConcepts = useCallback(() => {
     if (!hasMore || isLoadingMore) return;
     fetchConcepts(debouncedSearchQuery, difficultyFilter, inventoryConcepts.length, false);
-  }, [hasMore, isLoadingMore, fetchConcepts, debouncedSearchQuery, difficultyFilter, inventoryConcepts.length]);
+  }, [
+    hasMore,
+    isLoadingMore,
+    fetchConcepts,
+    debouncedSearchQuery,
+    difficultyFilter,
+    inventoryConcepts.length,
+  ]);
 
   useEffect(() => {
     if (!hasMore || isLoadingMore) return;
@@ -135,7 +145,8 @@ export const ConceptListPane = memo(function ConceptListPane({
         eyebrow="Concepts"
         meta={
           <span className="font-mono tabular-nums text-muted-foreground">
-            {String(filteredConcepts.length).padStart(2, '0')} / {String(concepts.length).padStart(2, '0')}
+            {String(filteredConcepts.length).padStart(2, '0')} /{' '}
+            {String(concepts.length).padStart(2, '0')}
           </span>
         }
         onCollapseToggle={onCollapseToggle}
@@ -149,7 +160,9 @@ export const ConceptListPane = memo(function ConceptListPane({
         </label>
         <div className="flex h-9 items-center gap-2 rounded-full border border-border bg-card/50 px-3 transition-colors focus-within:border-brand-accent-border focus-within:bg-card/50">
           <Search className="size-3.5 shrink-0 text-muted-foreground" strokeWidth={1.5} />
-          <input aria-label="Input field"  className="flex-1 border-0 bg-transparent text-sm leading-5 text-foreground outline-none placeholder:text-muted-foreground"
+          <input
+            aria-label="Input field"
+            className="flex-1 border-0 bg-transparent text-sm leading-5 text-foreground outline-none placeholder:text-muted-foreground"
             id={searchInputId}
             onChange={(event) => setSearchQuery(event.target.value)}
             placeholder="Search concept or definition"
@@ -160,12 +173,14 @@ export const ConceptListPane = memo(function ConceptListPane({
 
         <div role="group" aria-label="Difficulty filter" className="flex flex-wrap gap-1.5">
           {DIFFICULTY_FILTER_ORDER.map((value) => (
-            <button aria-label="Button"  aria-pressed={difficultyFilter === value}
+            <button
+              aria-label="Button"
+              aria-pressed={difficultyFilter === value}
               className={cn(
                 'inline-flex h-7 items-center gap-1.5 rounded-full border px-2.5 text-[0.7rem] font-medium tracking-wide transition-colors',
                 difficultyFilter === value
                   ? 'border-brand-accent-border bg-brand-accent-surface text-foreground'
-                  : 'border-border bg-card/50 text-muted-foreground hover:border-border hover:text-foreground',
+                  : 'border-border bg-card/50 text-muted-foreground hover:border-border hover:text-foreground'
               )}
               key={value}
               onClick={() => setDifficultyFilter(value)}
@@ -203,7 +218,9 @@ export const ConceptListPane = memo(function ConceptListPane({
               {isLoadingMore ? (
                 <span className="font-mono text-xs text-muted-foreground">Loading…</span>
               ) : hasMore ? (
-                <button aria-label="Button"  type="button"
+                <button
+                  aria-label="Button"
+                  type="button"
                   onClick={loadMoreConcepts}
                   className="font-mono text-xs text-brand-accent-foreground hover:text-brand-accent-foreground"
                 >
@@ -217,7 +234,9 @@ export const ConceptListPane = memo(function ConceptListPane({
 
       <footer className="flex items-center justify-between gap-3 border-t border-border px-4 py-3 font-mono text-[0.62rem] tabular-nums tracking-[0.16em] uppercase text-muted-foreground">
         <span>{String(concepts.length).padStart(2, '0')} concepts</span>
-        <span aria-hidden className="text-muted-foreground">·</span>
+        <span aria-hidden className="text-muted-foreground">
+          ·
+        </span>
         <span>{String(relationshipsCount).padStart(2, '0')} relationships</span>
       </footer>
     </aside>
@@ -234,7 +253,7 @@ const conceptListItemVariants = cva(
         true: 'bg-brand-accent-surface',
       },
     },
-  },
+  }
 );
 
 const ConceptListItem = memo(function ConceptListItem({
@@ -249,7 +268,9 @@ const ConceptListItem = memo(function ConceptListItem({
   onSelect: (id: string, multi?: boolean) => void;
 }) {
   return (
-    <button aria-label="Button"  aria-current={active ? 'true' : undefined}
+    <button
+      aria-label="Button"
+      aria-current={active ? 'true' : undefined}
       className={conceptListItemVariants({ active })}
       onClick={(e) => onSelect(concept.id, e.ctrlKey || e.metaKey || e.shiftKey)}
       type="button"
@@ -262,8 +283,12 @@ const ConceptListItem = memo(function ConceptListItem({
       ) : null}
       <div className="flex items-center justify-between gap-3 pl-2">
         <span className="flex items-baseline gap-2 font-mono text-[0.62rem] tabular-nums tracking-[0.16em] uppercase text-muted-foreground">
-          <span className={active ? 'text-brand-accent-foreground' : ''}>{String(index).padStart(2, '0')}</span>
-          <span aria-hidden className="text-muted-foreground">·</span>
+          <span className={active ? 'text-brand-accent-foreground' : ''}>
+            {String(index).padStart(2, '0')}
+          </span>
+          <span aria-hidden className="text-muted-foreground">
+            ·
+          </span>
           <span>{concept.difficulty}</span>
         </span>
         <ConfidencePill confidence={concept.confidence} muted={!active} />
@@ -271,7 +296,7 @@ const ConceptListItem = memo(function ConceptListItem({
       <p
         className={cn(
           'line-clamp-2 pl-2 text-sm font-medium leading-snug tracking-tight',
-          active ? 'text-foreground' : 'text-muted-foreground',
+          active ? 'text-foreground' : 'text-muted-foreground'
         )}
       >
         {concept.name}

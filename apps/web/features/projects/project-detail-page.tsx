@@ -15,6 +15,7 @@ import { ProjectSettings } from './components/project-settings';
 import { ProjectPipelineStatus } from './components/project-pipeline-status';
 import { IngestionStatusPanel, PlannedStagePanel } from './components/project-stage-panels';
 import { Eyebrow } from './components/project-shared';
+import type { ConceptRow, RelationshipRow } from './concept-graph/types';
 
 type ProjectDetailPageProps = {
   currentStage?: string;
@@ -174,9 +175,9 @@ export async function ProjectDetailPage({ currentStage, projectId }: ProjectDeta
             </span>
           </header>
           <ConceptGraphWorkspace
-            concepts={knowledgebaseGraph.concepts}
+            concepts={knowledgebaseGraph.concepts as unknown as ConceptRow[]}
             projectId={detail.project.id}
-            relationships={knowledgebaseGraph.relationships}
+            relationships={knowledgebaseGraph.relationships as unknown as RelationshipRow[]}
           />
         </div>
       ) : null}

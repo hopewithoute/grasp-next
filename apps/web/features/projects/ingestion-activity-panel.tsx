@@ -78,10 +78,18 @@ type IngestionActivityPanelProps = {
 };
 
 export type IngestionActivityPanelHandle = {
-  startIngestion: (sourceId: string, sourceTitle: string, sourceType: string, content: string) => void;
+  startIngestion: (
+    sourceId: string,
+    sourceTitle: string,
+    sourceType: string,
+    content: string
+  ) => void;
 };
 
-export function IngestionActivityPanel({ projectId, ref }: IngestionActivityPanelProps & { ref?: React.Ref<IngestionActivityPanelHandle> }) {
+export function IngestionActivityPanel({
+  projectId,
+  ref,
+}: IngestionActivityPanelProps & { ref?: React.Ref<IngestionActivityPanelHandle> }) {
   const [feed, setFeed] = useState<FeedItem[]>([]);
   const [isRunning, setIsRunning] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -104,7 +112,13 @@ export function IngestionActivityPanel({ projectId, ref }: IngestionActivityPane
 
       if (!response.ok || !response.body) {
         setIsRunning(false);
-        setFeed((f) => [...f, { id: `err-${Date.now()}`, event: { type: 'ingestion_failed', reason: 'Request failed' } }]);
+        setFeed((f) => [
+          ...f,
+          {
+            id: `err-${Date.now()}`,
+            event: { type: 'ingestion_failed', reason: 'Request failed' },
+          },
+        ]);
         return;
       }
 
@@ -127,7 +141,13 @@ export function IngestionActivityPanel({ projectId, ref }: IngestionActivityPane
       <header className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
         <div className="space-y-1">
           <span className="inline-flex items-center gap-2 font-mono text-[0.62rem] tabular-nums tracking-[0.18em] uppercase text-muted-foreground">
-            <span aria-hidden className={cn('size-1.5 rounded-full', isRunning ? 'bg-brand-accent pulse-soft' : 'bg-emerald-400')} />
+            <span
+              aria-hidden
+              className={cn(
+                'size-1.5 rounded-full',
+                isRunning ? 'bg-brand-accent pulse-soft' : 'bg-emerald-400'
+              )}
+            />
             Ingestion
           </span>
           <h3 className="text-sm font-medium tracking-tight text-foreground">Activity</h3>
@@ -202,13 +222,19 @@ function FeedEvent({ event }: { event: IngestionStreamEvent }) {
     case 'retrieval_activity':
       return (
         <FeedRow icon={<Bot className="size-3" />} tone="muted">
-          <TypewriterText text={`${formatRetrievalType(event.retrievalType)}: ${event.hitCount} hits for "${event.query}"`} speed={15} />
+          <TypewriterText
+            text={`${formatRetrievalType(event.retrievalType)}: ${event.hitCount} hits for "${event.query}"`}
+            speed={15}
+          />
         </FeedRow>
       );
     case 'relation_claim_extracted':
       return (
         <FeedRow icon={<GitBranch className="size-3" />} tone="muted">
-          <TypewriterText text={`Claim: ${event.subjectText} ${formatRelationshipType(event.predicate)} ${event.objectText}`} speed={15} />
+          <TypewriterText
+            text={`Claim: ${event.subjectText} ${formatRelationshipType(event.predicate)} ${event.objectText}`}
+            speed={15}
+          />
         </FeedRow>
       );
     case 'relationship_extracted':
@@ -228,7 +254,10 @@ function FeedEvent({ event }: { event: IngestionStreamEvent }) {
       );
     case 'link_candidate_reviewed':
       return (
-        <FeedRow icon={<Bot className="size-3" />} tone={event.decision === 'accept' ? 'accent' : 'muted'}>
+        <FeedRow
+          icon={<Bot className="size-3" />}
+          tone={event.decision === 'accept' ? 'accent' : 'muted'}
+        >
           <TypewriterText
             text={`Reviewed ${shortCandidateId(event.candidateId)}: ${event.decision}, ${event.evidenceStrength} evidence (${formatScore(event.finalEvidenceScore)})`}
             speed={15}
@@ -237,8 +266,20 @@ function FeedEvent({ event }: { event: IngestionStreamEvent }) {
       );
     case 'link_policy_applied':
       return (
-        <FeedRow icon={event.decision === 'accept' ? <CheckCircle2 className="size-3" /> : <XCircle className="size-3" />} tone={event.decision === 'accept' ? 'success' : 'muted'}>
-          <TypewriterText text={`Policy ${event.decision}: ${formatReason(event.reason)}`} speed={15} />
+        <FeedRow
+          icon={
+            event.decision === 'accept' ? (
+              <CheckCircle2 className="size-3" />
+            ) : (
+              <XCircle className="size-3" />
+            )
+          }
+          tone={event.decision === 'accept' ? 'success' : 'muted'}
+        >
+          <TypewriterText
+            text={`Policy ${event.decision}: ${formatReason(event.reason)}`}
+            speed={15}
+          />
         </FeedRow>
       );
     case 'link_applied':
@@ -253,7 +294,10 @@ function FeedEvent({ event }: { event: IngestionStreamEvent }) {
     case 'link_rejected':
       return (
         <FeedRow icon={<XCircle className="size-3" />} tone="muted">
-          <TypewriterText text={`Rejected: ${event.sourceConceptName} → ${event.targetConceptName} (${formatReason(event.reason)})`} speed={15} />
+          <TypewriterText
+            text={`Rejected: ${event.sourceConceptName} → ${event.targetConceptName} (${formatReason(event.reason)})`}
+            speed={15}
+          />
         </FeedRow>
       );
     case 'evidence_dropped':
@@ -268,7 +312,10 @@ function FeedEvent({ event }: { event: IngestionStreamEvent }) {
     case 'ingestion_complete':
       return (
         <FeedRow icon={<CheckCircle2 className="size-3" />} tone="success">
-          <TypewriterText text={`Done: ${event.conceptCount} concepts, ${event.relationshipCount} relationships`} speed={15} />
+          <TypewriterText
+            text={`Done: ${event.conceptCount} concepts, ${event.relationshipCount} relationships`}
+            speed={15}
+          />
         </FeedRow>
       );
     case 'ingestion_failed':
@@ -308,15 +355,25 @@ function formatDroppedConcepts(conceptKeys: string[]) {
   return `: ${conceptKeys.join(', ')}`;
 }
 
-function FeedRow({ children, icon, tone }: { children: React.ReactNode; icon: React.ReactNode; tone: 'muted' | 'accent' | 'success' | 'error' }) {
+function FeedRow({
+  children,
+  icon,
+  tone,
+}: {
+  children: React.ReactNode;
+  icon: React.ReactNode;
+  tone: 'muted' | 'accent' | 'success' | 'error';
+}) {
   return (
-    <div className={cn(
-      'flex items-start gap-2 rounded-lg px-2 py-1.5 text-[0.72rem] leading-5',
-      tone === 'muted' && 'text-muted-foreground',
-      tone === 'accent' && 'text-brand-accent',
-      tone === 'success' && 'text-emerald-300',
-      tone === 'error' && 'text-red-300',
-    )}>
+    <div
+      className={cn(
+        'flex items-start gap-2 rounded-lg px-2 py-1.5 text-[0.72rem] leading-5',
+        tone === 'muted' && 'text-muted-foreground',
+        tone === 'accent' && 'text-brand-accent',
+        tone === 'success' && 'text-emerald-300',
+        tone === 'error' && 'text-red-300'
+      )}
+    >
       <span className="mt-0.5 shrink-0">{icon}</span>
       <span className="min-w-0">{children}</span>
     </div>

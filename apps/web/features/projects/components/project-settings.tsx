@@ -32,9 +32,7 @@ export function ProjectSettings({ detail }: ProjectSettingsProps) {
             <p className="font-mono text-[0.65rem] tabular-nums tracking-[0.18em] uppercase text-muted-foreground">
               Project lifecycle
             </p>
-            <h2 className="text-xl font-medium tracking-tight text-foreground">
-              Project details
-            </h2>
+            <h2 className="text-xl font-medium tracking-tight text-foreground">Project details</h2>
           </div>
           <DeleteProjectForm
             disabled={detail.project.status === PROJECT_STATUS.PROCESSING}

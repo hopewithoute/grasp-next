@@ -47,11 +47,9 @@ export async function ProjectsPage() {
       [PROJECT_STATUS.PROCESSED]: 0,
       [PROJECT_STATUS.PROCESSING]: 0,
       [PROJECT_STATUS.REVIEWING]: 0,
-    },
+    }
   );
-  const inFlight =
-    counts[PROJECT_STATUS.PROCESSING] +
-    counts[PROJECT_STATUS.REVIEWING];
+  const inFlight = counts[PROJECT_STATUS.PROCESSING] + counts[PROJECT_STATUS.REVIEWING];
   const greeting = greet(viewer?.name ?? null);
 
   return (
@@ -64,8 +62,8 @@ export async function ProjectsPage() {
             {greeting}
           </h1>
           <p className="max-w-[58ch] text-base leading-relaxed text-muted-foreground">
-            Continue an open project, or seed a new one with raw source material. The pipeline
-            picks up from wherever you left off.
+            Continue an open project, or seed a new one with raw source material. The pipeline picks
+            up from wherever you left off.
           </p>
         </div>
 
@@ -167,8 +165,8 @@ export async function ProjectsPage() {
                     No projects yet.
                   </h3>
                   <p className="text-sm leading-relaxed text-muted-foreground">
-                    Use the composer on the right to create your first project. Paste a chapter,
-                    a markdown export, or notes: the pipeline starts as soon as you save.
+                    Use the composer on the right to create your first project. Paste a chapter, a
+                    markdown export, or notes: the pipeline starts as soon as you save.
                   </p>
                 </div>
                 <p className="font-mono text-[0.7rem] tracking-[0.14em] uppercase text-muted-foreground">

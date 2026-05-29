@@ -3,13 +3,7 @@
 import { Suspense } from 'react';
 import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
-import {
-  BookOpen,
-  CheckCircle2,
-  FileText,
-  LayoutDashboard,
-  Network,
-} from 'lucide-react';
+import { BookOpen, CheckCircle2, FileText, LayoutDashboard, Network } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   buildStageHref,
@@ -68,7 +62,7 @@ function ProjectNavigatorContent() {
                 'group relative inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full border px-2.5 text-[0.8rem] transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] active:scale-[0.98] md:gap-2 md:px-3.5 md:text-sm',
                 active
                   ? 'border-brand-accent-border bg-brand-accent-surface text-brand-accent-foreground shadow-sm'
-                  : 'border-transparent text-muted-foreground hover:bg-muted/50 hover:text-foreground',
+                  : 'border-transparent text-muted-foreground hover:bg-muted/50 hover:text-foreground'
               )}
               href={buildStageHref(projectId, stage)}
               key={stage}
@@ -76,7 +70,7 @@ function ProjectNavigatorContent() {
               <span
                 className={cn(
                   'hidden items-center gap-1.5 font-mono text-[0.65rem] tabular-nums tracking-[0.16em] uppercase md:inline-flex',
-                  active ? 'text-brand-accent-foreground' : 'text-muted-foreground',
+                  active ? 'text-brand-accent-foreground' : 'text-muted-foreground'
                 )}
               >
                 {stageNumber}
@@ -84,15 +78,14 @@ function ProjectNavigatorContent() {
               <Icon
                 className={cn(
                   'size-3.5 shrink-0',
-                  active ? 'text-brand-accent-foreground' : 'text-muted-foreground group-hover:text-foreground',
+                  active
+                    ? 'text-brand-accent-foreground'
+                    : 'text-muted-foreground group-hover:text-foreground'
                 )}
                 strokeWidth={1.5}
               />
               <span
-                className={cn(
-                  'whitespace-nowrap',
-                  !active && 'max-[420px]:sr-only md:not-sr-only',
-                )}
+                className={cn('whitespace-nowrap', !active && 'max-[420px]:sr-only md:not-sr-only')}
               >
                 {STAGE_LABELS[stage]}
               </span>

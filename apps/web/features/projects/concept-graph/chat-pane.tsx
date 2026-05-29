@@ -59,7 +59,7 @@ export function ChatPane({
     threadIdRef.current = `refinement-${projectId}-${crypto.randomUUID()}`;
   }
   const isClientHydrated = useClientHydrated();
-  
+
   const [messages, setMessages] = useState<ChatItem[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -85,7 +85,10 @@ export function ChatPane({
   useEffect(() => {
     if (onPendingProposalsChange) {
       const allProposals = [...items, ...messages]
-        .filter((item): item is Extract<ChatItem, { kind: 'proposal' }> => item.kind === 'proposal' && item.status === 'pending')
+        .filter(
+          (item): item is Extract<ChatItem, { kind: 'proposal' }> =>
+            item.kind === 'proposal' && item.status === 'pending'
+        )
         .map((item) => item.proposal);
       onPendingProposalsChange(allProposals);
     }
@@ -270,30 +273,55 @@ export function ChatPane({
     }
   };
 
-  const handleApproveProposal = useCallback(async (id: string, proposal: ProposalPayload) => {
-    setIsLoading(true);
-    try {
-      const result = await executeGraphProposalAction(projectId, proposal.actions);
-      const sysUserMsg = { id: `sys-${Date.now()}`, kind: 'message' as const, role: 'user' as const, text: '[System: User approved and applied the proposal]', streaming: false };
-      setMessages((prev) => [
-        ...prev.map((m) => (m.id === id ? { ...m, status: 'approved' as const } : m)),
-        sysUserMsg,
-        { id: `sys-reply-${Date.now()}`, kind: 'message', role: 'agent', text: `Proposal successfully applied to the graph! (${result.applied} actions)`, streaming: false }
-      ]);
-      refresh();
-    } catch (e) {
-      console.error(e);
-      setMessages((prev) => prev.map((m) => (m.id === id ? { ...m, status: 'pending' as const } : m)));
-    } finally {
-      setIsLoading(false);
-    }
-  }, [projectId, refresh]);
+  const handleApproveProposal = useCallback(
+    async (id: string, proposal: ProposalPayload) => {
+      setIsLoading(true);
+      try {
+        const result = await executeGraphProposalAction(projectId, proposal.actions);
+        const sysUserMsg = {
+          id: `sys-${Date.now()}`,
+          kind: 'message' as const,
+          role: 'user' as const,
+          text: '[System: User approved and applied the proposal]',
+          streaming: false,
+        };
+        setMessages((prev) => [
+          ...prev.map((m) => (m.id === id ? { ...m, status: 'approved' as const } : m)),
+          sysUserMsg,
+          {
+            id: `sys-reply-${Date.now()}`,
+            kind: 'message',
+            role: 'agent',
+            text: `Proposal successfully applied to the graph! (${result.applied} actions)`,
+            streaming: false,
+          },
+        ]);
+        refresh();
+      } catch (e) {
+        console.error(e);
+        setMessages((prev) =>
+          prev.map((m) => (m.id === id ? { ...m, status: 'pending' as const } : m))
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [projectId, refresh]
+  );
 
   const handleRejectProposal = useCallback((id: string) => {
-    setMessages((prev) => prev.map((m) => (m.id === id ? { ...m, status: 'rejected' as const } : m)));
+    setMessages((prev) =>
+      prev.map((m) => (m.id === id ? { ...m, status: 'rejected' as const } : m))
+    );
     setMessages((prev) => [
       ...prev,
-      { id: `sys-${Date.now()}`, kind: 'message', role: 'user', text: 'I reject this proposal. Please reconsider and provide a different solution or ask clarifying questions.', streaming: false }
+      {
+        id: `sys-${Date.now()}`,
+        kind: 'message',
+        role: 'user',
+        text: 'I reject this proposal. Please reconsider and provide a different solution or ask clarifying questions.',
+        streaming: false,
+      },
     ]);
   }, []);
 
@@ -318,7 +346,7 @@ export function ChatPane({
     );
   }
 
-  const hasPendingProposal = messages.some(m => m.kind === 'proposal' && m.status === 'pending');
+  const hasPendingProposal = messages.some((m) => m.kind === 'proposal' && m.status === 'pending');
 
   return (
     <aside
@@ -413,7 +441,11 @@ export function ChatPane({
             className="flex-1 rounded-md border border-border bg-white/5 px-3 py-2 text-sm text-foreground placeholder:text-foreground/30 focus:border-brand-accent-border focus:outline-none focus:ring-1 focus:ring-[#53d1cb]/50 disabled:opacity-50"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder={hasPendingProposal ? "Please approve or reject the pending proposal first." : "Instruct the agent..."}
+            placeholder={
+              hasPendingProposal
+                ? 'Please approve or reject the pending proposal first.'
+                : 'Instruct the agent...'
+            }
             disabled={isLoading || hasPendingProposal}
           />
           <button
@@ -438,7 +470,7 @@ function readStoredChatMessages(projectId: string): ChatItem[] {
 
   try {
     const parsed = JSON.parse(saved);
-    return Array.isArray(parsed) ? parsed as ChatItem[] : [];
+    return Array.isArray(parsed) ? (parsed as ChatItem[]) : [];
   } catch (error) {
     console.error('Failed to parse chat history', error);
     return [];
@@ -607,10 +639,7 @@ const MarkdownText = memo(function MarkdownText({ text }: { text: string }) {
 
   return (
     <div className="space-y-2.5 break-words">
-      <ReactMarkdown
-        remarkPlugins={MARKDOWN_REMARK_PLUGINS}
-        components={MARKDOWN_COMPONENTS}
-      >
+      <ReactMarkdown remarkPlugins={MARKDOWN_REMARK_PLUGINS} components={MARKDOWN_COMPONENTS}>
         {text}
       </ReactMarkdown>
     </div>

@@ -1,4 +1,3 @@
-
 import { ProjectStatusBadge } from '../project-status-badge';
 import { StatusCell } from './project-shared';
 
@@ -61,8 +60,6 @@ export function ProjectHeader({
             </p>
           ) : null}
         </div>
-
-
       </div>
 
       {/* Status strip — compact rail, secondary to the project heading */}

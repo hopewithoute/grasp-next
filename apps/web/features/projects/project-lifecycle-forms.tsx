@@ -37,7 +37,7 @@ export function ProjectDetailsForm({ description, projectId, title }: ProjectDet
             id="projectTitle"
             maxLength={160}
             name="title"
-              aria-label="Project Title"
+            aria-label="Project Title"
             required
           />
         </div>
@@ -52,7 +52,7 @@ export function ProjectDetailsForm({ description, projectId, title }: ProjectDet
             id="projectDescription"
             maxLength={1000}
             name="description"
-              aria-label="Project Description"
+            aria-label="Project Description"
           />
         </div>
       </div>

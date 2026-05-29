@@ -110,7 +110,7 @@ describe('buildConceptGraph', () => {
           sourceConceptId: 'c2',
           targetConceptId: 'c4',
         },
-      ],
+      ]
     );
 
     assert.equal(graph.nodes.length, 4);
@@ -142,7 +142,7 @@ describe('buildConceptGraph', () => {
       [
         { id: 'r1', relationshipType: 'related_to', sourceConceptId: 'a', targetConceptId: 'b' },
         { id: 'r2', relationshipType: 'related_to', sourceConceptId: 'b', targetConceptId: 'a' },
-      ],
+      ]
     );
     assert.equal(graph.nodes.length, 2);
     assert.equal(graph.edges.length, 2);
@@ -166,10 +166,7 @@ describe('getEvidence', () => {
   });
 
   it('filters valid evidence items', () => {
-    const result = getEvidence([
-      { excerpt: 'test', blockId: 'b1' },
-      { excerpt: 'also valid' },
-    ]);
+    const result = getEvidence([{ excerpt: 'test', blockId: 'b1' }, { excerpt: 'also valid' }]);
     assert.equal(result.length, 2);
     assert.equal(result[0]?.excerpt, 'test');
   });

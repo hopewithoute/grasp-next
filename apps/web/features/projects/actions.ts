@@ -34,7 +34,6 @@ import {
   addEvidenceProposalDto,
   updateEvidenceProposalDto,
   deleteEvidenceProposalDto,
-  type CreateProjectDto,
 } from '@grasp/domain';
 import { getActor as auth } from '@/server/actor';
 import { createProjectDeps } from '@/server/project-deps';
@@ -73,19 +72,7 @@ export type KnowledgebaseEvidenceFormState = {
   success: boolean;
 };
 
-async function createProjectAction(input: CreateProjectDto) {
-  const actor = await auth();
 
-  if (!canCreateProject(actor)) {
-    throw new Error('Unauthorized.');
-  }
-
-  const project = await createProject(input, createProjectDeps(), actor.id);
-
-  revalidatePath('/dashboard/projects');
-
-  return project;
-}
 
 export async function createProjectFormAction(
   _state: CreateProjectFormState,
@@ -388,7 +375,11 @@ export async function updateKnowledgebaseEvidenceFormAction(
   }
 
   try {
-    const artifact = await updateKnowledgebaseConceptEvidence(parsed.data, createProjectDeps(), actor);
+    const artifact = await updateKnowledgebaseConceptEvidence(
+      parsed.data,
+      createProjectDeps(),
+      actor
+    );
 
     revalidatePath(`/dashboard/projects/${artifact.projectId}`);
 
@@ -411,11 +402,11 @@ export type ConceptSearchPaginationParams = {
 
 export async function searchKnowledgebaseConceptsAction(params: ConceptSearchPaginationParams) {
   const actor = await auth();
-  
+
   if (!actor) {
     throw new Error('Unauthorized');
   }
-  
+
   const deps = createProjectDeps();
   const project = await deps.projectRepository.findByIdForOwner(params.projectId, actor.id);
 
@@ -561,7 +552,10 @@ export async function executeGraphProposalAction(
       }
       case 'delete_concept': {
         const payload = deleteConceptProposalDto.parse(action.payload);
-        await deps.knowledgebaseRepository.deleteConcept({ projectId, conceptKey: payload.conceptKey });
+        await deps.knowledgebaseRepository.deleteConcept({
+          projectId,
+          conceptKey: payload.conceptKey,
+        });
         break;
       }
       case 'add_relationship': {
@@ -569,7 +563,7 @@ export async function executeGraphProposalAction(
         await deps.knowledgebaseRepository.addRelationship({
           projectId,
           relationshipKey: `${payload.sourceConceptKey}:${payload.targetConceptKey}:${payload.relationshipType}`,
-          ...payload
+          ...payload,
         });
         break;
       }
@@ -577,7 +571,7 @@ export async function executeGraphProposalAction(
         const payload = deleteRelationshipProposalDto.parse(action.payload);
         await deps.knowledgebaseRepository.deleteRelationship({
           projectId,
-          relationshipKey: `${payload.sourceConceptKey}:${payload.targetConceptKey}:${payload.relationshipType}`
+          relationshipKey: `${payload.sourceConceptKey}:${payload.targetConceptKey}:${payload.relationshipType}`,
         });
         break;
       }
@@ -586,11 +580,11 @@ export async function executeGraphProposalAction(
         await deps.knowledgebaseRepository.addConceptEvidence({
           projectId,
           conceptKey: payload.conceptKey,
-          sourceType: (payload.sourceType === 'text' ? 'text' : 'web'),
+          sourceType: payload.sourceType === 'text' ? 'text' : 'web',
           title: payload.title || 'Agent Search Result',
           url: payload.url,
           quote: payload.evidenceText,
-          locationLabel: 'AI Extracted'
+          locationLabel: 'AI Extracted',
         });
         break;
       }

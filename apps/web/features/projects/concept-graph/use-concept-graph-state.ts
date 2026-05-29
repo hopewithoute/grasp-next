@@ -33,7 +33,7 @@ export function useClientHydrated() {
   return useSyncExternalStore(
     subscribeToHydration,
     getClientHydrationSnapshot,
-    getServerHydrationSnapshot,
+    getServerHydrationSnapshot
   );
 }
 
@@ -49,7 +49,9 @@ export type ConceptGraphState = {
 };
 
 export function useConceptGraphState(concepts: ConceptRow[]) {
-  const [pendingSelectedId, setPendingSelectedId] = useState<string | null>(concepts[0]?.id ?? null);
+  const [pendingSelectedId, setPendingSelectedId] = useState<string | null>(
+    concepts[0]?.id ?? null
+  );
   const [chatContextConceptIds, setChatContextConceptIds] = useState<string[]>([]);
   const [isInventoryCollapsed, setIsInventoryCollapsed] = useState<boolean>(true);
   const [isRefinementCollapsed, setIsRefinementCollapsed] = useState<boolean>(false);

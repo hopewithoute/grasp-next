@@ -44,7 +44,10 @@ export function ProjectPipelineStatus({
                 Source to publish, one workspace.
               </h2>
             </div>
-            <Sparkles className="hidden size-5 shrink-0 text-brand-accent md:block" strokeWidth={1.5} />
+            <Sparkles
+              className="hidden size-5 shrink-0 text-brand-accent md:block"
+              strokeWidth={1.5}
+            />
           </header>
 
           <ol className="divide-y divide-border border-y border-border">

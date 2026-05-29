@@ -104,4 +104,3 @@ export function shortenBlockId(blockId: string) {
   const parts = blockId.split(':');
   return parts.at(-1) ?? blockId;
 }
-

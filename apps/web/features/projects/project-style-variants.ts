@@ -88,7 +88,7 @@ export const sourceModeButtonVariants = cva('rounded-full px-2.5 py-1 transition
   },
 });
 
-const chatMessageVariants = cva('rounded-[1.25rem] px-4 py-3 text-sm leading-7', {
+export const chatMessageVariants = cva('rounded-[1.25rem] px-4 py-3 text-sm leading-7', {
   variants: {
     role: {
       agent: 'border border-border bg-card text-card-foreground',
@@ -97,7 +97,7 @@ const chatMessageVariants = cva('rounded-[1.25rem] px-4 py-3 text-sm leading-7',
   },
 });
 
-const stageLinkVariants = cva(
+export const stageLinkVariants = cva(
   'group relative flex min-w-[12rem] items-start gap-3 rounded-[1.4rem] border p-4 transition-all duration-200 hover:border-brand-accent-border hover:bg-brand-accent-surface',
   {
     variants: {
@@ -112,7 +112,7 @@ const stageLinkVariants = cva(
   }
 );
 
-const stageMarkerVariants = cva(
+export const stageMarkerVariants = cva(
   'mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-xl border text-xs font-semibold',
   {
     variants: {
@@ -132,7 +132,8 @@ export const statusChipVariants = cva(
   {
     variants: {
       ready: {
-        false: 'border-status-neutral-border bg-status-neutral-surface text-status-neutral-foreground',
+        false:
+          'border-status-neutral-border bg-status-neutral-surface text-status-neutral-foreground',
         true: 'border-status-success-border bg-status-success-surface text-status-success-foreground',
       },
     },

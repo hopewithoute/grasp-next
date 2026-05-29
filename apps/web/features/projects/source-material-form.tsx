@@ -1,6 +1,14 @@
 'use client';
 
-import { useActionState, useEffect, useLayoutEffect, useMemo, useRef, useState, useTransition } from 'react';
+import {
+  useActionState,
+
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  useTransition,
+} from 'react';
 import { FileText, Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,7 +17,10 @@ import {
   deleteProjectSourceFormAction,
   updateProjectSourceFormAction,
 } from './actions';
-import { IngestionActivityPanel, type IngestionActivityPanelHandle } from './ingestion-activity-panel';
+import {
+  IngestionActivityPanel,
+  type IngestionActivityPanelHandle,
+} from './ingestion-activity-panel';
 import { sourceModeButtonVariants, sourceTextareaVariants } from './project-style-variants';
 
 export type ProjectSourceItem = {
@@ -32,7 +43,7 @@ export function ProjectSourcesPanel({ projectId, sources }: ProjectSourcesPanelP
     ? (sources.find((source) => source.id === selectedSourceId) ?? sources[0])
     : null;
   const ingestionPanelRef = useRef<IngestionActivityPanelHandle>(null);
-  
+
   return (
     <div className="grid gap-6 h-full xl:grid-cols-[18rem_minmax(0,1fr)_18rem]">
       <aside className="flex min-w-0 flex-col gap-3 overflow-hidden xl:h-full">
@@ -45,7 +56,8 @@ export function ProjectSourcesPanel({ projectId, sources }: ProjectSourcesPanelP
           </span>
         </div>
 
-        <button aria-label="Button"
+        <button
+          aria-label="Button"
           className="flex w-full shrink-0 items-center justify-center gap-2 rounded-[1.1rem] border border-dashed border-brand-accent-border/30 bg-brand-accent/[0.04] px-3 py-2.5 text-xs font-medium text-brand-accent-foreground transition hover:border-brand-accent-border hover:bg-brand-accent/[0.08]"
           onClick={() => setIsAddingNew(true)}
           type="button"
@@ -55,47 +67,51 @@ export function ProjectSourcesPanel({ projectId, sources }: ProjectSourcesPanelP
         </button>
 
         <div className="min-h-0 flex-1 overflow-y-auto">
-        {sources.length ? (
-          <ul className="space-y-2">
-            {sources.map((source, index) => {
-              const counts = getTextCounts(source.content ?? '');
+          {sources.length ? (
+            <ul className="space-y-2">
+              {sources.map((source, index) => {
+                const counts = getTextCounts(source.content ?? '');
 
-              return (
-                <li key={source.id}>
-                  <button aria-label="Button"
-                    className={`w-full rounded-[1.1rem] border px-4 py-3 text-left transition ${
-                      selectedSource?.id === source.id
-                        ? 'border-brand-accent-border bg-brand-accent-surface'
-                        : 'border-border bg-white/[0.035] hover:bg-muted/50'
-                    }`}
-                    onClick={() => { setSelectedSourceId(source.id); setIsAddingNew(false); }}
-                    type="button"
-                  >
-                    <span className="mb-2 flex items-center justify-between gap-2">
-                      <span className="truncate text-sm font-medium text-foreground">
-                        {source.title}
+                return (
+                  <li key={source.id}>
+                    <button
+                      aria-label="Button"
+                      className={`w-full rounded-[1.1rem] border px-4 py-3 text-left transition ${
+                        selectedSource?.id === source.id
+                          ? 'border-brand-accent-border bg-brand-accent-surface'
+                          : 'border-border bg-white/[0.035] hover:bg-muted/50'
+                      }`}
+                      onClick={() => {
+                        setSelectedSourceId(source.id);
+                        setIsAddingNew(false);
+                      }}
+                      type="button"
+                    >
+                      <span className="mb-2 flex items-center justify-between gap-2">
+                        <span className="truncate text-sm font-medium text-foreground">
+                          {source.title}
+                        </span>
+                        <span className="font-mono text-[0.6rem] text-muted-foreground">
+                          {String(index + 1).padStart(2, '0')}
+                        </span>
                       </span>
-                      <span className="font-mono text-[0.6rem] text-muted-foreground">
-                        {String(index + 1).padStart(2, '0')}
+                      <span className="line-clamp-2 text-xs leading-5 text-muted-foreground">
+                        {getSourcePreview(source.content)}
                       </span>
-                    </span>
-                    <span className="line-clamp-2 text-xs leading-5 text-muted-foreground">
-                      {getSourcePreview(source.content)}
-                    </span>
-                    <span className="mt-3 flex items-center justify-between font-mono text-[0.6rem] tracking-[0.14em] text-foreground/38 uppercase">
-                      <span>{source.type}</span>
-                      <span>{counts.words} words</span>
-                    </span>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        ) : (
-          <div className="rounded-[1.1rem] border border-dashed border-border bg-card/50 px-4 py-5 text-sm leading-6 text-muted-foreground">
-            No sources yet. Add markdown or pasted text above.
-          </div>
-        )}
+                      <span className="mt-3 flex items-center justify-between font-mono text-[0.6rem] tracking-[0.14em] text-foreground/38 uppercase">
+                        <span>{source.type}</span>
+                        <span>{counts.words} words</span>
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          ) : (
+            <div className="rounded-[1.1rem] border border-dashed border-border bg-card/50 px-4 py-5 text-sm leading-6 text-muted-foreground">
+              No sources yet. Add markdown or pasted text above.
+            </div>
+          )}
         </div>
       </aside>
 
@@ -106,7 +122,11 @@ export function ProjectSourcesPanel({ projectId, sources }: ProjectSourcesPanelP
               {isAddingNew ? 'new source' : 'source editor'}
             </span>
             <h3 className="text-xl font-medium tracking-tight text-foreground">
-              {isAddingNew ? 'Add new source' : selectedSource ? selectedSource.title : 'Select a source'}
+              {isAddingNew
+                ? 'Add new source'
+                : selectedSource
+                  ? selectedSource.title
+                  : 'Select a source'}
             </h3>
           </div>
           {selectedSource && !isAddingNew && (
@@ -119,9 +139,21 @@ export function ProjectSourcesPanel({ projectId, sources }: ProjectSourcesPanelP
 
         <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
           {isAddingNew ? (
-            <ProjectSourceAddForm projectId={projectId} onIngestionTrigger={(sourceId, title, type, content) => { setIsAddingNew(false); ingestionPanelRef.current?.startIngestion(sourceId, title, type, content); }} />
+            <ProjectSourceAddForm
+              projectId={projectId}
+              onIngestionTrigger={(sourceId, title, type, content) => {
+                setIsAddingNew(false);
+                ingestionPanelRef.current?.startIngestion(sourceId, title, type, content);
+              }}
+            />
           ) : selectedSource ? (
-            <ProjectSourceEditForm key={selectedSource.id} source={selectedSource} onIngestionTrigger={(sourceId, title, type, content) => ingestionPanelRef.current?.startIngestion(sourceId, title, type, content)} />
+            <ProjectSourceEditForm
+              key={selectedSource.id}
+              source={selectedSource}
+              onIngestionTrigger={(sourceId, title, type, content) =>
+                ingestionPanelRef.current?.startIngestion(sourceId, title, type, content)
+              }
+            />
           ) : (
             <p className="py-8 text-center text-sm text-muted-foreground">
               Select a source from the left or add a new one.
@@ -137,7 +169,13 @@ export function ProjectSourcesPanel({ projectId, sources }: ProjectSourcesPanelP
   );
 }
 
-function ProjectSourceAddForm({ projectId, onIngestionTrigger }: { projectId: string; onIngestionTrigger?: (sourceId: string, title: string, type: string, content: string) => void }) {
+function ProjectSourceAddForm({
+  projectId,
+  onIngestionTrigger,
+}: {
+  projectId: string;
+  onIngestionTrigger?: (sourceId: string, title: string, type: string, content: string) => void;
+}) {
   const [state, formAction, isPending] = useActionState(addProjectSourceFormAction, {
     error: null,
     success: false,
@@ -156,11 +194,11 @@ function ProjectSourceAddForm({ projectId, onIngestionTrigger }: { projectId: st
   };
 
   useLayoutEffect(() => {
-      if (state.success && state.sourceId && state.sourceId !== lastSourceIdRef.current) {
+    if (state.success && state.sourceId && state.sourceId !== lastSourceIdRef.current) {
       lastSourceIdRef.current = state.sourceId;
       const values = submittedValuesRef.current;
-      // eslint-disable-next-line react-doctor/no-event-handler, react-doctor/no-pass-data-to-parent
-        if (values && onIngestionTrigger) {
+
+      if (values && onIngestionTrigger) {
         onIngestionTrigger(state.sourceId, values.title, values.type, values.content);
       }
     }
@@ -179,7 +217,13 @@ function ProjectSourceAddForm({ projectId, onIngestionTrigger }: { projectId: st
   );
 }
 
-function ProjectSourceEditForm({ source, onIngestionTrigger }: { source: ProjectSourceItem; onIngestionTrigger?: (sourceId: string, title: string, type: string, content: string) => void }) {
+function ProjectSourceEditForm({
+  source,
+  onIngestionTrigger,
+}: {
+  source: ProjectSourceItem;
+  onIngestionTrigger?: (sourceId: string, title: string, type: string, content: string) => void;
+}) {
   const [state, formAction, isPending] = useActionState(updateProjectSourceFormAction, {
     error: null,
     success: false,
@@ -203,11 +247,11 @@ function ProjectSourceEditForm({ source, onIngestionTrigger }: { source: Project
   };
 
   useLayoutEffect(() => {
-      if (state.success && state.sourceId && !triggeredRef.current) {
+    if (state.success && state.sourceId && !triggeredRef.current) {
       triggeredRef.current = true;
       const values = submittedValuesRef.current;
-      // eslint-disable-next-line react-doctor/no-event-handler, react-doctor/no-pass-data-to-parent
-        if (values && onIngestionTrigger) {
+
+      if (values && onIngestionTrigger) {
         onIngestionTrigger(state.sourceId, values.title, values.type, values.content);
       }
     } else if (!state.success) {
@@ -229,7 +273,8 @@ function ProjectSourceEditForm({ source, onIngestionTrigger }: { source: Project
         title={source.title}
         type={source.type}
         extraActions={
-          <button aria-label="Button"
+          <button
+            aria-label="Button"
             className="inline-flex h-9 items-center gap-1.5 rounded-full border border-border bg-transparent px-4 text-xs text-muted-foreground transition hover:border-status-danger-border hover:bg-status-danger-surface hover:text-status-danger-foreground disabled:opacity-50"
             disabled={isDeleting}
             onClick={() => {
@@ -292,7 +337,10 @@ function ProjectSourceFields({
       <input name="type" type="hidden" value={type === 'text' ? 'text' : 'markdown'} />
 
       <div className="space-y-2 shrink-0">
-        <label className="text-sm font-medium text-muted-foreground" htmlFor={`${sourceId ?? 'new'}-title`}>
+        <label
+          className="text-sm font-medium text-muted-foreground"
+          htmlFor={`${sourceId ?? 'new'}-title`}
+        >
           Title
         </label>
         <Input
@@ -307,21 +355,26 @@ function ProjectSourceFields({
 
       <div className="flex min-h-0 flex-1 flex-col gap-2">
         <div className="flex shrink-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <label className="text-sm font-medium text-muted-foreground" htmlFor={`${sourceId ?? 'new'}-content`}>
+          <label
+            className="text-sm font-medium text-muted-foreground"
+            htmlFor={`${sourceId ?? 'new'}-content`}
+          >
             Content
           </label>
           <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground sm:justify-end">
             <span className="font-mono tabular-nums">{counts.words} words</span>
             <span className="font-mono tabular-nums">{counts.characters} chars</span>
             <div className="flex rounded-full border border-border bg-white/[0.035] p-0.5">
-              <button aria-label="Button"
+              <button
+                aria-label="Button"
                 className={sourceModeButtonVariants({ active: mode === 'edit' })}
                 onClick={() => setMode('edit')}
                 type="button"
               >
                 Edit
               </button>
-              <button aria-label="Button"
+              <button
+                aria-label="Button"
                 className={sourceModeButtonVariants({ active: mode === 'preview' })}
                 onClick={() => setMode('preview')}
                 type="button"
@@ -333,7 +386,8 @@ function ProjectSourceFields({
         </div>
 
         {mode === 'edit' ? (
-          <textarea aria-label="Text field" 
+          <textarea
+            aria-label="Text field"
             className={`${sourceTextareaVariants({ compact: false })} flex-1 resize-none`}
             id={`${sourceId ?? 'new'}-content`}
             name="content"
@@ -379,12 +433,10 @@ function ProjectSourceFields({
 
 function SourcePreview({ value }: { value: string }) {
   const blocks = useMemo(() => {
-    return value
-      .split(/\n{2,}/)
-      .flatMap((block) => {
-        const trimmed = block.trim();
-        return trimmed ? [{ id: crypto.randomUUID(), text: trimmed }] : [];
-      });
+    return value.split(/\n{2,}/).flatMap((block) => {
+      const trimmed = block.trim();
+      return trimmed ? [{ id: crypto.randomUUID(), text: trimmed }] : [];
+    });
   }, [value]);
 
   if (!blocks.length) {
