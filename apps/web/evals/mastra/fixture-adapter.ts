@@ -3,9 +3,9 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 type RunEvalsDataItem = {
-  input: string | any;
-  groundTruth?: any;
-  expectedTrajectory?: any;
+  input: unknown;
+  groundTruth?: unknown;
+  expectedTrajectory?: unknown;
 };
 
 const currentDir = dirname(fileURLToPath(import.meta.url));

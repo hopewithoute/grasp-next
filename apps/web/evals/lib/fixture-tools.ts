@@ -49,14 +49,13 @@ export function createRefinementToolOverrides(fixture: RefinementToolFixture = {
       };
     },
     'search-web-ddg': async () => ({
-      results:
-        fixture.webSearchResults ?? [
-          {
-            title: 'React History Fixture',
-            description: 'React was originally created by Facebook in 2013.',
-            url: 'https://example.test/react-history',
-          },
-        ],
+      results: fixture.webSearchResults ?? [
+        {
+          title: 'React History Fixture',
+          description: 'React was originally created by Facebook in 2013.',
+          url: 'https://example.test/react-history',
+        },
+      ],
     }),
   };
 }

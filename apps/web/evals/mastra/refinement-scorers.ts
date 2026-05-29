@@ -14,8 +14,8 @@ export const requiredToolsScorer = createScorer({
     const trajectory = run.output as unknown as { steps?: ToolCall[] };
     const calledTools = (trajectory.steps ?? []).map((s) => s.toolName);
     const required = (run.expectedTrajectory?.steps ?? [])
-      .filter((s: any) => s.stepType === 'tool_call')
-      .map((s: any) => s.name);
+      .filter((s) => s.stepType === 'tool_call')
+      .map((s) => s.name);
     const missing = required.filter((t: string) => !calledTools.includes(t));
     return { calledTools, required, missing };
   })

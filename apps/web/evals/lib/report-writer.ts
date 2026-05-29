@@ -23,8 +23,7 @@ export async function writeEvalReport(report: EvalReport) {
 }
 
 export async function readEvalReport(agent: string, target = 'latest') {
-  const reportPath =
-    target === 'latest' ? join(reportsDir, agent, 'latest-fixture.json') : target;
+  const reportPath = target === 'latest' ? join(reportsDir, agent, 'latest-fixture.json') : target;
 
   return JSON.parse(await readFile(reportPath, 'utf8')) as EvalReport;
 }

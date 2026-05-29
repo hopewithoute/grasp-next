@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { canUseAgentModel } from '@grasp/ai/model-resolver';
+import { canUseAgent, mastra } from '@grasp/ai';
 import { embedText, embedTexts } from '@grasp/ai/embeddings';
 import {
   buildLinkCandidates,
@@ -10,7 +10,6 @@ import {
   extractChunk,
   ingestionAgentInstructions,
   mergeDraft,
-  sourceLinkingWorkflow,
   type LinkTrace,
 } from '@grasp/ai/ingestion';
 import {
@@ -32,9 +31,7 @@ import {
   createScorer,
   createFaithfulnessScorer,
   createHallucinationScorer,
-  type MastraScorer,
 } from '@grasp/ai/evals';
-import { resolveAgentModel } from '@grasp/ai/model-resolver';
 import { parseEvalCliOptions } from '../lib/cli';
 import { compareReports } from '../lib/compare';
 import { createEvalReport } from '../lib/eval-runner';
@@ -221,7 +218,7 @@ const relationshipTypeScorer = createScorer({
     const output = run.output as unknown as IngestionAgentOutput;
     const validTypes = new Set(['prerequisite', 'part_of', 'related_to', 'explains']);
     const rels = output.relationships ?? [];
-    const allValid = rels.every((r) => validTypes.has((r as any).relationshipType));
+    const allValid = rels.every((r) => validTypes.has((r as { relationshipType?: string }).relationshipType || ''));
     return { total: rels.length, allValid };
   })
   .analyze(({ results }) => ({
@@ -258,12 +255,7 @@ const retrievalUsageScorer = createScorer({
 // ─── LLM Judge scorers (from @mastra/evals) ─────────────────────────────────
 
 function getJudgeModel() {
-  try {
-    const model = resolveAgentModel('ingestionAgent', process.env);
-    return model;
-  } catch {
-    return undefined;
-  }
+  return resolveModelLabel();
 }
 
 function buildFaithfulnessScorer(context: string[]) {
@@ -492,6 +484,7 @@ async function ingestSourceWithRetrieval({
         query,
       }),
   });
+  const sourceLinkingWorkflow = mastra.getWorkflow('sourceLinkingWorkflow');
   const linkingRun = await sourceLinkingWorkflow.createRun({ resourceId: projectId });
   const linkingResult = await linkingRun.start({
     inputData: { candidates: linkCandidates, extraction: draft, useModel: true },
@@ -606,7 +599,7 @@ function resolveModelLabel() {
 async function scoreCase(
   id: string,
   output: unknown,
-  scorers: Array<MastraScorer<any, any, any, any>>,
+  scorers: Array<{ id: string; run: (opts: never) => Promise<unknown> }>,
   opts: { groundTruth?: unknown; metrics?: Record<string, unknown>; sourceText?: string } = {}
 ): Promise<EvalCaseResult> {
   const dimensions: Record<string, number> = {};
@@ -617,7 +610,7 @@ async function scoreCase(
     const result = await scorer.run({
       output,
       groundTruth: opts.groundTruth,
-    } as any);
+    } as never);
     const scorerResult = result as { score?: unknown; reason?: unknown };
     if (typeof scorerResult.score === 'number') {
       dimensions[scorer.id] = scorerResult.score;
@@ -685,25 +678,22 @@ async function main() {
     return;
   }
 
-  if (!canUseAgentModel('ingestionAgent', process.env)) {
-    console.log(
-      JSON.stringify(
-        {
-          skipped: true,
-          reason:
-            'No configured LLM credentials for ingestionAgent. Set OPENAI_API_KEY, ANTHROPIC_API_KEY, or OPENAI_COMPATIBLE_* credentials.',
-        },
-        null,
-        2
-      )
-    );
+  if (!canUseAgent()) {
+    console.log(JSON.stringify({
+      skipped: true,
+      reason: 'No configured LLM credentials. Set OPENAI_API_KEY, ANTHROPIC_API_KEY, XIAOMI_API_KEY, or AI_MODEL.',
+    }, null, 2));
     return;
   }
+
+  mastra.getAgent('ingestionAgent');
+  mastra.getAgent('linkAdjudicatorAgent');
 
   const sourceA = await readFile(resolve(docsDir, 'source-a-economics-basics.md'), 'utf8');
   const sourceB = await readFile(resolve(docsDir, 'source-b-elasticity.md'), 'utf8');
   const sourceC = await readFile(resolve(docsDir, 'source-c-total-revenue.md'), 'utf8');
 
+  console.error(`[Eval] Starting Ingestion Eval...`);
   const results: EvalCaseResult[] = [];
 
   // Case 1: Fresh extraction
@@ -728,13 +718,11 @@ async function main() {
       },
     })
   );
+  console.error(`[Eval] Case 'fresh-source-extraction' completed: ${results[results.length - 1].passed ? 'PASSED' : 'FAILED'} (Score: ${results[results.length - 1].score.toFixed(2)})`);
 
   // Case 2: Incremental extraction
-  const draftA = await extractSourceWithoutDb({
-    content: sourceA,
-    sourceId: 'eval-source-a',
-    title: 'Economics Basics',
-  });
+  console.error(`[Eval] Running 'incremental-source-extraction'...`);
+  const draftA = freshDraft;
   const draftB = await extractSourceWithoutDb({
     content: sourceB,
     sourceId: 'eval-source-b',
@@ -758,8 +746,10 @@ async function main() {
       },
     })
   );
+  console.error(`[Eval] Case 'incremental-source-extraction' completed: ${results[results.length - 1].passed ? 'PASSED' : 'FAILED'} (Score: ${results[results.length - 1].score.toFixed(2)})`);
 
   // Case 3: Graph walk (real mode only)
+  console.error(`[Eval] Checking graph-walk...`);
   if (options.mode === 'real' && process.env.DATABASE_URL && hasEmbeddingProvider(process.env)) {
     const embeddingPreflight = await checkEmbeddingProvider();
     if (!embeddingPreflight.ok) {
@@ -776,6 +766,7 @@ async function main() {
       results.push(
         await scoreCase('graph-walk-retrieval-linking', activity, [retrievalUsageScorer])
       );
+      console.error(`[Eval] Case 'graph-walk-retrieval-linking' completed: ${results[results.length - 1].passed ? 'PASSED' : 'FAILED'} (Score: ${results[results.length - 1].score.toFixed(2)})`);
     }
   } else if (options.mode === 'real') {
     results.push({
@@ -790,41 +781,32 @@ async function main() {
 
 
   // ─── Edge Cases ──────────────────────────────────────────────────────────
+  console.error(`[Eval] Running edge cases (empty, short, technical)...`);
   const fixturesDir = resolve(currentDir, '../../../../docs/example/fixtures');
 
-  // Empty source
-  const emptySource = await readFile(resolve(fixturesDir, 'source-empty.md'), 'utf8');
-  const emptyDraft = await extractSourceWithoutDb({
-    content: emptySource,
-    sourceId: 'eval-empty',
-    title: 'Empty Source',
-  });
+  const [emptySource, shortSource, techSource] = await Promise.all([
+    readFile(resolve(fixturesDir, 'source-empty.md'), 'utf8'),
+    readFile(resolve(fixturesDir, 'source-short.md'), 'utf8'),
+    readFile(resolve(fixturesDir, 'source-technical.md'), 'utf8'),
+  ]);
+
+  const [emptyDraft, shortDraft, techDraft] = await Promise.all([
+    extractSourceWithoutDb({ content: emptySource, sourceId: 'eval-empty', title: 'Empty Source' }),
+    extractSourceWithoutDb({ content: shortSource, sourceId: 'eval-short', title: 'Photosynthesis' }),
+    extractSourceWithoutDb({ content: techSource, sourceId: 'eval-technical', title: 'Kubernetes Architecture' }),
+  ]);
+
   results.push(
     await scoreCase('empty-source', emptyDraft, [emptySourceScorer, schemaValidityScorer], {
       metrics: { conceptCount: emptyDraft.concepts.length },
     })
   );
 
-  // Short source
-  const shortSource = await readFile(resolve(fixturesDir, 'source-short.md'), 'utf8');
-  const shortDraft = await extractSourceWithoutDb({
-    content: shortSource,
-    sourceId: 'eval-short',
-    title: 'Photosynthesis',
-  });
   results.push(
     await scoreCase('short-source', shortDraft, [shortSourceScorer, schemaValidityScorer, groundingScorer], {
       metrics: { conceptCount: shortDraft.concepts.length },
     })
   );
-
-  // Technical jargon-heavy source
-  const techSource = await readFile(resolve(fixturesDir, 'source-technical.md'), 'utf8');
-  const techDraft = await extractSourceWithoutDb({
-    content: techSource,
-    sourceId: 'eval-technical',
-    title: 'Kubernetes Architecture',
-  });
   results.push(
     await scoreCase('technical-jargon-heavy', techDraft, [
       technicalDepthScorer,
@@ -839,6 +821,7 @@ async function main() {
       },
     })
   );
+  console.error(`[Eval] Case 'technical-jargon-heavy' completed: ${results[results.length - 1].passed ? 'PASSED' : 'FAILED'} (Score: ${results[results.length - 1].score.toFixed(2)})`);
 
   // Cross-source dedup (merge source-a with source-b again)
   const crossDedupDraft = mergeDraft(draftA, draftB);
@@ -853,6 +836,7 @@ async function main() {
       },
     })
   );
+  console.error(`[Eval] Case 'cross-source-dedup' completed: ${results[results.length - 1].passed ? 'PASSED' : 'FAILED'} (Score: ${results[results.length - 1].score.toFixed(2)})`);
 
   // Relationship type validity (use tech source which has many relationships)
   results.push(
@@ -867,7 +851,7 @@ async function main() {
     fixtureVersion: options.mode === 'real' ? 'ingestion-agent-real-v2' : 'ingestion-agent-fixture-v2',
     mode: options.mode,
     model: resolveModelLabel(),
-    promptHash: hashText(ingestionAgentInstructions),
+    promptHash: hashText(JSON.stringify(ingestionAgentInstructions)),
     toolHash: hashToolDescriptions(
       createIngestionRetrievalTools({
         getConceptContext: async () => null,
@@ -875,6 +859,10 @@ async function main() {
       })
     ),
   });
+
+  console.error(`[Eval] Case 'relationship-type-validity' completed: ${results[results.length - 1].passed ? 'PASSED' : 'FAILED'} (Score: ${results[results.length - 1].score.toFixed(2)})`);
+  console.error(`\n[Eval] === SUMMARY ===`);
+  console.error(`[Eval] Passed: ${report.summary.passed}/${report.summary.total} | Average Score: ${(report.summary.averageScore * 100).toFixed(1)}%`);
 
   console.log(JSON.stringify(report, null, 2));
   if (options.writeReport) {
@@ -895,16 +883,18 @@ async function compareLatest(options: EvalCliOptions) {
   const sourceA = await readFile(resolve(docsDir, 'source-a-economics-basics.md'), 'utf8');
   const sourceB = await readFile(resolve(docsDir, 'source-b-elasticity.md'), 'utf8');
 
-  const draftA = await extractSourceWithoutDb({
-    content: sourceA,
-    sourceId: 'eval-source-a',
-    title: 'Economics Basics',
-  });
-  const draftB = await extractSourceWithoutDb({
-    content: sourceB,
-    sourceId: 'eval-source-b',
-    title: 'Elasticity',
-  });
+  const [draftA, draftB] = await Promise.all([
+    extractSourceWithoutDb({
+      content: sourceA,
+      sourceId: 'eval-source-a',
+      title: 'Economics Basics',
+    }),
+    extractSourceWithoutDb({
+      content: sourceB,
+      sourceId: 'eval-source-b',
+      title: 'Elasticity',
+    }),
+  ]);
   const existingKeys = new Set(draftA.concepts.map((c) => c.conceptKey));
   const finalDraft = mergeDraft(draftA, draftB);
 
@@ -944,7 +934,7 @@ async function compareLatest(options: EvalCliOptions) {
     fixtureVersion: 'ingestion-agent-fixture-v1',
     mode: 'fixture',
     model: resolveModelLabel(),
-    promptHash: hashText(ingestionAgentInstructions),
+    promptHash: hashText(JSON.stringify(ingestionAgentInstructions)),
     toolHash: hashToolDescriptions(
       createIngestionRetrievalTools({
         getConceptContext: async () => null,
@@ -956,7 +946,7 @@ async function compareLatest(options: EvalCliOptions) {
   const comparison = compareReports(current, baseline);
   console.log(JSON.stringify(comparison, null, 2));
 
-  if (comparison.cases.some((item: any) => item.regressed)) {
+  if (comparison.cases.some((item) => item.regressed)) {
     process.exitCode = 1;
   }
 }

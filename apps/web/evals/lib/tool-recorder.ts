@@ -25,7 +25,11 @@ export function wrapToolsWithRecorder<T extends Record<string, unknown>>(
 ): T {
   return Object.fromEntries(
     Object.entries(tools).map(([key, tool]) => {
-      if (!tool || typeof tool !== 'object' || typeof (tool as { execute?: unknown }).execute !== 'function') {
+      if (
+        !tool ||
+        typeof tool !== 'object' ||
+        typeof (tool as { execute?: unknown }).execute !== 'function'
+      ) {
         return [key, tool];
       }
 

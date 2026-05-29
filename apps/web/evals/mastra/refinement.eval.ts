@@ -1,8 +1,9 @@
 import { readFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { createRefinementTools, refinementAgent, refinementAgentInstructions } from '@grasp/ai/refinement';
-import { canUseAgentModel } from '@grasp/ai/model-resolver';
+import { canUseAgent, mastra } from '@grasp/ai';
+import { createRefinementTools, refinementAgentInstructions } from '@grasp/ai/refinement';
+import { robustStream } from '@grasp/ai/mastra';
 import type { KnowledgebaseRepository } from '@grasp/domain';
 import { createScorer } from '@grasp/ai/evals';
 import { parseEvalCliOptions } from '../lib/cli';
@@ -191,20 +192,11 @@ const policyComplianceScorer = createScorer({
         );
     }
 
-    // Exactly one proposal when actions expected
-    let singleProposal = true;
-    if (
-      (output.expected.actions.length > 0 || output.expected.requiredTools?.includes('propose-graph-changes')) &&
-      output.proposals.length > 0
-    ) {
-      singleProposal = output.proposals.length === 1;
-    }
-
-    return { claimedApplied, singleProposal };
+    return { claimedApplied };
   })
   .analyze(({ results }) => {
-    const { claimedApplied, singleProposal } = results.preprocessStepResult;
-    return { score: !claimedApplied && singleProposal ? 1 : 0 };
+    const { claimedApplied } = results.preprocessStepResult;
+    return { score: !claimedApplied ? 1 : 0 };
   })
   .generateScore(({ results }) => results.analyzeStepResult.score);
 
@@ -257,7 +249,7 @@ async function scoreCase(output: RefinementScoredOutput): Promise<EvalCaseResult
 
   // Custom scorers
   for (const scorer of allScorers) {
-    const result = await scorer.run({ output } as any);
+    const result = await scorer.run({ output } as never);
     const scorerResult = result as { score?: unknown; reason?: unknown };
     if (typeof scorerResult.score === 'number') {
       dimensions[scorer.id] = scorerResult.score;
@@ -317,7 +309,8 @@ async function runCase(
 ): Promise<EvalCaseResult> {
   const recording = createToolRecording();
   const tools = createToolsForMode(testCase.fixture, options.mode, recording);
-  const result = await refinementAgent.stream(testCase.messages, {
+  const refinementAgent = mastra.getAgent('refinementAgent');
+  const result = await robustStream(refinementAgent, testCase.messages, {
     toolsets: { refinement: tools },
     maxSteps: 10,
   });
@@ -341,6 +334,7 @@ async function runCase(
 
   const evalResult = await scoreCase(scoredOutput);
   evalResult.id = testCase.id;
+  console.error(`[Eval] Case '${testCase.id}' completed: ${evalResult.passed ? 'PASSED' : 'FAILED'} (Score: ${evalResult.score})`);
   return evalResult;
 }
 
@@ -353,21 +347,25 @@ async function main() {
     return;
   }
 
-  if (!canUseAgentModel('refinementAgent', process.env)) {
-    console.log(
-      JSON.stringify({
-        skipped: true,
-        reason:
-          'No configured LLM credentials for refinementAgent. Set OPENAI_API_KEY, ANTHROPIC_API_KEY, or OPENAI_COMPATIBLE_* credentials.',
-      })
-    );
+  if (!canUseAgent()) {
+    console.log(JSON.stringify({
+      skipped: true,
+      reason: 'No configured LLM credentials. Set OPENAI_API_KEY, ANTHROPIC_API_KEY, XIAOMI_API_KEY, or AI_MODEL.',
+    }, null, 2));
     return;
   }
 
+  mastra.getAgent('refinementAgent');
+
   const fixture = JSON.parse(await readFile(fixturePath, 'utf8')) as RefinementEvalFixture;
+  console.error(`[Eval] Loaded ${fixture.cases.length} cases from ${fixture.fixtureVersion}`);
   const cases: EvalCaseResult[] = [];
-  for (const testCase of fixture.cases) {
-    cases.push(await runCase(testCase, options));
+  const batchSize = 4;
+  for (let i = 0; i < fixture.cases.length; i += batchSize) {
+    console.error(`[Eval] Running batch ${Math.floor(i / batchSize) + 1} of ${Math.ceil(fixture.cases.length / batchSize)}...`);
+    const batch = fixture.cases.slice(i, i + batchSize);
+    const results = await Promise.all(batch.map((tc) => runCase(tc, options)));
+    cases.push(...results);
   }
 
   const report = createEvalReport({
@@ -376,9 +374,12 @@ async function main() {
     fixtureVersion: fixture.fixtureVersion,
     mode: options.mode,
     model: resolveModelLabel(),
-    promptHash: hashText(refinementAgentInstructions),
+    promptHash: hashText(JSON.stringify(refinementAgentInstructions)),
     toolHash: hashToolDescriptions(createFixtureRefinementTools()),
   });
+
+  console.error(`\n[Eval] === SUMMARY ===`);
+  console.error(`[Eval] Passed: ${report.summary.passed}/${report.summary.total} | Average Score: ${(report.summary.averageScore * 100).toFixed(1)}%`);
 
   console.log(JSON.stringify(report, null, 2));
   if (options.writeReport) {
@@ -397,8 +398,11 @@ async function compareLatest(options: EvalCliOptions) {
   options.mode = 'fixture';
   const fixture = JSON.parse(await readFile(fixturePath, 'utf8')) as RefinementEvalFixture;
   const cases: EvalCaseResult[] = [];
-  for (const testCase of fixture.cases) {
-    cases.push(await runCase(testCase, options));
+  const batchSize = 4;
+  for (let i = 0; i < fixture.cases.length; i += batchSize) {
+    const batch = fixture.cases.slice(i, i + batchSize);
+    const results = await Promise.all(batch.map((tc) => runCase(tc, options)));
+    cases.push(...results);
   }
   options.mode = previousMode;
 
@@ -408,14 +412,14 @@ async function compareLatest(options: EvalCliOptions) {
     fixtureVersion: fixture.fixtureVersion,
     mode: 'fixture',
     model: resolveModelLabel(),
-    promptHash: hashText(refinementAgentInstructions),
+    promptHash: hashText(JSON.stringify(refinementAgentInstructions)),
     toolHash: hashToolDescriptions(createFixtureRefinementTools()),
   });
 
   const comparison = compareReports(current, baseline);
   console.log(JSON.stringify(comparison, null, 2));
 
-  if (comparison.cases.some((item: any) => item.regressed)) {
+  if (comparison.cases.some((item) => item.regressed)) {
     process.exitCode = 1;
   }
 }

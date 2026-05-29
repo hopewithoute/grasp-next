@@ -19,11 +19,7 @@
         ]
       },
       "expect": {
-        "forbiddenTools": [
-          "propose-graph-changes",
-          "add-evidence",
-          "add-concept"
-        ],
+        "forbiddenTools": ["propose-graph-changes", "add-evidence", "add-concept"],
         "actions": [],
         "mustNotClaimApplied": true
       }
@@ -78,18 +74,9 @@
         }
       },
       "expect": {
-        "requiredTools": [
-          "search-wiki-concepts",
-          "propose-graph-changes"
-        ],
-        "forbiddenTools": [
-          "add-evidence",
-          "add-concept"
-        ],
-        "requiredToolOrder": [
-          "search-wiki-concepts",
-          "propose-graph-changes"
-        ],
+        "requiredTools": ["search-wiki-concepts", "propose-graph-changes"],
+        "forbiddenTools": ["add-evidence", "add-concept"],
+        "requiredToolOrder": ["search-wiki-concepts", "propose-graph-changes"],
         "actions": [
           {
             "type": "add_evidence",
@@ -122,17 +109,9 @@
         }
       },
       "expect": {
-        "requiredTools": [
-          "search-wiki-concepts",
-          "propose-graph-changes"
-        ],
-        "forbiddenTools": [
-          "add-concept"
-        ],
-        "requiredToolOrder": [
-          "search-wiki-concepts",
-          "propose-graph-changes"
-        ],
+        "requiredTools": ["search-wiki-concepts", "propose-graph-changes"],
+        "forbiddenTools": ["add-concept"],
+        "requiredToolOrder": ["search-wiki-concepts", "propose-graph-changes"],
         "actions": [
           {
             "type": "add_concept",
@@ -165,14 +144,8 @@
         ]
       },
       "expect": {
-        "requiredTools": [
-          "search-wiki-concepts",
-          "propose-graph-changes"
-        ],
-        "requiredToolOrder": [
-          "search-wiki-concepts",
-          "propose-graph-changes"
-        ],
+        "requiredTools": ["search-wiki-concepts", "propose-graph-changes"],
+        "requiredToolOrder": ["search-wiki-concepts", "propose-graph-changes"],
         "actions": [
           {
             "type": "update_concept",
@@ -200,10 +173,7 @@
         ]
       },
       "expect": {
-        "requiredTools": [
-          "search-wiki-concepts",
-          "propose-graph-changes"
-        ],
+        "requiredTools": ["search-wiki-concepts", "propose-graph-changes"],
         "actions": [
           {
             "type": "delete_concept",
@@ -236,10 +206,7 @@
         ]
       },
       "expect": {
-        "requiredTools": [
-          "search-wiki-concepts",
-          "propose-graph-changes"
-        ],
+        "requiredTools": ["search-wiki-concepts", "propose-graph-changes"],
         "actions": [
           {
             "type": "add_relationship",
@@ -269,10 +236,7 @@
         ]
       },
       "expect": {
-        "requiredTools": [
-          "search-wiki-concepts",
-          "propose-graph-changes"
-        ],
+        "requiredTools": ["search-wiki-concepts", "propose-graph-changes"],
         "actions": [
           {
             "type": "add_concept"
@@ -327,18 +291,8 @@
           "propose-graph-changes"
         ],
         "allowedToolOrders": [
-          [
-            "search-web-ddg",
-            "search-wiki-concepts",
-            "read-webpage",
-            "propose-graph-changes"
-          ],
-          [
-            "search-wiki-concepts",
-            "search-web-ddg",
-            "read-webpage",
-            "propose-graph-changes"
-          ]
+          ["search-web-ddg", "search-wiki-concepts", "read-webpage", "propose-graph-changes"],
+          ["search-wiki-concepts", "search-web-ddg", "read-webpage", "propose-graph-changes"]
         ],
         "actions": [
           {
@@ -368,13 +322,8 @@
         ]
       },
       "expect": {
-        "requiredTools": [
-          "search-wiki-concepts",
-          "propose-graph-changes"
-        ],
-        "forbiddenActionTypes": [
-          "add_concept"
-        ],
+        "requiredTools": ["search-wiki-concepts", "propose-graph-changes"],
+        "forbiddenActionTypes": ["add_concept"],
         "actions": [
           {
             "type": "update_concept",
@@ -418,10 +367,7 @@
             "conceptKey": "react"
           }
         ],
-        "requiredTools": [
-          "search-wiki-concepts",
-          "propose-graph-changes"
-        ],
+        "requiredTools": ["search-wiki-concepts", "propose-graph-changes"],
         "forbiddenTools": [],
         "mustNotClaimApplied": true,
         "noOrphanRelationships": true
@@ -438,9 +384,7 @@
       "expect": {
         "actions": [],
         "requiredTools": [],
-        "forbiddenTools": [
-          "propose-graph-changes"
-        ],
+        "forbiddenTools": ["propose-graph-changes"],
         "mustNotClaimApplied": false
       }
     },
@@ -455,10 +399,7 @@
       "expect": {
         "actions": [],
         "requiredTools": [],
-        "forbiddenTools": [
-          "propose-graph-changes",
-          "search-wiki-concepts"
-        ],
+        "forbiddenTools": ["propose-graph-changes", "search-wiki-concepts"],
         "mustNotClaimApplied": false
       }
     },
@@ -499,10 +440,7 @@
             "conceptKey": "javascript"
           }
         ],
-        "requiredTools": [
-          "search-wiki-concepts",
-          "propose-graph-changes"
-        ],
+        "requiredTools": ["search-wiki-concepts", "propose-graph-changes"],
         "forbiddenTools": [],
         "mustNotClaimApplied": true,
         "noOrphanRelationships": true
@@ -540,10 +478,7 @@
             "type": "add_relationship"
           }
         ],
-        "requiredTools": [
-          "search-wiki-concepts",
-          "propose-graph-changes"
-        ],
+        "requiredTools": ["search-wiki-concepts", "propose-graph-changes"],
         "forbiddenTools": [],
         "mustNotClaimApplied": true,
         "noOrphanRelationships": true
