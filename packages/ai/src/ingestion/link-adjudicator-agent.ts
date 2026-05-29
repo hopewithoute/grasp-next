@@ -18,6 +18,7 @@ You must:
 
 export const linkAdjudicatorAgent = new Agent({
   id: 'link-adjudicator-agent',
+  maxRetries: 3,
   name: 'LinkAdjudicatorAgent',
   instructions: linkAdjudicatorAgentInstructions.map(i => i.content).join('\n\n'),
   model: process.env.INGESTION_AGENT_MODEL || process.env.AI_MODEL || 'xiaomi/mimo-v2.5-pro',

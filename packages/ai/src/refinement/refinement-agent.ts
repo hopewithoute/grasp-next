@@ -49,6 +49,7 @@ When a user sends a vague message, greeting, test phrase, or short query without
 
 export const refinementAgent = new Agent({
   id: 'refinement-agent',
+  maxRetries: 3,
   name: 'Refinement Agent',
   instructions: refinementAgentInstructions.map(i => i.content).join('\n\n'),
   memory: createGraspMemory({

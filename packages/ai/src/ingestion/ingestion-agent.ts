@@ -94,6 +94,7 @@ export function buildIngestionPrompt(input: {
 
 export const ingestionAgent = new Agent({
   id: 'ingestion-agent',
+  maxRetries: 3,
   name: 'Source Ingestion Agent',
   instructions: ingestionAgentInstructions.map((i) => i.content).join('\n\n'),
   memory: createGraspMemory({
