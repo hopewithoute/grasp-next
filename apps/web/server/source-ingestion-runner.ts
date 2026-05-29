@@ -13,8 +13,8 @@ import {
   runIngestionChunkAgent,
   sourceLinkingWorkflow,
 } from '@grasp/ai/ingestion';
+import { canUseAgent } from '@grasp/ai';
 import { canUseEmbeddingModel, embedText, embedTexts } from '@grasp/ai/embeddings';
-import { canUseAgentModel } from '@grasp/ai/model-resolver';
 import type { createProjectDeps } from './project-deps';
 
 type ProjectDeps = ReturnType<typeof createProjectDeps>;
@@ -113,9 +113,9 @@ export async function runSourceIngestion(
   try {
     emit({ type: 'ingestion_started', sourceId: input.sourceId, sourceTitle: input.sourceTitle });
 
-    if (!canUseAgentModel('ingestionAgent', process.env)) {
+    if (!canUseAgent()) {
       throw new Error(
-        'No LLM provider configured for ingestionAgent. Set OPENAI_API_KEY, ANTHROPIC_API_KEY, or OPENAI_COMPATIBLE_BASE_URL+OPENAI_COMPATIBLE_API_KEY before running ingestion.'
+        'No LLM provider configured for ingestionAgent. Set AI_MODEL and an appropriate API key before running ingestion.'
       );
     }
 
@@ -225,7 +225,11 @@ export async function runSourceIngestion(
           })
         );
         for (const r of result.relationships) {
-          emit({ type: 'relationship_extracted', source: r.sourceConceptKey, target: r.targetConceptKey });
+          emit({
+            type: 'relationship_extracted',
+            source: r.sourceConceptKey,
+            target: r.targetConceptKey,
+          });
         }
         for (const claim of result.relationClaims) {
           emit({
@@ -342,11 +346,17 @@ export async function runSourceIngestion(
       mastra: {
         resourceId: mastraMemory.resource,
         threadPrefix: mastraMemory.threadPrefix,
-        chunkThreads: chunks.map((chunk) => `${mastraMemory.threadPrefix}:chunk:${chunk.chunkIndex}`),
+        chunkThreads: chunks.map(
+          (chunk) => `${mastraMemory.threadPrefix}:chunk:${chunk.chunkIndex}`
+        ),
       },
     });
 
-    emit({ type: 'ingestion_complete', conceptCount: draft.concepts.length, relationshipCount: draft.relationships.length });
+    emit({
+      type: 'ingestion_complete',
+      conceptCount: draft.concepts.length,
+      relationshipCount: draft.relationships.length,
+    });
   } catch (error) {
     await deps.ingestionRunRepository.markFailed(
       ingestionRun.id,
@@ -358,7 +368,10 @@ export async function runSourceIngestion(
         },
       }
     );
-    emit({ type: 'ingestion_failed', reason: error instanceof Error ? error.message : 'ingestion_failed' });
+    emit({
+      type: 'ingestion_failed',
+      reason: error instanceof Error ? error.message : 'ingestion_failed',
+    });
     throw error;
   }
 }

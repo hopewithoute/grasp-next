@@ -3,9 +3,30 @@ import { Eyebrow } from './home-shared';
 import { InfiniteScrollTrack, PulseBadge } from './motion-components';
 
 const reviewLog = [
-  { id: '1', actor: 'You', delta: 'approved', label: 'Concept graph', meta: 'v3', tone: 'success' as const },
-  { id: '2', actor: 'AI', delta: 'extracted', label: '12 concepts, 7 prerequisites', meta: '4.2s', tone: 'neutral' as const },
-  { id: '3', actor: 'You', delta: 'requested revision', label: 'Lesson §2.1', meta: 'v2', tone: 'warn' as const },
+  {
+    id: '1',
+    actor: 'You',
+    delta: 'approved',
+    label: 'Concept graph',
+    meta: 'v3',
+    tone: 'success' as const,
+  },
+  {
+    id: '2',
+    actor: 'AI',
+    delta: 'extracted',
+    label: '12 concepts, 7 prerequisites',
+    meta: '4.2s',
+    tone: 'neutral' as const,
+  },
+  {
+    id: '3',
+    actor: 'You',
+    delta: 'requested revision',
+    label: 'Lesson §2.1',
+    meta: 'v2',
+    tone: 'warn' as const,
+  },
 ];
 
 export function WorkflowSection() {
@@ -21,13 +42,13 @@ export function WorkflowSection() {
           </h2>
         </div>
         <p className="max-w-[60ch] text-base leading-relaxed text-muted-foreground md:text-lg">
-          Each stage is a strict checkpoint. The studio suspends the pipeline at every review so you stay in total control of the generated artifacts.
+          Each stage is a strict checkpoint. The studio suspends the pipeline at every review so you
+          stay in total control of the generated artifacts.
         </p>
       </header>
 
       {/* Dense Workbench Bento */}
       <div className="grid gap-[1px] bg-border border border-border rounded-3xl overflow-hidden md:grid-cols-12 md:auto-rows-[minmax(220px,auto)]">
-        
         {/* Stage 03 — Reviewable artifacts (Featured) */}
         <article className="relative bg-background p-7 md:col-span-7 md:row-span-2 md:p-8 flex flex-col justify-between">
           <div>
@@ -61,7 +82,15 @@ export function WorkflowSection() {
                       <span className="font-mono text-[0.65rem] tracking-[0.16em] uppercase text-muted-foreground">
                         [{entry.actor}]
                       </span>
-                      <span className={isSuccess ? 'text-brand-accent' : isWarn ? 'text-amber-500' : 'text-foreground'}>
+                      <span
+                        className={
+                          isSuccess
+                            ? 'text-brand-accent'
+                            : isWarn
+                              ? 'text-amber-500'
+                              : 'text-foreground'
+                        }
+                      >
                         {entry.delta}
                       </span>
                       <span className="text-muted-foreground">{entry.label}</span>
@@ -91,10 +120,13 @@ export function WorkflowSection() {
           </header>
           <div className="flex-1 flex flex-col justify-end">
             <p className="text-sm leading-relaxed text-muted-foreground mb-4">
-              Paste markdown or text. The studio validates length, language, and readiness before execution.
+              Paste markdown or text. The studio validates length, language, and readiness before
+              execution.
             </p>
             <div className="font-mono text-xs text-muted-foreground flex items-center gap-2 border border-border rounded-md px-3 py-2 bg-card">
-              <span>status: <span className="text-brand-accent">validated</span></span>
+              <span>
+                status: <span className="text-brand-accent">validated</span>
+              </span>
               <span className="text-border">|</span>
               <span>chars: 42,091</span>
             </div>
@@ -121,8 +153,13 @@ export function WorkflowSection() {
             {/* Infinite Scroll Micro-Interaction */}
             <InfiniteScrollTrack speed={30}>
               {[1, 2, 3, 4, 5].map((i) => (
-                <div key={i} className="font-mono text-[0.7rem] whitespace-nowrap bg-card border border-border px-3 py-1.5 rounded uppercase text-muted-foreground flex items-center gap-2">
-                  <PulseBadge><span className="size-1.5 bg-brand-accent block rounded-full" /></PulseBadge>
+                <div
+                  key={i}
+                  className="font-mono text-[0.7rem] whitespace-nowrap bg-card border border-border px-3 py-1.5 rounded uppercase text-muted-foreground flex items-center gap-2"
+                >
+                  <PulseBadge>
+                    <span className="size-1.5 bg-brand-accent block rounded-full" />
+                  </PulseBadge>
                   node_ext_{i}
                 </div>
               ))}
@@ -144,7 +181,8 @@ export function WorkflowSection() {
             </span>
           </header>
           <p className="text-sm leading-relaxed text-muted-foreground mb-6">
-            Lesson blocks regenerate on instruction. Versions are kept. Nothing publishes until approved.
+            Lesson blocks regenerate on instruction. Versions are kept. Nothing publishes until
+            approved.
           </p>
           <div className="mt-auto flex items-center gap-3 rounded-lg border border-border bg-card px-4 py-3">
             <span className="font-mono text-[0.65rem] tracking-[0.16em] uppercase text-brand-accent">
@@ -153,7 +191,10 @@ export function WorkflowSection() {
             <span className="flex-1 truncate text-sm text-foreground">
               rewrite explanation as a bookshelf analogy
             </span>
-            <span aria-hidden className="inline-block h-3.5 w-[2px] bg-brand-accent stream-cursor" />
+            <span
+              aria-hidden
+              className="inline-block h-3.5 w-[2px] bg-brand-accent stream-cursor"
+            />
           </div>
         </article>
 
@@ -178,7 +219,8 @@ export function WorkflowSection() {
               <span>Query: B-tree vs Table Scan</span>
             </div>
             <div className="relative border-l-2 border-brand-accent pl-4 py-1 text-sm text-foreground">
-              The engine reads <span className="font-mono text-brand-accent">log₁₀₀(N)</span> pages instead of N rows.
+              The engine reads <span className="font-mono text-brand-accent">log₁₀₀(N)</span> pages
+              instead of N rows.
               <div className="mt-2 flex items-center gap-2 font-mono text-[0.65rem] text-muted-foreground uppercase tracking-widest">
                 <ArrowRight className="size-3" strokeWidth={1.5} />
                 cited from §3.2, §3.4
@@ -186,7 +228,6 @@ export function WorkflowSection() {
             </div>
           </div>
         </article>
-
       </div>
     </section>
   );

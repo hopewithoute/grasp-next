@@ -18,7 +18,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={cn('font-sans', geist.variable)} suppressHydrationWarning data-scroll-behavior="smooth">
+    <html
+      lang="en"
+      className={cn('font-sans', geist.variable)}
+      suppressHydrationWarning
+      data-scroll-behavior="smooth"
+    >
       <head>
         {process.env.NODE_ENV === 'development' && (
           <script

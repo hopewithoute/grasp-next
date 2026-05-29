@@ -27,7 +27,7 @@ function parseUIMessageChunkStream(
   );
 }
 
-async function consumeUIMessageStream(
+export async function consumeUIMessageStream(
   stream: ReadableStream<Uint8Array>,
   onMessage: (message: UIMessage) => void
 ) {
@@ -48,7 +48,7 @@ export async function consumeUIMessageChunks(
   const reader = chunks.getReader();
 
   while (true) {
-    // eslint-disable-next-line react-doctor/async-await-in-loop
+
     const { done, value } = await reader.read();
 
     if (done) {

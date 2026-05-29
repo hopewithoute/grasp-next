@@ -17,12 +17,9 @@ function readToolCalls(value: unknown): unknown[] {
 }
 
 export function containsGraphMutationToolCall(event: unknown): boolean {
-  const mutationTools = [
-    'propose-graph-changes',
-  ];
+  const mutationTools = ['propose-graph-changes'];
 
-  const eventRecord =
-    event && typeof event === 'object' ? (event as Record<string, unknown>) : {};
+  const eventRecord = event && typeof event === 'object' ? (event as Record<string, unknown>) : {};
   const steps = Array.isArray(eventRecord.steps) ? eventRecord.steps : [];
   const rootToolCalls = readToolCalls(event);
 

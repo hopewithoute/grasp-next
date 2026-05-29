@@ -14,7 +14,9 @@ export function HomeNav() {
           <BrandMark className="size-5 brand-mark-spin" />
         </span>
         <span>
-          <span className="block text-sm font-medium tracking-tight text-foreground">Adaptive Learning Studio</span>
+          <span className="block text-sm font-medium tracking-tight text-foreground">
+            Adaptive Learning Studio
+          </span>
           <span className="block font-mono text-[0.65rem] tracking-[0.16em] uppercase text-muted-foreground">
             Reviewable AI for creators
           </span>

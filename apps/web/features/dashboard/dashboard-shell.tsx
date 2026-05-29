@@ -49,7 +49,7 @@ const sidebarVariants = cva(
     defaultVariants: {
       collapsed: false,
     },
-  },
+  }
 );
 
 const navItemVariants = cva(
@@ -57,8 +57,7 @@ const navItemVariants = cva(
   {
     variants: {
       active: {
-        false:
-          'text-sidebar-foreground/62 hover:bg-sidebar-accent hover:text-sidebar-foreground',
+        false: 'text-sidebar-foreground/62 hover:bg-sidebar-accent hover:text-sidebar-foreground',
         true: 'bg-sidebar-accent text-sidebar-accent-foreground shadow-sm',
       },
       collapsed: {
@@ -70,7 +69,7 @@ const navItemVariants = cva(
       active: false,
       collapsed: false,
     },
-  },
+  }
 );
 
 function BrandMark({ className = '' }: { className?: string }) {
@@ -147,7 +146,8 @@ function SidebarBody({
             aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
             className={cn(
               'inline-flex size-9 shrink-0 items-center justify-center rounded-xl border border-border bg-card/50 text-muted-foreground transition-colors hover:border-brand-accent-border hover:bg-brand-accent-surface hover:text-brand-accent-foreground',
-              collapsed && 'absolute -right-3 top-5 size-7 rounded-full border border-sidebar-border bg-sidebar',
+              collapsed &&
+                'absolute -right-3 top-5 size-7 rounded-full border border-sidebar-border bg-sidebar'
             )}
             onClick={onCollapseToggle}
             type="button"
@@ -196,7 +196,9 @@ function SidebarBody({
                   <Icon
                     className={cn(
                       'size-4 shrink-0',
-                      active ? 'text-brand-accent-foreground' : 'text-sidebar-foreground/60 group-hover:text-sidebar-foreground/80',
+                      active
+                        ? 'text-brand-accent-foreground'
+                        : 'text-sidebar-foreground/60 group-hover:text-sidebar-foreground/80'
                     )}
                     strokeWidth={1.5}
                   />
@@ -234,7 +236,7 @@ function SidebarBody({
         <Link
           className={cn(
             'group flex items-center gap-3 px-4 py-3 text-sm text-sidebar-foreground/60 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground',
-            collapsed && 'justify-center px-0',
+            collapsed && 'justify-center px-0'
           )}
           href="/"
           onClick={onNavigate}
@@ -350,7 +352,7 @@ export function DashboardShell({ children, topBarSlot, viewer }: DashboardShellP
         aria-label="Sidebar"
         className={cn(
           'h-full shrink-0 max-xl:!hidden xl:sticky xl:top-0 xl:z-30 xl:!flex',
-          sidebarVariants({ collapsed: isCollapsed }),
+          sidebarVariants({ collapsed: isCollapsed })
         )}
       >
         <SidebarBody
@@ -376,7 +378,7 @@ export function DashboardShell({ children, topBarSlot, viewer }: DashboardShellP
         aria-modal={isMobileOpen ? 'true' : undefined}
         className={cn(
           'fixed inset-y-0 left-0 z-50 flex h-full w-[18rem] flex-col border-r border-sidebar-border bg-sidebar transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] xl:hidden',
-          isMobileOpen ? 'translate-x-0' : '-translate-x-full',
+          isMobileOpen ? 'translate-x-0' : '-translate-x-full'
         )}
         role={isMobileOpen ? 'dialog' : undefined}
       >

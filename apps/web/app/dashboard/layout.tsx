@@ -7,10 +7,7 @@ type DashboardLayoutProps = Readonly<{
   projectChrome: ReactNode;
 }>;
 
-export default async function DashboardLayout({
-  children,
-  projectChrome,
-}: DashboardLayoutProps) {
+export default async function DashboardLayout({ children, projectChrome }: DashboardLayoutProps) {
   const viewer = await getViewer();
 
   return (

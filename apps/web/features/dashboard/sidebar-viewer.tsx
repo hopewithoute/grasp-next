@@ -29,7 +29,7 @@ function getInitials(name: string | null, email: string | null): string {
  * to just the avatar (sign-out moves to a long-press / hover affordance via
  * native title attribute fallback — explicit menu is out of scope here).
  */
-export function SidebarViewer({ collapsed, email, imageUrl, name, }: SidebarViewerProps) {
+export function SidebarViewer({ collapsed, email, imageUrl, name }: SidebarViewerProps) {
   const [isPending, startTransition] = useTransition();
   const initials = getInitials(name, email);
   const displayName = name?.trim() || email?.split('@')[0] || 'Creator';
@@ -94,9 +94,7 @@ export function SidebarViewer({ collapsed, email, imageUrl, name, }: SidebarView
       </span>
 
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium tracking-tight text-foreground">
-          {displayName}
-        </p>
+        <p className="truncate text-sm font-medium tracking-tight text-foreground">{displayName}</p>
         <p className="truncate font-mono text-[0.65rem] tabular-nums text-muted-foreground">
           {displayEmail}
         </p>
@@ -106,7 +104,7 @@ export function SidebarViewer({ collapsed, email, imageUrl, name, }: SidebarView
         aria-label="Sign out"
         className={cn(
           'inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-border bg-card/50 text-muted-foreground transition-colors hover:border-status-danger-border hover:bg-status-danger-surface hover:text-status-danger-foreground active:scale-[0.96]',
-          isPending && 'pointer-events-none opacity-50',
+          isPending && 'pointer-events-none opacity-50'
         )}
         disabled={isPending}
         onClick={handleSignOut}

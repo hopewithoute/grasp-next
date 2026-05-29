@@ -36,12 +36,7 @@ function BrandMark({ className = '' }: { className?: string }) {
 
 function GoogleGlyph({ className = '' }: { className?: string }) {
   return (
-    <svg
-      aria-hidden
-      className={className}
-      viewBox="0 0 24 24"
-      xmlns="http://www.w3.org/2000/svg"
-    >
+    <svg aria-hidden className={className} viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
       <path
         d="M21.6 12.227c0-.709-.064-1.39-.182-2.045H12v3.868h5.382a4.6 4.6 0 0 1-1.995 3.018v2.51h3.232c1.891-1.741 2.981-4.305 2.981-7.351z"
         fill="#4285F4"
@@ -88,7 +83,9 @@ export async function SignInPage({ searchParams }: SignInPageProps) {
               <BrandMark className="size-5" />
             </span>
             <span>
-              <span className="block text-sm font-medium tracking-tight">Adaptive Learning Studio</span>
+              <span className="block text-sm font-medium tracking-tight">
+                Adaptive Learning Studio
+              </span>
               <span className="block text-[0.7rem] tracking-[0.16em] uppercase text-muted-foreground">
                 Creator sign-in
               </span>
@@ -126,9 +123,9 @@ export async function SignInPage({ searchParams }: SignInPageProps) {
               </h1>
 
               <p className="max-w-[52ch] text-base leading-relaxed text-muted-foreground md:text-lg">
-                Adaptive Learning Studio uses a single creator entry. Google handles both
-                first-time registration and returning sessions. There is no password to manage and
-                nothing to verify by email.
+                Adaptive Learning Studio uses a single creator entry. Google handles both first-time
+                registration and returning sessions. There is no password to manage and nothing to
+                verify by email.
               </p>
             </div>
 
@@ -152,8 +149,8 @@ export async function SignInPage({ searchParams }: SignInPageProps) {
                 <div>
                   <p className="text-sm font-medium text-foreground">Reviewable by default</p>
                   <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-                    Nothing publishes without your approval. Every artifact is versioned,
-                    grounded, and cited.
+                    Nothing publishes without your approval. Every artifact is versioned, grounded,
+                    and cited.
                   </p>
                 </div>
                 <span className="font-mono text-[0.65rem] tabular-nums tracking-[0.16em] uppercase text-muted-foreground">

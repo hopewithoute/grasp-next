@@ -40,16 +40,12 @@ const debugRealTest = (...args: unknown[]) => {
 
 const hasDatabase = Boolean(process.env.DATABASE_URL);
 const hasLlm = Boolean(
-  process.env.OPENAI_API_KEY ||
-    process.env.ANTHROPIC_API_KEY ||
-    process.env.ANTHROPIC_AUTH_TOKEN ||
-    (process.env.OPENAI_COMPATIBLE_BASE_URL && process.env.OPENAI_COMPATIBLE_API_KEY)
+  process.env.OPENAI_API_KEY || process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_AUTH_TOKEN
 );
 const hasEmbedding = Boolean(
   process.env.GOOGLE_GENERATIVE_AI_API_KEY ||
-    process.env.GEMINI_API_KEY ||
-    process.env.OPENAI_API_KEY ||
-    (process.env.OPENAI_COMPATIBLE_BASE_URL && process.env.OPENAI_COMPATIBLE_API_KEY)
+  process.env.GEMINI_API_KEY ||
+  process.env.OPENAI_API_KEY
 );
 const databaseUrl = process.env.DATABASE_URL
   ? normalizeLocalDatabaseUrl(process.env.DATABASE_URL)
@@ -96,180 +92,182 @@ describeIfReal('real ingestion graph walking', { timeout: 240_000 }, () => {
         title: 'Real graph walking',
       });
 
-    try {
-      const sourceOne = await projectSourceRepository.createForProjectOwner(project.id, ownerId, {
-        content: sourceA,
-        title: 'Economics Basics',
-        type: 'markdown',
-      });
-      const sourceTwo = await projectSourceRepository.createForProjectOwner(project.id, ownerId, {
-        content: sourceB,
-        title: 'Elasticity',
-        type: 'markdown',
-      });
-      const sourceThree = await projectSourceRepository.createForProjectOwner(project.id, ownerId, {
-        content: sourceC,
-        title: 'Total Revenue',
-        type: 'markdown',
-      });
-      assert.ok(sourceOne);
-      assert.ok(sourceTwo);
-      assert.ok(sourceThree);
-
-      debugRealTest('ingest source 1 start');
-      await ingestSource(project.id, sourceOne.id, 'Economics Basics', sourceA);
-      debugRealTest('ingest source 1 done');
-      debugRealTest('ingest source 2 start');
-      const sourceTwoRetrieval = await ingestSource(
-        project.id,
-        sourceTwo.id,
-        'Elasticity',
-        sourceB
-      );
-      debugRealTest('ingest source 2 done', sourceTwoRetrieval);
-      assert.ok(
-        sourceTwoRetrieval.conceptSearchCalls > 0,
-        'Expected source 2 ingestion to search existing graph concepts'
-      );
-      assert.ok(
-        sourceTwoRetrieval.conceptContextCalls > 0,
-        'Expected source 2 ingestion to load existing concept context or neighbors'
-      );
-      assert.ok(
-        sourceTwoRetrieval.linkTrace?.acceptedLinks.some(
-          (link) =>
-            link.sourceConceptKey === 'supply-and-demand' &&
-            link.targetConceptKey === 'elasticity' &&
-            link.relationshipType === 'prerequisite' &&
-            link.evidenceQuality.finalEvidenceScore >= 0.6
-        ),
-        'Expected source 2 linking trace to accept supply-and-demand -> elasticity with usable evidence'
-      );
-      assert.ok(
-        (sourceTwoRetrieval.linkTrace?.metrics.appliedCount ?? 0) >= 1,
-        'Expected linking trace to apply at least the expected cross-source edge'
-      );
-      assert.ok(
-        (sourceTwoRetrieval.linkTrace?.metrics.appliedCount ?? 0) <= 2,
-        'Expected linking trace to keep accepted link count narrow for the economics fixture'
-      );
-      debugRealTest('ingest source 3 start');
-      const sourceThreeRetrieval = await ingestSource(
-        project.id,
-        sourceThree.id,
-        'Total Revenue',
-        sourceC
-      );
-      debugRealTest('ingest source 3 done', sourceThreeRetrieval);
-      assert.ok(
-        sourceThreeRetrieval.conceptSearchCalls > 0,
-        'Expected source 3 ingestion to search existing graph concepts'
-      );
-      assert.ok(
-        sourceThreeRetrieval.conceptContextCalls > 0,
-        'Expected source 3 ingestion to load existing concept context or neighbors'
-      );
-      assert.ok(
-        sourceThreeRetrieval.linkTrace?.acceptedLinks.some(
-          (link) =>
-            link.sourceConceptKey === 'price-elasticity-of-demand' &&
-            link.relationshipType === 'prerequisite' &&
-            link.evidenceQuality.finalEvidenceScore >= 0.6
-        ),
-        'Expected source 3 linking trace to accept price elasticity of demand as a prerequisite with usable evidence'
-      );
-
-      const graph = await knowledgebaseRepository.findCurrentGraphByProject(project.id);
-      assert.ok(graph);
-      assert.ok(graph.concepts.length >= 4, `Expected at least 4 concepts, got ${graph.concepts.length}`);
-      assert.ok(
-        graph.relationships.length >= 1,
-        `Expected at least 1 graph relationship, got ${graph.relationships.length}`
-      );
-      assert.ok(
-        graph.relationships.some(
-          (relationship) =>
-            relationship.sourceConceptId === 'supply-and-demand' &&
-            relationship.targetConceptId === 'elasticity' &&
-            relationship.relationshipType === 'prerequisite'
-        ),
-        'Expected source 2 linking to link supply-and-demand -> elasticity as prerequisite'
-      );
-      const totalRevenueConcept = graph.concepts.find((concept) =>
-        concept.id.includes('total-revenue')
-      );
-      assert.ok(totalRevenueConcept, 'Expected source 3 to add a total-revenue concept');
-      assert.ok(
-        graph.relationships.some(
-          (relationship) =>
-            relationship.sourceConceptId === 'price-elasticity-of-demand' &&
-            relationship.targetConceptId === totalRevenueConcept.id &&
-            relationship.relationshipType === 'prerequisite'
-        ),
-        'Expected source 3 linking to link price elasticity of demand -> total revenue as prerequisite'
-      );
-      for (const relationship of graph.relationships) {
-        assert.ok(
-          Array.isArray(relationship.sourceEvidence) && relationship.sourceEvidence.length > 0,
-          `Expected relationship ${relationship.id} to have grounded evidence`
+      try {
+        const sourceOne = await projectSourceRepository.createForProjectOwner(project.id, ownerId, {
+          content: sourceA,
+          title: 'Economics Basics',
+          type: 'markdown',
+        });
+        const sourceTwo = await projectSourceRepository.createForProjectOwner(project.id, ownerId, {
+          content: sourceB,
+          title: 'Elasticity',
+          type: 'markdown',
+        });
+        const sourceThree = await projectSourceRepository.createForProjectOwner(
+          project.id,
+          ownerId,
+          {
+            content: sourceC,
+            title: 'Total Revenue',
+            type: 'markdown',
+          }
         );
+        assert.ok(sourceOne);
+        assert.ok(sourceTwo);
+        assert.ok(sourceThree);
+
+        debugRealTest('ingest source 1 start');
+        await ingestSource(project.id, sourceOne.id, 'Economics Basics', sourceA);
+        debugRealTest('ingest source 1 done');
+        debugRealTest('ingest source 2 start');
+        const sourceTwoRetrieval = await ingestSource(
+          project.id,
+          sourceTwo.id,
+          'Elasticity',
+          sourceB
+        );
+        debugRealTest('ingest source 2 done', sourceTwoRetrieval);
+        assert.ok(
+          sourceTwoRetrieval.conceptSearchCalls > 0,
+          'Expected source 2 ingestion to search existing graph concepts'
+        );
+        assert.ok(
+          sourceTwoRetrieval.conceptContextCalls > 0,
+          'Expected source 2 ingestion to load existing concept context or neighbors'
+        );
+        assert.ok(
+          sourceTwoRetrieval.linkTrace?.acceptedLinks.some(
+            (link) =>
+              link.sourceConceptKey === 'supply-and-demand' &&
+              link.targetConceptKey === 'elasticity' &&
+              link.relationshipType === 'prerequisite' &&
+              link.evidenceQuality.finalEvidenceScore >= 0.6
+          ),
+          'Expected source 2 linking trace to accept supply-and-demand -> elasticity with usable evidence'
+        );
+        assert.ok(
+          (sourceTwoRetrieval.linkTrace?.metrics.appliedCount ?? 0) >= 1,
+          'Expected linking trace to apply at least the expected cross-source edge'
+        );
+        assert.ok(
+          (sourceTwoRetrieval.linkTrace?.metrics.appliedCount ?? 0) <= 2,
+          'Expected linking trace to keep accepted link count narrow for the economics fixture'
+        );
+        debugRealTest('ingest source 3 start');
+        const sourceThreeRetrieval = await ingestSource(
+          project.id,
+          sourceThree.id,
+          'Total Revenue',
+          sourceC
+        );
+        debugRealTest('ingest source 3 done', sourceThreeRetrieval);
+        assert.ok(
+          sourceThreeRetrieval.conceptSearchCalls > 0,
+          'Expected source 3 ingestion to search existing graph concepts'
+        );
+        assert.ok(
+          sourceThreeRetrieval.conceptContextCalls > 0,
+          'Expected source 3 ingestion to load existing concept context or neighbors'
+        );
+        assert.ok(
+          sourceThreeRetrieval.linkTrace?.acceptedLinks.some(
+            (link) =>
+              link.sourceConceptKey === 'price-elasticity-of-demand' &&
+              link.relationshipType === 'prerequisite' &&
+              link.evidenceQuality.finalEvidenceScore >= 0.6
+          ),
+          'Expected source 3 linking trace to accept price elasticity of demand as a prerequisite with usable evidence'
+        );
+
+        const graph = await knowledgebaseRepository.findCurrentGraphByProject(project.id);
+        assert.ok(graph);
+        assert.ok(
+          graph.concepts.length >= 4,
+          `Expected at least 4 concepts, got ${graph.concepts.length}`
+        );
+        assert.ok(
+          graph.relationships.length >= 1,
+          `Expected at least 1 graph relationship, got ${graph.relationships.length}`
+        );
+        assert.ok(
+          graph.relationships.some(
+            (relationship) =>
+              relationship.sourceConceptId === 'supply-and-demand' &&
+              relationship.targetConceptId === 'elasticity' &&
+              relationship.relationshipType === 'prerequisite'
+          ),
+          'Expected source 2 linking to link supply-and-demand -> elasticity as prerequisite'
+        );
+        const totalRevenueConcept = graph.concepts.find((concept) =>
+          concept.id.includes('total-revenue')
+        );
+        assert.ok(totalRevenueConcept, 'Expected source 3 to add a total-revenue concept');
+        assert.ok(
+          graph.relationships.some(
+            (relationship) =>
+              relationship.sourceConceptId === 'price-elasticity-of-demand' &&
+              relationship.targetConceptId === totalRevenueConcept.id &&
+              relationship.relationshipType === 'prerequisite'
+          ),
+          'Expected source 3 linking to link price elasticity of demand -> total revenue as prerequisite'
+        );
+        for (const relationship of graph.relationships) {
+          assert.ok(
+            Array.isArray(relationship.sourceEvidence) && relationship.sourceEvidence.length > 0,
+            `Expected relationship ${relationship.id} to have grounded evidence`
+          );
+        }
+
+        const queryEmbedding = await embedText('market equilibrium and elasticity prerequisites');
+        const semanticMatches = await knowledgebaseRepository.searchConceptsForIngestion({
+          embedding: queryEmbedding,
+          limit: 5,
+          projectId: project.id,
+          query: 'market equilibrium and elasticity prerequisites',
+        });
+        assert.ok(semanticMatches.length > 0, 'Expected semantic concept retrieval results');
+        assert.equal(typeof semanticMatches[0]?.distance, 'number');
+
+        const context = await knowledgebaseRepository.getConceptContext({
+          conceptKey: 'elasticity',
+          projectId: project.id,
+        });
+
+        assert.ok(context);
+        assert.equal(context.concept.conceptKey, 'elasticity');
+        assert.ok(context.evidence.length > 0, 'Expected graph context to include source evidence');
+        assert.ok(
+          context.neighbors.some(
+            (neighbor) =>
+              neighbor.conceptKey === 'supply-and-demand' &&
+              neighbor.relationshipType === 'prerequisite'
+          ),
+          'Expected graph walker context for elasticity to include patched supply-and-demand prerequisite'
+        );
+        const priceElasticityContext = await knowledgebaseRepository.getConceptContext({
+          conceptKey: 'price-elasticity-of-demand',
+          projectId: project.id,
+        });
+        assert.ok(priceElasticityContext);
+        assert.ok(
+          priceElasticityContext.neighbors.some(
+            (neighbor) =>
+              neighbor.conceptKey === totalRevenueConcept.id &&
+              neighbor.relationshipType === 'prerequisite'
+          ),
+          'Expected graph walker context for price elasticity of demand to include source 3 total-revenue neighbor'
+        );
+      } catch (error) {
+        console.error('graph-walk-real failure', error);
+        throw error;
+      } finally {
+        await db.delete(schema.projects).where(eq(schema.projects.id, project.id));
+        await db.delete(schema.user).where(eq(schema.user.id, ownerId));
       }
-
-      const queryEmbedding = await embedText('market equilibrium and elasticity prerequisites');
-      const semanticMatches = await knowledgebaseRepository.searchConceptsForIngestion({
-        embedding: queryEmbedding,
-        limit: 5,
-        projectId: project.id,
-        query: 'market equilibrium and elasticity prerequisites',
-      });
-      assert.ok(semanticMatches.length > 0, 'Expected semantic concept retrieval results');
-      assert.equal(typeof semanticMatches[0]?.distance, 'number');
-
-      const context = await knowledgebaseRepository.getConceptContext({
-        conceptKey: 'elasticity',
-        projectId: project.id,
-      });
-
-      assert.ok(context);
-      assert.equal(context.concept.conceptKey, 'elasticity');
-      assert.ok(context.evidence.length > 0, 'Expected graph context to include source evidence');
-      assert.ok(
-        context.neighbors.some(
-          (neighbor) =>
-            neighbor.conceptKey === 'supply-and-demand' &&
-            neighbor.relationshipType === 'prerequisite'
-        ),
-        'Expected graph walker context for elasticity to include patched supply-and-demand prerequisite'
-      );
-      const priceElasticityContext = await knowledgebaseRepository.getConceptContext({
-        conceptKey: 'price-elasticity-of-demand',
-        projectId: project.id,
-      });
-      assert.ok(priceElasticityContext);
-      assert.ok(
-        priceElasticityContext.neighbors.some(
-          (neighbor) =>
-            neighbor.conceptKey === totalRevenueConcept.id &&
-            neighbor.relationshipType === 'prerequisite'
-        ),
-        'Expected graph walker context for price elasticity of demand to include source 3 total-revenue neighbor'
-      );
-    } catch (error) {
-      console.error('graph-walk-real failure', error);
-      throw error;
-    } finally {
-      await db.delete(schema.projects).where(eq(schema.projects.id, project.id));
-      await db.delete(schema.user).where(eq(schema.user.id, ownerId));
-    }
     }
   );
 
-  async function ingestSource(
-    projectId: string,
-    sourceId: string,
-    title: string,
-    content: string
-  ) {
+  async function ingestSource(projectId: string, sourceId: string, title: string, content: string) {
     const retrievalActivity = {
       conceptContextCalls: 0,
       conceptSearchCalls: 0,

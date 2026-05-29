@@ -23,7 +23,7 @@ export function BrandMark({ className = '' }: { className?: string }) {
   );
 }
 
-// eslint-disable-next-line react-doctor/no-multi-comp
+
 export function Eyebrow({ children }: { children: React.ReactNode }) {
   return (
     <span className="inline-flex items-center gap-2 text-[0.7rem] tracking-[0.18em] uppercase text-muted-foreground">
@@ -33,17 +33,5 @@ export function Eyebrow({ children }: { children: React.ReactNode }) {
   );
 }
 
-// eslint-disable-next-line react-doctor/no-multi-comp
-function ConfidenceGauge({ value }: { value: number }) {
-  return (
-    <div className="flex items-center gap-2">
-      <div className="h-1 w-16 overflow-hidden rounded-full bg-border">
-        <div
-          className="h-full bg-brand-accent"
-          style={{ width: `${Math.min(100, Math.max(0, value))}%` }}
-        />
-      </div>
-      <span className="font-mono text-xs tabular-nums text-foreground">{value}%</span>
-    </div>
-  );
-}
+
+

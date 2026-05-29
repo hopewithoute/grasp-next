@@ -23,14 +23,24 @@ describe('Refinement Agent - Real Provider (Graph Proposals)', { skip: !shouldRu
   before(async () => {
     db = createDbClient(process.env.DATABASE_URL!);
     repo = createKnowledgebaseRepository(db);
-    
+
     ownerId = randomUUID();
     projectId = randomUUID();
-    
+
     const now = new Date();
-    await db.insert(schema.user).values({ id: ownerId, email: `test-refinement-${Date.now()}@example.com`, name: 'Test', createdAt: now, updatedAt: now });
-    await db.insert(schema.projects).values({ id: projectId, title: 'Test Project', ownerId, createdAt: now, updatedAt: now });
-    
+    await db
+      .insert(schema.user)
+      .values({
+        id: ownerId,
+        email: `test-refinement-${Date.now()}@example.com`,
+        name: 'Test',
+        createdAt: now,
+        updatedAt: now,
+      });
+    await db
+      .insert(schema.projects)
+      .values({ id: projectId, title: 'Test Project', ownerId, createdAt: now, updatedAt: now });
+
     await db.insert(schema.knowledgebases).values({ projectId });
 
     // Seed a concept
@@ -47,8 +57,8 @@ describe('Refinement Agent - Real Provider (Graph Proposals)', { skip: !shouldRu
   after(async () => {
     // Cleanup
     if (db) {
-       await db.delete(schema.projects).where(eq(schema.projects.id, projectId));
-       await db.delete(schema.user).where(eq(schema.user.id, ownerId));
+      await db.delete(schema.projects).where(eq(schema.projects.id, projectId));
+      await db.delete(schema.user).where(eq(schema.user.id, ownerId));
     }
   });
 

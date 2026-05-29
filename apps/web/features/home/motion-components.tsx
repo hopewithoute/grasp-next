@@ -12,30 +12,30 @@ export function InfiniteScrollTrack({
 }) {
   return (
     <LazyMotion features={domAnimation}>
-    <div className="relative flex overflow-hidden w-full">
-      <m.div
-        className="flex shrink-0 gap-4 pr-4"
-        animate={{ x: ['0%', '-100%'] }}
-        transition={{
-          ease: 'linear',
-          duration: speed,
-          repeat: Infinity,
-        }}
-      >
-        {children}
-      </m.div>
-      <m.div
-        className="flex shrink-0 gap-4 pr-4"
-        animate={{ x: ['0%', '-100%'] }}
-        transition={{
-          ease: 'linear',
-          duration: speed,
-          repeat: Infinity,
-        }}
-      >
-        {children}
-      </m.div>
-    </div>
+      <div className="relative flex overflow-hidden w-full">
+        <m.div
+          className="flex shrink-0 gap-4 pr-4"
+          animate={{ x: ['0%', '-100%'] }}
+          transition={{
+            ease: 'linear',
+            duration: speed,
+            repeat: Infinity,
+          }}
+        >
+          {children}
+        </m.div>
+        <m.div
+          className="flex shrink-0 gap-4 pr-4"
+          animate={{ x: ['0%', '-100%'] }}
+          transition={{
+            ease: 'linear',
+            duration: speed,
+            repeat: Infinity,
+          }}
+        >
+          {children}
+        </m.div>
+      </div>
     </LazyMotion>
   );
 }

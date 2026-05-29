@@ -18,9 +18,6 @@ describe('refinement chat stream adapter', () => {
   });
 
   it('keeps compatibility with plain textStream chunks', () => {
-    assert.equal(
-      readMastraTextDelta({ type: 'text-delta', textDelta: 'Done.' }),
-      'Done.'
-    );
+    assert.equal(readMastraTextDelta({ type: 'text-delta', textDelta: 'Done.' }), 'Done.');
   });
 });

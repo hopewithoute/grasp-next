@@ -29,8 +29,8 @@ export function HeroSection() {
         </h1>
 
         <p className="max-w-[58ch] text-base leading-relaxed text-muted-foreground md:text-lg">
-          Adaptive Learning Studio extracts concepts, surfaces evidence, and generates lesson
-          blocks you approve one at a time. A dense, high-agency workbench for creators.
+          Adaptive Learning Studio extracts concepts, surfaces evidence, and generates lesson blocks
+          you approve one at a time. A dense, high-agency workbench for creators.
         </p>
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -85,7 +85,9 @@ export function HeroSection() {
               <span className="text-sm font-medium tracking-tight">Concept Extractor</span>
             </div>
             <div className="flex gap-4">
-              <span className="font-mono text-[0.7rem] uppercase text-muted-foreground">v3 stream</span>
+              <span className="font-mono text-[0.7rem] uppercase text-muted-foreground">
+                v3 stream
+              </span>
               <span className="font-mono text-[0.7rem] uppercase text-brand-accent">Live</span>
             </div>
           </header>
@@ -103,15 +105,22 @@ export function HeroSection() {
             <div className="flex items-center gap-3 border-t border-border pt-4 text-sm text-muted-foreground">
               <Gauge className="size-4 text-brand-accent" strokeWidth={1.5} />
               <span className="flex-1 font-mono text-xs">Extracting from §3.8: LSM Trees</span>
-              <span aria-hidden className="inline-block h-3 w-[2px] bg-brand-accent stream-cursor" />
+              <span
+                aria-hidden
+                className="inline-block h-3 w-[2px] bg-brand-accent stream-cursor"
+              />
             </div>
           </div>
 
           {/* Footer log */}
           <footer className="flex items-center justify-between border-t border-border bg-card/40 px-5 py-3">
             <div className="flex items-center gap-3 font-mono text-[0.7rem] tabular-nums text-muted-foreground">
-              <span>Tokens: <span className="text-foreground">2,418</span></span>
-              <span>Latency: <span className="text-foreground">4.2s</span></span>
+              <span>
+                Tokens: <span className="text-foreground">2,418</span>
+              </span>
+              <span>
+                Latency: <span className="text-foreground">4.2s</span>
+              </span>
             </div>
             <span className="font-mono text-[0.65rem] tracking-[0.16em] uppercase text-brand-accent/70">
               [ human-in-the-loop ]

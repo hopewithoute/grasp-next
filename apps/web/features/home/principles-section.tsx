@@ -17,10 +17,7 @@ const principles = [
 
 export function PrinciplesSection() {
   return (
-    <section
-      className="border-t border-border pt-16 pb-20 md:pt-24 md:pb-32"
-      id="principles"
-    >
+    <section className="border-t border-border pt-16 pb-20 md:pt-24 md:pb-32" id="principles">
       <header className="mb-12 max-w-[60ch] space-y-3">
         <Eyebrow>Principles</Eyebrow>
         <h2 className="text-3xl leading-[1.05] font-medium tracking-tight md:text-5xl">
@@ -31,9 +28,7 @@ export function PrinciplesSection() {
       <ul className="grid gap-[1px] overflow-hidden rounded-3xl border border-border bg-border md:grid-cols-2">
         {principles.map((principle, index) => (
           <li
-            className={`bg-background p-7 md:p-10 ${
-              index === 0 ? 'md:col-span-2' : ''
-            }`}
+            className={`bg-background p-7 md:p-10 ${index === 0 ? 'md:col-span-2' : ''}`}
             key={principle.title}
           >
             <div className="flex items-baseline gap-3">

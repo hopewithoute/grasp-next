@@ -38,7 +38,7 @@ export async function signOut() {
   if (!session) {
     redirect('/');
   }
-  
+
   await auth.api.signOut({
     headers: await headers(),
   });
