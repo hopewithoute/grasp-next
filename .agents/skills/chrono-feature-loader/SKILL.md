@@ -1,6 +1,6 @@
 ---
 name: chrono-feature-loader
-description: "Use before implementing, fixing, reviewing, or modifying a feature when the agent should load only the relevant feature-scoped memory: PRD, chronicle, decision vault, current behavior, risks, tracker, tests, and implementation map."
+description: 'Use before implementing, fixing, reviewing, or modifying a feature when the agent should load only the relevant feature-scoped memory: PRD, chronicle, decision vault, current behavior, risks, tracker, tests, and implementation map.'
 ---
 
 # Chrono Feature Loader

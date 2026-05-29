@@ -14,9 +14,9 @@
 
 ## Drift Table
 
-| Area | PRD/Spec Says | Chronicle Says | Code Does | Tests Prove | Drift Type | Confidence |
-|---|---|---|---|---|---|---|
-| <area> | <intent> | <memory> | <behavior> | <coverage> | <type> | High/Medium/Low |
+| Area   | PRD/Spec Says | Chronicle Says | Code Does  | Tests Prove | Drift Type | Confidence      |
+| ------ | ------------- | -------------- | ---------- | ----------- | ---------- | --------------- |
+| <area> | <intent>      | <memory>       | <behavior> | <coverage>  | <type>     | High/Medium/Low |
 
 ## Accepted Drift
 

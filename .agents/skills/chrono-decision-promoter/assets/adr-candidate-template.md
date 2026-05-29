@@ -15,17 +15,21 @@ Status: Proposed
 ## Consequences
 
 Positive:
+
 - <benefit>
 
 Negative:
+
 - <tradeoff>
 
 ## Scope
 
 This applies to:
+
 - <features/subsystems>
 
 This does not apply to:
+
 - <exclusions>
 
 ## Alternatives Considered

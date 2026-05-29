@@ -18,9 +18,9 @@ See `test-map.md`.
 
 ## Decision Vault Summary
 
-| ID | Status | Decision | Confidence |
-|---|---|---|---|
-| D001 | Inferred | <decision> | Medium |
+| ID   | Status   | Decision   | Confidence |
+| ---- | -------- | ---------- | ---------- |
+| D001 | Inferred | <decision> | Medium     |
 
 ## Evolution Timeline
 

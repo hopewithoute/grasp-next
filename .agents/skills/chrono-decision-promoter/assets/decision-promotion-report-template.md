@@ -15,13 +15,13 @@ Decision:
 
 ## Impact Analysis
 
-| Area | Impact | Evidence |
-|---|---|---|
-| Feature | <impact> | <evidence> |
-| API | <impact> | <evidence> |
-| Data | <impact> | <evidence> |
+| Area          | Impact   | Evidence   |
+| ------------- | -------- | ---------- |
+| Feature       | <impact> | <evidence> |
+| API           | <impact> | <evidence> |
+| Data          | <impact> | <evidence> |
 | Security/Auth | <impact> | <evidence> |
-| Operations | <impact> | <evidence> |
+| Operations    | <impact> | <evidence> |
 
 ## Recommendation
 

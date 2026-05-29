@@ -13,6 +13,7 @@ Why:
 <Reason if explicit; otherwise label as inferred.>
 
 Evidence:
+
 - `<path>`
 - commit `<sha>`
 - issue/PR `<id>`
