@@ -28,10 +28,7 @@ export const ingestionConceptDto = z.object({
   difficulty: conceptDifficultyDto,
   confidence: z.number().min(0).max(1),
   sourceRefs: z.array(ingestionSourceRefDto).min(1),
-  mergesWith: z
-    .any()
-    .nullish()
-    .transform((v) => (typeof v === 'string' && v.trim() !== '' ? v.trim() : undefined)),
+  mergesWith: z.string().trim().min(1).optional().catch(undefined),
 });
 
 export const ingestionRelationshipDto = z.object({
