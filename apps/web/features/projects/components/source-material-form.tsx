@@ -9,7 +9,7 @@ import {
   useState,
   useTransition,
 } from 'react';
-import { FileText, Plus, Trash2 } from 'lucide-react';
+import { FileText, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -22,6 +22,7 @@ import {
   type IngestionActivityPanelHandle,
 } from './ingestion-activity-panel';
 import { sourceModeButtonVariants, sourceTextareaVariants } from '../project-style-variants';
+import { SourceList } from './source-list';
 
 export type ProjectSourceItem = {
   content: string | null;
@@ -46,74 +47,15 @@ export function ProjectSourcesPanel({ projectId, sources }: ProjectSourcesPanelP
 
   return (
     <div className="grid gap-6 h-full xl:grid-cols-[18rem_minmax(0,1fr)_18rem]">
-      <aside className="flex min-w-0 flex-col gap-3 overflow-hidden xl:h-full">
-        <div className="flex shrink-0 items-center justify-between gap-3">
-          <span className="font-mono text-[0.65rem] tabular-nums tracking-[0.18em] uppercase text-muted-foreground">
-            Sources
-          </span>
-          <span className="font-mono text-[0.65rem] tabular-nums tracking-[0.16em] uppercase text-muted-foreground">
-            {sources.length} total
-          </span>
-        </div>
-
-        <button
-          aria-label="Button"
-          className="flex w-full shrink-0 items-center justify-center gap-2 rounded-[1.1rem] border border-dashed border-brand-accent-border/30 bg-brand-accent/[0.04] px-3 py-2.5 text-xs font-medium text-brand-accent-foreground transition hover:border-brand-accent-border hover:bg-brand-accent/[0.08]"
-          onClick={() => setIsAddingNew(true)}
-          type="button"
-        >
-          <Plus className="size-3.5" />
-          Add source
-        </button>
-
-        <div className="min-h-0 flex-1 overflow-y-auto">
-          {sources.length ? (
-            <ul className="space-y-2">
-              {sources.map((source, index) => {
-                const counts = getTextCounts(source.content ?? '');
-
-                return (
-                  <li key={source.id}>
-                    <button
-                      aria-label="Button"
-                      className={`w-full rounded-[1.1rem] border px-4 py-3 text-left transition ${
-                        selectedSource?.id === source.id
-                          ? 'border-brand-accent-border bg-brand-accent-surface'
-                          : 'border-border bg-white/[0.035] hover:bg-muted/50'
-                      }`}
-                      onClick={() => {
-                        setSelectedSourceId(source.id);
-                        setIsAddingNew(false);
-                      }}
-                      type="button"
-                    >
-                      <span className="mb-2 flex items-center justify-between gap-2">
-                        <span className="truncate text-sm font-medium text-foreground">
-                          {source.title}
-                        </span>
-                        <span className="font-mono text-[0.6rem] text-muted-foreground">
-                          {String(index + 1).padStart(2, '0')}
-                        </span>
-                      </span>
-                      <span className="line-clamp-2 text-xs leading-5 text-muted-foreground">
-                        {getSourcePreview(source.content)}
-                      </span>
-                      <span className="mt-3 flex items-center justify-between font-mono text-[0.6rem] tracking-[0.14em] text-foreground/38 uppercase">
-                        <span>{source.type}</span>
-                        <span>{counts.words} words</span>
-                      </span>
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          ) : (
-            <div className="rounded-[1.1rem] border border-dashed border-border bg-card/50 px-4 py-5 text-sm leading-6 text-muted-foreground">
-              No sources yet. Add markdown or pasted text above.
-            </div>
-          )}
-        </div>
-      </aside>
+      <SourceList
+        sources={sources}
+        selectedSourceId={selectedSource?.id ?? null}
+        onSelectSource={(id) => {
+          setSelectedSourceId(id);
+          setIsAddingNew(false);
+        }}
+        onAddNew={() => setIsAddingNew(true)}
+      />
 
       <section className="flex min-w-0 flex-col gap-5 overflow-hidden rounded-[1.75rem] border border-border bg-card/50 p-6 xl:h-full">
         <div className="flex shrink-0 flex-col gap-3 border-b border-border pb-5 lg:flex-row lg:items-end lg:justify-between">
@@ -456,16 +398,6 @@ function SourcePreview({ value }: { value: string }) {
       ))}
     </div>
   );
-}
-
-function getSourcePreview(value: string | null) {
-  const trimmed = value?.trim();
-
-  if (!trimmed) {
-    return 'Empty source';
-  }
-
-  return trimmed.length > 140 ? `${trimmed.slice(0, 137)}...` : trimmed;
 }
 
 function getTextCounts(value: string) {

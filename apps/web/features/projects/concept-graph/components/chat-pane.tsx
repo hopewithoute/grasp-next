@@ -1,8 +1,8 @@
 'use client';
 
-import { type FormEvent, useMemo } from 'react';
+import { type FormEvent } from "react";
 import { type ConceptRow } from '../types';
-import { usePendingProposals, useDerivedPendingProposals } from '../hooks/use-pending-proposals-context';
+import { usePendingProposals } from '../hooks/use-pending-proposals-context';
 import { CollapsedPaneRail, PaneHeader } from './shared-components';
 import { ChatItemRow } from './chat-message';
 import { useChatThread } from '../hooks/use-chat-thread';
@@ -41,7 +41,7 @@ export function ChatPane({
   } = useChatThread(projectId, chatContextConcepts);
 
   // Derive pending proposals (syncs to parent state via useDerivedPendingProposals)
-  const { pendingProposals } = usePendingProposals();
+  usePendingProposals();
 
   if (collapsed) {
     return (

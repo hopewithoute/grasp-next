@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { type ConceptRow, type RelationshipRow } from '../types';
 import { type ProposalPayload } from '../types';
-import { mergeProposals, type MergedProposalResult } from './use-decorated-graph';
+import { mergeProposals } from './use-decorated-graph';
 
 const concepts: ConceptRow[] = [
   {

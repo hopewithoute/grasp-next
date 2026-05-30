@@ -131,7 +131,7 @@ describeIfReal('real ingestion graph walking', { timeout: 240_000 }, () => {
         expect(sourceTwoRetrieval.conceptSearchCalls > 0).toBeTruthy();
         expect(sourceTwoRetrieval.conceptContextCalls > 0).toBeTruthy();
         expect(sourceTwoRetrieval.linkTrace?.acceptedLinks.some(
-            (link: any) =>
+            (link: Record<string, unknown>) =>
               link.sourceConceptKey === 'supply-and-demand' &&
               link.targetConceptKey === 'elasticity' &&
               link.relationshipType === 'prerequisite' &&
@@ -150,7 +150,7 @@ describeIfReal('real ingestion graph walking', { timeout: 240_000 }, () => {
         expect(sourceThreeRetrieval.conceptSearchCalls > 0).toBeTruthy();
         expect(sourceThreeRetrieval.conceptContextCalls > 0).toBeTruthy();
         expect(sourceThreeRetrieval.linkTrace?.acceptedLinks.some(
-            (link: any) =>
+            (link: Record<string, unknown>) =>
               link.sourceConceptKey === 'price-elasticity-of-demand' &&
               link.relationshipType === 'prerequisite' &&
               link.evidenceQuality.finalEvidenceScore >= 0.6

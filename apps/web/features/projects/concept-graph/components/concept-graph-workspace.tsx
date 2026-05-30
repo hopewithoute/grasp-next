@@ -38,7 +38,6 @@ const ConceptGraphEditor = ({ concepts, projectId, relationships }: ConceptGraph
     hoveredChatConceptId,
     setHoveredChatConceptId,
     pendingProposals,
-    setPendingProposals,
   } = useConceptGraphState(concepts);
 
   const items = useMemo<ChatItem[]>(
