@@ -3,9 +3,9 @@
 import { useMemo, useCallback } from 'react';
 import { ReactFlowProvider } from '@xyflow/react';
 import { cn } from '@/lib/utils';
-import { type ConceptRow, type RelationshipRow } from './types';
-import { type ChatItem } from './types';
-import { useConceptGraphState } from './use-concept-graph-state';
+import { type ConceptRow, type RelationshipRow } from '../types';
+import { type ChatItem } from '../types';
+import { useConceptGraphState } from '../hooks/use-concept-graph-state';
 import { ConceptListPane } from './concept-list-pane';
 import { GraphCanvasPane } from './graph-canvas-pane';
 import { ChatPane } from './chat-pane';

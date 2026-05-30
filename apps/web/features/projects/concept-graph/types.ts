@@ -16,7 +16,24 @@ export type WorkspaceEvent =
 
 export type StreamEvent = Exclude<WorkspaceEvent, { type: 'assistant_message' }>;
 
-import { type ProposalPayload } from './proposal-card';
+
+export type ProposalAction = {
+  type:
+    | 'add_concept'
+    | 'update_concept'
+    | 'delete_concept'
+    | 'add_relationship'
+    | 'delete_relationship'
+    | 'add_evidence'
+    | 'update_evidence'
+    | 'delete_evidence';
+  payload: Record<string, boolean | number | string | null | undefined>;
+};
+
+export type ProposalPayload = {
+  rationale: string;
+  actions: ProposalAction[];
+};
 
 export type ChatItem =
   | {

@@ -2,7 +2,7 @@ import { cn } from '@/lib/utils';
 import { cva } from 'class-variance-authority';
 import { ChevronsLeft, ChevronsRight, CircleDashed } from 'lucide-react';
 import { type ReactNode } from 'react';
-import { type ConceptRow } from './types';
+import { type ConceptRow } from '../types';
 
 export function PaneHeader({
   eyebrow,

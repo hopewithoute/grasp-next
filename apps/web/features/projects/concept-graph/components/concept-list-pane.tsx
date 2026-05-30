@@ -2,11 +2,11 @@ import { useId, useRef, useEffect, useState, useCallback, memo } from 'react';
 import { cva } from 'class-variance-authority';
 import { ListFilter, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { type ConceptRow } from './types';
-import { type DifficultyFilter } from './types';
+import { type ConceptRow } from '../types';
+import { type DifficultyFilter } from '../types';
 import { CollapsedPaneRail, PaneHeader, ConfidencePill } from './shared-components';
-import { useDebounce } from './use-concept-graph-state';
-import { searchKnowledgebaseConceptsAction } from '../actions';
+import { useDebounce } from '../hooks/use-concept-graph-state';
+import { searchKnowledgebaseConceptsAction } from '../../actions';
 
 const DIFFICULTY_FILTER_ORDER: DifficultyFilter[] = ['all', 'beginner', 'intermediate', 'advanced'];
 

@@ -2,24 +2,9 @@ import { memo, useState } from 'react';
 import { Check, X, ArrowRight, Loader2, Play } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { type ProposalAction, type ProposalPayload } from '../types';
 
-export type ProposalAction = {
-  type:
-    | 'add_concept'
-    | 'update_concept'
-    | 'delete_concept'
-    | 'add_relationship'
-    | 'delete_relationship'
-    | 'add_evidence'
-    | 'update_evidence'
-    | 'delete_evidence';
-  payload: Record<string, boolean | number | string | null | undefined>;
-};
 
-export type ProposalPayload = {
-  rationale: string;
-  actions: ProposalAction[];
-};
 
 interface ProposalCardProps {
   proposal: ProposalPayload;
