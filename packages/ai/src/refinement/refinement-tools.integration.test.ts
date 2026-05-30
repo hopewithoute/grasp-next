@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import assert from 'node:assert/strict';
-import { describe, it } from 'node:test';
+import { describe, expect, it } from 'vitest';
 import { createRefinementTools } from './refinement-tools';
 import type { KnowledgebaseRepository } from '@grasp/domain';
 
@@ -21,15 +20,15 @@ describe('Refinement Tools (Integration)', () => {
         {} as any
       )) as any;
 
-      assert.ok(result.results, 'Expected results array to exist');
-      assert.ok(Array.isArray(result.results), 'Results should be an array');
-      assert.ok(result.results.length > 0, 'Should find at least one result');
+      expect(result.results).toBeTruthy();
+      expect(Array.isArray(result.results)).toBeTruthy();
+      expect(result.results.length > 0).toBeTruthy();
 
       const firstResult = result.results[0];
-      assert.ok(firstResult.title, 'Result should have title');
-      assert.ok(firstResult.description, 'Result should have description');
-      assert.ok(firstResult.url, 'Result should have url');
-      assert.match(firstResult.url, /^https?:\/\//, 'URL should be absolute');
+      expect(firstResult.title).toBeTruthy();
+      expect(firstResult.description).toBeTruthy();
+      expect(firstResult.url).toBeTruthy();
+      expect(firstResult.url).toMatch(/^https?:\/\//);
     } catch (e: any) {
       if (e.message && e.message.includes('anomaly')) {
         console.warn('Skipping DDG search test due to rate limiting: ', e.message);
@@ -50,13 +49,9 @@ describe('Refinement Tools (Integration)', () => {
       {} as any
     )) as any;
 
-    assert.ok(result.text, 'Expected extracted text to exist');
-    assert.ok(typeof result.text === 'string', 'Text should be a string');
-    assert.match(result.text, /Example Domain/i, 'Text should contain Example Domain');
-    assert.match(
-      result.text,
-      /documentation examples/i,
-      'Text should contain the updated example sentence'
-    );
+    expect(result.text).toBeTruthy();
+    expect(typeof result.text === 'string').toBeTruthy();
+    expect(result.text).toMatch(/Example Domain/i);
+    expect(result.text).toMatch(/documentation examples/i);
   });
 });

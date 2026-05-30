@@ -1,5 +1,4 @@
-import assert from 'node:assert/strict';
-import { describe, it } from 'node:test';
+import { describe, expect, it } from 'vitest';
 import type { LinkCandidate } from '@grasp/domain';
 import { parseReviewedLinkList } from './adjudicate-links';
 
@@ -31,8 +30,8 @@ describe('parseReviewedLinkList', () => {
   it('requires exactly one valid decision per candidate', () => {
     const result = parseReviewedLinkList({ links: [reviewed] }, [candidate]);
 
-    assert.equal(result.links.length, 1);
-    assert.equal(result.links[0]?.candidateId, candidate.candidateId);
+    expect(result.links.length).toBe(1);
+    expect(result.links[0]?.candidateId).toBe(candidate.candidateId);
   });
 
   it('keeps edge fields anchored to the generated candidate', () => {
@@ -48,36 +47,33 @@ describe('parseReviewedLinkList', () => {
       [candidate]
     );
 
-    assert.equal(result.links[0]?.sourceConceptKey, candidate.sourceConceptKey);
-    assert.equal(result.links[0]?.targetConceptKey, candidate.targetConceptKey);
-    assert.equal(result.links[0]?.relationshipType, candidate.relationshipType);
-    assert.deepEqual(result.links[0]?.evidence, candidate.evidence);
-    assert.equal(result.links[0]?.decision, 'accept');
-    assert.equal(result.links[0]?.confidence, 0.9);
-    assert.equal(result.links[0]?.evidenceQuality.semanticSupportConfidence, 0.9);
-    assert.equal(result.links[0]?.evidenceQuality.relationshipTypeConfidence, 0.88);
+    expect(result.links[0]?.sourceConceptKey).toBe(candidate.sourceConceptKey);
+    expect(result.links[0]?.targetConceptKey).toBe(candidate.targetConceptKey);
+    expect(result.links[0]?.relationshipType).toBe(candidate.relationshipType);
+    expect(result.links[0]?.evidence).toEqual(candidate.evidence);
+    expect(result.links[0]?.decision).toBe('accept');
+    expect(result.links[0]?.confidence).toBe(0.9);
+    expect(result.links[0]?.evidenceQuality.semanticSupportConfidence).toBe(0.9);
+    expect(result.links[0]?.evidenceQuality.relationshipTypeConfidence).toBe(0.88);
   });
 
   it('fails when a candidate decision is missing', () => {
-    assert.throws(
-      () => parseReviewedLinkList({ links: [] }, [candidate]),
+    expect(() => parseReviewedLinkList({ links: [] }, [candidate]).toThrow(),
       /link_adjudicator_incomplete/
     );
   });
 
   it('fails when the model returns an unknown candidate', () => {
-    assert.throws(
-      () =>
+    expect(() =>
         parseReviewedLinkList({ links: [{ ...reviewed, candidateId: 'candidate:unknown' }] }, [
           candidate,
-        ]),
+        ]).toThrow(),
       /link_adjudicator_unknown_candidate/
     );
   });
 
   it('fails when the model returns duplicate candidate decisions', () => {
-    assert.throws(
-      () => parseReviewedLinkList({ links: [reviewed, reviewed] }, [candidate]),
+    expect(() => parseReviewedLinkList({ links: [reviewed, reviewed] }, [candidate]).toThrow(),
       /link_adjudicator_duplicate_candidate/
     );
   });

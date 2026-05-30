@@ -1,5 +1,4 @@
-import assert from 'node:assert/strict';
-import { describe, it } from 'node:test';
+import { describe, expect, it } from 'vitest';
 import { validateAgainstBlocks } from './extract-chunk';
 import type { IngestionAgentOutput } from '@grasp/domain';
 
@@ -30,10 +29,10 @@ describe('validateAgainstBlocks', () => {
 
     const result = validateAgainstBlocks(agentOutput, blocks);
 
-    assert.equal(result.concepts.length, 1);
-    assert.equal(result.concepts[0]?.conceptKey, 'elasticity');
-    assert.ok(result.concepts[0]?.sourceRefs.length >= 1, 'expected at least one grounded ref');
-    assert.deepEqual(result.droppedConceptKeys, []);
+    expect(result.concepts.length).toBe(1);
+    expect(result.concepts[0]?.conceptKey).toBe('elasticity');
+    expect(result.concepts[0]?.sourceRefs.length >= 1).toBeTruthy();
+    expect(result.droppedConceptKeys).toEqual([]);
   });
 
   it('keeps paragraph relationship evidence while filtering weak heading-only refs', () => {
@@ -82,16 +81,10 @@ describe('validateAgainstBlocks', () => {
 
     const result = validateAgainstBlocks(agentOutput, blocks);
 
-    assert.equal(result.relationships.length, 1);
+    expect(result.relationships.length).toBe(1);
     const keptQuotes = result.relationships[0]?.sourceRefs.map((ref) => ref.quote) ?? [];
-    assert.ok(
-      keptQuotes.every((quote) => quote !== 'Supply and Demand'),
-      'expected heading-only weak evidence to be filtered'
-    );
-    assert.ok(
-      keptQuotes.some((quote) => quote === 'Supply and Demand establishes market equilibrium conditions.'),
-      'expected paragraph evidence to be retained'
-    );
-    assert.ok(result.droppedRefCount >= 1, `expected droppedRefCount >= 1, got ${result.droppedRefCount}`);
+    expect(keptQuotes.every((quote) => quote !== 'Supply and Demand')).toBeTruthy();
+    expect(keptQuotes.some((quote) => quote === 'Supply and Demand establishes market equilibrium conditions.')).toBeTruthy();
+    expect(result.droppedRefCount >= 1).toBeTruthy();
   });
 });

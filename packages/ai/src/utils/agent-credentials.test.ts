@@ -1,52 +1,50 @@
-import assert from 'node:assert/strict';
-import { describe, it } from 'node:test';
+import { describe, expect, it } from 'vitest';
 import { canUseAgent } from './agent-credentials';
 
 describe('canUseAgent', () => {
   it('returns false when no credentials are set', () => {
-    assert.equal(canUseAgent({}), false);
+    expect(canUseAgent({})).toBe(false);
   });
 
   it('detects OpenAI key', () => {
-    assert.equal(canUseAgent({ OPENAI_API_KEY: 'sk-test' }), true);
+    expect(canUseAgent({ OPENAI_API_KEY: 'sk-test' })).toBe(true);
   });
 
   it('detects Anthropic key', () => {
-    assert.equal(canUseAgent({ ANTHROPIC_API_KEY: 'sk-ant-test' }), true);
+    expect(canUseAgent({ ANTHROPIC_API_KEY: 'sk-ant-test' })).toBe(true);
   });
 
   it('detects Anthropic auth token', () => {
-    assert.equal(canUseAgent({ ANTHROPIC_AUTH_TOKEN: 'token' }), true);
+    expect(canUseAgent({ ANTHROPIC_AUTH_TOKEN: 'token' })).toBe(true);
   });
 
   it('detects Gemini key', () => {
-    assert.equal(canUseAgent({ GEMINI_API_KEY: 'key' }), true);
+    expect(canUseAgent({ GEMINI_API_KEY: 'key' })).toBe(true);
   });
 
   it('detects Google Generative AI key', () => {
-    assert.equal(canUseAgent({ GOOGLE_GENERATIVE_AI_API_KEY: 'key' }), true);
+    expect(canUseAgent({ GOOGLE_GENERATIVE_AI_API_KEY: 'key' })).toBe(true);
   });
 
   it('detects Xiaomi key', () => {
-    assert.equal(canUseAgent({ XIAOMI_API_KEY: 'key' }), true);
+    expect(canUseAgent({ XIAOMI_API_KEY: 'key' })).toBe(true);
   });
 
   it('detects AI_MODEL fallback', () => {
-    assert.equal(canUseAgent({ AI_MODEL: 'xiaomi/mimo-v2.5-pro' }), true);
+    expect(canUseAgent({ AI_MODEL: 'xiaomi/mimo-v2.5-pro' })).toBe(true);
   });
 
   it('detects OpenAI compatible config', () => {
-    assert.equal(
+    expect(
       canUseAgent({
         OPENAI_COMPATIBLE_BASE_URL: 'http://localhost:8080',
         OPENAI_COMPATIBLE_API_KEY: 'key',
-      }),
-      true
-    );
+      })
+    ).toBe(true);
   });
 
   it('requires both base URL and key for OpenAI compatible', () => {
-    assert.equal(canUseAgent({ OPENAI_COMPATIBLE_BASE_URL: 'http://localhost:8080' }), false);
-    assert.equal(canUseAgent({ OPENAI_COMPATIBLE_API_KEY: 'key' }), false);
+    expect(canUseAgent({ OPENAI_COMPATIBLE_BASE_URL: 'http://localhost:8080' })).toBe(false);
+    expect(canUseAgent({ OPENAI_COMPATIBLE_API_KEY: 'key' })).toBe(false);
   });
 });

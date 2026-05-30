@@ -1,5 +1,4 @@
-import assert from 'node:assert/strict';
-import { describe, it } from 'node:test';
+import { describe, expect, it } from 'vitest';
 import { buildIngestionPrompt, ingestionAgentInstructions } from './ingestion-agent';
 
 describe('buildIngestionPrompt', () => {
@@ -14,12 +13,12 @@ describe('buildIngestionPrompt', () => {
 
     const instructions = ingestionAgentInstructions[0].content;
 
-    assert.match(instructions, /search-wiki-concepts/);
-    assert.match(instructions, /get-concept-context/);
-    assert.doesNotMatch(prompt, /search-source-passages/);
-    assert.doesNotMatch(prompt, /<thinking>/);
-    assert.doesNotMatch(prompt, /<\/thinking>/);
-    assert.doesNotMatch(prompt, /Existing Concepts/);
-    assert.doesNotMatch(prompt, /already in knowledgebase/);
+    expect(instructions).toMatch(/search-wiki-concepts/);
+    expect(instructions).toMatch(/get-concept-context/);
+    expect(prompt).not.toMatch(/search-source-passages/);
+    expect(prompt).not.toMatch(/<thinking>/);
+    expect(prompt).not.toMatch(/<\/thinking>/);
+    expect(prompt).not.toMatch(/Existing Concepts/);
+    expect(prompt).not.toMatch(/already in knowledgebase/);
   });
 });

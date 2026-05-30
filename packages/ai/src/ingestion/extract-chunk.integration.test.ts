@@ -1,7 +1,6 @@
-import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { describe, it } from 'node:test';
+import { describe, expect, it } from 'vitest';
 import {
   chunkNormalizedBlocks,
   ingestionAgentOutputDto,
@@ -32,7 +31,7 @@ describeIfLlm('ingestion extraction (real agent)', () => {
     });
 
     const chunks = chunkNormalizedBlocks(normalized.blocks);
-    assert.ok(chunks.length >= 1, `Expected at least 1 chunk, got ${chunks.length}`);
+    expect(chunks.length >= 1).toBeTruthy();
 
     let draft: IngestionAgentOutput = { concepts: [], relationClaims: [], relationships: [] };
 
@@ -53,35 +52,29 @@ describeIfLlm('ingestion extraction (real agent)', () => {
 
     // Validate output shape
     const parsed = ingestionAgentOutputDto.safeParse(draft);
-    assert.ok(parsed.success, `Output failed validation: ${JSON.stringify(parsed.error?.issues)}`);
+    expect(parsed.success).toBeTruthy();
 
     // Verify concepts were extracted
-    assert.ok(
-      draft.concepts.length >= 2,
-      `Expected at least 2 concepts, got ${draft.concepts.length}`
-    );
+    expect(draft.concepts.length >= 2,
+      `Expected at least 2 concepts, got ${draft.concepts.length}`).toBeTruthy();
 
     // Verify each concept has required fields
     for (const concept of draft.concepts) {
-      assert.ok(concept.conceptKey, `Concept missing conceptKey: ${JSON.stringify(concept)}`);
-      assert.ok(concept.name, `Concept missing name: ${concept.conceptKey}`);
-      assert.ok(concept.definition, `Concept missing definition: ${concept.conceptKey}`);
-      assert.ok(concept.sourceRefs.length > 0, `Concept has no sourceRefs: ${concept.conceptKey}`);
-      assert.ok(
-        concept.confidence >= 0 && concept.confidence <= 1,
-        `Confidence out of range: ${concept.confidence}`
-      );
+      expect(concept.conceptKey).toBeTruthy();
+      expect(concept.name).toBeTruthy();
+      expect(concept.definition).toBeTruthy();
+      expect(concept.sourceRefs.length > 0).toBeTruthy();
+      expect(concept.confidence >= 0 && concept.confidence <= 1,
+        `Confidence out of range: ${concept.confidence}`).toBeTruthy();
     }
 
     // Verify sourceRefs quote from actual text
     for (const concept of draft.concepts) {
       for (const ref of concept.sourceRefs) {
-        assert.ok(ref.blockId, `sourceRef missing blockId for concept ${concept.conceptKey}`);
-        assert.ok(ref.quote, `sourceRef missing quote for concept ${concept.conceptKey}`);
-        assert.ok(
-          ref.locationLabel,
-          `sourceRef missing locationLabel for concept ${concept.conceptKey}`
-        );
+        expect(ref.blockId).toBeTruthy();
+        expect(ref.quote).toBeTruthy();
+        expect(ref.locationLabel,
+          `sourceRef missing locationLabel for concept ${concept.conceptKey}`).toBeTruthy();
       }
     }
 
@@ -149,13 +142,11 @@ describeIfLlm('ingestion extraction (real agent)', () => {
 
     // Validate output shape
     const parsed = ingestionAgentOutputDto.safeParse(draftB);
-    assert.ok(parsed.success, `Output failed validation: ${JSON.stringify(parsed.error?.issues)}`);
+    expect(parsed.success).toBeTruthy();
 
     // Verify new concepts were extracted
-    assert.ok(
-      draftB.concepts.length >= 1,
-      `Expected at least 1 concept, got ${draftB.concepts.length}`
-    );
+    expect(draftB.concepts.length >= 1,
+      `Expected at least 1 concept, got ${draftB.concepts.length}`).toBeTruthy();
 
     // This direct test has no retrieval tools, so compare with source A only for reporting.
     const existingKeys = new Set(draftA.concepts.map((c) => c.conceptKey));

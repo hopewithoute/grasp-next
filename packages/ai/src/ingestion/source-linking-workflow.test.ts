@@ -1,5 +1,4 @@
-import assert from 'node:assert/strict';
-import { describe, it } from 'node:test';
+import { describe, expect, it } from 'vitest';
 import { sourceLinkingWorkflow } from './source-linking-workflow';
 
 describe('sourceLinkingWorkflow', () => {
@@ -51,14 +50,14 @@ describe('sourceLinkingWorkflow', () => {
       },
     });
 
-    assert.equal(result.status, 'success');
-    assert.equal(result.result?.reviewedLinks.length, 1);
-    assert.equal(result.result?.acceptedLinks.length, 1);
-    assert.equal(result.result?.policyResults.length, 1);
-    assert.equal(result.result?.trace.metrics.candidateCount, 1);
-    assert.equal(result.result?.trace.metrics.acceptedCount, 1);
-    assert.equal(result.result?.trace.metrics.appliedCount, 1);
-    assert.equal(result.result?.patchedExtraction.relationships.length, 1);
+    expect(result.status).toBe('success');
+    expect(result.result?.reviewedLinks.length).toBe(1);
+    expect(result.result?.acceptedLinks.length).toBe(1);
+    expect(result.result?.policyResults.length).toBe(1);
+    expect(result.result?.trace.metrics.candidateCount).toBe(1);
+    expect(result.result?.trace.metrics.acceptedCount).toBe(1);
+    expect(result.result?.trace.metrics.appliedCount).toBe(1);
+    expect(result.result?.patchedExtraction.relationships.length).toBe(1);
   });
 
   it('applies deterministic policy before linking relationships into the extraction', async () => {
@@ -108,11 +107,11 @@ describe('sourceLinkingWorkflow', () => {
       },
     });
 
-    assert.equal(result.status, 'success');
-    assert.equal(result.result?.acceptedLinks.length, 0);
-    assert.equal(result.result?.rejectedLinks.length, 1);
-    assert.equal(result.result?.policyResults[0]?.reason, 'self_edge');
-    assert.equal(result.result?.patchedExtraction.relationships.length, 0);
+    expect(result.status).toBe('success');
+    expect(result.result?.acceptedLinks.length).toBe(0);
+    expect(result.result?.rejectedLinks.length).toBe(1);
+    expect(result.result?.policyResults[0]?.reason).toBe('self_edge');
+    expect(result.result?.patchedExtraction.relationships.length).toBe(0);
   });
 
   it('rejects heading-only link evidence before patching graph relationships', async () => {
@@ -162,11 +161,11 @@ describe('sourceLinkingWorkflow', () => {
       },
     });
 
-    assert.equal(result.status, 'success');
-    assert.equal(result.result?.acceptedLinks.length, 0);
-    assert.equal(result.result?.rejectedLinks.length, 1);
-    assert.equal(result.result?.policyResults[0]?.reason, 'confidence_below_threshold');
-    assert.equal(result.result?.trace.metrics.weakEvidenceCount, 1);
-    assert.equal(result.result?.patchedExtraction.relationships.length, 0);
+    expect(result.status).toBe('success');
+    expect(result.result?.acceptedLinks.length).toBe(0);
+    expect(result.result?.rejectedLinks.length).toBe(1);
+    expect(result.result?.policyResults[0]?.reason).toBe('confidence_below_threshold');
+    expect(result.result?.trace.metrics.weakEvidenceCount).toBe(1);
+    expect(result.result?.patchedExtraction.relationships.length).toBe(0);
   });
 });

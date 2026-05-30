@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import assert from 'node:assert/strict';
-import { describe, it } from 'node:test';
+import { describe, expect, it } from 'vitest';
 import type { KnowledgebaseRepository } from '@grasp/domain';
 import { createRefinementTools } from './refinement-tools';
 
@@ -15,17 +14,17 @@ describe('refinement tools contract', () => {
       projectId: 'project-1',
     });
 
-    assert.ok(tools['search-wiki-concepts']);
-    assert.ok(tools['propose-graph-changes']);
-    assert.ok(tools['search-web-ddg']);
-    assert.ok(tools['read-webpage']);
+    expect(tools['search-wiki-concepts']).toBeTruthy();
+    expect(tools['propose-graph-changes']).toBeTruthy();
+    expect(tools['search-web-ddg']).toBeTruthy();
+    expect(tools['read-webpage']).toBeTruthy();
 
-    assert.equal('add-evidence' in tools, false);
-    assert.equal('add-concept' in tools, false);
-    assert.equal('update-concept' in tools, false);
-    assert.equal('delete-concept' in tools, false);
-    assert.equal('add-relationship' in tools, false);
-    assert.equal('delete-relationship' in tools, false);
+    expect('add-evidence' in tools).toBe(false);
+    expect('add-concept' in tools).toBe(false);
+    expect('update-concept' in tools).toBe(false);
+    expect('delete-concept' in tools).toBe(false);
+    expect('add-relationship' in tools).toBe(false);
+    expect('delete-relationship' in tools).toBe(false);
   });
 
   it('returns graph changes as an approval proposal instead of mutating directly', async () => {
@@ -52,7 +51,7 @@ describe('refinement tools contract', () => {
 
     const result = await (tools['propose-graph-changes'] as any).execute(proposal, {} as any);
 
-    assert.deepEqual(result, {
+    expect(result).toEqual({
       status: 'proposal_submitted',
       proposal,
     });
@@ -84,7 +83,7 @@ describe('refinement tools contract', () => {
       {} as any
     );
 
-    assert.deepEqual(calls, [{ projectId: 'project-1', query: 'React', limit: 5 }]);
-    assert.equal(result.concepts[0].conceptKey, 'react');
+    expect(calls).toEqual([{ projectId: 'project-1', query: 'React', limit: 5 }]);
+    expect(result.concepts[0].conceptKey).toBe('react');
   });
 });

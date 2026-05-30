@@ -1,5 +1,4 @@
-import assert from 'node:assert/strict';
-import { afterEach, describe, it } from 'node:test';
+import { afterEach, describe, expect, it } from 'vitest';
 import { canUseEmbeddingModel, embedTexts } from './embeddings';
 
 const originalFetch = globalThis.fetch;
@@ -10,17 +9,16 @@ afterEach(() => {
 
 describe('embeddings', () => {
   it('detects OpenAI, OpenAI-compatible, or Google embedding configuration', () => {
-    assert.equal(canUseEmbeddingModel({}), false);
-    assert.equal(canUseEmbeddingModel({ AI_MODEL: 'xiaomi/mimo-v2.5-pro' }), false);
-    assert.equal(canUseEmbeddingModel({ OPENAI_API_KEY: 'key' }), true);
-    assert.equal(
+    expect(canUseEmbeddingModel({})).toBe(false);
+    expect(canUseEmbeddingModel({ AI_MODEL: 'xiaomi/mimo-v2.5-pro' })).toBe(false);
+    expect(canUseEmbeddingModel({ OPENAI_API_KEY: 'key' })).toBe(true);
+    expect(
       canUseEmbeddingModel({
         XIAOMI_API_KEY: 'key',
-      }),
-      true
-    );
-    assert.equal(canUseEmbeddingModel({ GOOGLE_GENERATIVE_AI_API_KEY: 'key' }), true);
-    assert.equal(canUseEmbeddingModel({ GEMINI_API_KEY: 'key' }), true);
+      })
+    ).toBe(true);
+    expect(canUseEmbeddingModel({ GOOGLE_GENERATIVE_AI_API_KEY: 'key' })).toBe(true);
+    expect(canUseEmbeddingModel({ GEMINI_API_KEY: 'key' })).toBe(true);
   });
 
   it('requests OpenAI-compatible embeddings and returns them in input order', async () => {
@@ -50,12 +48,12 @@ describe('embeddings', () => {
       OPENAI_EMBEDDING_MODEL: 'text-embedding-test',
     });
 
-    assert.deepEqual(embeddings, [
+    expect(embeddings).toEqual([
       [0.1, 0.2],
       [0.3, 0.4],
     ]);
-    assert.equal(calls[0]?.url, 'https://api.openai.com/v1/embeddings');
-    assert.deepEqual(calls[0]?.body, {
+    expect(calls[0]?.url).toBe('https://api.openai.com/v1/embeddings');
+    expect(calls[0]?.body).toEqual({
       input: ['alpha', 'beta'],
       model: 'text-embedding-test',
     });
@@ -87,17 +85,16 @@ describe('embeddings', () => {
       GOOGLE_GENERATIVE_AI_API_KEY: 'google-key',
     });
 
-    assert.deepEqual(embeddings, [
+    expect(embeddings).toEqual([
       [0.1, 0.2, 0.3],
       [0.1, 0.2, 0.3],
     ]);
-    assert.equal(calls.length, 2);
-    assert.equal(
-      calls[0]?.url,
+    expect(calls.length).toBe(2);
+    expect(calls[0]?.url).toBe(
       'https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent'
     );
-    assert.equal(calls[0]?.headers.get('x-goog-api-key'), 'google-key');
-    assert.deepEqual(calls[0]?.body, {
+    expect(calls[0]?.headers.get('x-goog-api-key')).toBe('google-key');
+    expect(calls[0]?.body).toEqual({
       content: {
         parts: [{ text: 'alpha' }],
       },
