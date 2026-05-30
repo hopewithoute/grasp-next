@@ -370,3 +370,9 @@ rtk init --global       # Add RTK to ~/.claude/CLAUDE.md
 Overall average: **60-90% token reduction** on common development operations.
 
 <!-- /rtk-instructions -->
+
+## 13. TypeScript Compilation Constraints
+
+**CRITICAL**: Do NOT use `tsc` directly in the terminal for type checking or compilation operations. Two of the last tasks crashed due to out-of-memory (OOM) errors during `tsc`.
+
+Instead, **always use `tsgo`** for all TypeScript operations in the terminal to avoid memory crashes.
