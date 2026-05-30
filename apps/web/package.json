@@ -8,7 +8,7 @@
     "eval:ingestion": "tsx evals/mastra/ingestion.eval.ts",
     "eval:refinement": "tsx evals/mastra/refinement.eval.ts",
     "lint": "eslint . --max-warnings=0",
-    "test": "node --import tsx/esm --test features/**/*.test.tsx server/**/*.test.ts",
+    "test": "node --env-file=../../.env ./node_modules/.bin/vitest run",
     "typecheck": "tsgo --noEmit"
   },
   "dependencies": {
@@ -42,6 +42,7 @@
     "eslint": "^9.39.1",
     "eslint-config-next": "^16.2.6",
     "eslint-config-prettier": "^10.1.8",
-    "tsx": "^4.21.0"
+    "tsx": "^4.21.0",
+    "vitest": "^3.2.4"
   }
 }

@@ -15,7 +15,7 @@
     "studio": "mastra dev",
     "lint": "eslint . --max-warnings=0",
     "mastra:build": "mastra build",
-    "test": "node --env-file=../../.env --import tsx/esm --test src/**/*.test.ts",
+    "test": "node --env-file=../../.env ./node_modules/.bin/vitest run",
     "typecheck": "tsgo --noEmit"
   },
   "devDependencies": {
@@ -24,7 +24,8 @@
     "@types/node": "^25.7.0",
     "eslint": "^9.39.1",
     "mastra": "^1.9.1",
-    "tsx": "^4.21.0"
+    "tsx": "^4.21.0",
+    "vitest": "^3.2.4"
   },
   "dependencies": {
     "@grasp/domain": "workspace:*",
