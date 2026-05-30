@@ -1,5 +1,4 @@
-import assert from 'node:assert/strict';
-import { describe, it } from 'node:test';
+import { describe, expect, it } from 'vitest';
 import { validateAndAnchorSourceRefs } from './validate-source-refs';
 
 const blocks = [
@@ -20,8 +19,8 @@ describe('validateAndAnchorSourceRefs', () => {
       blocks
     );
 
-    assert.equal(result.length, 1);
-    assert.equal(result[0]?.blockId, 'block-0001');
+    expect(result.length).toBe(1);
+    expect(result[0]?.blockId).toBe('block-0001');
   });
 
   it('rebinds refs to the actual block when agent picked the wrong blockId', () => {
@@ -36,8 +35,8 @@ describe('validateAndAnchorSourceRefs', () => {
       blocks
     );
 
-    assert.equal(result.length, 1);
-    assert.equal(result[0]?.blockId, 'block-0002');
+    expect(result.length).toBe(1);
+    expect(result[0]?.blockId).toBe('block-0002');
   });
 
   it('drops refs whose quote does not appear in any block', () => {
@@ -52,7 +51,7 @@ describe('validateAndAnchorSourceRefs', () => {
       blocks
     );
 
-    assert.equal(result.length, 0);
+    expect(result.length).toBe(0);
   });
 
   it('drops refs with empty quotes', () => {
@@ -67,7 +66,7 @@ describe('validateAndAnchorSourceRefs', () => {
       blocks
     );
 
-    assert.equal(result.length, 0);
+    expect(result.length).toBe(0);
   });
 
   it('trims whitespace around quotes before substring check', () => {
@@ -82,7 +81,7 @@ describe('validateAndAnchorSourceRefs', () => {
       blocks
     );
 
-    assert.equal(result.length, 1);
-    assert.equal(result[0]?.quote, 'Markets coordinate buyers and sellers through prices.');
+    expect(result.length).toBe(1);
+    expect(result[0]?.quote).toBe('Markets coordinate buyers and sellers through prices.');
   });
 });

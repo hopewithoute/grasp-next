@@ -1,5 +1,4 @@
-import assert from 'node:assert/strict';
-import { describe, it } from 'node:test';
+import { describe, expect, it } from 'vitest';
 import { normalizeMarkdownSource } from './normalize-markdown-source';
 
 describe('normalizeMarkdownSource', () => {
@@ -17,14 +16,11 @@ describe('normalizeMarkdownSource', () => {
       title: 'Database Lesson',
     });
 
-    assert.equal(source.sourceType, 'markdown');
-    assert.deepEqual(
-      source.blocks.map((block) => block.kind),
-      ['heading', 'paragraph', 'list']
-    );
-    assert.equal(source.blocks[0]?.text, 'Database Indexing');
-    assert.equal(source.blocks[0]?.metadata?.depth, 1);
-    assert.equal(source.blocks[1]?.location.label, 'Block 2');
+    expect(source.sourceType).toBe('markdown');
+    expect(source.blocks.map((block) => block.kind)).toEqual(['heading', 'paragraph', 'list']);
+    expect(source.blocks[0]?.text).toBe('Database Indexing');
+    expect(source.blocks[0]?.metadata?.depth).toBe(1);
+    expect(source.blocks[1]?.location.label).toBe('Block 2');
   });
 
   it('treats plain pasted text as the same normalized source contract', () => {
@@ -34,10 +30,7 @@ describe('normalizeMarkdownSource', () => {
       title: 'Economics',
     });
 
-    assert.equal(source.sourceType, 'text');
-    assert.deepEqual(
-      source.blocks.map((block) => block.kind),
-      ['paragraph', 'paragraph']
-    );
+    expect(source.sourceType).toBe('text');
+    expect(source.blocks.map((block) => block.kind)).toEqual(['paragraph', 'paragraph']);
   });
 });

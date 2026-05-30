@@ -1,5 +1,4 @@
-import assert from 'node:assert/strict';
-import { beforeEach, describe, it } from 'node:test';
+import { beforeEach, describe, expect, it } from 'vitest';
 import {
   approveArtifact,
   ArtifactApprovalForbiddenError,
@@ -43,43 +42,37 @@ describe('approveArtifact', () => {
       actor
     );
 
-    assert.equal(artifact.status, 'approved');
-    assert.equal(state.reviewRun.status, 'completed');
-    assert.deepEqual(state.resumeCalls, [
+    expect(artifact.status).toBe('approved');
+    expect(state.reviewRun.status).toBe('completed');
+    expect(state.resumeCalls).toEqual([
       {
         resumeLabel: 'review_concepts',
         workflowId: 'extract-concepts',
         workflowRunId: 'workflow-run-1',
       },
     ]);
-    assert.equal(state.auditLogs.length, 1);
-    assert.equal(state.auditLogs[0]?.action, 'artifact.approved');
+    expect(state.auditLogs.length).toBe(1);
+    expect(state.auditLogs[0]?.action).toBe('artifact.approved');
   });
 
   it('rejects actors that do not own the artifact project', async () => {
-    await assert.rejects(
-      approveArtifact({ artifactId: state.artifact.id }, createDeps(state), { id: 'other-user' }),
-      ArtifactApprovalForbiddenError
-    );
+    await expect(approveArtifact({ artifactId: state.artifact.id }, createDeps(state), { id: 'other-user' })).rejects.toThrow(ArtifactApprovalForbiddenError);
 
-    assert.equal(state.resumeCalls.length, 0);
-    assert.equal(state.artifact.status, 'generated');
+    expect(state.resumeCalls.length).toBe(0);
+    expect(state.artifact.status).toBe('generated');
   });
 
   it('marks the review run failed when workflow resume does not complete', async () => {
-    await assert.rejects(
-      approveArtifact(
+    await expect(approveArtifact(
         { artifactId: state.artifact.id },
         createDeps(state, {
           reviewStatus: 'failed',
         }),
         actor
-      ),
-      ArtifactApprovalInvalidStateError
-    );
+      )).rejects.toThrow(ArtifactApprovalInvalidStateError);
 
-    assert.equal(state.reviewRun.status, 'failed');
-    assert.equal(state.artifact.status, 'generated');
+    expect(state.reviewRun.status).toBe('failed');
+    expect(state.artifact.status).toBe('generated');
   });
 });
 
@@ -100,51 +93,42 @@ describe('requestConceptRevision', () => {
       actor
     );
 
-    assert.equal(artifact.status, 'needs_revision');
-    assert.equal(state.reviewRun.status, 'resumed');
-    assert.equal(state.project.status, 'reviewing');
-    assert.equal(state.auditLogs.length, 1);
-    assert.equal(state.auditLogs[0]?.action, 'artifact.revision_requested');
-    assert.equal(
-      state.auditLogs[0]?.metadata?.revisionFeedback,
-      'Split atom and molecule concepts more clearly.'
-    );
+    expect(artifact.status).toBe('needs_revision');
+    expect(state.reviewRun.status).toBe('resumed');
+    expect(state.project.status).toBe('reviewing');
+    expect(state.auditLogs.length).toBe(1);
+    expect(state.auditLogs[0]?.action).toBe('artifact.revision_requested');
+    expect(state.auditLogs[0]?.metadata?.revisionFeedback).toBe('Split atom and molecule concepts more clearly.');
   });
 
   it('rejects approval-state artifacts that cannot be revised', async () => {
     state.artifact.status = 'approved';
 
-    await assert.rejects(
-      requestConceptRevision(
+    await expect(requestConceptRevision(
         {
           artifactId: state.artifact.id,
           revisionFeedback: 'Try again.',
         },
         createDeps(state),
         actor
-      ),
-      ArtifactApprovalInvalidStateError
-    );
+      )).rejects.toThrow(ArtifactApprovalInvalidStateError);
 
-    assert.equal(state.reviewRun.status, 'suspended');
+    expect(state.reviewRun.status).toBe('suspended');
   });
 
   it('requires a suspended review run before requesting re-extraction', async () => {
     state.reviewRun.status = 'completed';
 
-    await assert.rejects(
-      requestConceptRevision(
+    await expect(requestConceptRevision(
         {
           artifactId: state.artifact.id,
           revisionFeedback: 'Try again.',
         },
         createDeps(state),
         actor
-      ),
-      ArtifactApprovalInvalidStateError
-    );
+      )).rejects.toThrow(ArtifactApprovalInvalidStateError);
 
-    assert.equal(state.artifact.status, 'generated');
+    expect(state.artifact.status).toBe('generated');
   });
 });
 
@@ -173,30 +157,26 @@ describe('updateKnowledgebaseConcept', () => {
       actor
     );
 
-    assert.equal(artifact.status, 'generated');
-    assert.equal(state.versions.length, 2);
-    assert.equal(state.artifact.currentVersionId, state.versions[1]?.id);
+    expect(artifact.status).toBe('generated');
+    expect(state.versions.length).toBe(2);
+    expect(state.artifact.currentVersionId).toBe(state.versions[1]?.id);
 
     const content = state.versions[1]?.content as KnowledgebaseArtifactContentDto;
-    assert.equal(content.knowledgebase.concepts[0]?.name, 'Atomic Structure');
-    assert.equal(
-      content.knowledgebase.concepts[0]?.definition,
-      'A corrected definition for atoms.'
-    );
-    assert.equal(content.knowledgebase.concepts[0]?.difficulty, 'intermediate');
-    assert.equal(content.graphProjection.nodes[0]?.conceptId, 'atom');
-    assert.equal(content.graphProjection.nodes[0]?.label, 'Atomic Structure');
-    assert.deepEqual(state.knowledgebaseWrites[0], {
+    expect(content.knowledgebase.concepts[0]?.name).toBe('Atomic Structure');
+    expect(content.knowledgebase.concepts[0]?.definition).toBe('A corrected definition for atoms.');
+    expect(content.knowledgebase.concepts[0]?.difficulty).toBe('intermediate');
+    expect(content.graphProjection.nodes[0]?.conceptId).toBe('atom');
+    expect(content.graphProjection.nodes[0]?.label).toBe('Atomic Structure');
+    expect(state.knowledgebaseWrites[0]).toEqual({
       projectId: state.artifact.projectId,
     });
-    assert.equal(state.auditLogs[0]?.action, 'artifact.knowledgebase_concept.updated');
+    expect(state.auditLogs[0]?.action).toBe('artifact.knowledgebase_concept.updated');
   });
 
   it('rejects approved artifacts', async () => {
     state.artifact.status = 'approved';
 
-    await assert.rejects(
-      updateKnowledgebaseConcept(
+    await expect(updateKnowledgebaseConcept(
         {
           artifactId: state.artifact.id,
           conceptId: 'atom',
@@ -206,11 +186,9 @@ describe('updateKnowledgebaseConcept', () => {
         },
         createDeps(state),
         actor
-      ),
-      ArtifactApprovalInvalidStateError
-    );
+      )).rejects.toThrow(ArtifactApprovalInvalidStateError);
 
-    assert.equal(state.versions.length, 1);
+    expect(state.versions.length).toBe(1);
   });
 });
 
@@ -239,24 +217,23 @@ describe('updateKnowledgebaseRelationship', () => {
       actor
     );
 
-    assert.equal(artifact.status, 'generated');
-    assert.equal(state.versions.length, 2);
-    assert.equal(state.artifact.currentVersionId, state.versions[1]?.id);
+    expect(artifact.status).toBe('generated');
+    expect(state.versions.length).toBe(2);
+    expect(state.artifact.currentVersionId).toBe(state.versions[1]?.id);
 
     const content = state.versions[1]?.content as KnowledgebaseArtifactContentDto;
-    assert.equal(content.knowledgebase.relationships[0]?.sourceConceptId, 'molecule');
-    assert.equal(content.knowledgebase.relationships[0]?.targetConceptId, 'atom');
-    assert.equal(content.graphProjection.edges[0]?.sourceNodeId, 'node:molecule');
-    assert.equal(content.graphProjection.edges[0]?.targetNodeId, 'node:atom');
-    assert.deepEqual(state.knowledgebaseWrites[0], {
+    expect(content.knowledgebase.relationships[0]?.sourceConceptId).toBe('molecule');
+    expect(content.knowledgebase.relationships[0]?.targetConceptId).toBe('atom');
+    expect(content.graphProjection.edges[0]?.sourceNodeId).toBe('node:molecule');
+    expect(content.graphProjection.edges[0]?.targetNodeId).toBe('node:atom');
+    expect(state.knowledgebaseWrites[0]).toEqual({
       projectId: state.artifact.projectId,
     });
-    assert.equal(state.auditLogs[0]?.action, 'artifact.knowledgebase_relationship.updated');
+    expect(state.auditLogs[0]?.action).toBe('artifact.knowledgebase_relationship.updated');
   });
 
   it('rejects self-referential relationship patches', async () => {
-    await assert.rejects(
-      updateKnowledgebaseRelationship(
+    await expect(updateKnowledgebaseRelationship(
         {
           artifactId: state.artifact.id,
           relationshipId: 'rel-atom-molecule',
@@ -266,11 +243,9 @@ describe('updateKnowledgebaseRelationship', () => {
         },
         createDeps(state),
         actor
-      ),
-      ArtifactApprovalInvalidStateError
-    );
+      )).rejects.toThrow(ArtifactApprovalInvalidStateError);
 
-    assert.equal(state.versions.length, 1);
+    expect(state.versions.length).toBe(1);
   });
 });
 
@@ -303,16 +278,16 @@ describe('updateKnowledgebaseConceptEvidence', () => {
       actor
     );
 
-    assert.equal(artifact.status, 'generated');
-    assert.equal(state.versions.length, 2);
+    expect(artifact.status).toBe('generated');
+    expect(state.versions.length).toBe(2);
 
     const content = state.versions[1]?.content as KnowledgebaseArtifactContentDto;
-    assert.equal(content.knowledgebase.concepts[0]?.sourceRefs[0]?.quote, 'basic units of matter');
-    assert.equal(content.knowledgebase.concepts[0]?.sourceRefs[0]?.blockId, 'source-1:block-0001');
-    assert.deepEqual(state.knowledgebaseWrites[0], {
+    expect(content.knowledgebase.concepts[0]?.sourceRefs[0]?.quote).toBe('basic units of matter');
+    expect(content.knowledgebase.concepts[0]?.sourceRefs[0]?.blockId).toBe('source-1:block-0001');
+    expect(state.knowledgebaseWrites[0]).toEqual({
       projectId: state.artifact.projectId,
     });
-    assert.equal(state.auditLogs[0]?.action, 'artifact.knowledgebase_evidence.updated');
+    expect(state.auditLogs[0]?.action).toBe('artifact.knowledgebase_evidence.updated');
   });
 
   it('patches concept evidence by original source ref identity instead of rendered index', async () => {
@@ -359,19 +334,12 @@ describe('updateKnowledgebaseConceptEvidence', () => {
     );
 
     const nextContent = state.versions[1]?.content as KnowledgebaseArtifactContentDto;
-    assert.equal(
-      nextContent.knowledgebase.concepts[0]?.sourceRefs[0]?.quote,
-      'Atoms are the basic units of matter.'
-    );
-    assert.equal(
-      nextContent.knowledgebase.concepts[0]?.sourceRefs[1]?.quote,
-      'join into molecules'
-    );
+    expect(nextContent.knowledgebase.concepts[0]?.sourceRefs[0]?.quote).toBe('Atoms are the basic units of matter.');
+    expect(nextContent.knowledgebase.concepts[0]?.sourceRefs[1]?.quote).toBe('join into molecules');
   });
 
   it('rejects evidence quotes that are not exact source block substrings', async () => {
-    await assert.rejects(
-      updateKnowledgebaseConceptEvidence(
+    await expect(updateKnowledgebaseConceptEvidence(
         {
           artifactId: state.artifact.id,
           blockId: 'source-1:block-0001',
@@ -385,11 +353,9 @@ describe('updateKnowledgebaseConceptEvidence', () => {
         },
         createDeps(state),
         actor
-      ),
-      ArtifactApprovalInvalidStateError
-    );
+      )).rejects.toThrow(ArtifactApprovalInvalidStateError);
 
-    assert.equal(state.versions.length, 1);
+    expect(state.versions.length).toBe(1);
   });
 });
 
@@ -422,18 +388,12 @@ describe('updateKnowledgebaseRelationshipEvidence', () => {
       actor
     );
 
-    assert.equal(artifact.status, 'generated');
-    assert.equal(state.versions.length, 2);
+    expect(artifact.status).toBe('generated');
+    expect(state.versions.length).toBe(2);
 
     const content = state.versions[1]?.content as KnowledgebaseArtifactContentDto;
-    assert.equal(
-      content.knowledgebase.relationships[0]?.sourceRefs[0]?.quote,
-      'Atoms are the basic units'
-    );
-    assert.equal(
-      state.auditLogs[0]?.action,
-      'artifact.knowledgebase_relationship_evidence.updated'
-    );
+    expect(content.knowledgebase.relationships[0]?.sourceRefs[0]?.quote).toBe('Atoms are the basic units');
+    expect(state.auditLogs[0]?.action).toBe('artifact.knowledgebase_relationship_evidence.updated');
   });
 
   it('patches relationship evidence by original source ref identity instead of rendered index', async () => {
@@ -480,19 +440,12 @@ describe('updateKnowledgebaseRelationshipEvidence', () => {
     );
 
     const nextContent = state.versions[1]?.content as KnowledgebaseArtifactContentDto;
-    assert.equal(
-      nextContent.knowledgebase.relationships[0]?.sourceRefs[0]?.quote,
-      'Atoms are the basic units of matter.'
-    );
-    assert.equal(
-      nextContent.knowledgebase.relationships[0]?.sourceRefs[1]?.quote,
-      'combine before molecules'
-    );
+    expect(nextContent.knowledgebase.relationships[0]?.sourceRefs[0]?.quote).toBe('Atoms are the basic units of matter.');
+    expect(nextContent.knowledgebase.relationships[0]?.sourceRefs[1]?.quote).toBe('combine before molecules');
   });
 
   it('rejects relationship evidence quotes that are not exact source block substrings', async () => {
-    await assert.rejects(
-      updateKnowledgebaseRelationshipEvidence(
+    await expect(updateKnowledgebaseRelationshipEvidence(
         {
           artifactId: state.artifact.id,
           blockId: 'source-1:block-0001',
@@ -506,11 +459,9 @@ describe('updateKnowledgebaseRelationshipEvidence', () => {
         },
         createDeps(state),
         actor
-      ),
-      ArtifactApprovalInvalidStateError
-    );
+      )).rejects.toThrow(ArtifactApprovalInvalidStateError);
 
-    assert.equal(state.versions.length, 1);
+    expect(state.versions.length).toBe(1);
   });
 });
 

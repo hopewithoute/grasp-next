@@ -1,5 +1,4 @@
-import assert from 'node:assert/strict';
-import { describe, it } from 'node:test';
+import { describe, expect, it } from 'vitest';
 import { applyGraphProposals, type GraphProposalAction } from './apply-graph-proposals.action';
 import type { KnowledgebaseRepository } from '../knowledgebase/knowledgebase.types';
 
@@ -82,10 +81,10 @@ describe('applyGraphProposals', () => {
       { knowledgebaseRepository: repo }
     );
 
-    assert.equal(result.success, true);
-    assert.equal(result.applied, 1);
-    assert.equal(repo.calls.length, 2); // addConcept + createSnapshot
-    assert.equal(repo.calls[0]?.method, 'addConcept');
+    expect(result.success).toBe(true);
+    expect(result.applied).toBe(1);
+    expect(repo.calls.length).toBe(2); // addConcept + createSnapshot
+    expect(repo.calls[0]?.method).toBe('addConcept');
   });
 
   it('applies delete_concept action', async () => {
@@ -102,7 +101,7 @@ describe('applyGraphProposals', () => {
       { knowledgebaseRepository: repo }
     );
 
-    assert.equal(repo.calls[0]?.method, 'deleteConcept');
+    expect(repo.calls[0]?.method).toBe('deleteConcept');
   });
 
   it('applies add_relationship action', async () => {
@@ -123,7 +122,7 @@ describe('applyGraphProposals', () => {
       { knowledgebaseRepository: repo }
     );
 
-    assert.equal(repo.calls[0]?.method, 'addRelationship');
+    expect(repo.calls[0]?.method).toBe('addRelationship');
   });
 
   it('applies add_evidence action', async () => {
@@ -144,7 +143,7 @@ describe('applyGraphProposals', () => {
       { knowledgebaseRepository: repo }
     );
 
-    assert.equal(repo.calls[0]?.method, 'addConceptEvidence');
+    expect(repo.calls[0]?.method).toBe('addConceptEvidence');
   });
 
   it('always creates a snapshot after applying', async () => {
@@ -168,7 +167,7 @@ describe('applyGraphProposals', () => {
     );
 
     const snapshotCall = repo.calls.find((c) => c.method === 'createSnapshot');
-    assert.ok(snapshotCall);
+    expect(snapshotCall).toBeTruthy();
   });
 
   it('throws on unknown action type', async () => {
@@ -177,14 +176,11 @@ describe('applyGraphProposals', () => {
       { type: 'unknown_action', payload: {} },
     ];
 
-    await assert.rejects(
-      () =>
+    await expect(() =>
         applyGraphProposals(
           { projectId: 'p1', actions },
           { knowledgebaseRepository: repo }
-        ),
-      { message: 'Unknown action type: unknown_action' }
-    );
+        )).rejects.toThrow('Unknown action type: unknown_action');
   });
 
   it('handles multiple actions in sequence', async () => {
@@ -225,8 +221,8 @@ describe('applyGraphProposals', () => {
       { knowledgebaseRepository: repo }
     );
 
-    assert.equal(result.applied, 3);
+    expect(result.applied).toBe(3);
     // 2 addConcept + 1 addRelationship + 1 createSnapshot = 4 calls
-    assert.equal(repo.calls.length, 4);
+    expect(repo.calls.length).toBe(4);
   });
 });

@@ -1,5 +1,4 @@
-import assert from 'node:assert/strict';
-import { beforeEach, describe, it } from 'node:test';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { AUDIT_ACTION, PROJECT_STATUS, type ProjectSourceType } from '../constants';
 import { ProjectForbiddenError } from '../projects/project.errors';
 import type {
@@ -36,11 +35,11 @@ describe('project source actions', () => {
       actor
     );
 
-    assert.equal(source.title, 'Textbook excerpt');
-    assert.equal(source.type, 'markdown');
-    assert.equal(state.sources.length, 1);
-    assert.equal(state.auditLogs[0]?.action, AUDIT_ACTION.PROJECT_SOURCE_CREATED);
-    assert.equal(state.auditLogs[0]?.metadata?.sourceId, source.id);
+    expect(source.title).toBe('Textbook excerpt');
+    expect(source.type).toBe('markdown');
+    expect(state.sources.length).toBe(1);
+    expect(state.auditLogs[0]?.action).toBe(AUDIT_ACTION.PROJECT_SOURCE_CREATED);
+    expect(state.auditLogs[0]?.metadata?.sourceId).toBe(source.id);
   });
 
   it('updates an owner-scoped source and writes an audit log', async () => {
@@ -57,9 +56,9 @@ describe('project source actions', () => {
       actor
     );
 
-    assert.equal(source.title, 'Updated source');
-    assert.equal(source.content, 'Updated source body.');
-    assert.equal(state.auditLogs[0]?.action, AUDIT_ACTION.PROJECT_SOURCE_UPDATED);
+    expect(source.title).toBe('Updated source');
+    expect(source.content).toBe('Updated source body.');
+    expect(state.auditLogs[0]?.action).toBe(AUDIT_ACTION.PROJECT_SOURCE_UPDATED);
   });
 
   it('deletes an owner-scoped source and writes an audit log', async () => {
@@ -73,14 +72,13 @@ describe('project source actions', () => {
       actor
     );
 
-    assert.equal(source.id, '77777777-7777-4777-8777-777777777777');
-    assert.equal(state.sources.length, 0);
-    assert.equal(state.auditLogs[0]?.action, AUDIT_ACTION.PROJECT_SOURCE_DELETED);
+    expect(source.id).toBe('77777777-7777-4777-8777-777777777777');
+    expect(state.sources.length).toBe(0);
+    expect(state.auditLogs[0]?.action).toBe(AUDIT_ACTION.PROJECT_SOURCE_DELETED);
   });
 
   it('rejects source writes for non-owners', async () => {
-    await assert.rejects(
-      addProjectSource(
+    await expect(addProjectSource(
         {
           content: 'Plants use light.',
           projectId: state.project.id,
@@ -89,12 +87,10 @@ describe('project source actions', () => {
         },
         createDeps(state),
         { id: 'other-user' }
-      ),
-      ProjectForbiddenError
-    );
+      )).rejects.toThrow(ProjectForbiddenError);
 
-    assert.equal(state.sources.length, 0);
-    assert.equal(state.auditLogs.length, 0);
+    expect(state.sources.length).toBe(0);
+    expect(state.auditLogs.length).toBe(0);
   });
 });
 

@@ -1,5 +1,4 @@
-import assert from 'node:assert/strict';
-import { describe, it } from 'node:test';
+import { describe, expect, it } from 'vitest';
 import type {
   KnowledgebaseRepository,
   KnowledgebaseQueryRepository,
@@ -13,17 +12,17 @@ describe('KnowledgebaseRepository sub-interfaces', () => {
     // We assert at runtime that the type relationship holds by checking
     // that a value of the full type can be assigned to the sub-type.
     const checkQuery = (repo: KnowledgebaseRepository): KnowledgebaseQueryRepository => repo;
-    assert.ok(typeof checkQuery === 'function');
+    expect(typeof checkQuery === 'function').toBeTruthy();
   });
 
   it('KnowledgebaseRepository satisfies KnowledgebaseMutationRepository', () => {
     const checkMutation = (repo: KnowledgebaseRepository): KnowledgebaseMutationRepository => repo;
-    assert.ok(typeof checkMutation === 'function');
+    expect(typeof checkMutation === 'function').toBeTruthy();
   });
 
   it('KnowledgebaseRepository satisfies KnowledgebaseIngestionRepository', () => {
     const checkIngestion = (repo: KnowledgebaseRepository): KnowledgebaseIngestionRepository => repo;
-    assert.ok(typeof checkIngestion === 'function');
+    expect(typeof checkIngestion === 'function').toBeTruthy();
   });
 
   it('sub-interfaces have the expected method counts', () => {
@@ -63,12 +62,9 @@ describe('KnowledgebaseRepository sub-interfaces', () => {
       'replaceVersionFromContent',
     ];
 
-    assert.equal(expectedQueryMethods.length, 6);
-    assert.equal(expectedMutationMethods.length, 9);
-    assert.equal(expectedIngestionMethods.length, 4);
-    assert.equal(
-      expectedQueryMethods.length + expectedMutationMethods.length + expectedIngestionMethods.length,
-      19
-    );
+    expect(expectedQueryMethods.length).toBe(6);
+    expect(expectedMutationMethods.length).toBe(9);
+    expect(expectedIngestionMethods.length).toBe(4);
+    expect(expectedQueryMethods.length + expectedMutationMethods.length + expectedIngestionMethods.length).toBe(19);
   });
 });

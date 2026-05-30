@@ -1,5 +1,4 @@
-import assert from 'node:assert/strict';
-import { describe, it } from 'node:test';
+import { describe, expect, it } from 'vitest';
 import type { IngestionAgentOutput } from '../index';
 import { buildLinkCandidates, scoreLinkEvidence } from './linking';
 
@@ -12,9 +11,9 @@ describe('scoreLinkEvidence', () => {
       semanticSupportConfidence: 0.95,
     });
 
-    assert.equal(quality.evidenceKind, 'heading');
-    assert.equal(quality.evidenceStrength, 'weak');
-    assert.ok(quality.finalEvidenceScore < 0.6);
+    expect(quality.evidenceKind).toBe('heading');
+    expect(quality.evidenceStrength).toBe('weak');
+    expect(quality.finalEvidenceScore < 0.6).toBeTruthy();
   });
 });
 
@@ -102,11 +101,11 @@ describe('buildLinkCandidates', () => {
             : [],
       });
 
-      assert.equal(candidates.length, 1);
-      assert.equal(candidates[0]?.sourceConceptKey, fixture.existingConceptKey);
-      assert.equal(candidates[0]?.targetConceptKey, fixture.subjectConceptKey);
-      assert.equal(candidates[0]?.relationshipType, 'prerequisite');
-      assert.equal(candidates[0]?.resolutionType, 'exact');
+      expect(candidates.length).toBe(1);
+      expect(candidates[0]?.sourceConceptKey).toBe(fixture.existingConceptKey);
+      expect(candidates[0]?.targetConceptKey).toBe(fixture.subjectConceptKey);
+      expect(candidates[0]?.relationshipType).toBe('prerequisite');
+      expect(candidates[0]?.resolutionType).toBe('exact');
     });
   }
 
@@ -176,9 +175,9 @@ describe('buildLinkCandidates', () => {
           : [],
     });
 
-    assert.equal(candidates.length, 1);
-    assert.equal(candidates[0]?.sourceConceptKey, 'price-elasticity-of-demand');
-    assert.equal(candidates[0]?.targetConceptKey, 'total-revenue-and-elasticity');
-    assert.equal(candidates[0]?.relationshipType, 'prerequisite');
+    expect(candidates.length).toBe(1);
+    expect(candidates[0]?.sourceConceptKey).toBe('price-elasticity-of-demand');
+    expect(candidates[0]?.targetConceptKey).toBe('total-revenue-and-elasticity');
+    expect(candidates[0]?.relationshipType).toBe('prerequisite');
   });
 });

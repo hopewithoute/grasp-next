@@ -1,5 +1,4 @@
-import assert from 'node:assert/strict';
-import { describe, it } from 'node:test';
+import { describe, expect, it } from 'vitest';
 import {
   buildKnowledgebaseArtifactContent,
   projectKnowledgebaseGraph,
@@ -13,17 +12,11 @@ describe('buildKnowledgebaseArtifactContent', () => {
       normalizedSource: normalizedSource(),
     });
 
-    assert.ok(!('conceptGraph' in content));
-    assert.ok(!('learningWiki' in content));
-    assert.equal(content.knowledgebase.concepts[0]?.id, 'market');
-    assert.deepEqual(
-      content.graphProjection.nodes.map((node) => node.conceptId),
-      ['market', 'demand']
-    );
-    assert.deepEqual(
-      content.graphProjection.edges.map((edge) => edge.relationshipId),
-      ['relationship-0001']
-    );
+    expect('conceptGraph' in content).toBe(false);
+    expect('learningWiki' in content).toBe(false);
+    expect(content.knowledgebase.concepts[0]?.id).toBeTruthy();
+    expect(content.graphProjection.nodes.map((node) => node.conceptId)).toEqual(['market', 'demand']);
+    expect(content.graphProjection.edges.map((edge) => edge.relationshipId)).toEqual(['relationship-0001']);
   });
 });
 
@@ -31,9 +24,9 @@ describe('projectKnowledgebaseGraph', () => {
   it('projects graph nodes and edges from knowledgebase ids', () => {
     const projection = projectKnowledgebaseGraph(knowledgebaseFixture());
 
-    assert.equal(projection.nodes[0]?.id, 'node:market');
-    assert.equal(projection.edges[0]?.sourceNodeId, 'node:market');
-    assert.equal(projection.edges[0]?.targetNodeId, 'node:demand');
+    expect(projection.nodes[0]?.id).toBe('node:market');
+    expect(projection.edges[0]?.sourceNodeId).toBe('node:market');
+    expect(projection.edges[0]?.targetNodeId).toBe('node:demand');
   });
 });
 

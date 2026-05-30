@@ -1,5 +1,4 @@
-import assert from 'node:assert/strict';
-import { beforeEach, describe, it } from 'node:test';
+import { beforeEach, describe, expect, it } from 'vitest';
 import type { IngestionRunRepository, KnowledgebaseRepository } from '../knowledgebase';
 import type { ProjectSourceRepository } from '../project-sources';
 import { deleteProject, ProjectDeleteBlockedError } from './delete-project.action';
@@ -34,18 +33,17 @@ describe('updateProjectDetails', () => {
       actor
     );
 
-    assert.equal(project.title, 'Updated title');
-    assert.equal(project.description, 'Updated description');
-    assert.equal(project.status, 'reviewing');
-    assert.equal(state.auditLogs.length, 1);
-    assert.equal(state.auditLogs[0]?.action, 'project.details.updated');
+    expect(project.title).toBe('Updated title');
+    expect(project.description).toBe('Updated description');
+    expect(project.status).toBe('reviewing');
+    expect(state.auditLogs.length).toBe(1);
+    expect(state.auditLogs[0]?.action).toBe('project.details.updated');
   });
 
   it('rejects actors that do not own the project', async () => {
     const existingProject = requireProject(state);
 
-    await assert.rejects(
-      updateProjectDetails(
+    await expect(updateProjectDetails(
         {
           description: 'Updated description',
           projectId: existingProject.id,
@@ -53,12 +51,10 @@ describe('updateProjectDetails', () => {
         },
         createDeps(state),
         { id: 'other-user' }
-      ),
-      ProjectForbiddenError
-    );
+      )).rejects.toThrow(ProjectForbiddenError);
 
-    assert.equal(requireProject(state).title, 'Original title');
-    assert.equal(state.auditLogs.length, 0);
+    expect(requireProject(state).title).toBe('Original title');
+    expect(state.auditLogs.length).toBe(0);
   });
 });
 
@@ -79,11 +75,11 @@ describe('deleteProject', () => {
       actor
     );
 
-    assert.equal(project.id, state.deletedProject?.id);
-    assert.equal(state.project, null);
-    assert.equal(state.auditLogs.length, 1);
-    assert.equal(state.auditLogs[0]?.action, 'project.deleted');
-    assert.equal(state.auditLogs[0]?.metadata?.title, 'Original title');
+    expect(project.id).toBe(state.deletedProject?.id);
+    expect(state.project).toBe(null);
+    expect(state.auditLogs.length).toBe(1);
+    expect(state.auditLogs[0]?.action).toBe('project.deleted');
+    expect(state.auditLogs[0]?.metadata?.title).toBe('Original title');
   });
 
   it('blocks delete while project is processing', async () => {
@@ -93,38 +89,32 @@ describe('deleteProject', () => {
       status: 'processing',
     };
 
-    await assert.rejects(
-      deleteProject(
+    await expect(deleteProject(
         {
           projectId: existingProject.id,
         },
         createDeps(state),
         actor
-      ),
-      ProjectDeleteBlockedError
-    );
+      )).rejects.toThrow(ProjectDeleteBlockedError);
 
-    assert.equal(requireProject(state).status, 'processing');
-    assert.equal(state.deletedProject, null);
-    assert.equal(state.auditLogs.length, 0);
+    expect(requireProject(state).status).toBe('processing');
+    expect(state.deletedProject).toBe(null);
+    expect(state.auditLogs.length).toBe(0);
   });
 
   it('rejects actors that do not own the project', async () => {
     const existingProject = requireProject(state);
 
-    await assert.rejects(
-      deleteProject(
+    await expect(deleteProject(
         {
           projectId: existingProject.id,
         },
         createDeps(state),
         { id: 'other-user' }
-      ),
-      ProjectForbiddenError
-    );
+      )).rejects.toThrow(ProjectForbiddenError);
 
-    assert.equal(state.deletedProject, null);
-    assert.equal(state.auditLogs.length, 0);
+    expect(state.deletedProject).toBe(null);
+    expect(state.auditLogs.length).toBe(0);
   });
 });
 
@@ -148,10 +138,10 @@ describe('loadProjectDetail', () => {
       }
     );
 
-    assert.equal(detail.project.ownerId, 'owner-1');
-    assert.equal(detail.sources.length, 1);
-    assert.equal(detail.knowledgebaseGraph.source, 'none');
-    assert.equal(detail.knowledgebaseGraph.concepts.length, 0);
+    expect(detail.project.ownerId).toBe('owner-1');
+    expect(detail.sources.length).toBe(1);
+    expect(detail.knowledgebaseGraph.source).toBe('none');
+    expect(detail.knowledgebaseGraph.concepts.length).toBe(0);
   });
 
   it('derives graph read data from the current knowledgebase artifact version', async () => {
@@ -169,10 +159,10 @@ describe('loadProjectDetail', () => {
       }
     );
 
-    assert.equal(detail.knowledgebaseGraph.source, 'relational_projection');
-    assert.equal(detail.knowledgebaseGraph.concepts.length, 1);
-    assert.equal(detail.knowledgebaseGraph.concepts[0]?.id, 'relational-market');
-    assert.equal(detail.knowledgebaseGraph.relationships.length, 0);
+    expect(detail.knowledgebaseGraph.source).toBe('relational_projection');
+    expect(detail.knowledgebaseGraph.concepts.length).toBe(1);
+    expect(detail.knowledgebaseGraph.concepts[0]?.id).toBe('relational-market');
+    expect(detail.knowledgebaseGraph.relationships.length).toBe(0);
   });
 
   it('prefers the current relational knowledgebase projection over artifact JSONB', async () => {
@@ -190,10 +180,10 @@ describe('loadProjectDetail', () => {
       }
     );
 
-    assert.equal(detail.knowledgebaseGraph.source, 'relational_projection');
-    assert.equal(detail.knowledgebaseGraph.concepts.length, 1);
-    assert.equal(detail.knowledgebaseGraph.concepts[0]?.id, 'relational-market');
-    assert.equal(detail.knowledgebaseGraph.relationships.length, 0);
+    expect(detail.knowledgebaseGraph.source).toBe('relational_projection');
+    expect(detail.knowledgebaseGraph.concepts.length).toBe(1);
+    expect(detail.knowledgebaseGraph.concepts[0]?.id).toBe('relational-market');
+    expect(detail.knowledgebaseGraph.relationships.length).toBe(0);
   });
 
   it('does not expose stale graph data when the project has no usable source', async () => {
@@ -211,10 +201,10 @@ describe('loadProjectDetail', () => {
       }
     );
 
-    assert.equal(detail.sources.length, 1);
-    assert.equal(detail.knowledgebaseGraph.source, 'none');
-    assert.equal(detail.knowledgebaseGraph.concepts.length, 0);
-    assert.equal(detail.knowledgebaseGraph.relationships.length, 0);
+    expect(detail.sources.length).toBe(1);
+    expect(detail.knowledgebaseGraph.source).toBe('none');
+    expect(detail.knowledgebaseGraph.concepts.length).toBe(0);
+    expect(detail.knowledgebaseGraph.relationships.length).toBe(0);
   });
 
   it('does not expose stale graph data when source changed after latest ingestion', async () => {
@@ -236,8 +226,8 @@ describe('loadProjectDetail', () => {
       }
     );
 
-    assert.equal(detail.knowledgebaseGraph.source, 'none');
-    assert.equal(detail.knowledgebaseGraph.concepts.length, 0);
+    expect(detail.knowledgebaseGraph.source).toBe('none');
+    expect(detail.knowledgebaseGraph.concepts.length).toBe(0);
   });
 });
 
@@ -272,7 +262,7 @@ function createTestState(): TestState {
 }
 
 function requireProject(state: TestState): ProjectRecord {
-  assert.ok(state.project);
+  expect(state.project).toBeTruthy();
 
   return state.project;
 }
