@@ -2,6 +2,7 @@
 
 import { useCallback, memo, type MouseEvent } from 'react';
 import { useTheme } from 'next-themes';
+import { usePendingProposals } from '../hooks/use-pending-proposals-context';
 import {
   Background,
   MiniMap,
@@ -17,7 +18,7 @@ import { PaneHeader, DifficultyChip, ConfidencePill } from './shared-components'
 import { useClientHydrated } from '../hooks/use-concept-graph-state';
 import { useEvidenceLoader } from '../hooks/use-evidence-loader';
 import { useDecoratedGraph } from '../hooks/use-decorated-graph';
-import { nodeTypes } from './concept-node';
+import { nodeTypes } from './node-types';
 import { FlowToolbar } from './flow-toolbar';
 import { GraphListFallback, GraphCanvasEmpty } from './graph-list-fallback';
 import {
@@ -35,6 +36,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 
+
 const FIT_VIEW_OPTIONS = { padding: 0.22 };
 const PRO_OPTIONS = { hideAttribution: true };
 
@@ -44,23 +46,21 @@ export const GraphCanvasPane = memo(function GraphCanvasPane({
   conceptNameById,
   isRunning,
   onSelectConcept,
-  proposalCount,
   relationships,
   selectedConcept,
   hoveredChatConceptId,
-  pendingProposals = [],
 }: {
   projectId: string;
   concepts: ConceptRow[];
   conceptNameById: Map<string, string>;
   isRunning: boolean;
   onSelectConcept: (id: string, multi?: boolean) => void;
-  proposalCount: number;
   relationships: RelationshipRow[];
   selectedConcept: ConceptRow | null;
   hoveredChatConceptId?: string | null;
-  pendingProposals?: import('../types').ProposalPayload[];
 }) {
+  const { pendingProposals } = usePendingProposals();
+  const proposalCount = pendingProposals.length;
   const hasGraph = concepts.length > 0 && relationships.length > 0;
   const hasConcepts = concepts.length > 0;
 
@@ -177,7 +177,6 @@ export const GraphCanvasPane = memo(function GraphCanvasPane({
                 selectedConceptId={selectedConcept?.id ?? null}
                 onViewDetails={openEvidenceDialog}
                 hoveredChatConceptId={hoveredChatConceptId}
-                pendingProposals={pendingProposals}
               />
             </>
           ) : (
@@ -212,7 +211,6 @@ function GraphCanvas({
   selectedConceptId,
   onViewDetails,
   hoveredChatConceptId,
-  pendingProposals = [],
 }: {
   concepts: ConceptRow[];
   onSelectConcept: (id: string, multi?: boolean) => void;
@@ -220,8 +218,8 @@ function GraphCanvas({
   selectedConceptId: string | null;
   onViewDetails: (id: string) => void;
   hoveredChatConceptId?: string | null;
-  pendingProposals?: import('../types').ProposalPayload[];
 }) {
+  const { pendingProposals } = usePendingProposals();
   const { resolvedTheme } = useTheme();
   const isClientHydrated = useClientHydrated();
 

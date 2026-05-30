@@ -76,28 +76,29 @@ export function mergeProposals(
 
   for (const [proposalIndex, proposal] of pendingProposals.entries()) {
     for (const action of proposal.actions) {
+      const { conceptKey, name: payloadName, id: payloadId, definition, confidence, difficulty } = action.payload as Record<string, string | undefined>;
       const actionType = action.type.replace('-', '_');
 
       if (actionType === 'add_concept') {
         const ghostId =
-          payloadString(action.payload.conceptKey) ??
-          payloadString(action.payload.name) ??
+          payloadString(conceptKey) ??
+          payloadString(payloadName) ??
           `ghost-${proposalIndex}-${ghostAddIds.size}`;
         const ghostConcept = {
           id: ghostId,
-          name: payloadString(action.payload.name) ?? 'New Concept',
-          definition: payloadString(action.payload.definition) ?? '',
-          confidence: payloadString(action.payload.confidence) ?? 'LOW',
-          difficulty: payloadString(action.payload.difficulty) ?? 'BEGINNER',
+          name: payloadString(payloadName) ?? 'New Concept',
+          definition: payloadString(definition) ?? '',
+          confidence: payloadString(confidence) ?? 'LOW',
+          difficulty: payloadString(difficulty) ?? 'BEGINNER',
         } as ConceptRow;
         newConcepts.push(ghostConcept);
         indexConcept(ghostConcept);
         ghostAddIds.add(ghostId);
       } else if (actionType === 'update_concept') {
         const key =
-          payloadString(action.payload.conceptKey) ??
-          payloadString(action.payload.name) ??
-          payloadString(action.payload.id);
+          payloadString(conceptKey) ??
+          payloadString(payloadName) ??
+          payloadString(payloadId);
         const target = findConcept(key);
         if (target) {
           ghostUpdateIds.add(target.id);
@@ -107,9 +108,9 @@ export function mergeProposals(
         }
       } else if (actionType === 'delete_concept') {
         const key =
-          payloadString(action.payload.conceptKey) ??
-          payloadString(action.payload.name) ??
-          payloadString(action.payload.id);
+          payloadString(conceptKey) ??
+          payloadString(payloadName) ??
+          payloadString(payloadId);
         const target = findConcept(key);
         if (target) {
           ghostDeleteIds.add(target.id);

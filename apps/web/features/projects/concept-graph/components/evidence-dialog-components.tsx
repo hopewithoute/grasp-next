@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { LazyMotion, m, AnimatePresence, domAnimation } from 'framer-motion';
 import { FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { type ConceptRow, type RelationshipRow } from '../types';
@@ -10,7 +10,26 @@ import { DifficultyChip, ConfidencePill } from './shared-components';
 
 // --- RelationChip ---
 
-export function RelationChip({
+const container = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.08,
+    },
+  },
+};
+
+const itemAnim = {
+  hidden: { opacity: 0, y: 10 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: { type: 'spring' as const, stiffness: 100, damping: 20 },
+  },
+};
+
+function RelationChip({
   label,
   onClick,
   type,
@@ -140,7 +159,7 @@ export function ConceptDetailStrip({
     <div className="relative z-50 w-full border-t border-border/40 bg-card/80 backdrop-blur-xl">
       <AnimatePresence mode="wait">
         {!concept ? (
-          <motion.div
+          <m.div
             key="empty"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -148,9 +167,9 @@ export function ConceptDetailStrip({
             className="flex items-center justify-center w-full px-6 py-4 text-xs font-medium tracking-wide text-muted-foreground"
           >
             Select a concept to inspect its details, evidence, and relationships
-          </motion.div>
+          </m.div>
         ) : (
-          <motion.div
+          <m.div
             key="selected"
             layoutId="concept-strip"
             initial={{ opacity: 0, y: 20 }}
@@ -202,7 +221,7 @@ export function ConceptDetailStrip({
                 Read Evidence
               </Button>
             </div>
-          </motion.div>
+          </m.div>
         )}
       </AnimatePresence>
     </div>
@@ -213,6 +232,7 @@ export function ConceptDetailStrip({
 
 export function EvidenceSkeleton() {
   return (
+      <LazyMotion features={domAnimation}>
     <div className="flex flex-col w-full">
       <div className="h-3 w-24 bg-muted/50 rounded animate-pulse mb-8" />
       <div className="flex flex-col gap-8">
@@ -225,6 +245,7 @@ export function EvidenceSkeleton() {
         ))}
       </div>
     </div>
+      </LazyMotion>
   );
 }
 
@@ -245,25 +266,6 @@ export function EvidenceStack({
     );
   }
 
-  const container = {
-    hidden: { opacity: 0 },
-    show: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.08,
-      },
-    },
-  };
-
-  const itemAnim = {
-    hidden: { opacity: 0, y: 10 },
-    show: {
-      opacity: 1,
-      y: 0,
-      transition: { type: 'spring' as const, stiffness: 100, damping: 20 },
-    },
-  };
-
   return (
     <div className="w-full">
       <div className="flex items-center justify-between gap-3 mb-6">
@@ -275,9 +277,9 @@ export function EvidenceStack({
         </span>
       </div>
 
-      <motion.div variants={container} initial="hidden" animate="show" className="flex flex-col">
+      <m.div variants={container} initial="hidden" animate="show" className="flex flex-col">
         {evidence.map((item, index) => (
-          <motion.blockquote
+          <m.blockquote
             variants={itemAnim}
             key={`${item.sourceId ?? 'source'}-${item.blockId ?? index}`}
             className="group relative overflow-hidden border-l-2 border-transparent hover:border-brand-accent/50 pl-5 py-5 -ml-5 transition-all duration-300"
@@ -295,9 +297,9 @@ export function EvidenceStack({
                 <span className="opacity-60">{shortenBlockId(item.blockId)}</span>
               ) : null}
             </cite>
-          </motion.blockquote>
+          </m.blockquote>
         ))}
-      </motion.div>
+      </m.div>
     </div>
   );
 }
@@ -317,7 +319,7 @@ export function GraphCanvasSkeleton() {
           ))}
         </div>
         <span className="mt-2 font-mono text-[0.62rem] tracking-[0.18em] uppercase text-muted-foreground">
-          Loading graph...
+          Loading graph…
         </span>
       </div>
     </div>

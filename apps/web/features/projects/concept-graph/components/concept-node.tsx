@@ -104,6 +104,3 @@ function areConceptNodePropsEqual(
   );
 }
 
-export const nodeTypes = {
-  concept: ConceptNode,
-};
