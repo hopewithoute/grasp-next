@@ -26,17 +26,13 @@ import {
   updateProjectDetailsDto,
   loadConceptEvidence,
   loadRelationshipEvidence,
-  addConceptProposalDto,
-  updateConceptProposalDto,
-  deleteConceptProposalDto,
-  addRelationshipProposalDto,
-  deleteRelationshipProposalDto,
-  addEvidenceProposalDto,
-  updateEvidenceProposalDto,
-  deleteEvidenceProposalDto,
+  applyGraphProposals,
+  type GraphProposalAction,
 } from '@grasp/domain';
 import { getActor as auth } from '@/server/actor';
 import { createProjectDeps } from '@/server/project-deps';
+
+// --- Form state types ---
 
 export type CreateProjectFormState = {
   error: string | null;
@@ -72,7 +68,7 @@ export type KnowledgebaseEvidenceFormState = {
   success: boolean;
 };
 
-
+// --- Project form actions ---
 
 export async function createProjectFormAction(
   _state: CreateProjectFormState,
@@ -99,6 +95,73 @@ export async function createProjectFormAction(
 
   return { error: null };
 }
+
+export async function deleteProjectFormAction(
+  _state: DeleteProjectFormState,
+  formData: FormData
+): Promise<DeleteProjectFormState> {
+  const actor = await auth();
+
+  if (!actor) {
+    return { error: 'Unauthorized.' };
+  }
+
+  const parsed = deleteProjectDto.safeParse({
+    projectId: formData.get('projectId')?.toString() ?? '',
+  });
+
+  if (!parsed.success) {
+    return { error: 'Project ID is required.' };
+  }
+
+  try {
+    await deleteProject(parsed.data, createProjectDeps(), actor);
+
+    revalidatePath('/dashboard/projects');
+
+    return { error: null };
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : 'Project deletion failed.',
+    };
+  }
+}
+
+export async function updateProjectDetailsFormAction(
+  _state: UpdateProjectDetailsFormState,
+  formData: FormData
+): Promise<UpdateProjectDetailsFormState> {
+  const actor = await auth();
+
+  if (!actor) {
+    return { error: 'Unauthorized.', success: false };
+  }
+
+  const parsed = updateProjectDetailsDto.safeParse({
+    description: formData.get('description')?.toString().trim() || undefined,
+    projectId: formData.get('projectId')?.toString() ?? '',
+    title: formData.get('title')?.toString() ?? '',
+  });
+
+  if (!parsed.success) {
+    return { error: 'Please check the project fields.', success: false };
+  }
+
+  try {
+    await updateProjectDetails(parsed.data, createProjectDeps(), actor);
+
+    revalidatePath(`/dashboard/projects/${parsed.data.projectId}`);
+
+    return { error: null, success: true };
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : 'Project update failed.',
+      success: false,
+    };
+  }
+}
+
+// --- Source form actions ---
 
 export async function addProjectSourceFormAction(
   _state: ProjectSourceFormState,
@@ -195,11 +258,6 @@ export async function deleteProjectSourceFormAction(
     const deps = createProjectDeps();
     const source = await deleteProjectSource(parsed.data, deps, actor);
 
-    await deps.knowledgebaseRepository.cleanupDeletedSource({
-      projectId: source.projectId,
-      sourceId: source.id,
-    });
-
     revalidatePath(`/dashboard/projects/${source.projectId}`);
 
     return { error: null, success: true };
@@ -211,70 +269,7 @@ export async function deleteProjectSourceFormAction(
   }
 }
 
-export async function updateProjectDetailsFormAction(
-  _state: UpdateProjectDetailsFormState,
-  formData: FormData
-): Promise<UpdateProjectDetailsFormState> {
-  const actor = await auth();
-
-  if (!actor) {
-    return { error: 'Unauthorized.', success: false };
-  }
-
-  const parsed = updateProjectDetailsDto.safeParse({
-    description: formData.get('description')?.toString().trim() || undefined,
-    projectId: formData.get('projectId')?.toString() ?? '',
-    title: formData.get('title')?.toString() ?? '',
-  });
-
-  if (!parsed.success) {
-    return { error: 'Please check the project details.', success: false };
-  }
-
-  try {
-    const project = await updateProjectDetails(parsed.data, createProjectDeps(), actor);
-
-    revalidatePath('/dashboard/projects');
-    revalidatePath(`/dashboard/projects/${project.id}`);
-
-    return { error: null, success: true };
-  } catch (error) {
-    return {
-      error: error instanceof Error ? error.message : 'Project details update failed.',
-      success: false,
-    };
-  }
-}
-
-export async function deleteProjectFormAction(
-  _state: DeleteProjectFormState,
-  formData: FormData
-): Promise<DeleteProjectFormState> {
-  const actor = await auth();
-
-  if (!actor) {
-    return { error: 'Unauthorized.' };
-  }
-
-  const parsed = deleteProjectDto.safeParse({
-    projectId: formData.get('projectId')?.toString() ?? '',
-  });
-
-  if (!parsed.success) {
-    return { error: 'Project is required.' };
-  }
-
-  try {
-    await deleteProject(parsed.data, createProjectDeps(), actor);
-  } catch (error) {
-    return {
-      error: error instanceof Error ? error.message : 'Project deletion failed.',
-    };
-  }
-
-  revalidatePath('/dashboard/projects');
-  redirect('/dashboard/projects');
-}
+// --- Knowledgebase form actions ---
 
 export async function updateKnowledgebaseConceptFormAction(
   _state: KnowledgebaseConceptFormState,
@@ -287,19 +282,24 @@ export async function updateKnowledgebaseConceptFormAction(
   }
 
   const parsed = updateKnowledgebaseConceptDto.safeParse({
-    artifactId: formData.get('artifactId')?.toString() ?? '',
-    conceptId: formData.get('conceptId')?.toString() ?? '',
-    definition: formData.get('definition')?.toString() ?? '',
-    difficulty: formData.get('difficulty')?.toString() ?? '',
-    name: formData.get('name')?.toString() ?? '',
+    conceptKey: formData.get('conceptKey')?.toString() ?? '',
+    confidence: formData.get('confidence')?.toString() ?? undefined,
+    definition: formData.get('definition')?.toString() ?? undefined,
+    difficulty: formData.get('difficulty')?.toString() ?? undefined,
+    name: formData.get('name')?.toString() ?? undefined,
+    projectId: formData.get('projectId')?.toString() ?? '',
   });
 
   if (!parsed.success) {
-    return { error: 'Concept name, definition, and difficulty are required.', success: false };
+    return { error: 'Please check the concept fields.', success: false };
   }
 
   try {
-    const artifact = await updateKnowledgebaseConcept(parsed.data, createProjectDeps(), actor);
+    const artifact = await updateKnowledgebaseConcept(
+      parsed.data,
+      createProjectDeps(),
+      actor
+    );
 
     revalidatePath(`/dashboard/projects/${artifact.projectId}`);
 
@@ -307,6 +307,47 @@ export async function updateKnowledgebaseConceptFormAction(
   } catch (error) {
     return {
       error: error instanceof Error ? error.message : 'Knowledgebase concept update failed.',
+      success: false,
+    };
+  }
+}
+
+export async function updateKnowledgebaseConceptEvidenceFormAction(
+  _state: KnowledgebaseEvidenceFormState,
+  formData: FormData
+): Promise<KnowledgebaseEvidenceFormState> {
+  const actor = await auth();
+
+  if (!actor) {
+    return { error: 'Unauthorized.', success: false };
+  }
+
+  const parsed = updateKnowledgebaseConceptEvidenceDto.safeParse({
+    evidenceId: formData.get('evidenceId')?.toString() ?? '',
+    locationLabel: formData.get('locationLabel')?.toString() ?? undefined,
+    quote: formData.get('quote')?.toString() ?? undefined,
+  });
+
+  if (!parsed.success) {
+    return { error: 'Please check the evidence fields.', success: false };
+  }
+
+  try {
+    const artifact = await updateKnowledgebaseConceptEvidence(
+      parsed.data,
+      createProjectDeps(),
+      actor
+    );
+
+    revalidatePath(`/dashboard/projects/${artifact.projectId}`);
+
+    return { error: null, success: true };
+  } catch (error) {
+    return {
+      error:
+        error instanceof Error
+          ? error.message
+          : 'Knowledgebase concept evidence update failed.',
       success: false,
     };
   }
@@ -323,59 +364,17 @@ export async function updateKnowledgebaseRelationshipFormAction(
   }
 
   const parsed = updateKnowledgebaseRelationshipDto.safeParse({
-    artifactId: formData.get('artifactId')?.toString() ?? '',
-    relationshipId: formData.get('relationshipId')?.toString() ?? '',
-    relationshipType: formData.get('relationshipType')?.toString() ?? '',
-    sourceConceptId: formData.get('sourceConceptId')?.toString() ?? '',
-    targetConceptId: formData.get('targetConceptId')?.toString() ?? '',
+    metadata: formData.get('metadata')?.toString() ?? undefined,
+    projectId: formData.get('projectId')?.toString() ?? '',
+    relationshipKey: formData.get('relationshipKey')?.toString() ?? '',
   });
 
   if (!parsed.success) {
-    return { error: 'Relationship source and target are required.', success: false };
+    return { error: 'Please check the relationship fields.', success: false };
   }
 
   try {
-    const artifact = await updateKnowledgebaseRelationship(parsed.data, createProjectDeps(), actor);
-
-    revalidatePath(`/dashboard/projects/${artifact.projectId}`);
-
-    return { error: null, success: true };
-  } catch (error) {
-    return {
-      error: error instanceof Error ? error.message : 'Knowledgebase relationship update failed.',
-      success: false,
-    };
-  }
-}
-
-export async function updateKnowledgebaseEvidenceFormAction(
-  _state: KnowledgebaseEvidenceFormState,
-  formData: FormData
-): Promise<KnowledgebaseEvidenceFormState> {
-  const actor = await auth();
-
-  if (!actor) {
-    return { error: 'Unauthorized.', success: false };
-  }
-
-  const parsed = updateKnowledgebaseConceptEvidenceDto.safeParse({
-    artifactId: formData.get('artifactId')?.toString() ?? '',
-    blockId: formData.get('blockId')?.toString() ?? '',
-    conceptId: formData.get('conceptId')?.toString() ?? '',
-    locationLabel: formData.get('locationLabel')?.toString() ?? '',
-    originalBlockId: formData.get('originalBlockId')?.toString() ?? '',
-    originalQuote: formData.get('originalQuote')?.toString() ?? '',
-    originalSourceId: formData.get('originalSourceId')?.toString() ?? '',
-    quote: formData.get('quote')?.toString() ?? '',
-    sourceId: formData.get('sourceId')?.toString() ?? '',
-  });
-
-  if (!parsed.success) {
-    return { error: 'Evidence quote, source block, and location are required.', success: false };
-  }
-
-  try {
-    const artifact = await updateKnowledgebaseConceptEvidence(
+    const artifact = await updateKnowledgebaseRelationship(
       parsed.data,
       createProjectDeps(),
       actor
@@ -386,41 +385,13 @@ export async function updateKnowledgebaseEvidenceFormAction(
     return { error: null, success: true };
   } catch (error) {
     return {
-      error: error instanceof Error ? error.message : 'Knowledgebase evidence update failed.',
+      error:
+        error instanceof Error
+          ? error.message
+          : 'Knowledgebase relationship update failed.',
       success: false,
     };
   }
-}
-
-export type ConceptSearchPaginationParams = {
-  projectId: string;
-  query?: string;
-  difficulty?: string;
-  limit?: number;
-  offset?: number;
-};
-
-export async function searchKnowledgebaseConceptsAction(params: ConceptSearchPaginationParams) {
-  const actor = await auth();
-
-  if (!actor) {
-    throw new Error('Unauthorized');
-  }
-
-  const deps = createProjectDeps();
-  const project = await deps.projectRepository.findByIdForOwner(params.projectId, actor.id);
-
-  if (!project) {
-    throw new Error('Unauthorized');
-  }
-
-  return deps.knowledgebaseRepository.searchConceptsWithPagination({
-    projectId: params.projectId,
-    query: params.query,
-    difficulty: params.difficulty,
-    limit: params.limit ?? 20,
-    offset: params.offset ?? 0,
-  });
 }
 
 export async function updateKnowledgebaseRelationshipEvidenceFormAction(
@@ -434,19 +405,13 @@ export async function updateKnowledgebaseRelationshipEvidenceFormAction(
   }
 
   const parsed = updateKnowledgebaseRelationshipEvidenceDto.safeParse({
-    artifactId: formData.get('artifactId')?.toString() ?? '',
-    blockId: formData.get('blockId')?.toString() ?? '',
-    locationLabel: formData.get('locationLabel')?.toString() ?? '',
-    originalBlockId: formData.get('originalBlockId')?.toString() ?? '',
-    originalQuote: formData.get('originalQuote')?.toString() ?? '',
-    originalSourceId: formData.get('originalSourceId')?.toString() ?? '',
-    quote: formData.get('quote')?.toString() ?? '',
-    relationshipId: formData.get('relationshipId')?.toString() ?? '',
-    sourceId: formData.get('sourceId')?.toString() ?? '',
+    evidenceId: formData.get('evidenceId')?.toString() ?? '',
+    locationLabel: formData.get('locationLabel')?.toString() ?? undefined,
+    quote: formData.get('quote')?.toString() ?? undefined,
   });
 
   if (!parsed.success) {
-    return { error: 'Evidence quote, source block, and location are required.', success: false };
+    return { error: 'Please check the evidence fields.', success: false };
   }
 
   try {
@@ -469,6 +434,8 @@ export async function updateKnowledgebaseRelationshipEvidenceFormAction(
     };
   }
 }
+
+// --- Evidence query actions ---
 
 export async function getConceptEvidence(projectId: string, conceptId: string) {
   const actor = await auth();
@@ -524,9 +491,11 @@ export async function getRelationshipEvidence(projectId: string, relationshipId:
   }
 }
 
+// --- Graph proposal action ---
+
 export async function executeGraphProposalAction(
   projectId: string,
-  actions: { type: string; payload: Record<string, unknown> }[]
+  proposalActions: GraphProposalAction[]
 ) {
   const actor = await auth();
   if (!actor) throw new Error('Unauthorized');
@@ -538,84 +507,45 @@ export async function executeGraphProposalAction(
     throw new Error('Unauthorized');
   }
 
-  for (const action of actions) {
-    switch (action.type) {
-      case 'add_concept': {
-        const payload = addConceptProposalDto.parse(action.payload);
-        await deps.knowledgebaseRepository.addConcept({ projectId, ...payload });
-        break;
-      }
-      case 'update_concept': {
-        const payload = updateConceptProposalDto.parse(action.payload);
-        await deps.knowledgebaseRepository.updateConcept({ projectId, ...payload });
-        break;
-      }
-      case 'delete_concept': {
-        const payload = deleteConceptProposalDto.parse(action.payload);
-        await deps.knowledgebaseRepository.deleteConcept({
-          projectId,
-          conceptKey: payload.conceptKey,
-        });
-        break;
-      }
-      case 'add_relationship': {
-        const payload = addRelationshipProposalDto.parse(action.payload);
-        await deps.knowledgebaseRepository.addRelationship({
-          projectId,
-          relationshipKey: `${payload.sourceConceptKey}:${payload.targetConceptKey}:${payload.relationshipType}`,
-          ...payload,
-        });
-        break;
-      }
-      case 'delete_relationship': {
-        const payload = deleteRelationshipProposalDto.parse(action.payload);
-        await deps.knowledgebaseRepository.deleteRelationship({
-          projectId,
-          relationshipKey: `${payload.sourceConceptKey}:${payload.targetConceptKey}:${payload.relationshipType}`,
-        });
-        break;
-      }
-      case 'add_evidence': {
-        const payload = addEvidenceProposalDto.parse(action.payload);
-        await deps.knowledgebaseRepository.addConceptEvidence({
-          projectId,
-          conceptKey: payload.conceptKey,
-          sourceType: payload.sourceType === 'text' ? 'text' : 'web',
-          title: payload.title || 'Agent Search Result',
-          url: payload.url,
-          quote: payload.evidenceText,
-          locationLabel: 'AI Extracted',
-        });
-        break;
-      }
-      case 'update_evidence': {
-        const payload = updateEvidenceProposalDto.parse(action.payload);
-        await deps.knowledgebaseRepository.updateConceptEvidence({
-          projectId,
-          evidenceId: payload.evidenceId,
-          quote: payload.evidenceText,
-        });
-        break;
-      }
-      case 'delete_evidence': {
-        const payload = deleteEvidenceProposalDto.parse(action.payload);
-        await deps.knowledgebaseRepository.deleteConceptEvidence({
-          projectId,
-          evidenceId: payload.evidenceId,
-        });
-        break;
-      }
-      default:
-        throw new Error(`Unknown action type: ${action.type}`);
-    }
-  }
-
-  await deps.knowledgebaseRepository.createSnapshot({
-    projectId,
-    trigger: 'agent_refinement_proposal_approval',
-  });
+  const result = await applyGraphProposals(
+    { projectId, actions: proposalActions },
+    { knowledgebaseRepository: deps.knowledgebaseRepository }
+  );
 
   revalidatePath(`/dashboard/projects/${projectId}`);
 
-  return { success: true, applied: actions.length };
+  return result;
+}
+
+// --- Knowledgebase search ---
+
+export type ConceptSearchPaginationParams = {
+  projectId: string;
+  query?: string;
+  difficulty?: string;
+  limit?: number;
+  offset?: number;
+};
+
+export async function searchKnowledgebaseConceptsAction(params: ConceptSearchPaginationParams) {
+  const actor = await auth();
+
+  if (!actor) {
+    throw new Error('Unauthorized');
+  }
+
+  const deps = createProjectDeps();
+  const project = await deps.projectRepository.findByIdForOwner(params.projectId, actor.id);
+
+  if (!project) {
+    throw new Error('Unauthorized');
+  }
+
+  return deps.knowledgebaseRepository.searchConceptsWithPagination({
+    projectId: params.projectId,
+    query: params.query,
+    difficulty: params.difficulty,
+    limit: params.limit ?? 20,
+    offset: params.offset ?? 0,
+  });
 }
