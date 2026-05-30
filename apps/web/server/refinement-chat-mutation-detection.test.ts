@@ -1,10 +1,9 @@
-import assert from 'node:assert/strict';
-import { describe, it } from 'node:test';
+import { describe, expect, it } from 'vitest';
 import { containsGraphMutationToolCall } from './refinement-chat-mutation-detection';
 
 describe('refinement chat mutation detection', () => {
   it('treats graph proposals as mutation-intent events', () => {
-    assert.equal(
+    expect(
       containsGraphMutationToolCall({
         steps: [
           {
@@ -15,13 +14,12 @@ describe('refinement chat mutation detection', () => {
             ],
           },
         ],
-      }),
-      true
-    );
+      })
+    ).toBe(true);
   });
 
   it('keeps read-only refinement tools out of mutation detection', () => {
-    assert.equal(
+    expect(
       containsGraphMutationToolCall({
         toolCalls: [
           {
@@ -31,21 +29,19 @@ describe('refinement chat mutation detection', () => {
             toolName: 'read-webpage',
           },
         ],
-      }),
-      false
-    );
+      })
+    ).toBe(false);
   });
 
   it('does not match removed legacy mutation tool names', () => {
-    assert.equal(
+    expect(
       containsGraphMutationToolCall({
         toolCalls: [
           {
             toolName: 'add-evidence',
           },
         ],
-      }),
-      false
-    );
+      })
+    ).toBe(false);
   });
 });

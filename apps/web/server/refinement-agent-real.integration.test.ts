@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
-import { describe, it, before, after } from 'node:test';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createDbClient, createKnowledgebaseRepository, eq, schema } from '@grasp/db';
 import { refinementAgent, createRefinementTools } from '@grasp/ai/refinement';
 
@@ -14,13 +13,14 @@ const hasLlm = Boolean(
 );
 const shouldRun = hasDatabase && hasLlm;
 
-describe('Refinement Agent - Real Provider (Graph Proposals)', { skip: !shouldRun }, () => {
+const describeIfReady = shouldRun ? describe : describe.skip;
+describeIfReady('Refinement Agent - Real Provider (Graph Proposals)', () => {
   let db: ReturnType<typeof createDbClient>;
   let repo: ReturnType<typeof createKnowledgebaseRepository>;
   let projectId: string;
   let ownerId: string;
 
-  before(async () => {
+  beforeAll(async () => {
     db = createDbClient(process.env.DATABASE_URL!);
     repo = createKnowledgebaseRepository(db);
 
@@ -54,7 +54,7 @@ describe('Refinement Agent - Real Provider (Graph Proposals)', { skip: !shouldRu
     });
   });
 
-  after(async () => {
+  afterAll(async () => {
     // Cleanup
     if (db) {
       await db.delete(schema.projects).where(eq(schema.projects.id, projectId));
@@ -163,20 +163,20 @@ function assertAddEvidenceProposal(
     url?: string;
   }
 ) {
-  assert.ok(proposalCalls.length > 0, 'Expected agent to call propose-graph-changes');
+  expect(proposalCalls.length > 0).toBeTruthy();
   const proposal = proposalCalls.at(-1);
-  assert.ok(typeof proposal.rationale === 'string' && proposal.rationale.length > 0);
+  expect(typeof proposal.rationale === 'string' && proposal.rationale.length > 0).toBeTruthy();
 
   const evidenceActions = proposal.actions.filter((action: any) => action.type === 'add_evidence');
-  assert.equal(evidenceActions.length, 1, 'Expected exactly one add_evidence action');
+  expect(evidenceActions.length).toBe(1, 'Expected exactly one add_evidence action');
 
   const payload = evidenceActions[0].payload;
-  assert.equal(payload.conceptKey, expected.conceptKey);
-  assert.equal(payload.sourceType, expected.sourceType);
-  assert.equal(payload.title, expected.title);
-  assert.match(payload.evidenceText, expected.evidenceText);
+  expect(payload.conceptKey).toBe(expected.conceptKey);
+  expect(payload.sourceType).toBe(expected.sourceType);
+  expect(payload.title).toBe(expected.title);
+  expect(payload.evidenceText).toMatch(expected.evidenceText);
 
   if (expected.url) {
-    assert.equal(payload.url, expected.url);
+    expect(payload.url).toBe(expected.url);
   }
 }

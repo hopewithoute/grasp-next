@@ -1,5 +1,4 @@
-import assert from 'node:assert/strict';
-import { describe, it } from 'node:test';
+import { describe, expect, it } from 'vitest';
 import { type ConceptRow, type RelationshipRow } from '../types';
 import { type ProposalPayload } from '../types';
 import { mergeProposals, type MergedProposalResult } from './use-decorated-graph';
@@ -34,13 +33,13 @@ describe('mergeProposals', () => {
   it('returns original concepts and relationships when no proposals', () => {
     const result = mergeProposals(concepts, relationships, []);
 
-    assert.equal(result.mergedConcepts.length, 2);
-    assert.equal(result.mergedRelationships.length, 1);
-    assert.equal(result.ghostAddIds.size, 0);
-    assert.equal(result.ghostUpdateIds.size, 0);
-    assert.equal(result.ghostDeleteIds.size, 0);
-    assert.equal(result.ghostRelAddIds.size, 0);
-    assert.equal(result.ghostRelDeleteIds.size, 0);
+    expect(result.mergedConcepts.length).toBe(2);
+    expect(result.mergedRelationships.length).toBe(1);
+    expect(result.ghostAddIds.size).toBe(0);
+    expect(result.ghostUpdateIds.size).toBe(0);
+    expect(result.ghostDeleteIds.size).toBe(0);
+    expect(result.ghostRelAddIds.size).toBe(0);
+    expect(result.ghostRelDeleteIds.size).toBe(0);
   });
 
   describe('add_concept', () => {
@@ -65,14 +64,14 @@ describe('mergeProposals', () => {
 
       const result = mergeProposals(concepts, relationships, proposals);
 
-      assert.equal(result.mergedConcepts.length, 3);
-      assert.equal(result.ghostAddIds.size, 1);
-      assert.ok(result.ghostAddIds.has('momentum'));
+      expect(result.mergedConcepts.length).toBe(3);
+      expect(result.ghostAddIds.size).toBe(1);
+      expect(result.ghostAddIds.has('momentum')).toBeTruthy();
 
       const ghost = result.mergedConcepts.find((c) => c.id === 'momentum');
-      assert.ok(ghost);
-      assert.equal(ghost.name, 'Momentum');
-      assert.equal(ghost.definition, 'Mass times velocity.');
+      expect(ghost).toBeTruthy();
+      expect(ghost.name).toBeTruthy();
+      expect(ghost.definition).toBe('Mass times velocity.');
     });
 
     it('uses name as fallback id when conceptKey is missing', () => {
@@ -95,8 +94,8 @@ describe('mergeProposals', () => {
 
       const result = mergeProposals(concepts, relationships, proposals);
 
-      assert.equal(result.mergedConcepts.length, 3);
-      assert.ok(result.ghostAddIds.has('Velocity'));
+      expect(result.mergedConcepts.length).toBe(3);
+      expect(result.ghostAddIds.has('Velocity')).toBeTruthy();
     });
 
     it('generates fallback id when neither conceptKey nor name present', () => {
@@ -118,10 +117,10 @@ describe('mergeProposals', () => {
 
       const result = mergeProposals(concepts, relationships, proposals);
 
-      assert.equal(result.mergedConcepts.length, 3);
-      assert.equal(result.ghostAddIds.size, 1);
+      expect(result.mergedConcepts.length).toBe(3);
+      expect(result.ghostAddIds.size).toBe(1);
       const ghostId = [...result.ghostAddIds][0]!;
-      assert.ok(ghostId.startsWith('ghost-'));
+      expect(ghostId.startsWith('ghost-')).toBeTruthy();
     });
   });
 
@@ -145,14 +144,14 @@ describe('mergeProposals', () => {
 
       const result = mergeProposals(concepts, relationships, proposals);
 
-      assert.equal(result.mergedConcepts.length, 2);
-      assert.equal(result.ghostUpdateIds.size, 1);
-      assert.ok(result.ghostUpdateIds.has('c1'));
+      expect(result.mergedConcepts.length).toBe(2);
+      expect(result.ghostUpdateIds.size).toBe(1);
+      expect(result.ghostUpdateIds.has('c1')).toBeTruthy();
 
       const updated = result.mergedConcepts.find((c) => c.id === 'c1');
-      assert.ok(updated);
-      assert.equal(updated.name, 'Force (updated)');
-      assert.equal(updated.definition, 'Updated definition.');
+      expect(updated).toBeTruthy();
+      expect(updated.name).toBeTruthy();
+      expect(updated.definition).toBe('Updated definition.');
     });
 
     it('finds concept by name when conceptKey is missing', () => {
@@ -173,8 +172,8 @@ describe('mergeProposals', () => {
 
       const result = mergeProposals(concepts, relationships, proposals);
 
-      assert.equal(result.ghostUpdateIds.size, 1);
-      assert.ok(result.ghostUpdateIds.has('c1'));
+      expect(result.ghostUpdateIds.size).toBe(1);
+      expect(result.ghostUpdateIds.has('c1')).toBeTruthy();
     });
 
     it('does nothing when target concept is not found', () => {
@@ -195,8 +194,8 @@ describe('mergeProposals', () => {
 
       const result = mergeProposals(concepts, relationships, proposals);
 
-      assert.equal(result.ghostUpdateIds.size, 0);
-      assert.equal(result.mergedConcepts.length, 2);
+      expect(result.ghostUpdateIds.size).toBe(0);
+      expect(result.mergedConcepts.length).toBe(2);
     });
   });
 
@@ -216,9 +215,9 @@ describe('mergeProposals', () => {
 
       const result = mergeProposals(concepts, relationships, proposals);
 
-      assert.equal(result.ghostDeleteIds.size, 1);
-      assert.ok(result.ghostDeleteIds.has('c2'));
-      assert.equal(result.mergedConcepts.length, 2, 'concept stays in list for rendering');
+      expect(result.ghostDeleteIds.size).toBe(1);
+      expect(result.ghostDeleteIds.has('c2')).toBeTruthy();
+      expect(result.mergedConcepts.length).toBe(2, 'concept stays in list for rendering');
     });
   });
 
@@ -242,13 +241,13 @@ describe('mergeProposals', () => {
 
       const result = mergeProposals(concepts, relationships, proposals);
 
-      assert.equal(result.mergedRelationships.length, 2);
-      assert.equal(result.ghostRelAddIds.size, 1);
+      expect(result.mergedRelationships.length).toBe(2);
+      expect(result.ghostRelAddIds.size).toBe(1);
 
       const ghostRel = result.mergedRelationships.find((r) => r.sourceConceptId === 'c2');
-      assert.ok(ghostRel);
-      assert.equal(ghostRel.targetConceptId, 'c1');
-      assert.equal(ghostRel.relationshipType, 'related_to');
+      expect(ghostRel).toBeTruthy();
+      expect(ghostRel.targetConceptId).toBeTruthy();
+      expect(ghostRel.relationshipType).toBe('related_to');
     });
 
     it('skips when source concept is not found', () => {
@@ -270,8 +269,8 @@ describe('mergeProposals', () => {
 
       const result = mergeProposals(concepts, relationships, proposals);
 
-      assert.equal(result.mergedRelationships.length, 1);
-      assert.equal(result.ghostRelAddIds.size, 0);
+      expect(result.mergedRelationships.length).toBe(1);
+      expect(result.ghostRelAddIds.size).toBe(0);
     });
 
     it('skips when target concept is not found', () => {
@@ -293,8 +292,8 @@ describe('mergeProposals', () => {
 
       const result = mergeProposals(concepts, relationships, proposals);
 
-      assert.equal(result.mergedRelationships.length, 1);
-      assert.equal(result.ghostRelAddIds.size, 0);
+      expect(result.mergedRelationships.length).toBe(1);
+      expect(result.ghostRelAddIds.size).toBe(0);
     });
   });
 
@@ -318,8 +317,8 @@ describe('mergeProposals', () => {
 
       const result = mergeProposals(concepts, relationships, proposals);
 
-      assert.equal(result.ghostRelDeleteIds.size, 1);
-      assert.ok(result.ghostRelDeleteIds.has('r1'));
+      expect(result.ghostRelDeleteIds.size).toBe(1);
+      expect(result.ghostRelDeleteIds.has('r1')).toBeTruthy();
     });
   });
 
@@ -353,10 +352,10 @@ describe('mergeProposals', () => {
 
       const result = mergeProposals(concepts, relationships, proposals);
 
-      assert.equal(result.mergedConcepts.length, 3);
-      assert.equal(result.mergedRelationships.length, 2);
-      assert.equal(result.ghostAddIds.size, 1);
-      assert.equal(result.ghostRelAddIds.size, 1);
+      expect(result.mergedConcepts.length).toBe(3);
+      expect(result.mergedRelationships.length).toBe(2);
+      expect(result.ghostAddIds.size).toBe(1);
+      expect(result.ghostRelAddIds.size).toBe(1);
     });
 
     it('handles action type with hyphen (add_concept vs add-concept)', () => {
@@ -380,8 +379,8 @@ describe('mergeProposals', () => {
 
       const result = mergeProposals(concepts, relationships, proposals);
 
-      assert.equal(result.ghostAddIds.size, 1);
-      assert.ok(result.ghostAddIds.has('work'));
+      expect(result.ghostAddIds.size).toBe(1);
+      expect(result.ghostAddIds.has('work')).toBeTruthy();
     });
   });
 
@@ -410,8 +409,8 @@ describe('mergeProposals', () => {
 
       mergeProposals(concepts, relationships, proposals);
 
-      assert.deepEqual(concepts, conceptsCopy);
-      assert.deepEqual(relationships, relationshipsCopy);
+      expect(concepts).toEqual(conceptsCopy);
+      expect(relationships).toEqual(relationshipsCopy);
     });
   });
 });

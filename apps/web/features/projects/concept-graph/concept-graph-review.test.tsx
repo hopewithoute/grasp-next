@@ -1,5 +1,4 @@
-import assert from 'node:assert/strict';
-import { describe, it } from 'node:test';
+import { describe, expect, it } from 'vitest';
 import { type ConceptRow, type RelationshipRow } from './types';
 import { buildConceptGraph, getEvidence, shortenBlockId } from './concept-graph-utils';
 
@@ -57,18 +56,18 @@ describe('buildConceptGraph', () => {
   it('builds a graph layout that preserves prerequisite order', () => {
     const graph = buildConceptGraph(concepts, relationships);
 
-    assert.equal(graph.nodes.length, 2);
-    assert.equal(graph.edges.length, 1);
-    assert.equal(graph.edges[0]?.source, 'c1');
-    assert.equal(graph.edges[0]?.target, 'c2');
-    assert.equal(graph.edges[0]?.type, 'step');
+    expect(graph.nodes.length).toBe(2);
+    expect(graph.edges.length).toBe(1);
+    expect(graph.edges[0]?.source).toBe('c1');
+    expect(graph.edges[0]?.target).toBe('c2');
+    expect(graph.edges[0]?.type).toBe('step');
   });
 
   it('omits edges whose endpoint concepts are outside the rendered graph window', () => {
     const graph = buildConceptGraph([concepts[0]!], relationships);
 
-    assert.equal(graph.nodes.length, 1);
-    assert.equal(graph.edges.length, 0);
+    expect(graph.nodes.length).toBe(1);
+    expect(graph.edges.length).toBe(0);
   });
 
   it('uses the deepest prerequisite path when a concept has multiple parents', () => {
@@ -113,24 +112,24 @@ describe('buildConceptGraph', () => {
       ]
     );
 
-    assert.equal(graph.nodes.length, 4);
-    assert.equal(graph.edges.length, 4);
+    expect(graph.nodes.length).toBe(4);
+    expect(graph.edges.length).toBe(4);
 
     const xByNodeId = new Map(graph.nodes.map((node) => [node.id, node.position.x]));
-    assert.ok((xByNodeId.get('c4') ?? 0) > (xByNodeId.get('c1') ?? 0));
+    expect((xByNodeId.get('c4') ?? 0) > (xByNodeId.get('c1') ?? 0)).toBeTruthy();
   });
 
   it('returns empty graph for no concepts', () => {
     const graph = buildConceptGraph([], []);
-    assert.equal(graph.nodes.length, 0);
-    assert.equal(graph.edges.length, 0);
+    expect(graph.nodes.length).toBe(0);
+    expect(graph.edges.length).toBe(0);
   });
 
   it('handles single node with no edges', () => {
     const graph = buildConceptGraph([concepts[0]!], []);
-    assert.equal(graph.nodes.length, 1);
-    assert.equal(graph.edges.length, 0);
-    assert.equal(graph.nodes[0]?.id, 'c1');
+    expect(graph.nodes.length).toBe(1);
+    expect(graph.edges.length).toBe(0);
+    expect(graph.nodes[0]?.id).toBe('c1');
   });
 
   it('handles cycle in relationships', () => {
@@ -144,31 +143,31 @@ describe('buildConceptGraph', () => {
         { id: 'r2', relationshipType: 'related_to', sourceConceptId: 'b', targetConceptId: 'a' },
       ]
     );
-    assert.equal(graph.nodes.length, 2);
-    assert.equal(graph.edges.length, 2);
+    expect(graph.nodes.length).toBe(2);
+    expect(graph.edges.length).toBe(2);
   });
 
   it('includes relationshipType in edge data', () => {
     const graph = buildConceptGraph(concepts, relationships);
     const edge = graph.edges[0];
-    assert.ok(edge);
-    assert.deepEqual(edge.data, { relationshipType: 'prerequisite' });
+    expect(edge).toBeTruthy();
+    expect(edge.data).toEqual({ relationshipType: 'prerequisite' });
   });
 });
 
 describe('getEvidence', () => {
   it('returns empty array for null', () => {
-    assert.deepEqual(getEvidence(null), []);
+    expect(getEvidence(null)).toEqual([]);
   });
 
   it('returns empty array for undefined', () => {
-    assert.deepEqual(getEvidence(undefined), []);
+    expect(getEvidence(undefined)).toEqual([]);
   });
 
   it('filters valid evidence items', () => {
     const result = getEvidence([{ excerpt: 'test', blockId: 'b1' }, { excerpt: 'also valid' }]);
-    assert.equal(result.length, 2);
-    assert.equal(result[0]?.excerpt, 'test');
+    expect(result.length).toBe(2);
+    expect(result[0]?.excerpt).toBe('test');
   });
 
   it('filters out items without excerpt', () => {
@@ -176,16 +175,16 @@ describe('getEvidence', () => {
       { excerpt: 'valid' },
       { blockId: 'b1' } as unknown as { excerpt: string },
     ]);
-    assert.equal(result.length, 1);
+    expect(result.length).toBe(1);
   });
 });
 
 describe('shortenBlockId', () => {
   it('returns last segment after colon', () => {
-    assert.equal(shortenBlockId('source-1:block-0001'), 'block-0001');
+    expect(shortenBlockId('source-1:block-0001')).toBe('block-0001');
   });
 
   it('returns full id when no colon', () => {
-    assert.equal(shortenBlockId('simple-id'), 'simple-id');
+    expect(shortenBlockId('simple-id')).toBe('simple-id');
   });
 });
