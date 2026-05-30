@@ -7,15 +7,15 @@ import {
 } from '@grasp/domain';
 import { getActor } from '@/server/actor';
 import { createProjectDeps } from '@/server/project-deps';
-import { ConceptGraphWorkspace } from './concept-graph';
+import { ConceptGraphWorkspace } from '../concept-graph';
 import { ProjectSourcesPanel } from './source-material-form';
-import { buildStageHref, resolveStage } from './stages';
-import { ProjectHeader } from './components/project-header';
-import { ProjectSettings } from './components/project-settings';
-import { ProjectPipelineStatus } from './components/project-pipeline-status';
-import { IngestionStatusPanel, PlannedStagePanel } from './components/project-stage-panels';
-import { Eyebrow } from './components/project-shared';
-import type { ConceptRow, RelationshipRow } from './concept-graph/types';
+import { buildStageHref, resolveStage } from '../stages';
+import { ProjectHeader } from './project-header';
+import { ProjectSettings } from './project-settings';
+import { ProjectPipelineStatus } from './project-pipeline-status';
+import { IngestionStatusPanel, PlannedStagePanel } from './project-stage-panels';
+import { Eyebrow } from './project-shared';
+import type { ConceptRow, RelationshipRow } from '../concept-graph/types';
 
 type ProjectDetailPageProps = {
   currentStage?: string;

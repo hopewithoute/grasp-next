@@ -3,7 +3,7 @@
 import { useActionState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { createProjectFormAction } from './actions';
+import { createProjectFormAction } from '../actions';
 
 export function CreateProjectForm() {
   const [state, formAction, isPending] = useActionState(createProjectFormAction, { error: null });

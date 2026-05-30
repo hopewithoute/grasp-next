@@ -1,6 +1,6 @@
 import { PROJECT_STATUS, type ProjectStatus } from '@grasp/domain';
 import { Badge } from '@/components/ui/badge';
-import { statusBadgeVariants } from './project-style-variants';
+import { statusBadgeVariants } from '../project-style-variants';
 
 export function ProjectStatusBadge({ status }: { status: ProjectStatus }) {
   const labelByStatus = {

@@ -16,12 +16,12 @@ import {
   addProjectSourceFormAction,
   deleteProjectSourceFormAction,
   updateProjectSourceFormAction,
-} from './actions';
+} from '../actions';
 import {
   IngestionActivityPanel,
   type IngestionActivityPanelHandle,
 } from './ingestion-activity-panel';
-import { sourceModeButtonVariants, sourceTextareaVariants } from './project-style-variants';
+import { sourceModeButtonVariants, sourceTextareaVariants } from '../project-style-variants';
 
 export type ProjectSourceItem = {
   content: string | null;

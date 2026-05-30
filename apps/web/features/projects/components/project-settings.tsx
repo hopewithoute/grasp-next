@@ -1,5 +1,5 @@
 import { PROJECT_STATUS } from '@grasp/domain';
-import { DeleteProjectForm, ProjectDetailsForm } from '../project-lifecycle-forms';
+import { DeleteProjectForm, ProjectDetailsForm } from './project-lifecycle-forms';
 
 type ProjectSettingsProps = {
   detail: {

@@ -1,4 +1,4 @@
-import { ProjectStatusBadge } from '../project-status-badge';
+import { ProjectStatusBadge } from './project-status-badge';
 import { StatusCell } from './project-shared';
 
 type ProjectHeaderProps = {

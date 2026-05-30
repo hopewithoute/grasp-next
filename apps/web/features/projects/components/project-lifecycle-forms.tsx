@@ -3,7 +3,7 @@
 import { Pencil, Trash2 } from 'lucide-react';
 import { useActionState } from 'react';
 import { Button } from '@/components/ui/button';
-import { deleteProjectFormAction, updateProjectDetailsFormAction } from './actions';
+import { deleteProjectFormAction, updateProjectDetailsFormAction } from '../actions';
 
 type ProjectDetailsFormProps = {
   description: string | null;

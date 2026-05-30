@@ -1,4 +1,4 @@
-import { ProjectChrome } from '@/features/projects/project-chrome';
+import { ProjectChrome } from '@/features/projects/components/project-chrome';
 import { getActor } from '@/server/actor';
 import { createProjectDeps } from '@/server/project-deps';
 

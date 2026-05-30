@@ -11,7 +11,7 @@ import {
   STAGE_LABELS,
   STAGE_ORDER,
   type StudioStage,
-} from './stages';
+} from '../stages';
 
 const STAGE_ICONS: Record<StudioStage, typeof FileText> = {
   graph: Network,
