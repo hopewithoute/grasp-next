@@ -30,18 +30,3 @@ export async function signInWithGoogle() {
   redirect(response.url);
 }
 
-export async function signOut() {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-
-  if (!session) {
-    redirect('/');
-  }
-
-  await auth.api.signOut({
-    headers: await headers(),
-  });
-
-  redirect('/');
-}
