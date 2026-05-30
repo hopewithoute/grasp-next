@@ -1,6 +1,5 @@
-import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
-import { after, before, describe, it } from 'node:test';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import { eq } from 'drizzle-orm';
 import postgres from 'postgres';
@@ -23,7 +22,7 @@ describeIfDatabase('createIngestionRunRepository', () => {
   const projectRepository = createProjectRepository(db);
   const ownerId = `ingestion-run-repository-test-${randomUUID()}`;
 
-  before(async () => {
+  beforeAll(async () => {
     await db.insert(user).values({
       createdAt: new Date(),
       email: `${ownerId}@example.test`,
@@ -34,7 +33,7 @@ describeIfDatabase('createIngestionRunRepository', () => {
     });
   });
 
-  after(async () => {
+  afterAll(async () => {
     await db.delete(user).where(eq(user.id, ownerId));
     await sql.end();
   });
@@ -52,18 +51,18 @@ describeIfDatabase('createIngestionRunRepository', () => {
         projectId: project.id,
       });
 
-      assert.equal(run.status, 'ingesting');
-      assert.equal(run.completedAt, null);
+      expect(run.status).toBe('ingesting');
+      expect(run.completedAt).toBe(null);
 
       const completed = await ingestionRunRepository.markCompleted(run.id, {
         conceptCount: 1,
       });
       const latest = await ingestionRunRepository.findLatestByProject(project.id);
 
-      assert.equal(completed?.status, 'completed');
-      assert.ok(completed?.completedAt);
-      assert.equal(latest?.id, run.id);
-      assert.equal(latest?.status, 'completed');
+      expect(completed?.status).toBe('completed');
+      expect(completed?.completedAt).toBeTruthy();
+      expect(latest?.id).toBe(run.id);
+      expect(latest?.status).toBe('completed');
     } finally {
       await db.delete(projects).where(eq(projects.id, project.id));
     }

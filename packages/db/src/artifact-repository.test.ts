@@ -1,6 +1,5 @@
-import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
-import { after, before, describe, it } from 'node:test';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import { eq } from 'drizzle-orm';
 import postgres from 'postgres';
@@ -23,7 +22,7 @@ describeIfDatabase('createArtifactRepository', () => {
   const projectRepository = createProjectRepository(db);
   const ownerId = `artifact-repository-test-${randomUUID()}`;
 
-  before(async () => {
+  beforeAll(async () => {
     await db.insert(user).values({
       createdAt: new Date(),
       email: `${ownerId}@example.test`,
@@ -34,7 +33,7 @@ describeIfDatabase('createArtifactRepository', () => {
     });
   });
 
-  after(async () => {
+  afterAll(async () => {
     await db.delete(user).where(eq(user.id, ownerId));
     await sql.end();
   });
@@ -71,16 +70,16 @@ describeIfDatabase('createArtifactRepository', () => {
       const versions = await artifactRepository.listVersions(artifact.id);
       const updatedArtifact = await artifactRepository.findById(artifact.id);
 
-      assert.equal(versionOne.versionNumber, 1);
-      assert.equal(versionOne.revisionFeedback, null);
-      assert.equal(versionOne.extractionMode, 'llm_strict');
-      assert.equal(versionTwo.versionNumber, 2);
-      assert.equal(versionTwo.revisionFeedback, 'Split atom and molecule concepts.');
-      assert.equal(versionTwo.extractionMode, 'llm_json');
-      assert.equal(versions.length, 2);
-      assert.equal(versions[0]?.id, versionTwo.id);
-      assert.equal(versions[1]?.id, versionOne.id);
-      assert.equal(updatedArtifact?.currentVersionId, versionTwo.id);
+      expect(versionOne.versionNumber).toBe(1);
+      expect(versionOne.revisionFeedback).toBe(null);
+      expect(versionOne.extractionMode).toBe('llm_strict');
+      expect(versionTwo.versionNumber).toBe(2);
+      expect(versionTwo.revisionFeedback).toBe('Split atom and molecule concepts.');
+      expect(versionTwo.extractionMode).toBe('llm_json');
+      expect(versions.length).toBe(2);
+      expect(versions[0]?.id).toBe(versionTwo.id);
+      expect(versions[1]?.id).toBe(versionOne.id);
+      expect(updatedArtifact?.currentVersionId).toBe(versionTwo.id);
     } finally {
       await db.delete(projects).where(eq(projects.id, project.id));
     }

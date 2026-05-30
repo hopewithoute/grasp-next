@@ -1,6 +1,5 @@
-import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
-import { after, before, describe, it } from 'node:test';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import { and, eq } from 'drizzle-orm';
 import postgres from 'postgres';
@@ -34,7 +33,7 @@ describeIfDatabase('createKnowledgebaseRepository', () => {
   const projectSourceRepository = createProjectSourceRepository(db);
   const ownerId = `knowledgebase-repository-test-${randomUUID()}`;
 
-  before(async () => {
+  beforeAll(async () => {
     await db.insert(user).values({
       createdAt: new Date(),
       email: `${ownerId}@example.test`,
@@ -45,7 +44,7 @@ describeIfDatabase('createKnowledgebaseRepository', () => {
     });
   });
 
-  after(async () => {
+  afterAll(async () => {
     await db.delete(user).where(eq(user.id, ownerId));
     await sql.end();
   });
@@ -63,7 +62,7 @@ describeIfDatabase('createKnowledgebaseRepository', () => {
         title: 'Market source',
         type: 'text',
       });
-      assert.ok(source);
+      expect(source).toBeTruthy();
 
       const content = knowledgebaseArtifactContent(source.id);
 
@@ -89,39 +88,38 @@ describeIfDatabase('createKnowledgebaseRepository', () => {
         .from(wikiConcepts)
         .where(eq(wikiConcepts.knowledgebaseVersionId, version.id));
 
-      assert.equal(knowledgebase?.currentVersionId, version.id);
-      assert.equal(storedVersion?.knowledgebaseId, knowledgebase?.id);
-      assert.equal(passages.length, 1);
-      assert.equal(passages[0]?.blockId, `${source.id}:block-0001`);
-      assert.equal(concepts.length, 1);
-      assert.equal(concepts[0]?.conceptKey, 'market');
+      expect(knowledgebase?.currentVersionId).toBe(version.id);
+      expect(storedVersion?.knowledgebaseId).toBe(knowledgebase?.id);
+      expect(passages.length).toBe(1);
+      expect(passages[0]?.blockId).toBe(`${source.id}:block-0001`);
+      expect(concepts.length).toBe(1);
+      expect(concepts[0]?.conceptKey).toBe('market');
 
       const graph = await knowledgebaseRepository.findCurrentGraphByProject(project.id);
 
-      assert.equal(graph?.concepts.length, 1);
-      assert.equal(graph?.concepts[0]?.id, 'market');
-      const evidence = graph?.concepts[0]?.sourceEvidence as Array<{ blockId: string }> | undefined;
-      assert.equal(evidence?.[0]?.blockId, `${source.id}:block-0001`);
-      assert.equal(graph?.relationships.length, 0);
+      expect(graph?.concepts.length).toBe(1);
+      expect(graph?.concepts[0]?.id).toBe('market');
+      expect(graph?.concepts[0]?.evidenceCount).toBe(1);
+      expect(graph?.relationships.length).toBe(0);
 
       const searchResults = await knowledgebaseRepository.searchConceptsForIngestion({
         projectId: project.id,
         query: 'market',
       });
 
-      assert.equal(searchResults.length, 1);
-      assert.equal(searchResults[0]?.conceptKey, 'market');
-      assert.equal(searchResults[0]?.evidenceCount, 1);
+      expect(searchResults.length).toBe(1);
+      expect(searchResults[0]?.conceptKey).toBe('market');
+      expect(searchResults[0]?.evidenceCount).toBe(1);
 
       const context = await knowledgebaseRepository.getConceptContext({
         conceptKey: 'market',
         projectId: project.id,
       });
 
-      assert.equal(context?.concept.conceptKey, 'market');
-      assert.equal(context?.concept.evidenceCount, 1);
-      assert.equal(context?.evidence[0]?.blockId, `${source.id}:block-0001`);
-      assert.equal(context?.neighbors.length, 0);
+      expect(context?.concept.conceptKey).toBe('market');
+      expect(context?.concept.evidenceCount).toBe(1);
+      expect(context?.evidence[0]?.blockId).toBe(`${source.id}:block-0001`);
+      expect(context?.neighbors.length).toBe(0);
 
       await db
         .update(wikiConcepts)
@@ -134,8 +132,8 @@ describeIfDatabase('createKnowledgebaseRepository', () => {
         query: 'exchange venue',
       });
 
-      assert.equal(semanticConcepts[0]?.conceptKey, 'market');
-      assert.equal(typeof semanticConcepts[0]?.distance, 'number');
+      expect(semanticConcepts[0]?.conceptKey).toBe('market');
+      expect(typeof semanticConcepts[0]?.distance).toBe('number');
 
       await knowledgebaseRepository.upsertSourcePassages({
         blocks: [
@@ -157,7 +155,7 @@ describeIfDatabase('createKnowledgebaseRepository', () => {
         .from(sourcePassages)
         .where(eq(sourcePassages.blockId, `${source.id}:evidence-only`));
 
-      assert.equal(evidenceOnlyPassage?.embedding, null);
+      expect(evidenceOnlyPassage?.embedding).toBe(null);
     } finally {
       await db.delete(projects).where(eq(projects.id, project.id));
     }
@@ -176,7 +174,7 @@ describeIfDatabase('createKnowledgebaseRepository', () => {
         title: 'Elasticity source',
         type: 'text',
       });
-      assert.ok(source);
+      expect(source).toBeTruthy();
 
       await knowledgebaseRepository.upsertSourcePassages({
         blocks: [
@@ -264,8 +262,8 @@ describeIfDatabase('createKnowledgebaseRepository', () => {
         | { evidenceQuality?: { finalEvidenceScore?: number } }
         | undefined;
 
-      assert.equal(relationship?.relationshipType, 'prerequisite');
-      assert.equal(metadata?.evidenceQuality?.finalEvidenceScore, 0.88);
+      expect(relationship?.relationshipType).toBe('prerequisite');
+      expect(metadata?.evidenceQuality?.finalEvidenceScore).toBe(0.88);
 
       const [storedRelationship] = await db
         .select({ metadata: wikiRelationships.metadata })
@@ -278,7 +276,7 @@ describeIfDatabase('createKnowledgebaseRepository', () => {
           )
         );
 
-      assert.deepEqual(storedRelationship?.metadata, relationship?.metadata);
+      expect(storedRelationship?.metadata).toEqual(relationship?.metadata);
     } finally {
       await db.delete(projects).where(eq(projects.id, project.id));
     }
@@ -297,7 +295,7 @@ describeIfDatabase('createKnowledgebaseRepository', () => {
         title: 'Test source',
         type: 'text',
       });
-      assert.ok(source);
+      expect(source).toBeTruthy();
 
       await knowledgebaseRepository.upsertSourcePassages({
         blocks: [
@@ -349,9 +347,9 @@ describeIfDatabase('createKnowledgebaseRepository', () => {
         offset: 0,
       });
 
-      assert.equal(result.totalCount, 2);
-      assert.equal(result.concepts.length, 1);
-      assert.equal(result.concepts[0]?.name, 'Concept One');
+      expect(result.totalCount).toBe(2);
+      expect(result.concepts.length).toBe(1);
+      expect(result.concepts[0]?.name).toBe('Concept One');
 
       const resultWithQuery = await knowledgebaseRepository.searchConceptsWithPagination({
         projectId: project.id,
@@ -360,8 +358,8 @@ describeIfDatabase('createKnowledgebaseRepository', () => {
         offset: 0,
       });
 
-      assert.equal(resultWithQuery.totalCount, 1);
-      assert.equal(resultWithQuery.concepts[0]?.name, 'Concept Two');
+      expect(resultWithQuery.totalCount).toBe(1);
+      expect(resultWithQuery.concepts[0]?.name).toBe('Concept Two');
     } finally {
       await db.delete(projects).where(eq(projects.id, project.id));
     }
@@ -380,23 +378,20 @@ describeIfDatabase('createKnowledgebaseRepository', () => {
         title: 'Relationship endpoint source',
         type: 'text',
       });
-      assert.ok(source);
+      expect(source).toBeTruthy();
 
       await knowledgebaseRepository.replaceVersionFromContent({
         content: knowledgebaseArtifactContent(source.id),
         projectId: project.id,
       });
 
-      await assert.rejects(
-        knowledgebaseRepository.addRelationship({
+      await expect(knowledgebaseRepository.addRelationship({
           projectId: project.id,
           relationshipKey: 'market:missing:prerequisite',
           sourceConceptKey: 'market',
           targetConceptKey: 'missing',
           relationshipType: 'prerequisite',
-        }),
-        /target \(missing\) concept not found/
-      );
+        })).rejects.toThrow(/target \(missing\) concept not found/);
 
       const relationships = await db
         .select()
@@ -404,7 +399,7 @@ describeIfDatabase('createKnowledgebaseRepository', () => {
         .innerJoin(knowledgebases, eq(wikiRelationships.knowledgebaseId, knowledgebases.id))
         .where(eq(knowledgebases.projectId, project.id));
 
-      assert.equal(relationships.length, 0);
+      expect(relationships.length).toBe(0);
     } finally {
       await db.delete(projects).where(eq(projects.id, project.id));
     }
@@ -423,24 +418,21 @@ describeIfDatabase('createKnowledgebaseRepository', () => {
         title: 'Evidence concept source',
         type: 'text',
       });
-      assert.ok(source);
+      expect(source).toBeTruthy();
 
       await knowledgebaseRepository.replaceVersionFromContent({
         content: knowledgebaseArtifactContent(source.id),
         projectId: project.id,
       });
 
-      await assert.rejects(
-        knowledgebaseRepository.addConceptEvidence({
+      await expect(knowledgebaseRepository.addConceptEvidence({
           projectId: project.id,
           conceptKey: 'missing',
           sourceType: 'text',
           title: 'Missing evidence',
           quote: 'This quote should not be attached.',
           locationLabel: 'Missing evidence source',
-        }),
-        /concept missing not found/
-      );
+        })).rejects.toThrow(/concept missing not found/);
     } finally {
       await db.delete(projects).where(eq(projects.id, project.id));
     }
