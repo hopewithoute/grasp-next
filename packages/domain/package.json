@@ -14,8 +14,7 @@
   "devDependencies": {
     "@types/node": "^25.8.0",
     "eslint": "^9.39.1",
-    "tsx": "^4.21.0",
-    "typescript": "^5.9.3"
+    "tsx": "^4.21.0"
   },
   "dependencies": {
     "zod": "^4.4.3"

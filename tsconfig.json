@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ES2022",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true
+  },
+  "references": [
+    { "path": "apps/web" },
+    { "path": "packages/domain" },
+    { "path": "packages/db" },
+    { "path": "packages/ai" }
+  ],
+  "files": []
+}
