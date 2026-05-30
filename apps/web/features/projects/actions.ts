@@ -12,20 +12,11 @@ import {
   deleteProjectSourceDto,
   deleteProject,
   deleteProjectDto,
-  updateKnowledgebaseConcept,
-  updateKnowledgebaseConceptDto,
-  updateKnowledgebaseConceptEvidence,
-  updateKnowledgebaseConceptEvidenceDto,
-  updateKnowledgebaseRelationship,
-  updateKnowledgebaseRelationshipDto,
-  updateKnowledgebaseRelationshipEvidence,
-  updateKnowledgebaseRelationshipEvidenceDto,
   updateProjectSource,
   updateProjectSourceDto,
   updateProjectDetails,
   updateProjectDetailsDto,
   loadConceptEvidence,
-  loadRelationshipEvidence,
   applyGraphProposals,
   type GraphProposalAction,
 } from '@grasp/domain';
@@ -53,20 +44,6 @@ export type DeleteProjectFormState = {
   error: string | null;
 };
 
-export type KnowledgebaseConceptFormState = {
-  error: string | null;
-  success: boolean;
-};
-
-export type KnowledgebaseRelationshipFormState = {
-  error: string | null;
-  success: boolean;
-};
-
-export type KnowledgebaseEvidenceFormState = {
-  error: string | null;
-  success: boolean;
-};
 
 // --- Project form actions ---
 
@@ -269,171 +246,6 @@ export async function deleteProjectSourceFormAction(
   }
 }
 
-// --- Knowledgebase form actions ---
-
-export async function updateKnowledgebaseConceptFormAction(
-  _state: KnowledgebaseConceptFormState,
-  formData: FormData
-): Promise<KnowledgebaseConceptFormState> {
-  const actor = await auth();
-
-  if (!actor) {
-    return { error: 'Unauthorized.', success: false };
-  }
-
-  const parsed = updateKnowledgebaseConceptDto.safeParse({
-    conceptKey: formData.get('conceptKey')?.toString() ?? '',
-    confidence: formData.get('confidence')?.toString() ?? undefined,
-    definition: formData.get('definition')?.toString() ?? undefined,
-    difficulty: formData.get('difficulty')?.toString() ?? undefined,
-    name: formData.get('name')?.toString() ?? undefined,
-    projectId: formData.get('projectId')?.toString() ?? '',
-  });
-
-  if (!parsed.success) {
-    return { error: 'Please check the concept fields.', success: false };
-  }
-
-  try {
-    const artifact = await updateKnowledgebaseConcept(
-      parsed.data,
-      createProjectDeps(),
-      actor
-    );
-
-    revalidatePath(`/dashboard/projects/${artifact.projectId}`);
-
-    return { error: null, success: true };
-  } catch (error) {
-    return {
-      error: error instanceof Error ? error.message : 'Knowledgebase concept update failed.',
-      success: false,
-    };
-  }
-}
-
-export async function updateKnowledgebaseConceptEvidenceFormAction(
-  _state: KnowledgebaseEvidenceFormState,
-  formData: FormData
-): Promise<KnowledgebaseEvidenceFormState> {
-  const actor = await auth();
-
-  if (!actor) {
-    return { error: 'Unauthorized.', success: false };
-  }
-
-  const parsed = updateKnowledgebaseConceptEvidenceDto.safeParse({
-    evidenceId: formData.get('evidenceId')?.toString() ?? '',
-    locationLabel: formData.get('locationLabel')?.toString() ?? undefined,
-    quote: formData.get('quote')?.toString() ?? undefined,
-  });
-
-  if (!parsed.success) {
-    return { error: 'Please check the evidence fields.', success: false };
-  }
-
-  try {
-    const artifact = await updateKnowledgebaseConceptEvidence(
-      parsed.data,
-      createProjectDeps(),
-      actor
-    );
-
-    revalidatePath(`/dashboard/projects/${artifact.projectId}`);
-
-    return { error: null, success: true };
-  } catch (error) {
-    return {
-      error:
-        error instanceof Error
-          ? error.message
-          : 'Knowledgebase concept evidence update failed.',
-      success: false,
-    };
-  }
-}
-
-export async function updateKnowledgebaseRelationshipFormAction(
-  _state: KnowledgebaseRelationshipFormState,
-  formData: FormData
-): Promise<KnowledgebaseRelationshipFormState> {
-  const actor = await auth();
-
-  if (!actor) {
-    return { error: 'Unauthorized.', success: false };
-  }
-
-  const parsed = updateKnowledgebaseRelationshipDto.safeParse({
-    metadata: formData.get('metadata')?.toString() ?? undefined,
-    projectId: formData.get('projectId')?.toString() ?? '',
-    relationshipKey: formData.get('relationshipKey')?.toString() ?? '',
-  });
-
-  if (!parsed.success) {
-    return { error: 'Please check the relationship fields.', success: false };
-  }
-
-  try {
-    const artifact = await updateKnowledgebaseRelationship(
-      parsed.data,
-      createProjectDeps(),
-      actor
-    );
-
-    revalidatePath(`/dashboard/projects/${artifact.projectId}`);
-
-    return { error: null, success: true };
-  } catch (error) {
-    return {
-      error:
-        error instanceof Error
-          ? error.message
-          : 'Knowledgebase relationship update failed.',
-      success: false,
-    };
-  }
-}
-
-export async function updateKnowledgebaseRelationshipEvidenceFormAction(
-  _state: KnowledgebaseEvidenceFormState,
-  formData: FormData
-): Promise<KnowledgebaseEvidenceFormState> {
-  const actor = await auth();
-
-  if (!actor) {
-    return { error: 'Unauthorized.', success: false };
-  }
-
-  const parsed = updateKnowledgebaseRelationshipEvidenceDto.safeParse({
-    evidenceId: formData.get('evidenceId')?.toString() ?? '',
-    locationLabel: formData.get('locationLabel')?.toString() ?? undefined,
-    quote: formData.get('quote')?.toString() ?? undefined,
-  });
-
-  if (!parsed.success) {
-    return { error: 'Please check the evidence fields.', success: false };
-  }
-
-  try {
-    const artifact = await updateKnowledgebaseRelationshipEvidence(
-      parsed.data,
-      createProjectDeps(),
-      actor
-    );
-
-    revalidatePath(`/dashboard/projects/${artifact.projectId}`);
-
-    return { error: null, success: true };
-  } catch (error) {
-    return {
-      error:
-        error instanceof Error
-          ? error.message
-          : 'Knowledgebase relationship evidence update failed.',
-      success: false,
-    };
-  }
-}
 
 // --- Evidence query actions ---
 
@@ -464,32 +276,6 @@ export async function getConceptEvidence(projectId: string, conceptId: string) {
   }
 }
 
-export async function getRelationshipEvidence(projectId: string, relationshipId: string) {
-  const actor = await auth();
-
-  if (!actor) {
-    redirect('/sign-in');
-  }
-
-  const deps = createProjectDeps();
-
-  try {
-    const project = await deps.projectRepository.findByIdForOwner(projectId, actor.id);
-
-    if (!project) {
-      throw new Error('Unauthorized');
-    }
-
-    const evidence = await loadRelationshipEvidence(
-      { relationshipId, projectId, ownerId: actor.id },
-      { knowledgebaseRepository: deps.knowledgebaseRepository }
-    );
-    return evidence;
-  } catch (error) {
-    console.error('Failed to load relationship evidence', error);
-    return [];
-  }
-}
 
 // --- Graph proposal action ---
 

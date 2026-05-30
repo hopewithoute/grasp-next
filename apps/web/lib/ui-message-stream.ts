@@ -27,7 +27,7 @@ function parseUIMessageChunkStream(
   );
 }
 
-export async function consumeUIMessageStream(
+async function consumeUIMessageStream(
   stream: ReadableStream<Uint8Array>,
   onMessage: (message: UIMessage) => void
 ) {

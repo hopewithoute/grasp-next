@@ -146,7 +146,7 @@ export function ConfidencePill({
   );
 }
 
-export function formatConfidence(value: string): string {
+function formatConfidence(value: string): string {
   const confidence = Number(value);
   if (!Number.isFinite(confidence)) return 'n/a';
   return `${Math.round(confidence * 100)}%`;
