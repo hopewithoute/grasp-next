@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { LazyMotion, m, AnimatePresence, domAnimation } from 'framer-motion';
+import { m, AnimatePresence } from 'framer-motion';
 import { FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { type ConceptRow, type RelationshipRow } from '../types';
@@ -232,7 +232,6 @@ export function ConceptDetailStrip({
 
 export function EvidenceSkeleton() {
   return (
-      <LazyMotion features={domAnimation}>
     <div className="flex flex-col w-full">
       <div className="h-3 w-24 bg-muted/50 rounded animate-pulse mb-8" />
       <div className="flex flex-col gap-8">
@@ -245,7 +244,6 @@ export function EvidenceSkeleton() {
         ))}
       </div>
     </div>
-      </LazyMotion>
   );
 }
 

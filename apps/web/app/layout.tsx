@@ -3,6 +3,7 @@ import Script from 'next/script';
 import { Geist } from 'next/font/google';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { ThemeProvider } from '@/components/theme-provider';
+import { MotionProvider } from '@/components/motion-provider';
 import { cn } from '@/lib/utils';
 import './globals.css';
 
@@ -77,7 +78,7 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <TooltipProvider>{children}</TooltipProvider>
+          <MotionProvider><TooltipProvider>{children}</TooltipProvider></MotionProvider>
         </ThemeProvider>
       </body>
     </html>

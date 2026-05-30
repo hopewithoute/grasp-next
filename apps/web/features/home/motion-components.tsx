@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { LazyMotion, m, domAnimation, AnimatePresence } from 'framer-motion';
+import { m, AnimatePresence } from 'framer-motion';
 
 export function InfiniteScrollTrack({
   children,
@@ -11,8 +11,7 @@ export function InfiniteScrollTrack({
   speed?: number;
 }) {
   return (
-    <LazyMotion features={domAnimation}>
-      <div className="relative flex overflow-hidden w-full">
+    <div className="relative flex overflow-hidden w-full">
         <m.div
           className="flex shrink-0 gap-4 pr-4"
           animate={{ x: ['0%', '-100%'] }}
@@ -35,8 +34,7 @@ export function InfiniteScrollTrack({
         >
           {children}
         </m.div>
-      </div>
-    </LazyMotion>
+    </div>
   );
 }
 
