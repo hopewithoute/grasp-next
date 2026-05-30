@@ -117,7 +117,13 @@ export type ConceptSearchPaginationResult = {
   totalCount: number;
 };
 
-export type KnowledgebaseRepository = {
+// --- Sub-interfaces ---
+
+/**
+ * Read-only graph queries: projection, evidence lookup, search.
+ * Used by: load-project-detail, load-concept-evidence, search actions.
+ */
+export type KnowledgebaseQueryRepository = {
   findCurrentGraphByProject(projectId: string): Promise<KnowledgebaseGraphProjectionRecord | null>;
   findConceptEvidence(input: { conceptKey: string; projectId: string }): Promise<unknown[]>;
   findRelationshipEvidence(input: {
@@ -134,26 +140,16 @@ export type KnowledgebaseRepository = {
     conceptKey: string;
     projectId: string;
   }): Promise<IngestionConceptContext | null>;
-  mergeIngestionOutput(input: {
-    conceptEmbeddingsByKey?: Record<string, number[]>;
-    output: IngestionAgentOutput;
-    projectId: string;
-    sourceId: string;
-  }): Promise<KnowledgebaseVersionRecord>;
-  upsertSourcePassages(input: {
-    blocks: NormalizedSourceBlockDto[];
-    projectId: string;
-    sourceId: string;
-  }): Promise<void>;
-  cleanupDeletedSource(input: { projectId: string; sourceId: string }): Promise<void>;
-  replaceVersionFromContent(input: {
-    content: KnowledgebaseArtifactContentDto;
-    projectId: string;
-  }): Promise<KnowledgebaseVersionRecord>;
   searchConceptsWithPagination(
     input: ConceptSearchPaginationInput
   ): Promise<ConceptSearchPaginationResult>;
+};
 
+/**
+ * Concept, relationship, and evidence mutations + snapshot creation.
+ * Used by: apply-graph-proposals, update-knowledgebase-* actions.
+ */
+export type KnowledgebaseMutationRepository = {
   addConcept(input: {
     projectId: string;
     conceptKey: string;
@@ -208,3 +204,35 @@ export type KnowledgebaseRepository = {
     trigger: string;
   }): Promise<KnowledgebaseVersionRecord | null>;
 };
+
+/**
+ * Ingestion pipeline: source passage management, ingestion merge, version replacement.
+ * Used by: ingest-source, ingestion-ai-adapter, update-knowledgebase-* actions.
+ */
+export type KnowledgebaseIngestionRepository = {
+  mergeIngestionOutput(input: {
+    conceptEmbeddingsByKey?: Record<string, number[]>;
+    output: IngestionAgentOutput;
+    projectId: string;
+    sourceId: string;
+  }): Promise<KnowledgebaseVersionRecord>;
+  upsertSourcePassages(input: {
+    blocks: NormalizedSourceBlockDto[];
+    projectId: string;
+    sourceId: string;
+  }): Promise<void>;
+  cleanupDeletedSource(input: { projectId: string; sourceId: string }): Promise<void>;
+  replaceVersionFromContent(input: {
+    content: KnowledgebaseArtifactContentDto;
+    projectId: string;
+  }): Promise<KnowledgebaseVersionRecord>;
+};
+
+/**
+ * Full knowledgebase repository: intersection of all sub-interfaces.
+ * The concrete DB adapter implements this type. Callers can narrow to
+ * a sub-interface when they only need a focused subset.
+ */
+export type KnowledgebaseRepository = KnowledgebaseQueryRepository &
+  KnowledgebaseMutationRepository &
+  KnowledgebaseIngestionRepository;

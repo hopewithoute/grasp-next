@@ -32,6 +32,9 @@ export type {
   KnowledgebaseGraphConceptRecord,
   KnowledgebaseGraphProjectionRecord,
   KnowledgebaseGraphRelationshipRecord,
+  KnowledgebaseIngestionRepository,
+  KnowledgebaseMutationRepository,
+  KnowledgebaseQueryRepository,
   KnowledgebaseRepository,
   KnowledgebaseVersionRecord,
 } from './knowledgebase.types';
