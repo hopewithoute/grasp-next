@@ -149,12 +149,12 @@ const orphanRelationshipsScorer = createScorer({
     const existingKeys = new Set(
       (output.fixtureConcepts ?? []).map((c) => c.conceptKey)
     );
-    const addedKeys = new Set(
-      output.actions
-        .filter((a) => a.type === 'add_concept')
-        .map((a) => a.payload?.conceptKey)
-        .filter((v): v is string => typeof v === 'string')
-    );
+    const addedKeys = new Set<string>();
+    for (const a of output.actions) {
+      if (a.type === 'add_concept' && typeof a.payload?.conceptKey === 'string') {
+        addedKeys.add(a.payload.conceptKey);
+      }
+    }
     const relationships = output.actions.filter((a) => a.type === 'add_relationship');
     const allValid = relationships.every((rel) => {
       const src = rel.payload?.sourceConceptKey;
@@ -248,14 +248,18 @@ async function scoreCase(output: RefinementScoredOutput): Promise<EvalCaseResult
   const reasons: string[] = [];
 
   // Custom scorers
-  for (const scorer of allScorers) {
-    const result = await scorer.run({ output } as never);
-    const scorerResult = result as { score?: unknown; reason?: unknown };
-    if (typeof scorerResult.score === 'number') {
-      dimensions[scorer.id] = scorerResult.score;
+  const scorerResults = await Promise.all(
+    allScorers.map(async (scorer) => {
+      const result = await scorer.run({ output } as never);
+      return { id: scorer.id, ...(result as { score?: unknown; reason?: unknown }) };
+    })
+  );
+  for (const { id, score, reason } of scorerResults) {
+    if (typeof score === 'number') {
+      dimensions[id] = score;
     }
-    if (scorerResult.reason) {
-      reasons.push(String(scorerResult.reason));
+    if (reason) {
+      reasons.push(String(reason));
     }
   }
 

@@ -608,17 +608,21 @@ async function scoreCase(
   const reasons: string[] = [];
 
   // Custom scorers
-  for (const scorer of scorers) {
-    const result = await scorer.run({
-      output,
-      groundTruth: opts.groundTruth,
-    } as never);
-    const scorerResult = result as { score?: unknown; reason?: unknown };
-    if (typeof scorerResult.score === 'number') {
-      dimensions[scorer.id] = scorerResult.score;
+  const scorerResults = await Promise.all(
+    scorers.map(async (scorer) => {
+      const result = await scorer.run({
+        output,
+        groundTruth: opts.groundTruth,
+      } as never);
+      return { id: scorer.id, ...(result as { score?: unknown; reason?: unknown }) };
+    })
+  );
+  for (const { id, score, reason } of scorerResults) {
+    if (typeof score === 'number') {
+      dimensions[id] = score;
     }
-    if (scorerResult.reason) {
-      reasons.push(String(scorerResult.reason));
+    if (reason) {
+      reasons.push(String(reason));
     }
   }
 
@@ -691,9 +695,11 @@ async function main() {
   mastra.getAgent('ingestionAgent');
   mastra.getAgent('linkAdjudicatorAgent');
 
-  const sourceA = await readFile(resolve(docsDir, 'source-a-economics-basics.md'), 'utf8');
-  const sourceB = await readFile(resolve(docsDir, 'source-b-elasticity.md'), 'utf8');
-  const sourceC = await readFile(resolve(docsDir, 'source-c-total-revenue.md'), 'utf8');
+  const [sourceA, sourceB, sourceC] = await Promise.all([
+    readFile(resolve(docsDir, 'source-a-economics-basics.md'), 'utf8'),
+    readFile(resolve(docsDir, 'source-b-elasticity.md'), 'utf8'),
+    readFile(resolve(docsDir, 'source-c-total-revenue.md'), 'utf8'),
+  ]);
 
   console.error(`[Eval] Starting Ingestion Eval...`);
   const results: EvalCaseResult[] = [];
@@ -882,8 +888,10 @@ async function compareLatest(options: EvalCliOptions) {
   const previousMode = options.mode;
   options.mode = 'fixture';
 
-  const sourceA = await readFile(resolve(docsDir, 'source-a-economics-basics.md'), 'utf8');
-  const sourceB = await readFile(resolve(docsDir, 'source-b-elasticity.md'), 'utf8');
+  const [sourceA, sourceB] = await Promise.all([
+    readFile(resolve(docsDir, 'source-a-economics-basics.md'), 'utf8'),
+    readFile(resolve(docsDir, 'source-b-elasticity.md'), 'utf8'),
+  ]);
 
   const [draftA, draftB] = await Promise.all([
     extractSourceWithoutDb({
