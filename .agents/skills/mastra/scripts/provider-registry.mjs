@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* eslint-disable no-undef, no-useless-escape */
 
 import { readFileSync } from "node:fs";
 import { join, dirname } from "node:path";
