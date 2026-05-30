@@ -14,3 +14,9 @@ export {
   type IngestionRelationship,
   type IngestionSourceRef,
 } from './ingestion-agent.dto';
+
+export * from './merge-draft';
+export * from './linking';
+export * from './validate-source-refs';
+export * from './ingestion-ai.port';
+export * from './ingest-source.action';

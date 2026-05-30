@@ -6,9 +6,9 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "build": "tsc --noEmit",
+    "build": "tsgo --noEmit",
     "lint": "eslint . --max-warnings=0",
-    "test": "tsx --test src/**/*.test.ts",
+    "test": "node --env-file=../../.env --import tsx/esm --test src/**/*.test.ts",
     "typecheck": "tsgo --noEmit"
   },
   "devDependencies": {
