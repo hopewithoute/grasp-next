@@ -1,11 +1,18 @@
 'use client';
 
-import { type FormEvent, useEffect, useMemo } from 'react';
+import { type FormEvent, useMemo } from 'react';
 import { type ConceptRow } from '../types';
-import { type ProposalPayload } from '../types';
+import { usePendingProposals, useDerivedPendingProposals } from '../hooks/use-pending-proposals-context';
 import { CollapsedPaneRail, PaneHeader } from './shared-components';
 import { ChatItemRow } from './chat-message';
 import { useChatThread } from '../hooks/use-chat-thread';
+
+const ACTIVE_BADGE = (
+  <span className="inline-flex items-center gap-1.5 rounded-full border border-brand-accent-border/30 bg-brand-accent-surface px-2 py-0.5 font-mono text-[0.62rem] tabular-nums tracking-[0.18em] uppercase text-brand-accent-foreground">
+    <span aria-hidden className="size-1.5 rounded-full bg-brand-accent" />
+    active
+  </span>
+);
 
 export function ChatPane({
   collapsed,
@@ -15,7 +22,6 @@ export function ChatPane({
   chatContextConcepts,
   onRemoveChatContext,
   onHoverChatContext,
-  onPendingProposalsChange,
 }: {
   collapsed: boolean;
   items: import('../types').ChatItem[];
@@ -24,7 +30,6 @@ export function ChatPane({
   chatContextConcepts: ConceptRow[];
   onRemoveChatContext: (id: string) => void;
   onHoverChatContext?: (id: string | null) => void;
-  onPendingProposalsChange?: (proposals: ProposalPayload[]) => void;
 }) {
   const {
     messages,
@@ -35,21 +40,8 @@ export function ChatPane({
     scrollRef,
   } = useChatThread(projectId, chatContextConcepts);
 
-  // Extract pending proposals and lift them up via effect (not during render)
-  const pendingProposals = useMemo(
-    () =>
-      [...items, ...messages]
-        .filter(
-          (item): item is Extract<import('../types').ChatItem, { kind: 'proposal' }> =>
-            item.kind === 'proposal' && item.status === 'pending'
-        )
-        .map((item) => item.proposal),
-    [items, messages]
-  );
-
-  useEffect(() => {
-    onPendingProposalsChange?.(pendingProposals);
-  }, [pendingProposals, onPendingProposalsChange]);
+  // Derive pending proposals (syncs to parent state via useDerivedPendingProposals)
+  const { pendingProposals } = usePendingProposals();
 
   if (collapsed) {
     return (
@@ -75,12 +67,7 @@ export function ChatPane({
     >
       <PaneHeader
         eyebrow="Refinement"
-        meta={
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-brand-accent-border/30 bg-brand-accent-surface px-2 py-0.5 font-mono text-[0.62rem] tabular-nums tracking-[0.18em] uppercase text-brand-accent-foreground">
-            <span aria-hidden className="size-1.5 rounded-full bg-brand-accent" />
-            active
-          </span>
-        }
+        meta={ACTIVE_BADGE}
         onCollapseToggle={onCollapseToggle}
         side="right"
         title="Graph agent"

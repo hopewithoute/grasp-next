@@ -9,6 +9,7 @@ import { useConceptGraphState } from '../hooks/use-concept-graph-state';
 import { ConceptListPane } from './concept-list-pane';
 import { GraphCanvasPane } from './graph-canvas-pane';
 import { ChatPane } from './chat-pane';
+import { PendingProposalsContext } from '../hooks/use-pending-proposals-context';
 
 type ConceptGraphWorkspaceProps = {
   concepts: ConceptRow[];
@@ -95,7 +96,6 @@ const ConceptGraphEditor = ({ concepts, projectId, relationships }: ConceptGraph
     [conceptById, selectedConceptId]
   );
 
-  const proposalCount = pendingProposals.length;
 
   const isRunning = false;
   const handleInventoryCollapseToggle = useCallback(() => {
@@ -113,7 +113,13 @@ const ConceptGraphEditor = ({ concepts, projectId, relationships }: ConceptGraph
     [setChatContextConceptIds]
   );
 
+  const pendingProposalsValue = useMemo(
+    () => ({ pendingProposals }),
+    [pendingProposals]
+  );
+
   return (
+    <PendingProposalsContext.Provider value={pendingProposalsValue}>
     <section
       aria-label="Concept graph editor"
       className={cn(
@@ -145,12 +151,10 @@ const ConceptGraphEditor = ({ concepts, projectId, relationships }: ConceptGraph
         concepts={concepts}
         isRunning={isRunning}
         onSelectConcept={handleSelectConcept}
-        proposalCount={proposalCount}
         relationships={relationships}
         selectedConcept={selectedConcept}
         conceptNameById={conceptNameById}
         hoveredChatConceptId={hoveredChatConceptId}
-        pendingProposals={pendingProposals}
       />
 
       <ChatPane
@@ -162,8 +166,8 @@ const ConceptGraphEditor = ({ concepts, projectId, relationships }: ConceptGraph
         chatContextConcepts={chatContextConcepts}
         onRemoveChatContext={handleRemoveChatContext}
         onHoverChatContext={setHoveredChatConceptId}
-        onPendingProposalsChange={setPendingProposals}
       />
     </section>
+    </PendingProposalsContext.Provider>
   );
 };
