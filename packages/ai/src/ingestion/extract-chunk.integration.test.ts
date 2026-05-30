@@ -8,7 +8,8 @@ import {
   normalizeMarkdownSource,
   type IngestionAgentOutput,
 } from '@grasp/domain';
-import { extractChunk, mergeDraft } from './extract-chunk';
+import { extractChunk } from './extract-chunk';
+import { mergeDraft } from '@grasp/domain';
 
 const DOCS_DIR = resolve(import.meta.dirname, '../../../../docs/example');
 

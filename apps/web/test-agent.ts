@@ -1,10 +1,10 @@
-import { mastra } from './packages/ai/src/mastra/index';
+import { mastra } from '@grasp/ai';
 import { readFile } from 'node:fs/promises';
 
 async function main() {
   const agent = mastra.getAgent('refinementAgent');
   const fixture = JSON.parse(await readFile('./apps/web/fixtures/refinement-agent/cases.json', 'utf8'));
-  const testCase = fixture.cases.find(c => c.id === 'batch-mixed-actions');
+  const testCase = fixture.cases.find((c: any) => c.id === 'batch-mixed-actions');
   
   if (!testCase) {
     console.log("TestCase not found");

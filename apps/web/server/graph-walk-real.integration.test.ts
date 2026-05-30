@@ -20,13 +20,15 @@ import {
 } from '@grasp/db';
 import { embedText, embedTexts } from '@grasp/ai/embeddings';
 import {
-  buildLinkCandidates,
   createIngestionRetrievalTools,
   extractChunk,
-  type LinkTrace,
-  mergeDraft,
   sourceLinkingWorkflow,
 } from '@grasp/ai/ingestion';
+import {
+  buildLinkCandidates,
+  mergeDraft,
+  type LinkTrace,
+} from '@grasp/domain';
 
 const DOCS_DIR = resolve(dirname(fileURLToPath(import.meta.url)), '../../../docs/example');
 const sourceA = readFileSync(resolve(DOCS_DIR, 'source-a-economics-basics.md'), 'utf-8');
@@ -137,7 +139,7 @@ describeIfReal('real ingestion graph walking', { timeout: 240_000 }, () => {
         );
         assert.ok(
           sourceTwoRetrieval.linkTrace?.acceptedLinks.some(
-            (link) =>
+            (link: any) =>
               link.sourceConceptKey === 'supply-and-demand' &&
               link.targetConceptKey === 'elasticity' &&
               link.relationshipType === 'prerequisite' &&
@@ -171,7 +173,7 @@ describeIfReal('real ingestion graph walking', { timeout: 240_000 }, () => {
         );
         assert.ok(
           sourceThreeRetrieval.linkTrace?.acceptedLinks.some(
-            (link) =>
+            (link: any) =>
               link.sourceConceptKey === 'price-elasticity-of-demand' &&
               link.relationshipType === 'prerequisite' &&
               link.evidenceQuality.finalEvidenceScore >= 0.6
@@ -341,13 +343,13 @@ describeIfReal('real ingestion graph walking', { timeout: 240_000 }, () => {
 
     debugRealTest(title, 'build link candidates start');
     const linkCandidates = await buildLinkCandidates({
-      getConceptContext: (conceptKey) =>
+      getConceptContext: (conceptKey: string) =>
         knowledgebaseRepository.getConceptContext({
           conceptKey,
           projectId,
         }),
       localExtraction: draft,
-      searchConcepts: async ({ query, limit }) =>
+      searchConcepts: async ({ query, limit }: { query: string; limit?: number }) =>
         knowledgebaseRepository.searchConceptsForIngestion({
           embedding: await embedText(query),
           limit,

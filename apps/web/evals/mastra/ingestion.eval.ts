@@ -5,13 +5,15 @@ import { fileURLToPath } from 'node:url';
 import { canUseAgent, mastra } from '@grasp/ai';
 import { embedText, embedTexts } from '@grasp/ai/embeddings';
 import {
-  buildLinkCandidates,
   createIngestionRetrievalTools,
   extractChunk,
   ingestionAgentInstructions,
+} from '@grasp/ai/ingestion';
+import {
+  buildLinkCandidates,
   mergeDraft,
   type LinkTrace,
-} from '@grasp/ai/ingestion';
+} from '@grasp/domain';
 import {
   createDbClient,
   createKnowledgebaseRepository,
@@ -473,10 +475,10 @@ async function ingestSourceWithRetrieval({
   }
 
   const linkCandidates = await buildLinkCandidates({
-    getConceptContext: (conceptKey) =>
+    getConceptContext: (conceptKey: string) =>
       knowledgebaseRepository.getConceptContext({ conceptKey, projectId }),
     localExtraction: draft,
-    searchConcepts: async ({ query, limit }) =>
+    searchConcepts: async ({ query, limit }: { query: string; limit?: number }) =>
       knowledgebaseRepository.searchConceptsForIngestion({
         embedding: await embedText(query),
         limit,
@@ -832,7 +834,7 @@ async function main() {
     ], {
       metrics: {
         totalConcepts: crossDedupDraft.concepts.length,
-        mergedConcepts: crossDedupDraft.concepts.filter((c) => c.mergesWith).length,
+        mergedConcepts: crossDedupDraft.concepts.filter((c: any) => c.mergesWith).length,
       },
     })
   );
