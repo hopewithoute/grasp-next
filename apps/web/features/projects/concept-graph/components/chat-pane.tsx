@@ -1,6 +1,6 @@
 'use client';
 
-import { type FormEvent } from 'react';
+import { type FormEvent, useEffect, useMemo } from 'react';
 import { type ConceptRow } from '../types';
 import { type ProposalPayload } from '../types';
 import { CollapsedPaneRail, PaneHeader } from './shared-components';
@@ -35,16 +35,21 @@ export function ChatPane({
     scrollRef,
   } = useChatThread(projectId, chatContextConcepts);
 
-  // Extract pending proposals and lift them up
-  if (onPendingProposalsChange) {
-    const allProposals = [...items, ...messages]
-      .filter(
-        (item): item is Extract<import('../types').ChatItem, { kind: 'proposal' }> =>
-          item.kind === 'proposal' && item.status === 'pending'
-      )
-      .map((item) => item.proposal);
-    onPendingProposalsChange(allProposals);
-  }
+  // Extract pending proposals and lift them up via effect (not during render)
+  const pendingProposals = useMemo(
+    () =>
+      [...items, ...messages]
+        .filter(
+          (item): item is Extract<import('../types').ChatItem, { kind: 'proposal' }> =>
+            item.kind === 'proposal' && item.status === 'pending'
+        )
+        .map((item) => item.proposal),
+    [items, messages]
+  );
+
+  useEffect(() => {
+    onPendingProposalsChange?.(pendingProposals);
+  }, [pendingProposals, onPendingProposalsChange]);
 
   if (collapsed) {
     return (
