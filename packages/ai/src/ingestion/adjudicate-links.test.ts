@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import type { LinkCandidate } from './linking';
+import type { LinkCandidate } from '@grasp/domain';
 import { parseReviewedLinkList } from './adjudicate-links';
 
 describe('parseReviewedLinkList', () => {

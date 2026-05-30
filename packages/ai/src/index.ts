@@ -2,7 +2,6 @@ export {
   extractChunk,
   ingestionAgent,
   buildIngestionPrompt,
-  mergeDraft,
   type ExtractChunkInput,
   type ExtractChunkResult,
 } from './ingestion';

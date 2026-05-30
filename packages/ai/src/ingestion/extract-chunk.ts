@@ -1,5 +1,7 @@
 import {
   ingestionAgentOutputDto,
+  validateAndAnchorSourceRefs,
+  type SourceBlockForValidation,
   type IngestionConceptContext,
   type IngestionAgentOutput,
   type IngestionConcept,
@@ -11,8 +13,7 @@ import { ingestionAgent } from './ingestion-agent';
 import { buildIngestionPrompt } from './ingestion-agent';
 import type { createIngestionRetrievalTools } from './ingestion-retrieval-tools';
 
-import { validateAndAnchorSourceRefs, type SourceBlockForValidation } from './validate-source-refs';
-import { scoreLinkEvidence } from './linking';
+import { scoreLinkEvidence } from '@grasp/domain';
 
 export type ExtractChunkInput = {
   blocks: SourceBlockForValidation[];
@@ -91,7 +92,8 @@ export async function runIngestionChunkAgent(
 
       const response = input.retrievalTools
         ? await ingestionAgent.generate(effectivePrompt, {
-            structuredOutput: { schema: ingestionAgentOutputDto },
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            structuredOutput: { schema: ingestionAgentOutputDto as any },
             maxSteps: 5,
             memory: input.memory,
             toolsets: {
@@ -102,7 +104,8 @@ export async function runIngestionChunkAgent(
             },
           })
         : await ingestionAgent.generate(effectivePrompt, {
-            structuredOutput: { schema: ingestionAgentOutputDto },
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            structuredOutput: { schema: ingestionAgentOutputDto as any },
             memory: input.memory,
             onIterationComplete: ({ messages }: { messages: MastraDBMessage[] }) => {
               latestMessages = messages;
@@ -114,7 +117,11 @@ export async function runIngestionChunkAgent(
       if (thinking && input.onThinking) {
         input.onThinking(thinking);
       }
-      const result = response.object as IngestionAgentOutput;
+      const parsed = ingestionAgentOutputDto.safeParse(response.object);
+      if (!parsed.success) {
+        throw parsed.error;
+      }
+      const result = parsed.data as IngestionAgentOutput;
       const validated = validateAgainstBlocks(result, input.blocks);
       return {
         domain: { ...validated, thinking },
@@ -263,55 +270,4 @@ function estimateLocalRelationshipTypeConfidence(relationship: IngestionRelation
   return relationship.relationshipType === 'related_to' ? 0.78 : 0.72;
 }
 
-/**
- * Merge a chunk's extraction result into the accumulated draft.
- * Concepts with the same conceptKey are updated (last write wins for definition/confidence).
- * Relationships are deduplicated by (source+target+type).
- */
-export function mergeDraft(
-  draft: IngestionAgentOutput,
-  chunkResult: Pick<ExtractChunkResult, 'concepts' | 'relationClaims' | 'relationships'>
-): IngestionAgentOutput {
-  const conceptsByKey = new Map<string, IngestionConcept>(
-    draft.concepts.map((c) => [c.conceptKey, c])
-  );
 
-  for (const concept of chunkResult.concepts) {
-    const effectiveKey = concept.mergesWith ?? concept.conceptKey;
-    const existing = conceptsByKey.get(effectiveKey);
-
-    if (existing) {
-      conceptsByKey.set(effectiveKey, {
-        ...existing,
-        confidence: Math.max(existing.confidence, concept.confidence),
-        definition: concept.definition,
-        difficulty: concept.difficulty,
-        name: concept.name,
-        sourceRefs: [...existing.sourceRefs, ...concept.sourceRefs],
-      });
-    } else {
-      conceptsByKey.set(effectiveKey, { ...concept, conceptKey: effectiveKey });
-    }
-  }
-
-  const relKeySet = new Set<string>(
-    draft.relationships.map(
-      (r) => `${r.sourceConceptKey}:${r.targetConceptKey}:${r.relationshipType}`
-    )
-  );
-  const newRelationships: IngestionRelationship[] = [...draft.relationships];
-
-  for (const rel of chunkResult.relationships) {
-    const key = `${rel.sourceConceptKey}:${rel.targetConceptKey}:${rel.relationshipType}`;
-    if (!relKeySet.has(key)) {
-      relKeySet.add(key);
-      newRelationships.push(rel);
-    }
-  }
-
-  return {
-    concepts: [...conceptsByKey.values()],
-    relationClaims: [...draft.relationClaims, ...chunkResult.relationClaims],
-    relationships: newRelationships,
-  };
-}

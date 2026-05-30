@@ -11,7 +11,7 @@
     "./mastra": "./src/mastra/index.ts"
   },
   "scripts": {
-    "build": "tsc --noEmit",
+    "build": "tsgo --noEmit",
     "studio": "mastra dev",
     "lint": "eslint . --max-warnings=0",
     "mastra:build": "mastra build",

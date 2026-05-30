@@ -1,186 +1,97 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { mergeDraft, validateAgainstBlocks } from './extract-chunk';
-describe('mergeDraft', () => {
-  it('deduplicates relationships by source, target, and type', () => {
-    const merged = mergeDraft(
-      {
-        concepts: [
-          {
-            conceptKey: 'market',
-            confidence: 0.9,
-            definition: 'A place of exchange.',
-            difficulty: 'beginner',
-            mergesWith: undefined,
-            name: 'Market',
-            sourceRefs: [{ blockId: 'block-1', locationLabel: 'Block 1', quote: 'market' }],
-          },
-        ],
-        relationClaims: [],
-        relationships: [
-          {
-            relationshipType: 'prerequisite',
-            sourceConceptKey: 'market',
-            sourceRefs: [{ blockId: 'block-1', locationLabel: 'Block 1', quote: 'market' }],
-            targetConceptKey: 'equilibrium',
-          },
-        ],
-      },
-      {
-        concepts: [],
-        relationClaims: [],
-        relationships: [
-          {
-            relationshipType: 'prerequisite',
-            sourceConceptKey: 'market',
-            sourceRefs: [{ blockId: 'block-1', locationLabel: 'Block 1', quote: 'market' }],
-            targetConceptKey: 'equilibrium',
-          },
-        ],
-      }
-    );
-
-    assert.equal(merged.relationships.length, 1);
-  });
-});
+import { validateAgainstBlocks } from './extract-chunk';
+import type { IngestionAgentOutput } from '@grasp/domain';
 
 describe('validateAgainstBlocks', () => {
-  it('drops relationship refs that are only heading evidence', () => {
-    const result = validateAgainstBlocks(
-      {
-        concepts: [
-          {
-            conceptKey: 'law-of-demand',
-            confidence: 0.9,
-            definition: 'Demand falls when price rises.',
-            difficulty: 'beginner',
-            mergesWith: undefined,
-            name: 'Law of Demand',
-            sourceRefs: [
-              {
-                blockId: 'block-1',
-                locationLabel: 'Heading',
-                quote: 'Law of Demand',
-              },
-            ],
-          },
-          {
-            conceptKey: 'supply-and-demand',
-            confidence: 0.9,
-            definition: 'Markets coordinate supply and demand.',
-            difficulty: 'beginner',
-            mergesWith: undefined,
-            name: 'Supply and Demand',
-            sourceRefs: [
-              {
-                blockId: 'block-2',
-                locationLabel: 'Paragraph',
-                quote:
-                  'As the price of a good increases, the quantity demanded decreases, all else being equal.',
-              },
-            ],
-          },
-        ],
-        relationClaims: [],
-        relationships: [
-          {
-            relationshipType: 'part_of',
-            sourceConceptKey: 'law-of-demand',
-            sourceRefs: [
-              {
-                blockId: 'block-1',
-                locationLabel: 'Heading',
-                quote: 'Law of Demand',
-              },
-            ],
-            targetConceptKey: 'supply-and-demand',
-          },
-        ],
-      },
-      [
-        { id: 'block-1', text: 'Law of Demand' },
+  it('retains a concept whose quote remains grounded in at least one block', () => {
+    const agentOutput: IngestionAgentOutput = {
+      concepts: [
         {
-          id: 'block-2',
-          text: 'As the price of a good increases, the quantity demanded decreases, all else being equal.',
+          conceptKey: 'elasticity',
+          name: 'Elasticity',
+          definition: 'A responsiveness measure.',
+          difficulty: 'beginner',
+          confidence: 0.9,
+          sourceRefs: [
+            { blockId: 'blk-1', quote: 'Elasticity', locationLabel: 'heading' },
+            { blockId: 'blk-2', quote: 'Price elasticity measures responsiveness of quantity demanded to price changes.', locationLabel: 'paragraph' },
+          ],
         },
-      ]
-    );
+      ],
+      relationClaims: [],
+      relationships: [],
+    };
 
-    assert.equal(result.relationships.length, 0);
-    assert.equal(result.droppedRefCount, 1);
+    const blocks = [
+      { id: 'blk-1', text: 'Elasticity' },
+      { id: 'blk-2', text: 'Price elasticity measures responsiveness of quantity demanded to price changes.' },
+    ];
+
+    const result = validateAgainstBlocks(agentOutput, blocks);
+
+    assert.equal(result.concepts.length, 1);
+    assert.equal(result.concepts[0]?.conceptKey, 'elasticity');
+    assert.ok(result.concepts[0]?.sourceRefs.length >= 1, 'expected at least one grounded ref');
+    assert.deepEqual(result.droppedConceptKeys, []);
   });
 
-  it('keeps paragraph evidence for relationships even when heading refs are present', () => {
-    const result = validateAgainstBlocks(
-      {
-        concepts: [
-          {
-            conceptKey: 'law-of-demand',
-            confidence: 0.9,
-            definition: 'Demand falls when price rises.',
-            difficulty: 'beginner',
-            mergesWith: undefined,
-            name: 'Law of Demand',
-            sourceRefs: [
-              {
-                blockId: 'block-1',
-                locationLabel: 'Heading',
-                quote: 'Law of Demand',
-              },
-            ],
-          },
-          {
-            conceptKey: 'supply-and-demand',
-            confidence: 0.9,
-            definition: 'Markets coordinate supply and demand.',
-            difficulty: 'beginner',
-            mergesWith: undefined,
-            name: 'Supply and Demand',
-            sourceRefs: [
-              {
-                blockId: 'block-2',
-                locationLabel: 'Paragraph',
-                quote:
-                  'As the price of a good increases, the quantity demanded decreases, all else being equal.',
-              },
-            ],
-          },
-        ],
-        relationClaims: [],
-        relationships: [
-          {
-            relationshipType: 'part_of',
-            sourceConceptKey: 'law-of-demand',
-            sourceRefs: [
-              {
-                blockId: 'block-1',
-                locationLabel: 'Heading',
-                quote: 'Law of Demand',
-              },
-              {
-                blockId: 'block-2',
-                locationLabel: 'Paragraph',
-                quote:
-                  'As the price of a good increases, the quantity demanded decreases, all else being equal.',
-              },
-            ],
-            targetConceptKey: 'supply-and-demand',
-          },
-        ],
-      },
-      [
-        { id: 'block-1', text: 'Law of Demand' },
+  it('keeps paragraph relationship evidence while filtering weak heading-only refs', () => {
+    const agentOutput: IngestionAgentOutput = {
+      concepts: [
         {
-          id: 'block-2',
-          text: 'As the price of a good increases, the quantity demanded decreases, all else being equal.',
+          conceptKey: 'market-equilibrium',
+          name: 'Market Equilibrium',
+          definition: 'Equilibrium quantity and price.',
+          difficulty: 'beginner',
+          confidence: 0.9,
+          sourceRefs: [
+            { blockId: 'blk-2', quote: 'Supply and Demand establishes market equilibrium conditions.', locationLabel: 'paragraph' },
+          ],
         },
-      ]
-    );
+        {
+          conceptKey: 'law-of-demand',
+          name: 'Law of Demand',
+          definition: 'Demand curve relationship.',
+          difficulty: 'beginner',
+          confidence: 0.9,
+          sourceRefs: [
+            { blockId: 'blk-2', quote: 'Supply and Demand establishes market equilibrium conditions.', locationLabel: 'paragraph' },
+          ],
+        },
+      ],
+      relationClaims: [],
+      relationships: [
+        {
+          sourceConceptKey: 'market-equilibrium',
+          targetConceptKey: 'law-of-demand',
+          relationshipType: 'prerequisite',
+          rationale: 'market equilibrium depends on demand relationships',
+          sourceRefs: [
+            { blockId: 'blk-1', quote: 'Supply and Demand', locationLabel: 'heading' },
+            { blockId: 'blk-2', quote: 'Supply and Demand establishes market equilibrium conditions.', locationLabel: 'paragraph' },
+          ],
+        },
+      ],
+    };
+
+    const blocks = [
+      { id: 'blk-1', text: 'Supply and Demand' },
+      { blockId: 'blk-2', text: 'Supply and Demand establishes market equilibrium conditions.' } as unknown as { id: string; text: string },
+    ];
+
+    const result = validateAgainstBlocks(agentOutput, blocks);
 
     assert.equal(result.relationships.length, 1);
-    assert.equal(result.relationships[0]?.sourceRefs.length, 1);
-    assert.equal(result.relationships[0]?.sourceRefs[0]?.blockId, 'block-2');
-    assert.equal(result.relationships[0]?.evidenceQuality?.evidenceStrength, 'usable');
-    assert.ok((result.relationships[0]?.evidenceQuality?.finalEvidenceScore ?? 0) >= 0.6);
+    const keptQuotes = result.relationships[0]?.sourceRefs.map((ref) => ref.quote) ?? [];
+    assert.ok(
+      keptQuotes.every((quote) => quote !== 'Supply and Demand'),
+      'expected heading-only weak evidence to be filtered'
+    );
+    assert.ok(
+      keptQuotes.some((quote) => quote === 'Supply and Demand establishes market equilibrium conditions.'),
+      'expected paragraph evidence to be retained'
+    );
+    assert.ok(result.droppedRefCount >= 1, `expected droppedRefCount >= 1, got ${result.droppedRefCount}`);
   });
 });

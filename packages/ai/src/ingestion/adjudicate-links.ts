@@ -4,7 +4,7 @@ import {
   scoreLinkEvidence,
   type LinkCandidate,
   type ReviewedLink,
-} from './linking';
+} from '@grasp/domain';
 import { linkAdjudicatorAgent } from './link-adjudicator-agent';
 
 import { z } from 'zod';

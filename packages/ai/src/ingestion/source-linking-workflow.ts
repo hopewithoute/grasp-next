@@ -1,31 +1,31 @@
 import { createStep, createWorkflow } from '@mastra/core/workflows';
 import { z } from 'zod';
-import { ingestionAgentOutputDto } from '@grasp/domain';
+import type { IngestionAgentOutput } from '@grasp/domain';
 import {
   applyAcceptedLinks,
   applyLinkPolicy,
   buildLinkTrace,
-  linkCandidateDto,
-  linkPolicyResultDto,
-  linkTraceDto,
-  reviewedLinkDto,
-} from './linking';
+  type LinkCandidate,
+  type LinkPolicyResult,
+  type LinkTrace,
+  type ReviewedLink,
+} from '@grasp/domain';
 import { adjudicateLinks } from './adjudicate-links';
 
 const linkingWorkflowInputDto = z.object({
-  candidates: z.array(linkCandidateDto),
-  extraction: ingestionAgentOutputDto as unknown as z.ZodTypeAny,
+  candidates: z.custom<LinkCandidate[]>(),
+  extraction: z.custom<IngestionAgentOutput>(),
   useModel: z.boolean().default(true),
 });
 
 const linkingWorkflowOutputDto = z.object({
-  acceptedLinks: z.array(reviewedLinkDto),
-  candidates: z.array(linkCandidateDto),
-  patchedExtraction: ingestionAgentOutputDto as unknown as z.ZodTypeAny,
-  policyResults: z.array(linkPolicyResultDto),
-  rejectedLinks: z.array(reviewedLinkDto),
-  reviewedLinks: z.array(reviewedLinkDto),
-  trace: linkTraceDto,
+  acceptedLinks: z.custom<ReviewedLink[]>(),
+  candidates: z.custom<LinkCandidate[]>(),
+  patchedExtraction: z.custom<IngestionAgentOutput>(),
+  policyResults: z.custom<LinkPolicyResult[]>(),
+  rejectedLinks: z.custom<ReviewedLink[]>(),
+  reviewedLinks: z.custom<ReviewedLink[]>(),
+  trace: z.custom<LinkTrace>(),
 });
 
 const prepareLinkBatchStep = createStep({
@@ -40,7 +40,7 @@ const prepareLinkBatchStep = createStep({
 });
 
 const linkReviewOutputDto = linkingWorkflowInputDto.extend({
-  reviewedLinks: z.array(reviewedLinkDto),
+  reviewedLinks: z.custom<ReviewedLink[]>(),
 });
 
 const adjudicateLinksStep = createStep({
@@ -57,14 +57,14 @@ const adjudicateLinksStep = createStep({
 });
 
 const linkPolicyOutputDto = linkingWorkflowInputDto.extend({
-  policyResults: z.array(linkPolicyResultDto),
-  reviewedLinks: z.array(reviewedLinkDto),
+  policyResults: z.custom<LinkPolicyResult[]>(),
+  reviewedLinks: z.custom<ReviewedLink[]>(),
 });
 
 const linkAppliedOutputDto = linkPolicyOutputDto.extend({
-  acceptedLinks: z.array(reviewedLinkDto),
-  patchedExtraction: ingestionAgentOutputDto as unknown as z.ZodTypeAny,
-  rejectedLinks: z.array(reviewedLinkDto),
+  acceptedLinks: z.custom<ReviewedLink[]>(),
+  patchedExtraction: z.custom<IngestionAgentOutput>(),
+  rejectedLinks: z.custom<ReviewedLink[]>(),
 });
 
 const applyLinkPolicyStep = createStep({
