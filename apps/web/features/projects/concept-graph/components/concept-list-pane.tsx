@@ -1,4 +1,4 @@
-import { useId, useRef, useEffect, useState, useCallback, memo } from 'react';
+import { useId, useRef, useEffect, useState, useCallback, memo, useMemo } from 'react';
 import { cva } from 'class-variance-authority';
 import { ListFilter, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -123,6 +123,16 @@ export const ConceptListPane = memo(function ConceptListPane({
 
   const filteredConcepts = inventoryConcepts;
 
+  const conceptCountMeta = useMemo(
+    () => (
+      <span className="font-mono tabular-nums text-muted-foreground">
+        {String(filteredConcepts.length).padStart(2, '0')} /{' '}
+        {String(concepts.length).padStart(2, '0')}
+      </span>
+    ),
+    [filteredConcepts.length, concepts.length]
+  );
+
   if (collapsed) {
     return (
       <CollapsedPaneRail
@@ -143,12 +153,7 @@ export const ConceptListPane = memo(function ConceptListPane({
     >
       <PaneHeader
         eyebrow="Concepts"
-        meta={
-          <span className="font-mono tabular-nums text-muted-foreground">
-            {String(filteredConcepts.length).padStart(2, '0')} /{' '}
-            {String(concepts.length).padStart(2, '0')}
-          </span>
-        }
+        meta={conceptCountMeta}
         onCollapseToggle={onCollapseToggle}
         side="left"
         title="Inventory"
@@ -171,7 +176,7 @@ export const ConceptListPane = memo(function ConceptListPane({
           />
         </div>
 
-        <div role="group" aria-label="Difficulty filter" className="flex flex-wrap gap-1.5">
+        <address aria-label="Difficulty filter" className="flex flex-wrap gap-1.5">
           {DIFFICULTY_FILTER_ORDER.map((value) => (
             <button
               aria-label="Button"
@@ -194,7 +199,7 @@ export const ConceptListPane = memo(function ConceptListPane({
               {DIFFICULTY_FILTER_LABEL[value]}
             </button>
           ))}
-        </div>
+        </address>
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto">
