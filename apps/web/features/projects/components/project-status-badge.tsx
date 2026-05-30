@@ -2,14 +2,15 @@ import { PROJECT_STATUS, type ProjectStatus } from '@grasp/domain';
 import { Badge } from '@/components/ui/badge';
 import { statusBadgeVariants } from '../project-style-variants';
 
+const labelByStatus: Record<ProjectStatus, string> = {
+  [PROJECT_STATUS.DRAFT]: 'Draft',
+  [PROJECT_STATUS.FAILED]: 'Failed',
+  [PROJECT_STATUS.PROCESSED]: 'Processed',
+  [PROJECT_STATUS.PROCESSING]: 'Processing',
+  [PROJECT_STATUS.REVIEWING]: 'Reviewing',
+};
+
 export function ProjectStatusBadge({ status }: { status: ProjectStatus }) {
-  const labelByStatus = {
-    [PROJECT_STATUS.DRAFT]: 'Draft',
-    [PROJECT_STATUS.FAILED]: 'Failed',
-    [PROJECT_STATUS.PROCESSED]: 'Processed',
-    [PROJECT_STATUS.PROCESSING]: 'Processing',
-    [PROJECT_STATUS.REVIEWING]: 'Reviewing',
-  };
 
   return (
     <Badge

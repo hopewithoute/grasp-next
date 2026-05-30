@@ -7,7 +7,7 @@ import {
 } from '@grasp/domain';
 import { getActor } from '@/server/actor';
 import { createProjectDeps } from '@/server/project-deps';
-import { ConceptGraphWorkspace } from '../concept-graph';
+import { ConceptGraphWorkspace } from '../concept-graph/components/concept-graph-workspace';
 import { ProjectSourcesPanel } from './source-material-form';
 import { buildStageHref, resolveStage } from '../stages';
 import { ProjectHeader } from './project-header';

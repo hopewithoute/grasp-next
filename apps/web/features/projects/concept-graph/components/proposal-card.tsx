@@ -58,7 +58,7 @@ export const ProposalCard = memo(function ProposalCard({
 
       <div className="flex flex-col gap-px bg-border/20">
         {proposal.actions.slice(0, expanded ? undefined : 3).map((action, idx) => (
-          <ActionRow key={idx} action={action} />
+          <ActionRow key={`${action.type}-${idx}`} action={action} />
         ))}
         {proposal.actions.length > 3 && !expanded && (
           <button
@@ -66,7 +66,7 @@ export const ProposalCard = memo(function ProposalCard({
             onClick={() => setExpanded(true)}
             className="bg-background/30 px-4 py-2 text-xs font-medium text-muted-foreground hover:bg-muted/40 transition-colors"
           >
-            Show {proposal.actions.length - 3} more changes...
+            Show {proposal.actions.length - 3} more changes…
           </button>
         )}
       </div>
