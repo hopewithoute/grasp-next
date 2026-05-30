@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Script from 'next/script';
 import { Geist } from 'next/font/google';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { ThemeProvider } from '@/components/theme-provider';
@@ -26,8 +27,9 @@ export default function RootLayout({
     >
       <head>
         {process.env.NODE_ENV === 'development' && (
-          <script
+          <Script
             id="react-performance-measure-guard"
+            strategy="afterInteractive"
             suppressHydrationWarning
             dangerouslySetInnerHTML={{
               __html: `
