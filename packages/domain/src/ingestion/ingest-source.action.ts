@@ -6,68 +6,8 @@ import type { IngestionAiPort, EvaluateLinkCandidatesPortOutput } from './ingest
 import type { IngestionConceptContext, IngestionConceptSearchResult } from '../knowledgebase';
 import type { IngestionAgentOutput } from './ingestion-agent.dto';
 
-export type IngestionStreamEvent =
-  | { type: 'ingestion_started'; sourceId: string; sourceTitle: string }
-  | { type: 'chunk_processing'; chunkIndex: number; totalChunks: number }
-  | { type: 'agent_thinking'; chunkIndex: number; thinking: string }
-  | {
-      type: 'retrieval_activity';
-      hitCount: number;
-      query: string;
-      retrievalType: 'concept_search' | 'concept_neighbors';
-    }
-  | { type: 'concept_extracted'; conceptKey: string; name: string; isNew: boolean }
-  | {
-      type: 'link_applied';
-      candidateId: string;
-      relationshipType: string;
-      sourceConceptName: string;
-      targetConceptName: string;
-    }
-  | {
-      type: 'link_candidate_generated';
-      candidateId: string;
-      relationshipType: string;
-      resolutionType: 'exact' | 'semantic';
-      sourceConceptName: string;
-      targetConceptName: string;
-    }
-  | {
-      type: 'link_candidate_reviewed';
-      candidateId: string;
-      confidence: number;
-      decision: 'accept' | 'reject';
-      evidenceStrength: 'strong' | 'usable' | 'weak' | 'rejected';
-      finalEvidenceScore: number;
-    }
-  | {
-      type: 'link_policy_applied';
-      candidateId: string;
-      decision: 'accept' | 'reject';
-      reason: string;
-    }
-  | {
-      type: 'link_rejected';
-      candidateId: string;
-      reason: string;
-      sourceConceptName: string;
-      targetConceptName: string;
-    }
-  | {
-      type: 'relation_claim_extracted';
-      objectText: string;
-      predicate: string;
-      subjectText: string;
-    }
-  | { type: 'relationship_extracted'; source: string; target: string }
-  | {
-      type: 'evidence_dropped';
-      chunkIndex: number;
-      droppedConceptKeys: string[];
-      droppedRefCount: number;
-    }
-  | { type: 'ingestion_complete'; conceptCount: number; relationshipCount: number }
-  | { type: 'ingestion_failed'; reason: string };
+import type { IngestionStreamEvent, IngestionProgressPort } from './ingestion-events';
+export type { IngestionStreamEvent, IngestionProgressPort };
 
 export interface IngestionRunRepositoryPort {
   create(params: { projectId: string; sourceId: string }): Promise<{ id: string }>;

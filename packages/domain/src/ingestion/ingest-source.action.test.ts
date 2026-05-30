@@ -5,9 +5,9 @@ import type { IngestionAiPort } from './ingestion-ai.port';
 describe('ingestSourceAction', () => {
   it('successfully extracts and links concepts from a markdown document', async () => {
     // 1. Setup mocks
-    const createRun = vi.fn((..._args: unknown[]) => Promise.resolve({ id: 'run-123' }));
-    const markRunCompleted = vi.fn((..._args: unknown[]) => Promise.resolve(undefined));
-    const markRunFailed = vi.fn((..._args: unknown[]) => Promise.resolve(undefined));
+    const createRun = vi.fn(() => Promise.resolve({ id: 'run-123' }));
+    const markRunCompleted = vi.fn(() => Promise.resolve(undefined));
+    const markRunFailed = vi.fn(() => Promise.resolve(undefined));
 
     const mockIngestionRunRepo = {
       create: createRun,
@@ -98,7 +98,7 @@ describe('ingestSourceAction', () => {
 
   it('safely handles an empty document without invoking AI', async () => {
     // 1. Setup mocks
-    const markRunCompleted = vi.fn((..._args: unknown[]) => Promise.resolve(undefined));
+    const markRunCompleted = vi.fn(() => Promise.resolve(undefined));
     
     const mockIngestionRunRepo = {
       create: vi.fn(async () => ({ id: 'run-123' })),
@@ -147,8 +147,8 @@ describe('ingestSourceAction', () => {
 
   it('marks the run as failed and re-throws if AI extraction throws', async () => {
     // 1. Setup mocks
-    const markRunFailed = vi.fn((..._args: unknown[]) => Promise.resolve(undefined));
-    const markRunCompleted = vi.fn((..._args: unknown[]) => Promise.resolve(undefined));
+    const markRunFailed = vi.fn(() => Promise.resolve(undefined));
+    const markRunCompleted = vi.fn(() => Promise.resolve(undefined));
 
     const mockIngestionRunRepo = {
       create: vi.fn(async () => ({ id: 'run-fail' })),

@@ -641,7 +641,7 @@ async function scoreCase(
           });
           const score = (result as { score?: unknown }).score;
           if (typeof score === 'number') dimensions['faithfulness'] = score;
-        } catch {
+        } catch (error) { console.error(error);
         }
       }
 
@@ -656,7 +656,7 @@ async function scoreCase(
           const hallucRaw = (result as { score?: unknown }).score;
           if (typeof hallucRaw === 'number') dimensions['hallucination'] = 1 - hallucRaw;
         }
-      } catch {
+      } catch (error) { console.error(error);
       }
     }
   }
@@ -840,7 +840,7 @@ async function main() {
     ], {
       metrics: {
         totalConcepts: crossDedupDraft.concepts.length,
-        mergedConcepts: crossDedupDraft.concepts.filter((c: any) => c.mergesWith).length,
+        mergedConcepts: crossDedupDraft.concepts.filter((c: Record<string, unknown>) => c.mergesWith).length,
       },
     })
   );

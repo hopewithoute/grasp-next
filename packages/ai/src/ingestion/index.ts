@@ -17,4 +17,4 @@ export { buildIngestionPrompt } from './ingestion-agent';
 export { linkAdjudicatorAgent } from './link-adjudicator-agent';
 export { adjudicateLinks } from './adjudicate-links';
 export { sourceLinkingWorkflow } from './source-linking-workflow';
-export { IngestionAiAdapter } from './ingestion-ai.adapter';
+export { IngestionAiAdapter, type IngestionRetrievalPort } from './ingestion-ai.adapter';

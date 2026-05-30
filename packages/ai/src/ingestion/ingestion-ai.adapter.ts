@@ -10,12 +10,27 @@ import type {
   EvaluateLinkCandidatesPortOutput,
   IngestionConcept,
   IngestionConceptContext,
-  KnowledgebaseRepositoryPort,
+  IngestionConceptSearchResult,
   LinkTrace,
 } from '@grasp/domain';
 
+/**
+ * Narrow port for the ingestion AI adapter — only the retrieval methods it actually uses.
+ * Callers can pass a full KnowledgebaseRepository (which satisfies this interface)
+ * or a focused test double.
+ */
+export type IngestionRetrievalPort = {
+  getConceptContext(input: { conceptKey: string; projectId: string }): Promise<IngestionConceptContext | null>;
+  searchConceptsForIngestion(input: {
+    embedding?: number[];
+    limit?: number;
+    projectId: string;
+    query: string;
+  }): Promise<IngestionConceptSearchResult[]>;
+};
+
 export class IngestionAiAdapter implements IngestionAiPort {
-  constructor(private readonly knowledgebaseRepository: KnowledgebaseRepositoryPort) {}
+  constructor(private readonly retrievalPort: IngestionRetrievalPort) {}
 
   async extractConceptsFromChunk(input: ExtractChunkPortInput) {
     if (!canUseAgent()) {
@@ -26,7 +41,7 @@ export class IngestionAiAdapter implements IngestionAiPort {
 
     const retrievalTools = createIngestionRetrievalTools({
       getConceptContext: (conceptKey) =>
-        this.knowledgebaseRepository
+        this.retrievalPort
           .getConceptContext({ conceptKey, projectId: input.projectId })
           .then((context: IngestionConceptContext | null) => {
             if (input.onRetrieval) {
@@ -36,7 +51,7 @@ export class IngestionAiAdapter implements IngestionAiPort {
           }),
       searchWikiConcepts: async (query, limit) => {
         const embedding = await this.embedQuery(query);
-        const concepts = await this.knowledgebaseRepository.searchConceptsForIngestion({
+        const concepts = await this.retrievalPort.searchConceptsForIngestion({
           embedding,
           limit,
           projectId: input.projectId,
@@ -160,7 +175,7 @@ export class IngestionAiAdapter implements IngestionAiPort {
     if (!query) return [];
 
     const embedding = await this.embedQuery(query);
-    const concepts = await this.knowledgebaseRepository.searchConceptsForIngestion({
+    const concepts = await this.retrievalPort.searchConceptsForIngestion({
       embedding,
       limit: 3,
       projectId: input.projectId,
@@ -173,7 +188,7 @@ export class IngestionAiAdapter implements IngestionAiPort {
 
     const rawContexts = await Promise.all(
       concepts.slice(0, 2).map(async (concept: { conceptKey: string; name: string; definition: string }) => {
-        const context = await this.knowledgebaseRepository.getConceptContext({
+        const context = await this.retrievalPort.getConceptContext({
           conceptKey: concept.conceptKey,
           projectId: input.projectId,
         });
