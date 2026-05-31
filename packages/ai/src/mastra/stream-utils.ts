@@ -40,40 +40,33 @@ export async function robustStream(
     }
     
     const newStream = new ReadableStream({
-      async start(controller) {
+      start(controller) {
         for (const chunk of firstChunks) {
           controller.enqueue(chunk);
         }
+        if (isEmpty) {
+          controller.close();
+        }
+      },
+      async pull(controller) {
         if (!isEmpty) {
           try {
-            while (true) {
-              const { done, value } = await reader.read();
-              if (done) break;
+            const { done, value } = await reader.read();
+            if (done) {
+              controller.close();
+            } else {
               controller.enqueue(value);
             }
           } catch (err) {
             controller.error(err);
           }
         }
-        controller.close();
+      },
+      cancel(reason) {
+        reader.cancel(reason);
       }
     });
-    
-    // Support async iteration for textStream
-    Object.assign(newStream, {
-      [Symbol.asyncIterator]: async function* () {
-        for (const chunk of firstChunks) {
-          yield chunk;
-        }
-        if (!isEmpty) {
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            yield value;
-          }
-        }
-      }
-    });
+
     
     return { isEmpty, stream: newStream };
   };
@@ -99,13 +92,10 @@ export async function robustStream(
       continue;
     }
 
-    const [fullRes, textRes] = await Promise.all([
-      peekStream(result.fullStream),
-      peekStream(result.textStream)
-    ]);
+    const fullRes = await peekStream(result.fullStream);
     
     // If no text was produced and no tools were called, it's a blank output failure.
-    if (textRes.isEmpty && fullRes.isEmpty && attempt < maxRetries) {
+    if (fullRes.isEmpty && attempt < maxRetries) {
       console.warn(`[robustStream] Attempt ${attempt} returned blank response (no text, no tools). Retrying...`);
       continue;
     }
@@ -113,7 +103,6 @@ export async function robustStream(
     return {
       ...result,
       fullStream: fullRes.stream || result.fullStream,
-      textStream: textRes.stream || result.textStream,
     } as StreamResult;
   }
   
