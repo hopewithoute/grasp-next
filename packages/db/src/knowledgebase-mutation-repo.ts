@@ -97,6 +97,33 @@ export function createKnowledgebaseMutationMethods(db: DbClient): KnowledgebaseM
         );
     },
 
+    async cleanupOrphans(projectId: string) {
+      const [knowledgebase] = await db
+        .select()
+        .from(knowledgebases)
+        .where(eq(knowledgebases.projectId, projectId))
+        .limit(1);
+
+      if (!knowledgebase) return;
+
+      const conceptsInKb = await db
+        .select({ id: wikiConcepts.id })
+        .from(wikiConcepts)
+        .where(eq(wikiConcepts.knowledgebaseId, knowledgebase.id));
+
+      for (const concept of conceptsInKb) {
+        const [hasRefs] = await db
+          .select({ id: wikiConceptSourceRefs.id })
+          .from(wikiConceptSourceRefs)
+          .where(eq(wikiConceptSourceRefs.conceptId, concept.id))
+          .limit(1);
+
+        if (!hasRefs) {
+          await db.delete(wikiConcepts).where(eq(wikiConcepts.id, concept.id));
+        }
+      }
+    },
+
     async addRelationship(input) {
       const [knowledgebase] = await db
         .select()
