@@ -14,6 +14,11 @@ export const knowledgebaseRelationshipTypeDto = z.enum([
   'part_of',
   'related_to',
   'explains',
+  'connects_to',
+  'builds_on',
+  'influences',
+  'requires',
+  'depends_on',
 ]);
 
 export const knowledgebaseConceptDto = z.object({

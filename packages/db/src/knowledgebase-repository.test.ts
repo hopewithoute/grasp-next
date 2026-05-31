@@ -64,7 +64,7 @@ describeIfDatabase('createKnowledgebaseRepository', () => {
       });
       expect(source).toBeTruthy();
 
-      const content = knowledgebaseArtifactContent(source.id);
+      const content = knowledgebaseArtifactContent(source!.id);
 
       const version = await knowledgebaseRepository.replaceVersionFromContent({
         content,
@@ -91,7 +91,7 @@ describeIfDatabase('createKnowledgebaseRepository', () => {
       expect(knowledgebase?.currentVersionId).toBe(version.id);
       expect(storedVersion?.knowledgebaseId).toBe(knowledgebase?.id);
       expect(passages.length).toBe(1);
-      expect(passages[0]?.blockId).toBe(`${source.id}:block-0001`);
+      expect(passages[0]?.blockId).toBe(`${source!.id}:block-0001`);
       expect(concepts.length).toBe(1);
       expect(concepts[0]?.conceptKey).toBe('market');
 
@@ -118,7 +118,7 @@ describeIfDatabase('createKnowledgebaseRepository', () => {
 
       expect(context?.concept.conceptKey).toBe('market');
       expect(context?.concept.evidenceCount).toBe(1);
-      expect(context?.evidence[0]?.blockId).toBe(`${source.id}:block-0001`);
+      expect(context?.evidence[0]?.blockId).toBe(`${source!.id}:block-0001`);
       expect(context?.neighbors.length).toBe(0);
 
       await db
@@ -142,18 +142,18 @@ describeIfDatabase('createKnowledgebaseRepository', () => {
             kind: 'paragraph',
             location: { label: 'Evidence only' },
             order: 1,
-            sourceId: source.id,
+            sourceId: source!.id,
             text: 'Inflation is a sustained rise in the general price level.',
           },
         ],
         projectId: project.id,
-        sourceId: source.id,
+        sourceId: source!.id,
       });
 
       const [evidenceOnlyPassage] = await db
         .select({ embedding: sourcePassages.embedding })
         .from(sourcePassages)
-        .where(eq(sourcePassages.blockId, `${source.id}:evidence-only`));
+        .where(eq(sourcePassages.blockId, `${source!.id}:evidence-only`));
 
       expect(evidenceOnlyPassage?.embedding).toBe(null);
     } finally {
@@ -183,12 +183,12 @@ describeIfDatabase('createKnowledgebaseRepository', () => {
             kind: 'paragraph',
             location: { label: 'Elasticity source / Block 1' },
             order: 0,
-            sourceId: source.id,
+            sourceId: source!.id,
             text: 'Elasticity builds on supply and demand.',
           },
         ],
         projectId: project.id,
-        sourceId: source.id,
+        sourceId: source!.id,
       });
 
       await knowledgebaseRepository.mergeIngestionOutput({
@@ -253,7 +253,7 @@ describeIfDatabase('createKnowledgebaseRepository', () => {
           ],
         },
         projectId: project.id,
-        sourceId: source.id,
+        sourceId: source!.id,
       });
 
       const graph = await knowledgebaseRepository.findCurrentGraphByProject(project.id);
@@ -304,12 +304,12 @@ describeIfDatabase('createKnowledgebaseRepository', () => {
             kind: 'paragraph',
             location: { label: 'Source / Block 1' },
             order: 0,
-            sourceId: source.id,
+            sourceId: source!.id,
             text: 'Test content here.',
           },
         ],
         projectId: project.id,
-        sourceId: source.id,
+        sourceId: source!.id,
       });
 
       await knowledgebaseRepository.mergeIngestionOutput({
@@ -338,7 +338,7 @@ describeIfDatabase('createKnowledgebaseRepository', () => {
           relationships: [],
         },
         projectId: project.id,
-        sourceId: source.id,
+        sourceId: source!.id,
       });
 
       const result = await knowledgebaseRepository.searchConceptsWithPagination({
@@ -381,7 +381,7 @@ describeIfDatabase('createKnowledgebaseRepository', () => {
       expect(source).toBeTruthy();
 
       await knowledgebaseRepository.replaceVersionFromContent({
-        content: knowledgebaseArtifactContent(source.id),
+        content: knowledgebaseArtifactContent(source!.id),
         projectId: project.id,
       });
 
@@ -421,7 +421,7 @@ describeIfDatabase('createKnowledgebaseRepository', () => {
       expect(source).toBeTruthy();
 
       await knowledgebaseRepository.replaceVersionFromContent({
-        content: knowledgebaseArtifactContent(source.id),
+        content: knowledgebaseArtifactContent(source!.id),
         projectId: project.id,
       });
 

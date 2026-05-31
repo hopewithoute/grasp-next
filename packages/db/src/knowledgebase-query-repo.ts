@@ -1,4 +1,4 @@
-import { and, asc, eq, exists, ilike, or, sql } from 'drizzle-orm';
+import { and, asc, eq, exists, ilike, isNotNull, or, sql } from 'drizzle-orm';
 import type {
   KnowledgebaseQueryRepository,
 } from '@grasp/domain';
@@ -172,7 +172,7 @@ export function createKnowledgebaseQueryMethods(db: DbClient): KnowledgebaseQuer
               ilike(wikiConcepts.conceptKey, pattern),
               ilike(wikiConcepts.name, pattern),
               ilike(wikiConcepts.definition, pattern),
-              input.embedding ? sql`${wikiConcepts.embedding} is not null` : sql`false`
+              input.embedding ? isNotNull(wikiConcepts.embedding) : sql`false`
             )
           )
         )
@@ -186,6 +186,11 @@ export function createKnowledgebaseQueryMethods(db: DbClient): KnowledgebaseQuer
         )
         .orderBy(input.embedding ? distance : asc(wikiConcepts.createdAt))
         .limit(input.limit ?? 10);
+
+      console.log(`[searchConceptsForIngestion] projectId: ${input.projectId}, query: ${input.query}, hasEmbedding: ${!!input.embedding}, results: ${rows.length}`);
+      if (rows.length === 0) {
+        console.log(`[searchConceptsForIngestion] No results found! Knowledgebase ID: ${knowledgebase.id}`);
+      }
 
       const evidenceByConceptId = await getConceptEvidence(
         db,
