@@ -102,5 +102,9 @@ export type ConceptNodeData = {
   isGhostAdd?: boolean;
   isGhostUpdate?: boolean;
   isGhostDelete?: boolean;
+  dimmed?: boolean;
+  proposalId?: string;
   onViewDetails?: () => void;
+  onAcceptProposal?: (proposalId: string) => void;
+  onRejectProposal?: (proposalId: string) => void;
 };
