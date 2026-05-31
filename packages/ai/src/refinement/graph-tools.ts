@@ -179,12 +179,35 @@ export function createSearchWikiConceptsTool(deps: {
         })
       ),
     }),
-    execute: async ({ query, limit }) => {
+    execute: async ({ query, limit }, context) => {
+      await context?.writer?.custom({
+        type: 'data-agent-activity',
+        data: {
+          type: 'agent_activity',
+          label: 'Checking graph',
+          detail: 'Looking for matching concepts in this project.',
+          status: 'started',
+        },
+        transient: true,
+      });
+
       const concepts = await deps.knowledgebaseRepository.searchConceptsForIngestion({
         projectId: deps.projectId,
         query,
         limit,
       });
+
+      await context?.writer?.custom({
+        type: 'data-agent-activity',
+        data: {
+          type: 'agent_activity',
+          label: 'Checked graph',
+          detail: 'Found the closest existing concepts.',
+          status: 'completed',
+        },
+        transient: true,
+      });
+
       return { concepts };
     },
   });
@@ -196,7 +219,34 @@ export function createProposeGraphChangesTool() {
     description:
       'Propose structural changes to the graph. You MUST use this tool to execute any CREATE, UPDATE, or DELETE intent from the user. You are fully authorized to delete data this way. The changes only take effect after user approval.',
     inputSchema: GraphProposalSchema,
-    execute: async (input) => {
+    execute: async (input, context) => {
+      await context?.writer?.custom({
+        type: 'data-agent-activity',
+        data: {
+          type: 'agent_activity',
+          label: 'Preparing proposal',
+          detail: 'Drafting graph changes for your review.',
+          status: 'started',
+        },
+        transient: true,
+      });
+
+      await context?.writer?.custom({
+        type: 'data-agent-proposal',
+        data: input,
+      });
+
+      await context?.writer?.custom({
+        type: 'data-agent-activity',
+        data: {
+          type: 'agent_activity',
+          label: 'Proposal ready',
+          detail: 'Proposal submitted for approval.',
+          status: 'completed',
+        },
+        transient: true,
+      });
+
       // Return the proposal directly. We do not save to DB here. The frontend intercepts this.
       return { status: 'proposal_submitted', proposal: input };
     },
