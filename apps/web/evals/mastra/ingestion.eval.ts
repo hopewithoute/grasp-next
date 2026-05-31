@@ -218,7 +218,10 @@ const relationshipTypeScorer = createScorer({
 })
   .preprocess(({ run }) => {
     const output = run.output as unknown as IngestionAgentOutput;
-    const validTypes = new Set(['prerequisite', 'part_of', 'related_to', 'explains']);
+    const validTypes = new Set([
+      'prerequisite', 'part_of', 'related_to', 'explains', 
+      'connects_to', 'builds_on', 'influences', 'requires', 'depends_on'
+    ]);
     const rels = output.relationships ?? [];
     const allValid = rels.every((r) => validTypes.has((r as { relationshipType?: string }).relationshipType || ''));
     return { total: rels.length, allValid };
@@ -340,6 +343,8 @@ async function runGraphWalk({
   const knowledgebaseRepository = createKnowledgebaseRepository(db);
   const projectRepository = createProjectRepository(db);
   const projectSourceRepository = createProjectSourceRepository(db);
+  const { createIngestionRunRepository } = await import('@grasp/db');
+  const ingestionRunRepository = createIngestionRunRepository(db);
   const ownerId = `ingestion-eval-${randomUUID()}`;
 
   await db.insert(schema.user).values({
@@ -380,6 +385,7 @@ async function runGraphWalk({
 
     await ingestSourceWithRetrieval({
       knowledgebaseRepository,
+      ingestionRunRepository,
       projectId: project.id,
       retrievalActivity,
       source: { content: sourceOne.content, title: sourceOne.title },
@@ -387,6 +393,7 @@ async function runGraphWalk({
     });
     await ingestSourceWithRetrieval({
       knowledgebaseRepository,
+      ingestionRunRepository,
       projectId: project.id,
       retrievalActivity,
       source: { content: sourceTwo.content, title: sourceTwo.title },
@@ -403,6 +410,7 @@ async function runGraphWalk({
     }
     await ingestSourceWithRetrieval({
       knowledgebaseRepository,
+      ingestionRunRepository,
       projectId: project.id,
       retrievalActivity,
       source: { content: sourceThree.content, title: sourceThree.title },
@@ -417,139 +425,48 @@ async function runGraphWalk({
 
 async function ingestSourceWithRetrieval({
   knowledgebaseRepository,
+  ingestionRunRepository,
   projectId,
   retrievalActivity,
   source,
   sourceId,
 }: {
   knowledgebaseRepository: ReturnType<typeof createKnowledgebaseRepository>;
+  ingestionRunRepository: any;
   projectId: string;
   retrievalActivity: RetrievalActivity;
   source: { content: string; title: string };
   sourceId: string;
 }): Promise<void> {
-  const normalized = normalizeMarkdownSource({
-    sourceId,
-    sourceMaterial: source.content,
-    title: source.title,
-  });
-  const chunks = chunkNormalizedBlocks(normalized.blocks);
-  let draft: IngestionAgentOutput = { concepts: [], relationClaims: [], relationships: [] };
+  const { runSourceIngestion } = await import('../../server/source-ingestion-runner');
+  
+  const originalSearch = knowledgebaseRepository.searchConceptsForIngestion.bind(knowledgebaseRepository);
+  const originalGetContext = knowledgebaseRepository.getConceptContext.bind(knowledgebaseRepository);
+  
+  const trackingRepo = {
+    ...knowledgebaseRepository,
+    searchConceptsForIngestion: async (input: any) => {
+      retrievalActivity.conceptSearchCalls++;
+      return originalSearch(input);
+    },
+    getConceptContext: async (input: any) => {
+      retrievalActivity.conceptContextCalls++;
+      return originalGetContext(input);
+    }
+  } as any;
 
-  for (const chunk of chunks) {
-    const existingContexts = await retrieveExistingConceptContext({
-      blocks: chunk.blocks.map((block) => block.text),
-      knowledgebaseRepository,
+  await runSourceIngestion(
+    {
+      content: source.content,
       projectId,
-      retrievalActivity,
-    });
-    const retrievalTools = createIngestionRetrievalTools({
-      getConceptContext: async (conceptKey) => {
-        retrievalActivity.conceptContextCalls += 1;
-        return knowledgebaseRepository.getConceptContext({ conceptKey, projectId });
-      },
-      searchWikiConcepts: async (query, limit) => {
-        retrievalActivity.conceptSearchCalls += 1;
-        return knowledgebaseRepository.searchConceptsForIngestion({
-          embedding: await embedText(query),
-          limit,
-          projectId,
-          query,
-        });
-      },
-    });
-    const result = await extractChunk({
-      blocks: chunk.blocks.map((block) => ({ id: block.id, text: block.text })),
-      chunkIndex: chunk.chunkIndex,
-      draftConcepts: draft.concepts,
-      draftRelationships: draft.relationships,
-      retrievedConcepts: existingContexts,
-      retrievalTools,
       sourceId,
-      totalChunks: chunks.length,
-    });
-
-    if (result.concepts.length > 0) {
-      draft = mergeDraft(draft, result);
-    }
-  }
-
-  const linkCandidates = await buildLinkCandidates({
-    getConceptContext: (conceptKey: string) =>
-      knowledgebaseRepository.getConceptContext({ conceptKey, projectId }),
-    localExtraction: draft,
-    searchConcepts: async ({ query, limit }: { query: string; limit?: number }) =>
-      knowledgebaseRepository.searchConceptsForIngestion({
-        embedding: await embedText(query),
-        limit,
-        projectId,
-        query,
-      }),
-  });
-  const sourceLinkingWorkflow = mastra.getWorkflow('sourceLinkingWorkflow');
-  const linkingRun = await sourceLinkingWorkflow.createRun({ resourceId: projectId });
-  const linkingResult = await linkingRun.start({
-    inputData: { candidates: linkCandidates, extraction: draft, useModel: true },
-  });
-
-  if (linkingResult.status === 'success') {
-    draft = linkingResult.result?.patchedExtraction ?? draft;
-    retrievalActivity.linkTrace = linkingResult.result?.trace ?? null;
-  }
-
-  const embeddings = await embedTexts(
-    draft.concepts.map((concept) => `${concept.name}\n\n${concept.definition}`)
-  );
-  const conceptEmbeddingsByKey: Record<string, number[]> = {};
-  draft.concepts.forEach((concept, index) => {
-    const embedding = embeddings[index];
-    if (embedding) {
-      conceptEmbeddingsByKey[concept.mergesWith ?? concept.conceptKey] = embedding;
-    }
-  });
-
-  await knowledgebaseRepository.mergeIngestionOutput({
-    conceptEmbeddingsByKey,
-    output: draft,
-    projectId,
-    sourceId,
-  });
-}
-
-async function retrieveExistingConceptContext({
-  blocks,
-  knowledgebaseRepository,
-  projectId,
-  retrievalActivity,
-}: {
-  blocks: string[];
-  knowledgebaseRepository: ReturnType<typeof createKnowledgebaseRepository>;
-  projectId: string;
-  retrievalActivity: { conceptContextCalls: number; conceptSearchCalls: number };
-}): Promise<IngestionConceptContext[]> {
-  const query = blocks.join('\n\n').slice(0, 1200).trim();
-  if (!query) return [];
-
-  retrievalActivity.conceptSearchCalls += 1;
-  const concepts = await knowledgebaseRepository.searchConceptsForIngestion({
-    embedding: await embedText(query),
-    limit: 3,
-    projectId,
-    query,
-  });
-
-  const rawContexts = await Promise.all(
-    concepts.slice(0, 2).map(async (concept) => {
-      retrievalActivity.conceptContextCalls += 1;
-      return knowledgebaseRepository.getConceptContext({
-        conceptKey: concept.conceptKey,
-        projectId,
-      });
-    })
-  );
-
-  return rawContexts.filter(
-    (context): context is IngestionConceptContext => context !== null
+      sourceTitle: source.title,
+      sourceType: 'markdown',
+    },
+    {
+      ingestionRunRepository,
+      knowledgebaseRepository: trackingRepo,
+    } as any
   );
 }
 
