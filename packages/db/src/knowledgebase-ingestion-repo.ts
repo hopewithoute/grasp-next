@@ -98,6 +98,9 @@ export function createKnowledgebaseIngestionMethods(db: DbClient): Knowledgebase
         // Upsert concepts from extraction output
         for (const concept of input.output.concepts) {
           const existing = conceptIdByKey.get(concept.conceptKey);
+          const lookupKey = concept.mergesWith ?? concept.conceptKey;
+          const embedding = input.conceptEmbeddingsByKey?.[lookupKey] ?? input.conceptEmbeddingsByKey?.[concept.conceptKey] ?? null;
+          console.log(`[mergeIngestionOutput] concept: ${concept.conceptKey}, lookupKey: ${lookupKey}, hasEmbedding: ${!!embedding}`);
 
           if (existing) {
             await tx
@@ -107,6 +110,7 @@ export function createKnowledgebaseIngestionMethods(db: DbClient): Knowledgebase
                 definition: concept.definition,
                 difficulty: concept.difficulty,
                 name: concept.name,
+                embedding,
                 updatedAt: new Date(),
               })
               .where(eq(wikiConcepts.id, existing));
@@ -122,6 +126,7 @@ export function createKnowledgebaseIngestionMethods(db: DbClient): Knowledgebase
                 knowledgebaseVersionId: null,
                 metadata: null,
                 name: concept.name,
+                embedding,
               })
               .returning();
             conceptIdByKey.set(concept.conceptKey, inserted.id);
@@ -177,7 +182,7 @@ export function createKnowledgebaseIngestionMethods(db: DbClient): Knowledgebase
           if (!conceptId || !concept.sourceRefs?.length) continue;
 
           for (const ref of concept.sourceRefs) {
-            const passageId = passageByBlockId.get(ref.blockId);
+            const passageId = passageByBlockId.get(ref.blockId) || passageByBlockId.get(`${input.sourceId}:${ref.blockId}`);
             if (!passageId) continue;
 
             await tx
