@@ -1,5 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, expect, it } from 'vitest';
-import { sourceLinkingWorkflow } from './source-linking-workflow';
+import { sourceLinkingWorkflow } from './source-linking.workflow';
 
 describe('sourceLinkingWorkflow', () => {
   it('reviews link candidates through the Mastra workflow', async () => {
@@ -51,13 +52,13 @@ describe('sourceLinkingWorkflow', () => {
     });
 
     expect(result.status).toBe('success');
-    expect(result.result?.reviewedLinks.length).toBe(1);
-    expect(result.result?.acceptedLinks.length).toBe(1);
-    expect(result.result?.policyResults.length).toBe(1);
-    expect(result.result?.trace.metrics.candidateCount).toBe(1);
-    expect(result.result?.trace.metrics.acceptedCount).toBe(1);
-    expect(result.result?.trace.metrics.appliedCount).toBe(1);
-    expect(result.result?.patchedExtraction.relationships.length).toBe(1);
+    expect((result as any).result?.reviewedLinks.length).toBe(1);
+    expect((result as any).result?.acceptedLinks.length).toBe(1);
+    expect((result as any).result?.policyResults.length).toBe(1);
+    expect((result as any).result?.trace.metrics.candidateCount).toBe(1);
+    expect((result as any).result?.trace.metrics.acceptedCount).toBe(1);
+    expect((result as any).result?.trace.metrics.appliedCount).toBe(1);
+    expect((result as any).result?.patchedExtraction.relationships.length).toBe(1);
   });
 
   it('applies deterministic policy before linking relationships into the extraction', async () => {
@@ -108,10 +109,10 @@ describe('sourceLinkingWorkflow', () => {
     });
 
     expect(result.status).toBe('success');
-    expect(result.result?.acceptedLinks.length).toBe(0);
-    expect(result.result?.rejectedLinks.length).toBe(1);
-    expect(result.result?.policyResults[0]?.reason).toBe('self_edge');
-    expect(result.result?.patchedExtraction.relationships.length).toBe(0);
+    expect((result as any).result?.acceptedLinks.length).toBe(0);
+    expect((result as any).result?.rejectedLinks.length).toBe(1);
+    expect((result as any).result?.policyResults[0]?.reason).toBe('self_edge');
+    expect((result as any).result?.patchedExtraction.relationships.length).toBe(0);
   });
 
   it('rejects heading-only link evidence before patching graph relationships', async () => {
@@ -162,10 +163,10 @@ describe('sourceLinkingWorkflow', () => {
     });
 
     expect(result.status).toBe('success');
-    expect(result.result?.acceptedLinks.length).toBe(0);
-    expect(result.result?.rejectedLinks.length).toBe(1);
-    expect(result.result?.policyResults[0]?.reason).toBe('confidence_below_threshold');
-    expect(result.result?.trace.metrics.weakEvidenceCount).toBe(1);
-    expect(result.result?.patchedExtraction.relationships.length).toBe(0);
+    expect((result as any).result?.acceptedLinks.length).toBe(0);
+    expect((result as any).result?.rejectedLinks.length).toBe(1);
+    expect((result as any).result?.policyResults[0]?.reason).toBe('confidence_below_threshold');
+    expect((result as any).result?.trace.metrics.weakEvidenceCount).toBe(1);
+    expect((result as any).result?.patchedExtraction.relationships.length).toBe(0);
   });
 });

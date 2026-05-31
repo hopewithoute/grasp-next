@@ -4,12 +4,13 @@ import { ConsoleLogger } from '@mastra/core/logger';
 import { setupGlobalLlmQueue } from './llm-queue';
 
 import { getMastraStorage } from './storage';
-import { linkAdjudicatorAgent } from '../ingestion/link-adjudicator-agent';
+import { linkAdjudicatorAgent } from '../ingestion/link-adjudicator.agent';
 
 // Apply global rate limiting to all outgoing LLM requests before initializing Mastra
 setupGlobalLlmQueue();
-import { ingestionAgent } from '../ingestion/ingestion-agent';
-import { sourceLinkingWorkflow } from '../ingestion/source-linking-workflow';
+import { ingestionAgent } from '../ingestion/ingestion.agent';
+import { sourceLinkingWorkflow } from '../ingestion/source-linking.workflow';
+import { sourceIngestionWorkflow } from '../ingestion/source-ingestion.workflow';
 import { refinementAgent } from '../refinement/refinement-agent';
 
 export const mastra = new Mastra({
@@ -22,5 +23,7 @@ export const mastra = new Mastra({
   storage: getMastraStorage(),
   workflows: {
     sourceLinkingWorkflow,
+    sourceIngestionWorkflow,
   },
 });
+

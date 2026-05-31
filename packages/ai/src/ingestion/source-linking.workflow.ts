@@ -12,7 +12,7 @@ import {
 } from '@grasp/domain';
 import { adjudicateLinks } from './adjudicate-links';
 
-const linkingWorkflowInputDto = z.object({
+export const linkingWorkflowInputDto = z.object({
   candidates: z.custom<LinkCandidate[]>(),
   extraction: z.custom<IngestionAgentOutput>(),
   useModel: z.boolean().default(true),
@@ -85,8 +85,14 @@ const applyReviewedLinksStep = createStep({
   inputSchema: linkPolicyOutputDto,
   outputSchema: linkAppliedOutputDto,
   execute: async ({ inputData }) => {
-    const acceptedLinks = (inputData.reviewedLinks || []).filter((link) => link.decision === 'accept');
-    const rejectedLinks = (inputData.reviewedLinks || []).filter((link) => link.decision === 'reject');
+    const acceptedLinks = (inputData.reviewedLinks || []).filter((link) => {
+      const policy = inputData.policyResults.find((p) => p.candidateId === link.candidateId);
+      return policy?.decision === 'accept';
+    });
+    const rejectedLinks = (inputData.reviewedLinks || []).filter((link) => {
+      const policy = inputData.policyResults.find((p) => p.candidateId === link.candidateId);
+      return policy?.decision === 'reject';
+    });
 
     return {
       acceptedLinks,
@@ -105,23 +111,37 @@ const summarizeLinkTraceStep = createStep({
   id: 'summarize-linking-trace',
   inputSchema: linkAppliedOutputDto,
   outputSchema: linkingWorkflowOutputDto,
-  execute: async ({ inputData }) => ({
-    acceptedLinks: inputData.acceptedLinks,
-    candidates: inputData.candidates,
-    patchedExtraction: inputData.patchedExtraction,
-    policyResults: inputData.policyResults,
-    rejectedLinks: inputData.rejectedLinks,
-    reviewedLinks: inputData.reviewedLinks,
-    trace: buildLinkTrace({
+  execute: async ({ inputData, writer }) => {
+    if (writer) {
+      for (const link of inputData.acceptedLinks) {
+        await writer.write({
+          type: 'link_applied',
+          candidateId: link.candidateId,
+          relationshipType: link.relationshipType || 'related',
+          sourceConceptName: link.sourceConceptKey || 'Source',
+          targetConceptName: link.targetConceptKey || 'Target',
+        });
+      }
+    }
+
+    return {
       acceptedLinks: inputData.acceptedLinks,
-      appliedLinks: inputData.acceptedLinks,
       candidates: inputData.candidates,
-      extraction: inputData.extraction,
+      patchedExtraction: inputData.patchedExtraction,
       policyResults: inputData.policyResults,
       rejectedLinks: inputData.rejectedLinks,
       reviewedLinks: inputData.reviewedLinks,
-    }),
-  }),
+      trace: buildLinkTrace({
+        acceptedLinks: inputData.acceptedLinks,
+        appliedLinks: inputData.acceptedLinks,
+        candidates: inputData.candidates,
+        extraction: inputData.extraction,
+        policyResults: inputData.policyResults,
+        rejectedLinks: inputData.rejectedLinks,
+        reviewedLinks: inputData.reviewedLinks,
+      }),
+    };
+  },
 });
 
 export const sourceLinkingWorkflow = createWorkflow({

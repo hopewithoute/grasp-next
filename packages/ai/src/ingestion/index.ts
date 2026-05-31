@@ -1,20 +1,18 @@
 export {
   extractChunk,
-  runIngestionChunkAgent,
   type ExtractChunkInput,
   type ExtractChunkResult,
-  type IngestionChunkAgentRunResult,
-  type IngestionMastraRunArtifact,
 } from './extract-chunk';
-export { ingestionAgent, ingestionAgentInstructions } from './ingestion-agent';
+export { ingestionAgent, ingestionAgentInstructions } from './ingestion.agent';
 
 export {
   createIngestionRetrievalTools,
   type IngestionRetrieval,
-} from './ingestion-retrieval-tools';
+} from './ingestion-retrieval.tools';
 
-export { buildIngestionPrompt } from './ingestion-agent';
-export { linkAdjudicatorAgent } from './link-adjudicator-agent';
+export { buildIngestionPrompt } from './ingestion.agent';
+export { linkAdjudicatorAgent } from './link-adjudicator.agent';
 export { adjudicateLinks } from './adjudicate-links';
-export { sourceLinkingWorkflow } from './source-linking-workflow';
+export { sourceLinkingWorkflow } from './source-linking.workflow';
 export { IngestionAiAdapter, type IngestionRetrievalPort } from './ingestion-ai.adapter';
+export { sourceIngestionWorkflow } from './source-ingestion.workflow';

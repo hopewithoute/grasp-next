@@ -1,17 +1,13 @@
 import { canUseAgent } from '../index';
 import { canUseEmbeddingModel, embedText, embedTexts } from '../utils/embeddings';
-import { createIngestionRetrievalTools } from './ingestion-retrieval-tools';
-import { runIngestionChunkAgent } from './extract-chunk';
-import { sourceLinkingWorkflow } from './source-linking-workflow';
+import { createIngestionRetrievalTools } from './ingestion-retrieval.tools';
+import { extractChunk } from './extract-chunk';
 import type {
   IngestionAiPort,
   ExtractChunkPortInput,
-  EvaluateLinkCandidatesPortInput,
-  EvaluateLinkCandidatesPortOutput,
   IngestionConcept,
   IngestionConceptContext,
   IngestionConceptSearchResult,
-  LinkTrace,
 } from '@grasp/domain';
 
 /**
@@ -75,7 +71,7 @@ export class IngestionAiAdapter implements IngestionAiPort {
       thread: `ingestion:${input.sourceId}:chunk:${input.chunkIndex}`,
     };
 
-    const runResult = await runIngestionChunkAgent({
+    return await extractChunk({
       blocks: input.blocks.map((block) => ({ id: block.id, text: block.text })),
       chunkIndex: input.chunkIndex,
       draftConcepts: input.draftConcepts,
@@ -87,44 +83,15 @@ export class IngestionAiAdapter implements IngestionAiPort {
       totalChunks: input.totalChunks,
       onThinking: input.onThinking,
     });
-
-    return runResult.domain;
   }
 
-  async evaluateLinkCandidates(
-    input: EvaluateLinkCandidatesPortInput
-  ): Promise<EvaluateLinkCandidatesPortOutput> {
-    const linkingRun = await sourceLinkingWorkflow.createRun({
-      resourceId: input.projectId,
-    });
-    
-    const linkingResult = await linkingRun.start({
-      inputData: {
-        candidates: input.candidates,
-        extraction: input.extraction,
-        useModel: true,
-      },
-    });
-    
-    if (linkingResult.status !== 'success') {
-      throw new Error(`linking_workflow_${linkingResult.status}`);
-    }
-
-    return {
-      reviewedLinks: linkingResult.result?.reviewedLinks ?? [],
-      policyResults: linkingResult.result?.policyResults ?? [],
-      acceptedLinks: linkingResult.result?.acceptedLinks ?? [],
-      rejectedLinks: linkingResult.result?.rejectedLinks ?? [],
-      patchedExtraction: linkingResult.result?.patchedExtraction ?? input.extraction,
-      trace: linkingResult.result?.trace as LinkTrace,
-    };
-  }
+  // Removed evaluateLinkCandidates since sourceLinkingWorkflow is now natively composed in sourceIngestionWorkflow
 
   async embedConcepts(concepts: IngestionConcept[]) {
     if (!canUseEmbeddingModel(process.env) || !concepts.length) {
       return {
         embeddingsByKey: undefined,
-        metadata: { status: 'skipped', reason: 'embedding_provider_not_configured' },
+        metadata: { status: 'skipped' as const, reason: 'embedding_provider_not_configured' },
       };
     }
 
@@ -142,14 +109,14 @@ export class IngestionAiAdapter implements IngestionAiPort {
 
       return {
         embeddingsByKey,
-        metadata: { status: 'completed', embeddedConceptCount: Object.keys(embeddingsByKey).length },
+        metadata: { status: 'completed' as const, embeddedConceptCount: Object.keys(embeddingsByKey).length },
       };
     } catch (error) {
       return {
         embeddingsByKey: undefined,
         metadata: {
           reason: error instanceof Error ? error.message : 'concept_embedding_failed',
-          status: 'failed',
+          status: 'failed' as const,
         },
       };
     }

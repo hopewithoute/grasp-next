@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildIngestionPrompt, ingestionAgentInstructions } from './ingestion-agent';
+import { buildIngestionPrompt, ingestionAgentInstructions } from './ingestion.agent';
 
 describe('buildIngestionPrompt', () => {
   it('keeps DB-wide existing concepts out of the prompt and directs retrieval tool use', () => {
