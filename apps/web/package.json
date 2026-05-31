@@ -8,7 +8,7 @@
     "eval:ingestion": "tsx evals/mastra/ingestion.eval.ts",
     "eval:refinement": "tsx evals/mastra/refinement.eval.ts",
     "lint": "eslint . --max-warnings=0",
-    "test": "node --env-file=../../.env ./node_modules/.bin/vitest run",
+    "test": "node --env-file=../../.env ./node_modules/vitest/vitest.mjs run",
     "typecheck": "tsgo --noEmit"
   },
   "dependencies": {
