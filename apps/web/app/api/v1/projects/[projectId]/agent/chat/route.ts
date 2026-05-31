@@ -28,107 +28,6 @@ type ChatRequestBody = {
   threadId?: string;
 };
 
-type ActivityWriter = (event: AgentActivityEvent) => void;
-
-const ACTIVITY_FLUSH_INTERVAL_MS = 100;
-
-function wait(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-function describeToolActivity(
-  toolName: string,
-  input: unknown,
-  status: AgentActivityEvent['status']
-): AgentActivityEvent {
-  switch (toolName) {
-    case 'search-wiki-concepts':
-      return {
-        type: 'agent_activity',
-        label: status === 'started' ? 'Checking graph' : 'Checked graph',
-        detail:
-          status === 'started'
-            ? 'Looking for matching concepts in this project.'
-            : 'Found the closest existing concepts.',
-        status,
-      };
-    case 'search-web-ddg':
-      return {
-        type: 'agent_activity',
-        label: status === 'started' ? 'Checking web' : 'Checked web',
-        detail:
-          status === 'started' ? 'Looking up supporting information.' : 'Reviewed search results.',
-        status,
-      };
-    case 'read-webpage':
-      return {
-        type: 'agent_activity',
-        label: status === 'started' ? 'Reading source' : 'Read source',
-        detail: `${status === 'started' ? 'Reviewing' : 'Reviewed'} a web page for context.`,
-        status,
-      };
-    case 'propose-graph-changes':
-      return {
-        type: 'agent_activity',
-        label: status === 'started' ? 'Preparing proposal' : 'Proposal ready',
-        detail:
-          status === 'started'
-            ? 'Drafting graph changes for your review.'
-            : 'Proposal submitted for approval.',
-        status,
-      };
-    default:
-      return {
-        type: 'agent_activity',
-        label: status === 'started' ? 'Working on graph' : 'Updated graph',
-        detail:
-          status === 'started' ? 'Updating the project context.' : 'Updated the project context.',
-        status,
-      };
-  }
-}
-
-function withActivityEvents<T extends Record<string, unknown>>(
-  tools: T,
-  emitActivity: ActivityWriter,
-  emitProposal: (p: GraphProposalPayload) => void
-): T {
-  return Object.fromEntries(
-    Object.entries(tools).map(([key, tool]) => {
-      if (
-        !tool ||
-        typeof tool !== 'object' ||
-        typeof (tool as { execute?: unknown }).execute !== 'function'
-      ) {
-        return [key, tool];
-      }
-
-      const toolRecord = tool as { id?: string; execute: (...args: unknown[]) => Promise<unknown> };
-      return [
-        key,
-        {
-          ...toolRecord,
-          execute: async (...args: unknown[]) => {
-            const toolId = toolRecord.id ?? key;
-            if (toolId === 'propose-graph-changes' || key === 'proposeGraphChangesTool') {
-              emitActivity(describeToolActivity(toolId, args[0], 'started'));
-              emitProposal(args[0] as never);
-              const result = await toolRecord.execute(...args);
-              emitActivity(describeToolActivity(toolId, args[0], 'completed'));
-              return result;
-            }
-
-            emitActivity(describeToolActivity(toolId, args[0], 'started'));
-            const result = await toolRecord.execute(...args);
-            emitActivity(describeToolActivity(toolId, args[0], 'completed'));
-            return result;
-          },
-        },
-      ];
-    })
-  ) as T;
-}
-
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ projectId: string }> }
@@ -164,79 +63,77 @@ export async function POST(
   }
 
   try {
-    const activityEvents: AgentActivityEvent[] = [];
-    const proposalEvents: GraphProposalPayload[] = [];
-
-    const tools = withActivityEvents(
-      createRefinementTools({
-        knowledgebaseRepository: deps.knowledgebaseRepository,
-        projectId,
-      }),
-      (event) => activityEvents.push(event),
-      (proposal) => proposalEvents.push(proposal)
-    );
-
-    const agentMessages = messages;
-    const result = await robustStream(refinementAgent, agentMessages, {
-      memory: {
-        resource: projectId,
-        thread: threadId ?? `refinement:${projectId}:${actor.id}`,
-      },
-      toolsets: { refinement: tools },
-      maxSteps: 10,
-    });
-
     const stream = createUIMessageStream({
       async execute({ writer }) {
         const textId = 'assistant-response';
         let wroteText = false;
         let needsNewline = false;
 
-        const flushActivityEvents = () => {
-          let hasActivity = false;
-          while (activityEvents.length > 0) {
-            hasActivity = true;
-            writer.write({
-              type: 'data-agent-activity',
-              data: activityEvents.shift()!,
-              transient: true,
-            });
-          }
-          while (proposalEvents.length > 0) {
-            hasActivity = true;
-            writer.write({
-              type: 'data-agent-proposal',
-              data: proposalEvents.shift()!,
-            });
-          }
-          if (hasActivity && wroteText) {
-            needsNewline = true;
-          }
-        };
-
         writer.write({ type: 'text-start', id: textId });
 
+        const tools = createRefinementTools({
+          knowledgebaseRepository: deps.knowledgebaseRepository,
+          projectId,
+          onAddWebSource: async (url, title, text, skipIngestion) => {
+            const source = await deps.projectSourceRepository.createForProjectOwner(projectId, actor.id, {
+              title,
+              content: text,
+              type: 'markdown',
+              fileRef: url,
+            });
+            if (!source) throw new Error('Failed to create source');
+
+            if (!skipIngestion) {
+              // Fire and forget the background ingestion
+              import('@/server/source-ingestion-runner').then(({ runSourceIngestion }) => {
+                runSourceIngestion({
+                  projectId,
+                  sourceId: source.id,
+                  sourceTitle: source.title,
+                  sourceType: 'markdown',
+                  content: source.content ?? '',
+                }, deps).catch(console.error);
+              });
+            }
+
+            return source.id;
+          }
+        });
+
         try {
-          const streamReader = (result.fullStream as ReadableStream<unknown>).getReader();
-          let pendingText = streamReader.read();
+          const result = await robustStream(refinementAgent, messages, {
+            memory: {
+              resource: projectId,
+              thread: threadId ?? `refinement:${projectId}:${actor.id}`,
+            },
+            toolsets: { refinement: tools },
+            maxSteps: 10,
+          });
 
-          while (true) {
-            const next = await Promise.race([
-              pendingText,
-              wait(ACTIVITY_FLUSH_INTERVAL_MS).then(() => null),
-            ]);
+          for await (const chunk of result.fullStream as AsyncIterable<any>) {
+            // Check for native Mastra tool streaming chunks
+            const customType = chunk?.type ?? chunk?.payload?.output?.type;
+            const customData = chunk?.data ?? chunk?.payload?.output?.data ?? chunk?.payload?.output;
 
-            flushActivityEvents();
-
-            if (next === null) {
+            if (customType === 'data-agent-activity') {
+              if (wroteText) needsNewline = true;
+              writer.write({
+                type: 'data-agent-activity',
+                data: customData,
+                transient: true,
+              });
               continue;
             }
 
-            if (next.done) {
-              break;
+            if (customType === 'data-agent-proposal') {
+              if (wroteText) needsNewline = true;
+              writer.write({
+                type: 'data-agent-proposal',
+                data: customData,
+              });
+              continue;
             }
 
-            const chunk = next.value;
             const text =
               typeof chunk === 'string'
                 ? chunk
@@ -250,11 +147,7 @@ export async function POST(
               wroteText = true;
               writer.write({ type: 'text-delta', id: textId, delta: text });
             }
-
-            pendingText = streamReader.read();
           }
-
-          flushActivityEvents();
 
           if (!wroteText) {
             writer.write({
@@ -265,7 +158,6 @@ export async function POST(
           }
         } catch (error) {
           console.error('Chat stream error:', error);
-          flushActivityEvents();
           writer.write({
             type: 'text-delta',
             id: textId,
