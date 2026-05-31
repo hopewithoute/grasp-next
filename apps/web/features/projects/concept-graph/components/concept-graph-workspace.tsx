@@ -4,17 +4,22 @@ import { useMemo, useCallback } from 'react';
 import { ReactFlowProvider } from '@xyflow/react';
 import { cn } from '@/lib/utils';
 import { type ConceptRow, type RelationshipRow } from '../types';
+import type { ProjectSourceRecord } from '@grasp/domain';
 import { type ChatItem } from '../types';
 import { useConceptGraphState } from '../hooks/use-concept-graph-state';
-import { ConceptListPane } from './concept-list-pane';
+import { LibraryPane } from './library-pane';
 import { GraphCanvasPane } from './graph-canvas-pane';
+import { ConceptDataGridPane } from './concept-data-grid-pane';
 import { ChatPane } from './chat-pane';
 import { PendingProposalsContext } from '../hooks/use-pending-proposals-context';
+import { executeGraphProposalAction } from '../../actions';
+import { LayoutGrid, Network } from 'lucide-react';
 
 type ConceptGraphWorkspaceProps = {
   concepts: ConceptRow[];
   projectId: string;
   relationships: RelationshipRow[];
+  sources?: ProjectSourceRecord[];
 };
 
 export function ConceptGraphWorkspace(props: ConceptGraphWorkspaceProps) {
@@ -25,7 +30,7 @@ export function ConceptGraphWorkspace(props: ConceptGraphWorkspaceProps) {
   );
 }
 
-const ConceptGraphEditor = ({ concepts, projectId, relationships }: ConceptGraphWorkspaceProps) => {
+const ConceptGraphEditor = ({ concepts, projectId, relationships, sources = [] }: ConceptGraphWorkspaceProps) => {
   const {
     pendingSelectedId,
     setPendingSelectedId,
@@ -38,6 +43,9 @@ const ConceptGraphEditor = ({ concepts, projectId, relationships }: ConceptGraph
     hoveredChatConceptId,
     setHoveredChatConceptId,
     pendingProposals,
+    setPendingProposals,
+    viewMode,
+    setViewMode,
   } = useConceptGraphState(concepts);
 
   const items = useMemo<ChatItem[]>(
@@ -112,6 +120,31 @@ const ConceptGraphEditor = ({ concepts, projectId, relationships }: ConceptGraph
     [setChatContextConceptIds]
   );
 
+  const handleAcceptProposal = useCallback(
+    async (proposalId: string) => {
+      const proposal = pendingProposals.find((p) => p.id === proposalId);
+      if (!proposal) return;
+
+      // Optimistically remove from state
+      setPendingProposals((current) => current.filter((p) => p.id !== proposalId));
+
+      try {
+        await executeGraphProposalAction(projectId, proposal.actions);
+      } catch (error) {
+        console.error('Failed to accept proposal', error);
+        // On error, we could add it back to state, but for MVP just log it
+      }
+    },
+    [pendingProposals, projectId, setPendingProposals]
+  );
+
+  const handleRejectProposal = useCallback(
+    (proposalId: string) => {
+      setPendingProposals((current) => current.filter((p) => p.id !== proposalId));
+    },
+    [setPendingProposals]
+  );
+
   const pendingProposalsValue = useMemo(
     () => ({ pendingProposals }),
     [pendingProposals]
@@ -135,26 +168,66 @@ const ConceptGraphEditor = ({ concepts, projectId, relationships }: ConceptGraph
         isInventoryCollapsed && isRefinementCollapsed && 'lg:grid-cols-[4rem_minmax(0,1fr)_4rem]'
       )}
     >
-      <ConceptListPane
+      <LibraryPane
         projectId={projectId}
         collapsed={isInventoryCollapsed}
-        concepts={concepts}
         onCollapseToggle={handleInventoryCollapseToggle}
-        onSelectConcept={handleSelectConcept}
-        relationshipsCount={relationships.length}
-        selectedConceptId={selectedConceptId}
+        sources={sources}
+        
       />
 
-      <GraphCanvasPane
-        projectId={projectId}
-        concepts={concepts}
-        isRunning={isRunning}
-        onSelectConcept={handleSelectConcept}
-        relationships={relationships}
-        selectedConcept={selectedConcept}
-        conceptNameById={conceptNameById}
-        hoveredChatConceptId={hoveredChatConceptId}
-      />
+      <div className="relative flex-1 flex flex-col min-h-0 overflow-hidden">
+        {/* View Toggle */}
+        <div className="absolute top-4 right-4 z-10 flex rounded-full border border-border bg-card-surface/50 p-1 shadow-sm backdrop-blur-md">
+          <button
+            onClick={() => setViewMode('graph')}
+            title="Graph View"
+            className={cn(
+              'flex size-8 items-center justify-center rounded-full transition-all',
+              viewMode === 'graph'
+                ? 'bg-brand-accent text-brand-accent-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground hover:bg-background/50'
+            )}
+          >
+            <Network className="size-4" />
+          </button>
+          <button
+            onClick={() => setViewMode('list')}
+            title="List View"
+            className={cn(
+              'flex size-8 items-center justify-center rounded-full transition-all',
+              viewMode === 'list'
+                ? 'bg-brand-accent text-brand-accent-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground hover:bg-background/50'
+            )}
+          >
+            <LayoutGrid className="size-4" />
+          </button>
+        </div>
+
+        {viewMode === 'graph' ? (
+          <GraphCanvasPane
+            projectId={projectId}
+            concepts={concepts}
+            isRunning={isRunning}
+            onSelectConcept={handleSelectConcept}
+            relationships={relationships}
+            selectedConcept={selectedConcept}
+            conceptNameById={conceptNameById}
+            hoveredChatConceptId={hoveredChatConceptId}
+            onAcceptProposal={handleAcceptProposal}
+            onRejectProposal={handleRejectProposal}
+          />
+        ) : (
+          <ConceptDataGridPane
+            projectId={projectId}
+            concepts={concepts}
+            relationships={relationships}
+            onSelectConcept={handleSelectConcept}
+            selectedConceptId={selectedConceptId}
+          />
+        )}
+      </div>
 
       <ChatPane
         key={projectId}
