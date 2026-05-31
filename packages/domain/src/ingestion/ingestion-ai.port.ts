@@ -1,36 +1,23 @@
-import type { IngestionAgentOutput, IngestionConcept, IngestionRelationship } from './ingestion-agent.dto';
-import type { LinkCandidate, ReviewedLink, LinkPolicyResult, LinkTrace } from './linking';
+import type { IngestionAgentOutput, IngestionConcept } from './ingestion-agent.dto';
 import type { SourceBlockForValidation } from './validate-source-refs';
 
-export interface ExtractChunkPortInput {
+export type ExtractChunkPortInput = {
+  blocks: SourceBlockForValidation[];
+  chunkIndex: number;
+  draftConcepts: IngestionConcept[];
+  draftRelationships: IngestionAgentOutput['relationships'];
   projectId: string;
   sourceId: string;
-  chunkIndex: number;
   totalChunks: number;
-  blocks: SourceBlockForValidation[];
-  draftConcepts: IngestionConcept[];
-  draftRelationships: IngestionRelationship[];
+  onRetrieval?: (matches: number, queryOrKey: string, type: 'concept_search' | 'concept_neighbors') => void;
   onThinking?: (thinking: string) => void;
-  onRetrieval?: (hitCount: number, query: string, type: 'concept_search' | 'concept_neighbors') => void;
-}
+};
 
-export interface EvaluateLinkCandidatesPortInput {
-  projectId: string;
-  extraction: IngestionAgentOutput;
-  candidates: LinkCandidate[];
-}
-
-export interface EvaluateLinkCandidatesPortOutput {
-  reviewedLinks: ReviewedLink[];
-  policyResults: LinkPolicyResult[];
-  acceptedLinks: ReviewedLink[];
-  rejectedLinks: ReviewedLink[];
-  patchedExtraction: IngestionAgentOutput;
-  trace: LinkTrace;
-}
+export type EmbedConceptsPortOutput =
+  | { embeddingsByKey: undefined; metadata: { reason: string; status: 'skipped' | 'failed' } }
+  | { embeddingsByKey: Record<string, number[]>; metadata: { embeddedConceptCount: number; status: 'completed' } };
 
 export interface IngestionAiPort {
+  embedConcepts(concepts: IngestionConcept[]): Promise<EmbedConceptsPortOutput>;
   extractConceptsFromChunk(input: ExtractChunkPortInput): Promise<IngestionAgentOutput & { droppedConceptKeys: string[]; droppedRefCount: number; }>;
-  evaluateLinkCandidates(input: EvaluateLinkCandidatesPortInput): Promise<EvaluateLinkCandidatesPortOutput>;
-  embedConcepts(concepts: IngestionConcept[]): Promise<{ embeddingsByKey?: Record<string, number[]>; metadata: Record<string, unknown> }>;
 }

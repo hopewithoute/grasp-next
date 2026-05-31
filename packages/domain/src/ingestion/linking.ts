@@ -53,9 +53,22 @@ export async function buildLinkCandidates(input: {
     }
 
     const relationshipType = relationshipTypeForPredicate(claim.predicate);
-    const matches = await input.searchConcepts({ limit: 5, query: claim.objectText });
-    const exactMatches = matches.filter((match) => isExactConceptMatch(claim.objectText, match));
-    const candidateMatches = exactMatches.length ? exactMatches : matches;
+    const dbMatches = await input.searchConcepts({ limit: 5, query: claim.objectText });
+    
+    // Cross-chunk linking: Also look in the local extraction (spanning all chunks) for the target concept
+    const localMatch = findLocalConcept(claim.objectText, input.localExtraction.concepts);
+    const allMatches = [...dbMatches];
+    
+    if (localMatch && !allMatches.some(m => m.conceptKey === localMatch.conceptKey)) {
+      allMatches.unshift({
+        conceptKey: localMatch.conceptKey,
+        name: localMatch.name,
+        definition: localMatch.definition,
+      });
+    }
+
+    const exactMatches = allMatches.filter((match) => isExactConceptMatch(claim.objectText, match));
+    const candidateMatches = exactMatches.length ? exactMatches : allMatches;
     const resolutionType = exactMatches.length ? 'exact' : 'semantic';
 
     for (const match of candidateMatches) {
@@ -206,14 +219,20 @@ export function applyAcceptedLinks(
 
 export function reviewLinksDeterministically(candidates: LinkCandidate[]): ReviewedLink[] {
   return candidates.map((candidate) => {
+    const isSelfEdge = candidate.sourceConceptKey === candidate.targetConceptKey;
+    const isHeading = candidate.evidence.locationLabel?.toLowerCase().includes('heading') && !candidate.evidence.quote.includes(' ');
+
+    const relationshipTypeConfidence = isSelfEdge ? 0.1 : 0.9;
+    const semanticSupportConfidence = isSelfEdge ? 0.1 : 0.9;
+    const confidence = isSelfEdge || isHeading ? 0.5 : 0.9;
+    
     const evidenceQuality = scoreLinkEvidence({
       quote: candidate.evidence.quote,
       relationshipType: candidate.relationshipType,
-      relationshipTypeConfidence: 0.5,
-      semanticSupportConfidence: 0.5,
+      relationshipTypeConfidence,
+      semanticSupportConfidence,
     });
 
-    const confidence = 0.5;
     const decision = confidence >= MIN_LINK_CONFIDENCE ? 'accept' : 'reject';
 
     return {
@@ -240,11 +259,15 @@ export function scoreLinkEvidence(input: {
   const shape = scoreEvidenceShape(input.quote, input.relationshipType);
   const grounded = true;
   const groundingReason = 'exact_quote';
-  const finalScore =
+  let finalScore =
     (input.semanticSupportConfidence * 0.4 +
       input.relationshipTypeConfidence * 0.3 +
       shape.shapeScore * 0.3) *
     (grounded ? 1 : 0.2);
+
+  if (shape.evidenceKind === 'heading') {
+    finalScore = Math.min(finalScore, 0.59);
+  }
 
   return {
     evidenceKind: shape.evidenceKind,
@@ -329,10 +352,6 @@ function linkPolicyRejectionReason(
   existingRelationships: Set<string>,
   acceptedRelationships: Set<string>
 ) {
-  if (link.decision === 'reject') {
-    return null;
-  }
-
   if (link.sourceConceptKey === link.targetConceptKey) {
     return 'self_edge';
   }
@@ -360,6 +379,10 @@ function linkPolicyRejectionReason(
 
   if (existingRelationships.has(key) || acceptedRelationships.has(key)) {
     return 'duplicate_relationship';
+  }
+
+  if (link.decision === 'reject') {
+    return 'agent_rejected';
   }
 
   return null;

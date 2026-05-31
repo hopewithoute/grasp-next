@@ -36,24 +36,27 @@ export const ingestionRelationshipDto = z.object({
   targetConceptKey: z.string().trim().min(1),
   relationshipType: knowledgebaseRelationshipTypeDto,
   rationale: z.string().trim().min(1).optional(),
-  sourceRefs: z.array(ingestionSourceRefDto).min(1),
+  sourceRefs: z.array(ingestionSourceRefDto).default([]),
   evidenceQuality: ingestionEvidenceQualityDto.optional(),
 });
 
 export const ingestionRelationClaimPredicateDto = z.enum([
+  'prerequisite',
+  'part_of',
+  'related_to',
+  'explains',
+  'connects_to',
   'builds_on',
+  'influences',
   'requires',
   'depends_on',
-  'part_of',
-  'explains',
-  'related_to',
 ]);
 
 export const ingestionRelationClaimDto = z.object({
   subjectText: z.string().trim().min(1),
   predicate: ingestionRelationClaimPredicateDto,
   objectText: z.string().trim().min(1),
-  sourceRefs: z.array(ingestionSourceRefDto).min(1),
+  sourceRefs: z.array(ingestionSourceRefDto).default([]),
 });
 
 export const ingestionAgentOutputDto = z.object({

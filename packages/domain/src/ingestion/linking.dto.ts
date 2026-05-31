@@ -9,7 +9,17 @@ export const linkCandidateDto = z.object({
     quote: z.string().trim().min(1),
   }),
   reason: z.string().trim().min(1),
-  relationshipType: z.enum(['prerequisite', 'part_of', 'related_to', 'explains']),
+  relationshipType: z.enum([
+    'prerequisite',
+    'part_of',
+    'related_to',
+    'explains',
+    'connects_to',
+    'builds_on',
+    'influences',
+    'requires',
+    'depends_on',
+  ]),
   resolutionType: z.enum(['exact', 'semantic']),
   sourceConceptKey: z.string().trim().min(1),
   sourceConceptName: z.string().trim().min(1),
@@ -29,7 +39,17 @@ export const evidenceQualityDto = z.object({
   semanticSupportConfidence: z.number().min(0).max(1),
   shapeScore: z.number().min(0).max(1),
   suggestedRelationshipType: z
-    .enum(['prerequisite', 'part_of', 'related_to', 'explains'])
+    .enum([
+      'prerequisite',
+      'part_of',
+      'related_to',
+      'explains',
+      'connects_to',
+      'builds_on',
+      'influences',
+      'requires',
+      'depends_on',
+    ])
     .optional(),
 });
 
