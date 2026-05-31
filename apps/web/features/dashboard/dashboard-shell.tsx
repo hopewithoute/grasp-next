@@ -22,12 +22,15 @@ type DashboardShellProps = {
 };
 export function DashboardShell({ children, topBarSlot, viewer }: DashboardShellProps) {
   const pathname = usePathname();
-  const [isCollapsed, setIsCollapsed] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    return localStorage.getItem(COLLAPSE_STORAGE_KEY) === 'true';
-  });
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const hasTopBar = Boolean(topBarSlot);
+  useEffect(() => {
+    const stored = localStorage.getItem(COLLAPSE_STORAGE_KEY);
+    if (stored === "true") {
+      setIsCollapsed(true);
+    }
+  }, []);
   useEffect(() => {
     localStorage.setItem(COLLAPSE_STORAGE_KEY, String(isCollapsed));
   }, [isCollapsed]);
