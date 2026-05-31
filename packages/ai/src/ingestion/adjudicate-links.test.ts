@@ -58,7 +58,7 @@ describe('parseReviewedLinkList', () => {
   });
 
   it('fails when a candidate decision is missing', () => {
-    expect(() => parseReviewedLinkList({ links: [] }, [candidate]).toThrow(),
+    expect(() => parseReviewedLinkList({ links: [] }, [candidate])).toThrow(
       /link_adjudicator_incomplete/
     );
   });
@@ -67,13 +67,12 @@ describe('parseReviewedLinkList', () => {
     expect(() =>
         parseReviewedLinkList({ links: [{ ...reviewed, candidateId: 'candidate:unknown' }] }, [
           candidate,
-        ]).toThrow(),
-      /link_adjudicator_unknown_candidate/
-    );
+        ])
+    ).toThrow(/link_adjudicator_unknown_candidate/);
   });
 
   it('fails when the model returns duplicate candidate decisions', () => {
-    expect(() => parseReviewedLinkList({ links: [reviewed, reviewed] }, [candidate]).toThrow(),
+    expect(() => parseReviewedLinkList({ links: [reviewed, reviewed] }, [candidate])).toThrow(
       /link_adjudicator_duplicate_candidate/
     );
   });

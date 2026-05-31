@@ -5,7 +5,7 @@ import {
   type LinkCandidate,
   type ReviewedLink,
 } from '@grasp/domain';
-import { linkAdjudicatorAgent } from './link-adjudicator-agent';
+import { linkAdjudicatorAgent } from './link-adjudicator.agent';
 
 import { z } from 'zod';
 
@@ -106,7 +106,7 @@ const linkDecisionDto = z
     };
   })
   .refine(
-    (decision) => decision.relationshipTypeConfidence > 0 && decision.semanticSupportConfidence > 0,
+    (decision) => decision.relationshipTypeConfidence >= 0 && decision.semanticSupportConfidence >= 0,
     'semanticSupportConfidence and relationshipTypeConfidence are required'
   );
 

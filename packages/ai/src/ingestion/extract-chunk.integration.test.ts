@@ -90,7 +90,7 @@ describeIfLlm('ingestion extraction (real agent)', () => {
     }
   });
 
-  it('case 2: incremental source — existing concepts from source A', async () => {
+  it('case 2: incremental source — existing concepts from source A', { timeout: 120_000 }, async () => {
     // First, extract from source A to get existing concepts
     const sourceIdA = 'src-a';
     const normalizedA = normalizeMarkdownSource({

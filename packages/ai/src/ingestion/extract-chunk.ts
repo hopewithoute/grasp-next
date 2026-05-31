@@ -9,9 +9,9 @@ import {
   type IngestionRelationship,
 } from '@grasp/domain';
 import type { MastraDBMessage } from '@mastra/core/agent';
-import { ingestionAgent } from './ingestion-agent';
-import { buildIngestionPrompt } from './ingestion-agent';
-import type { createIngestionRetrievalTools } from './ingestion-retrieval-tools';
+import { ingestionAgent } from './ingestion.agent';
+import { buildIngestionPrompt } from './ingestion.agent';
+import type { createIngestionRetrievalTools } from './ingestion-retrieval.tools';
 
 import { scoreLinkEvidence } from '@grasp/domain';
 
@@ -40,25 +40,9 @@ export type ExtractChunkResult = {
   droppedRefCount: number;
 };
 
-export type IngestionMastraRunArtifact = {
-  messages: MastraDBMessage[];
-  text: string;
-  attempts: number;
-};
-
-export type IngestionChunkAgentRunResult = {
-  domain: ExtractChunkResult;
-  mastra: IngestionMastraRunArtifact;
-};
-
-export async function extractChunk(input: ExtractChunkInput): Promise<ExtractChunkResult> {
-  const result = await runIngestionChunkAgent(input);
-  return result.domain;
-}
-
-export async function runIngestionChunkAgent(
+export async function extractChunk(
   input: ExtractChunkInput
-): Promise<IngestionChunkAgentRunResult> {
+): Promise<ExtractChunkResult> {
   const prompt = buildIngestionPrompt({
     blocks: input.blocks,
     chunkIndex: input.chunkIndex,
@@ -77,21 +61,13 @@ export async function runIngestionChunkAgent(
     })),
   });
 
-  const MAX_ATTEMPTS = 3;
-  let lastError: string | null = null;
-  let thinking = '';
-  let latestMessages: MastraDBMessage[] = [];
-  let latestText = '';
-
-  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+  let lastError: Error | undefined;
+  for (let attempt = 1; attempt <= 3; attempt++) {
     try {
-      const effectivePrompt =
-        attempt === 0
-          ? prompt
-          : `${prompt}\n\n## RETRY (attempt ${attempt + 1}/${MAX_ATTEMPTS})\n\nPrevious attempt failed with error:\n\`\`\`\n${lastError}\n\`\`\`\n\nPlease try again.`;
-
+      const retryInstructions = attempt > 1 ? `\n\nPrevious response failed validation. Return a valid JSON object matching the requested schema.` : '';
+      
       const response = input.retrievalTools
-        ? await ingestionAgent.generate(effectivePrompt, {
+        ? await ingestionAgent.generate(prompt + retryInstructions, {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             structuredOutput: { schema: ingestionAgentOutputDto as any },
             maxSteps: 5,
@@ -99,45 +75,58 @@ export async function runIngestionChunkAgent(
             toolsets: {
               ingestionRetrieval: input.retrievalTools,
             },
-            onIterationComplete: ({ messages }: { messages: MastraDBMessage[] }) => {
-              latestMessages = messages;
-            },
           })
-        : await ingestionAgent.generate(effectivePrompt, {
+        : await ingestionAgent.generate(prompt + retryInstructions, {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             structuredOutput: { schema: ingestionAgentOutputDto as any },
             memory: input.memory,
-            onIterationComplete: ({ messages }: { messages: MastraDBMessage[] }) => {
-              latestMessages = messages;
-            },
           });
 
-      latestText = JSON.stringify(response.object);
-      thinking = response.reasoningText ?? '';
+      const thinking = response.reasoningText ?? '';
       if (thinking && input.onThinking) {
         input.onThinking(thinking);
       }
-      const parsed = ingestionAgentOutputDto.safeParse(response.object);
+
+      let parsedObj = response.object;
+
+      if (!parsedObj && response.text) {
+        try {
+          const text = response.text.trim();
+          const jsonMatch = text.match(/```(?:json)?\n([\s\S]*?)\n```/);
+          if (jsonMatch) {
+            parsedObj = JSON.parse(jsonMatch[1]);
+          } else {
+            const firstBrace = text.indexOf('{');
+            const lastBrace = text.lastIndexOf('}');
+            if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+              parsedObj = JSON.parse(text.substring(firstBrace, lastBrace + 1));
+            }
+          }
+        } catch (e) {
+          console.warn('Failed to parse fallback JSON from response text:', e);
+        }
+      }
+
+      if (!parsedObj) {
+        throw new Error(`LLM returned undefined object. Raw text: ${response.text ? response.text.substring(0, 500) : 'none'}`);
+      }
+
+      const parsed = ingestionAgentOutputDto.safeParse(parsedObj);
       if (!parsed.success) {
         throw parsed.error;
       }
+      
       const result = parsed.data as IngestionAgentOutput;
       const validated = validateAgainstBlocks(result, input.blocks);
-      return {
-        domain: { ...validated, thinking },
-        mastra: {
-          messages: latestMessages,
-          text: latestText,
-          attempts: attempt + 1,
-        },
-      };
-    } catch (error) {
-      lastError = error instanceof Error ? error.message : String(error);
-      if (attempt === MAX_ATTEMPTS - 1) throw error;
+      
+      return { ...validated, thinking };
+    } catch (error: any) {
+      lastError = error;
+      console.warn(`[extractChunk] Attempt ${attempt} failed: ${error.message}`);
     }
   }
 
-  throw lastError ? new Error(lastError) : new Error('Ingestion failed after all attempts');
+  throw lastError ?? new Error('Failed to extract chunk after multiple attempts');
 }
 
 export function validateAgainstBlocks(
