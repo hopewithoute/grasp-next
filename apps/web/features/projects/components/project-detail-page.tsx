@@ -8,12 +8,12 @@ import {
 import { getActor } from '@/server/actor';
 import { createProjectDeps } from '@/server/project-deps';
 import { ConceptGraphWorkspace } from '../concept-graph/components/concept-graph-workspace';
-import { ProjectSourcesPanel } from './source-material-form';
+
 import { buildStageHref, resolveStage } from '../stages';
 import { ProjectHeader } from './project-header';
 import { ProjectSettings } from './project-settings';
 import { ProjectPipelineStatus } from './project-pipeline-status';
-import { IngestionStatusPanel, PlannedStagePanel } from './project-stage-panels';
+import { PlannedStagePanel } from './project-stage-panels';
 import { Eyebrow } from './project-shared';
 import type { ConceptRow, RelationshipRow } from '../concept-graph/types';
 
@@ -72,10 +72,10 @@ export async function ProjectDetailPage({ currentStage, projectId }: ProjectDeta
           <ProjectHeader
             detail={detail}
             graphReady={graphReady}
-            ingestionStatus={ingestionStatus}
             knowledgebaseGraph={knowledgebaseGraph}
             sourceCounts={sourceCounts}
             sourceReady={sourceReady}
+            ingestionStatus={ingestionStatus}
           />
 
           <ProjectSettings detail={detail} />
@@ -118,66 +118,37 @@ export async function ProjectDetailPage({ currentStage, projectId }: ProjectDeta
           </header>
           <ProjectPipelineStatus
             graphReady={graphReady}
-            ingestionStatus={ingestionStatus}
             knowledgebaseGraph={knowledgebaseGraph}
             projectId={projectId}
             sourceCounts={sourceCounts}
             sourceReady={sourceReady}
+            ingestionStatus={ingestionStatus}
           />
         </div>
       ) : null}
 
-      {stage === 'source' ? (
-        <div className="flex flex-col gap-6 lg:gap-8">
-          <header className="flex shrink-0 flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-            <div className="space-y-3">
-              <Eyebrow>Source workspace</Eyebrow>
-              <h2 className="max-w-[28ch] text-balance text-3xl leading-[1.05] font-medium tracking-[-0.03em] text-foreground md:text-4xl">
-                Curate the multi-source library that feeds the graph.
-              </h2>
-              <p className="max-w-[60ch] text-pretty text-sm leading-relaxed text-muted-foreground">
-                Source edits trigger direct ingestion into the relational knowledgebase projection.
-                Additional inputs (URL, PDF, video transcript) are wiring up next.
-              </p>
-            </div>
-            <span className="inline-flex items-center gap-2 self-start rounded-full border border-border bg-card/50 px-3 py-1.5 font-mono text-[0.65rem] tracking-[0.18em] uppercase text-muted-foreground">
-              <span className="size-1.5 rounded-full bg-brand-accent pulse-soft" />
-              Stage 02 / Source
-            </span>
-          </header>
-
-          <div className="shrink-0">
-            <IngestionStatusPanel status={ingestionStatus} />
-          </div>
-
-          <div className="lg:h-[min(calc(90dvh-380px),820px)] lg:min-h-0">
-            <ProjectSourcesPanel projectId={detail.project.id} sources={detail.sources} />
-          </div>
-        </div>
-      ) : null}
-
-      {stage === 'graph' ? (
+      {stage === 'workspace' ? (
         <div className="flex flex-col gap-6">
           <header className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
             <div className="space-y-3">
-              <Eyebrow>Concept graph</Eyebrow>
+              <Eyebrow>Unified workspace</Eyebrow>
               <h2 className="max-w-[28ch] text-balance text-2xl leading-[1.05] font-medium tracking-[-0.03em] text-foreground md:text-3xl">
-                Review extraction and refine the concept structure.
+                Ingest sources and refine the concept graph.
               </h2>
               <p className="max-w-[60ch] text-pretty text-sm leading-relaxed text-muted-foreground">
-                The graph is built directly from source ingestion. Refine definitions and
-                relationships as needed.
+                Manage your documents on the left. The AI will extract concepts and propose them on the canvas for your approval.
               </p>
             </div>
             <span className="inline-flex items-center gap-2 self-start rounded-full border border-border bg-card/50 px-3 py-1.5 font-mono text-[0.65rem] tracking-[0.18em] uppercase text-muted-foreground">
               <span className="size-1.5 rounded-full bg-brand-accent pulse-soft" />
-              Stage 03 / Graph
+              Stage 02 / Workspace
             </span>
           </header>
           <ConceptGraphWorkspace
             concepts={knowledgebaseGraph.concepts as unknown as ConceptRow[]}
             projectId={detail.project.id}
             relationships={knowledgebaseGraph.relationships as unknown as RelationshipRow[]}
+            sources={detail.sources}
           />
         </div>
       ) : null}
@@ -189,8 +160,8 @@ export async function ProjectDetailPage({ currentStage, projectId }: ProjectDeta
             'Learning objectives and lesson block generation are not implemented yet.',
             'Per-block revision and version history UI still belong to the next slice.',
           ]}
-          ctaHref={buildStageHref(projectId, graphReady ? 'graph' : 'overview')}
-          ctaLabel={graphReady ? 'Review graph again' : 'Return to overview'}
+          ctaHref={buildStageHref(projectId, graphReady ? 'workspace' : 'overview')}
+          ctaLabel={graphReady ? 'Review workspace' : 'Return to overview'}
           eyebrow="Lesson workspace"
           title="This stage is reserved for objective and block review."
         />
@@ -203,8 +174,8 @@ export async function ProjectDetailPage({ currentStage, projectId }: ProjectDeta
             'Lesson approval is not implemented yet.',
             'Learner preview and publish gate UI are still planned.',
           ]}
-          ctaHref={buildStageHref(projectId, graphReady ? 'lesson' : 'graph')}
-          ctaLabel={graphReady ? 'Open lesson stage' : 'Open graph stage'}
+          ctaHref={buildStageHref(projectId, graphReady ? 'lesson' : 'workspace')}
+          ctaLabel={graphReady ? 'Open lesson stage' : 'Open workspace'}
           eyebrow="Publish gate"
           title="Publish stays visible so the studio keeps the full end-to-end shape."
         />

@@ -14,11 +14,10 @@ import {
 } from '../stages';
 
 const STAGE_ICONS: Record<StudioStage, typeof FileText> = {
-  graph: Network,
-  lesson: BookOpen,
   overview: LayoutDashboard,
+  workspace: Network,
+  lesson: BookOpen,
   publish: CheckCircle2,
-  source: FileText,
 };
 
 /**

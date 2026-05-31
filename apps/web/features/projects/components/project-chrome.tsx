@@ -8,7 +8,7 @@ type ProjectChromeProps = {
 /**
  * Two-row project chrome rendered inside the dashboard top header:
  *   1. Breadcrumb superscript (Projects / {title})
- *   2. Stage navigator pills (Overview · Source · Graph · Lesson · Publish)
+ *   2. Stage navigator pills (Overview · Workspace · Lesson · Publish)
  *
  * Server component on purpose — the title is server-fetched in the parallel
  * route slot, so the breadcrumb has no hydration flash. The existing

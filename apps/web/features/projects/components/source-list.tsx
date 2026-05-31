@@ -12,7 +12,7 @@ type SourceListProps = {
 
 export function SourceList({ onSelectSource, onAddNew, selectedSourceId, sources }: SourceListProps) {
   return (
-    <aside className="flex min-w-0 flex-col gap-3 overflow-hidden xl:h-full">
+    <aside className="flex min-w-0 flex-col gap-3 overflow-hidden h-full">
       <div className="flex shrink-0 items-center justify-between gap-3">
         <span className="font-mono text-[0.65rem] tabular-nums tracking-[0.18em] uppercase text-muted-foreground">
           Sources
