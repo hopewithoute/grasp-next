@@ -1,18 +1,19 @@
 'use client';
 
-import { createContext, use, useMemo } from 'react';
-import { type ProposalPayload, type ChatItem } from '../types';
+import { createContext, useContext, useMemo } from 'react';
+import { type ChatItem } from '../types';
+import { type PendingProposal } from './use-concept-graph-state';
 
-type PendingProposalsContextValue = {
-  pendingProposals: ProposalPayload[];
+export type PendingProposalsContextType = {
+  pendingProposals: PendingProposal[];
 };
 
-export const PendingProposalsContext = createContext<PendingProposalsContextValue>({
+export const PendingProposalsContext = createContext<PendingProposalsContextType>({
   pendingProposals: [],
 });
 
 export function usePendingProposals() {
-  return use(PendingProposalsContext);
+  return useContext(PendingProposalsContext);
 }
 
 /**
@@ -22,8 +23,8 @@ export function usePendingProposals() {
 export function useDerivedPendingProposals(
   items: ChatItem[],
   messages: ChatItem[],
-  setPendingProposals: React.Dispatch<React.SetStateAction<ProposalPayload[]>>
-): PendingProposalsContextValue {
+  setPendingProposals: React.Dispatch<React.SetStateAction<PendingProposal[]>>
+): PendingProposalsContextType {
   const proposals = useMemo(
     () =>
       [...items, ...messages]
@@ -31,7 +32,7 @@ export function useDerivedPendingProposals(
           (item): item is Extract<ChatItem, { kind: 'proposal' }> =>
             item.kind === 'proposal' && item.status === 'pending'
         )
-        .map((item) => item.proposal),
+        .map((item) => ({ ...item.proposal, id: item.id })),
     [items, messages]
   );
 

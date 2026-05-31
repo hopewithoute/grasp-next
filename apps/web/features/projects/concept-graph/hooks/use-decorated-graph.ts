@@ -2,17 +2,19 @@ import { useMemo } from 'react';
 import { MarkerType, type Edge, type Node } from '@xyflow/react';
 import { type ConceptRow, type RelationshipRow, type ConceptNodeData } from '../types';
 import { buildConceptGraph } from '../concept-graph-utils';
-import { type ProposalPayload } from '../types';
+import { type PendingProposal } from './use-concept-graph-state';
 
 // --- Types ---
 
 export type DecoratedGraphInput = {
   concepts: ConceptRow[];
   relationships: RelationshipRow[];
-  pendingProposals: ProposalPayload[];
+  pendingProposals: PendingProposal[];
   selectedConceptId: string | null;
   hoveredChatConceptId?: string | null;
   onViewDetails: (id: string) => void;
+  onAcceptProposal: (proposalId: string) => void;
+  onRejectProposal: (proposalId: string) => void;
 };
 
 export type DecoratedGraphResult = {
@@ -33,6 +35,7 @@ export type MergedProposalResult = {
   ghostDeleteIds: Set<string>;
   ghostRelAddIds: Set<string>;
   ghostRelDeleteIds: Set<string>;
+  nodeProposalMap: Map<string, string>;
 };
 
 // --- Pure helper ---
@@ -48,7 +51,7 @@ function payloadString(value: boolean | number | string | null | undefined): str
 export function mergeProposals(
   concepts: ConceptRow[],
   relationships: RelationshipRow[],
-  pendingProposals: ProposalPayload[]
+  pendingProposals: PendingProposal[]
 ): MergedProposalResult {
   let newConcepts = [...concepts];
   const newRelationships = [...relationships];
@@ -63,6 +66,7 @@ export function mergeProposals(
   const ghostDeleteIds = new Set<string>();
   const ghostRelAddIds = new Set<string>();
   const ghostRelDeleteIds = new Set<string>();
+  const nodeProposalMap = new Map<string, string>();
 
   const findConcept = (key: string | undefined) => {
     if (!key) return undefined;
@@ -94,6 +98,7 @@ export function mergeProposals(
         newConcepts.push(ghostConcept);
         indexConcept(ghostConcept);
         ghostAddIds.add(ghostId);
+        nodeProposalMap.set(ghostId, proposal.id);
       } else if (actionType === 'update_concept') {
         const key =
           payloadString(conceptKey) ??
@@ -102,6 +107,7 @@ export function mergeProposals(
         const target = findConcept(key);
         if (target) {
           ghostUpdateIds.add(target.id);
+          nodeProposalMap.set(target.id, proposal.id);
           const updatedConcept = { ...target, ...action.payload };
           newConcepts = newConcepts.map((c) => (c.id === target.id ? updatedConcept : c));
           indexConcept(updatedConcept);
@@ -114,6 +120,7 @@ export function mergeProposals(
         const target = findConcept(key);
         if (target) {
           ghostDeleteIds.add(target.id);
+          nodeProposalMap.set(target.id, proposal.id);
         }
       } else if (actionType === 'add_relationship') {
         const srcKey =
@@ -161,6 +168,7 @@ export function mergeProposals(
     ghostDeleteIds,
     ghostRelAddIds,
     ghostRelDeleteIds,
+    nodeProposalMap,
   };
 }
 
@@ -173,6 +181,8 @@ export function useDecoratedGraph({
   selectedConceptId,
   hoveredChatConceptId,
   onViewDetails,
+  onAcceptProposal,
+  onRejectProposal,
 }: DecoratedGraphInput): DecoratedGraphResult {
   const {
     mergedConcepts,
@@ -182,6 +192,7 @@ export function useDecoratedGraph({
     ghostDeleteIds,
     ghostRelAddIds,
     ghostRelDeleteIds,
+    nodeProposalMap,
   } = useMemo(
     () => mergeProposals(concepts, relationships, pendingProposals),
     [concepts, relationships, pendingProposals]
@@ -193,12 +204,25 @@ export function useDecoratedGraph({
   );
 
   const decorated = useMemo(() => {
+    // 1-degree neighbor calculation for Progressive Disclosure
+    const neighbors = new Set<string>();
+    if (selectedConceptId) {
+      neighbors.add(selectedConceptId);
+      for (const edge of baseGraph.edges) {
+        if (edge.source === selectedConceptId) neighbors.add(edge.target);
+        if (edge.target === selectedConceptId) neighbors.add(edge.source);
+      }
+    }
+
     const nodes = baseGraph.nodes.map((node) => {
       const isSelected = node.id === selectedConceptId;
       const isHoveredChat = node.id === hoveredChatConceptId;
       const isGhostAdd = ghostAddIds.has(node.id);
       const isGhostUpdate = ghostUpdateIds.has(node.id);
       const isGhostDelete = ghostDeleteIds.has(node.id);
+      const proposalId = nodeProposalMap.get(node.id);
+      
+      const isDimmed = selectedConceptId ? !neighbors.has(node.id) : false;
 
       return {
         ...node,
@@ -209,7 +233,11 @@ export function useDecoratedGraph({
           isGhostAdd,
           isGhostUpdate,
           isGhostDelete,
+          dimmed: isDimmed,
+          proposalId,
           onViewDetails: () => onViewDetails(node.id),
+          onAcceptProposal: proposalId ? () => onAcceptProposal(proposalId) : undefined,
+          onRejectProposal: proposalId ? () => onRejectProposal(proposalId) : undefined,
         },
       };
     });
@@ -218,6 +246,10 @@ export function useDecoratedGraph({
       const isLinked = edge.source === selectedConceptId || edge.target === selectedConceptId;
       const isGhostAdd = ghostRelAddIds.has(edge.id);
       const isGhostDelete = ghostRelDeleteIds.has(edge.id);
+
+      const isSourceNeighbor = selectedConceptId ? neighbors.has(edge.source) : true;
+      const isTargetNeighbor = selectedConceptId ? neighbors.has(edge.target) : true;
+      const isDimmed = selectedConceptId ? !(isSourceNeighbor && isTargetNeighbor) : false;
 
       let strokeColor = isLinked ? 'var(--brand-accent)' : 'rgba(83, 209, 203, 0.55)';
       let strokeDasharray: string | undefined;
@@ -232,7 +264,10 @@ export function useDecoratedGraph({
 
       const isAnimated = isLinked || isGhostAdd;
       const strokeWidth = isLinked || isGhostAdd ? 2 : 1.4;
-      const opacity = isGhostDelete ? 0.3 : 1;
+      
+      let opacity = 1;
+      if (isGhostDelete) opacity = 0.3;
+      if (isDimmed) opacity = 0.15;
 
       const relType = (edge.data as { relationshipType?: string } | undefined)?.relationshipType;
 

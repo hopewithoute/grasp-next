@@ -37,7 +37,8 @@ export const ConceptNode = memo(function ConceptNode({
                     ? 'border-destructive/50 border-dashed bg-destructive/5 opacity-50 grayscale'
                     : data.isGhostUpdate
                       ? 'border-blue-500/50 border-dashed bg-blue-500/5 shadow-[0_0_15px_-3px_rgba(59,130,246,0.2)] opacity-90'
-                      : 'border-border shadow-sm hover:border-brand-accent/50 hover:scale-[1.02]'
+                      : 'border-border shadow-sm hover:border-brand-accent/50 hover:scale-[1.02]',
+            data.dimmed ? 'opacity-30 grayscale-[50%]' : 'opacity-100'
           )}
         >
           {data.isGhostDelete && (
@@ -48,13 +49,41 @@ export const ConceptNode = memo(function ConceptNode({
             </div>
           )}
           {data.isGhostAdd && (
-            <div className="absolute -top-2 -right-2 z-10 rounded-full bg-emerald-500 px-1.5 py-0.5 font-mono text-[0.55rem] font-bold uppercase tracking-widest text-white shadow-sm">
-              New
+            <div className="absolute -top-3 right-0 z-10 flex gap-1">
+              <span className="rounded-full bg-emerald-500 px-1.5 py-0.5 font-mono text-[0.55rem] font-bold uppercase tracking-widest text-white shadow-sm">
+                New
+              </span>
+              {data.onAcceptProposal && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); data.onAcceptProposal?.(data.proposalId!); }}
+                  className="rounded-full bg-emerald-500/20 px-2 py-0.5 text-xs text-emerald-600 hover:bg-emerald-500 hover:text-white"
+                >✓</button>
+              )}
+              {data.onRejectProposal && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); data.onRejectProposal?.(data.proposalId!); }}
+                  className="rounded-full bg-destructive/20 px-2 py-0.5 text-xs text-destructive hover:bg-destructive hover:text-white"
+                >✕</button>
+              )}
             </div>
           )}
           {data.isGhostUpdate && (
-            <div className="absolute -top-2 -right-2 z-10 rounded-full bg-blue-500 px-1.5 py-0.5 font-mono text-[0.55rem] font-bold uppercase tracking-widest text-white shadow-sm">
-              Update
+            <div className="absolute -top-3 right-0 z-10 flex gap-1">
+              <span className="rounded-full bg-blue-500 px-1.5 py-0.5 font-mono text-[0.55rem] font-bold uppercase tracking-widest text-white shadow-sm">
+                Update
+              </span>
+              {data.onAcceptProposal && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); data.onAcceptProposal?.(data.proposalId!); }}
+                  className="rounded-full bg-blue-500/20 px-2 py-0.5 text-xs text-blue-600 hover:bg-blue-500 hover:text-white"
+                >✓</button>
+              )}
+              {data.onRejectProposal && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); data.onRejectProposal?.(data.proposalId!); }}
+                  className="rounded-full bg-destructive/20 px-2 py-0.5 text-xs text-destructive hover:bg-destructive hover:text-white"
+                >✕</button>
+              )}
             </div>
           )}
           <Handle
@@ -100,7 +129,8 @@ function areConceptNodePropsEqual(
     previous.data.isHoveredChat === next.data.isHoveredChat &&
     previous.data.isGhostAdd === next.data.isGhostAdd &&
     previous.data.isGhostUpdate === next.data.isGhostUpdate &&
-    previous.data.isGhostDelete === next.data.isGhostDelete
+    previous.data.isGhostDelete === next.data.isGhostDelete &&
+    previous.data.dimmed === next.data.dimmed
   );
 }
 

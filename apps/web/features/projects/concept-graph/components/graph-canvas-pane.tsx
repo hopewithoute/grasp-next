@@ -49,6 +49,8 @@ export const GraphCanvasPane = memo(function GraphCanvasPane({
   relationships,
   selectedConcept,
   hoveredChatConceptId,
+  onAcceptProposal,
+  onRejectProposal,
 }: {
   projectId: string;
   concepts: ConceptRow[];
@@ -58,6 +60,8 @@ export const GraphCanvasPane = memo(function GraphCanvasPane({
   relationships: RelationshipRow[];
   selectedConcept: ConceptRow | null;
   hoveredChatConceptId?: string | null;
+  onAcceptProposal: (proposalId: string) => void;
+  onRejectProposal: (proposalId: string) => void;
 }) {
   const { pendingProposals } = usePendingProposals();
   const proposalCount = pendingProposals.length;
@@ -86,7 +90,7 @@ export const GraphCanvasPane = memo(function GraphCanvasPane({
   return (
     <section
       aria-label="Concept graph canvas"
-      className="flex min-h-[520px] flex-col border-b border-border bg-background lg:min-h-0 lg:border-b-0 lg:border-r"
+      className="flex flex-1 min-h-[520px] flex-col border-b border-border bg-background lg:min-h-0 lg:border-b-0 lg:border-r"
     >
       <PaneHeader eyebrow="Concept graph" meta={null} title="Interactive Canvas" />
 
@@ -177,6 +181,8 @@ export const GraphCanvasPane = memo(function GraphCanvasPane({
                 selectedConceptId={selectedConcept?.id ?? null}
                 onViewDetails={openEvidenceDialog}
                 hoveredChatConceptId={hoveredChatConceptId}
+                onAcceptProposal={onAcceptProposal}
+                onRejectProposal={onRejectProposal}
               />
             </>
           ) : (
@@ -211,6 +217,8 @@ function GraphCanvas({
   selectedConceptId,
   onViewDetails,
   hoveredChatConceptId,
+  onAcceptProposal,
+  onRejectProposal,
 }: {
   concepts: ConceptRow[];
   onSelectConcept: (id: string, multi?: boolean) => void;
@@ -218,6 +226,8 @@ function GraphCanvas({
   selectedConceptId: string | null;
   onViewDetails: (id: string) => void;
   hoveredChatConceptId?: string | null;
+  onAcceptProposal: (proposalId: string) => void;
+  onRejectProposal: (proposalId: string) => void;
 }) {
   const { pendingProposals } = usePendingProposals();
   const { resolvedTheme } = useTheme();
@@ -230,6 +240,8 @@ function GraphCanvas({
     selectedConceptId,
     hoveredChatConceptId,
     onViewDetails,
+    onAcceptProposal,
+    onRejectProposal,
   });
 
   const handleNodeClick = useCallback(

@@ -45,18 +45,23 @@ export type ConceptGraphState = {
   isInventoryCollapsed: boolean;
   isRefinementCollapsed: boolean;
   hoveredChatConceptId: string | null;
-  pendingProposals: ProposalPayload[];
+  pendingProposals: PendingProposal[];
 };
+
+export type PendingProposal = ProposalPayload & { id: string };
 
 export function useConceptGraphState(concepts: ConceptRow[]) {
   const [pendingSelectedId, setPendingSelectedId] = useState<string | null>(
     concepts[0]?.id ?? null
   );
   const [chatContextConceptIds, setChatContextConceptIds] = useState<string[]>([]);
-  const [isInventoryCollapsed, setIsInventoryCollapsed] = useState<boolean>(true);
-  const [isRefinementCollapsed, setIsRefinementCollapsed] = useState<boolean>(false);
+  const [isInventoryCollapsed, setIsInventoryCollapsed] = useState(false);
+  const [isRefinementCollapsed, setIsRefinementCollapsed] = useState(true);
   const [hoveredChatConceptId, setHoveredChatConceptId] = useState<string | null>(null);
-  const [pendingProposals, setPendingProposals] = useState<ProposalPayload[]>([]);
+  const [viewMode, setViewMode] = useState<'graph' | 'list'>('graph');
+
+  // Load proposals from server (mock for MVP if needed, assuming handled elsewhere)
+  const [pendingProposals, setPendingProposals] = useState<PendingProposal[]>([]);
 
   return {
     pendingSelectedId,
@@ -71,5 +76,7 @@ export function useConceptGraphState(concepts: ConceptRow[]) {
     setHoveredChatConceptId,
     pendingProposals,
     setPendingProposals,
+    viewMode,
+    setViewMode,
   };
 }
