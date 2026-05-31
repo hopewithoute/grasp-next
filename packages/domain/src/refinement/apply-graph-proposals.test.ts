@@ -38,6 +38,9 @@ function createMockRepository(): KnowledgebaseRepository & { calls: MockCall[] }
     deleteConcept: async (input) => {
       calls.push({ method: 'deleteConcept', args: [input] });
     },
+    cleanupOrphans: async (input) => {
+      calls.push({ method: 'cleanupOrphans', args: [input] });
+    },
     addRelationship: async (input) => {
       calls.push({ method: 'addRelationship', args: [input] });
     },

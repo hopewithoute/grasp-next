@@ -264,7 +264,7 @@ function createTestState(): TestState {
 function requireProject(state: TestState): ProjectRecord {
   expect(state.project).toBeTruthy();
 
-  return state.project;
+  return state.project as ProjectRecord;
 }
 
 function createDeps(state: TestState) {
@@ -413,6 +413,7 @@ function createKnowledgebaseRepository(): KnowledgebaseRepository {
     },
     async upsertSourcePassages() {},
     async cleanupDeletedSource() {},
+    async cleanupOrphans() {},
   };
 }
 

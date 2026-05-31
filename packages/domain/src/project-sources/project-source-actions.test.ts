@@ -143,6 +143,9 @@ function createSource(projectId: string): ProjectSourceRecord {
 function createDeps(state: TestState) {
   return {
     auditLogRepository: createAuditLogRepository(state),
+    knowledgebaseRepository: {
+      cleanupOrphans: async () => {},
+    } as never,
     projectRepository: createProjectRepository(state),
     projectSourceRepository: createProjectSourceRepository(state),
   };

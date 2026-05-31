@@ -11,9 +11,10 @@ import {
   type UpdateProjectSourceDto,
 } from './project-source.dto';
 import type { ProjectSourceRecord, ProjectSourceRepository } from './project-source.types';
-
+import type { KnowledgebaseMutationRepository } from '../knowledgebase/knowledgebase.types';
 export type ProjectSourceActionDeps = {
   auditLogRepository: AuditLogRepository;
+  knowledgebaseRepository: KnowledgebaseMutationRepository;
   projectRepository: ProjectRepository;
   projectSourceRepository: ProjectSourceRepository;
 };
@@ -95,6 +96,8 @@ export async function deleteProjectSource(
   if (!source) {
     throw new ProjectForbiddenError();
   }
+
+  await deps.knowledgebaseRepository.cleanupOrphans(source.projectId);
 
   await deps.auditLogRepository.write({
     actorId: actor.id,

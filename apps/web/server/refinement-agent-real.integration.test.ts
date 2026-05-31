@@ -168,7 +168,7 @@ function assertAddEvidenceProposal(
   expect(typeof proposal.rationale === 'string' && proposal.rationale.length > 0).toBeTruthy();
 
   const evidenceActions = proposal.actions.filter((action: any) => action.type === 'add_evidence');
-  expect(evidenceActions.length).toBe(1, 'Expected exactly one add_evidence action');
+  expect(evidenceActions.length, 'Expected exactly one add_evidence action').toBe(1);
 
   const payload = evidenceActions[0].payload;
   expect(payload.conceptKey).toBe(expected.conceptKey);

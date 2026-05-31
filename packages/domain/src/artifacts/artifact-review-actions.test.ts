@@ -576,6 +576,7 @@ function createKnowledgebaseRepository(state: TestState): KnowledgebaseRepositor
     async addConceptEvidence() {},
     async updateConceptEvidence() {},
     async deleteConceptEvidence() {},
+    async cleanupOrphans() {},
     async createSnapshot() {
       return null;
     },

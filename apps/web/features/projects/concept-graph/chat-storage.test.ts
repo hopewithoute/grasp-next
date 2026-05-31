@@ -62,7 +62,7 @@ describe('writeStoredChatMessages', () => {
 
     const stored = store.get('grasp-chat-project-2');
     expect(stored).toBeTruthy();
-    const parsed = JSON.parse(stored);
+    const parsed = JSON.parse(stored!);
     expect(parsed.length).toBe(1);
     expect(parsed[0].id).toBe('msg-1');
   });
