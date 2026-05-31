@@ -20,3 +20,4 @@ debug-evidence.log
 test-query.mjs
 test-query.ts
 packages/db/test-evidence.ts
+packages/ai/test-mastra.mjs
