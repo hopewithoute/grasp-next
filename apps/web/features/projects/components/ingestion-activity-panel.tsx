@@ -1,6 +1,14 @@
 'use client';
 
-import { useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from 'react';
+import { useRouter } from 'next/navigation';
 import { Bot, GitBranch, Loader2, Sparkles, CheckCircle2, XCircle } from 'lucide-react';
 import { consumeUIMessageChunks } from '@/lib/ui-message-stream';
 import { cn } from '@/lib/utils';
@@ -68,30 +76,22 @@ export type IngestionStreamEvent =
   | { type: 'ingestion_complete'; conceptCount: number; relationshipCount: number }
   | { type: 'ingestion_failed'; reason: string };
 
-type FeedItem = {
+export type FeedItem = {
   id: string;
   event: IngestionStreamEvent;
 };
 
 type IngestionActivityPanelProps = {
   projectId: string;
-};
-
-export type IngestionActivityPanelHandle = {
-  startIngestion: (
-    sourceId: string,
-    sourceTitle: string,
-    sourceType: string,
-    content: string
-  ) => void;
+  feed: FeedItem[];
+  isRunning: boolean;
 };
 
 export function IngestionActivityPanel({
   projectId,
-  ref,
-}: IngestionActivityPanelProps & { ref?: React.Ref<IngestionActivityPanelHandle> }) {
-  const [feed, setFeed] = useState<FeedItem[]>([]);
-  const [isRunning, setIsRunning] = useState(false);
+  feed,
+  isRunning,
+}: IngestionActivityPanelProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -99,45 +99,8 @@ export function IngestionActivityPanel({
     if (el) el.scrollTop = el.scrollHeight;
   }, [feed]);
 
-  const startIngestion = useCallback(
-    async (sourceId: string, sourceTitle: string, sourceType: string, content: string) => {
-      setIsRunning(true);
-      setFeed([]);
-
-      const response = await fetch(`/api/v1/projects/${projectId}/ingestion/stream`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sourceId, sourceTitle, sourceType, content }),
-      });
-
-      if (!response.ok || !response.body) {
-        setIsRunning(false);
-        setFeed((f) => [
-          ...f,
-          {
-            id: `err-${Date.now()}`,
-            event: { type: 'ingestion_failed', reason: 'Request failed' },
-          },
-        ]);
-        return;
-      }
-
-      await consumeUIMessageChunks(response.body, (chunk) => {
-        if (chunk.type === 'data-ingestion') {
-          const event = chunk.data as IngestionStreamEvent;
-          setFeed((f) => [...f, { id: `${event.type}-${Date.now()}-${f.length}`, event }]);
-        }
-      });
-
-      setIsRunning(false);
-    },
-    [projectId]
-  );
-
-  useImperativeHandle(ref, () => ({ startIngestion }), [startIngestion]);
-
   return (
-    <section className="flex h-full flex-col">
+    <section className="flex h-full min-h-0 flex-col">
       <header className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
         <div className="space-y-1">
           <span className="inline-flex items-center gap-2 font-mono text-[0.62rem] tabular-nums tracking-[0.18em] uppercase text-muted-foreground">
@@ -160,7 +123,7 @@ export function IngestionActivityPanel({
         )}
       </header>
 
-      <div className="min-h-0 flex-1 overflow-y-auto p-3" ref={scrollRef}>
+      <div className="min-h-0 flex-1 overflow-y-scroll p-4 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border hover:[&::-webkit-scrollbar-thumb]:bg-muted-foreground/50" ref={scrollRef}>
         {feed.length === 0 && !isRunning ? (
           <div className="grid h-full place-items-center px-4">
             <p className="text-center text-xs leading-5 text-muted-foreground">
@@ -168,7 +131,7 @@ export function IngestionActivityPanel({
             </p>
           </div>
         ) : (
-          <ol className="space-y-1.5">
+          <ol className="space-y-2">
             {feed.map((item) => (
               <li key={item.id}>
                 <FeedEvent event={item.event} />

@@ -17,12 +17,14 @@ import {
   deleteProjectSourceFormAction,
   updateProjectSourceFormAction,
 } from '../actions';
-import {
-  IngestionActivityPanel,
-  type IngestionActivityPanelHandle,
-} from './ingestion-activity-panel';
 import { sourceModeButtonVariants, sourceTextareaVariants } from '../project-style-variants';
 import { SourceList } from './source-list';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 export type ProjectSourceItem = {
   content: string | null;
@@ -34,79 +36,84 @@ export type ProjectSourceItem = {
 type ProjectSourcesPanelProps = {
   projectId: string;
   sources: ProjectSourceItem[];
+  onIngestionTrigger: (sourceId: string, title: string, type: string, content: string) => void;
 };
 
-export function ProjectSourcesPanel({ projectId, sources }: ProjectSourcesPanelProps) {
-  const defaultSelectedId = sources.length > 0 && sources[0] ? sources[0].id : null;
-  const [selectedSourceId, setSelectedSourceId] = useState(defaultSelectedId);
+export function ProjectSourcesPanel({ projectId, sources, onIngestionTrigger }: ProjectSourcesPanelProps) {
+  const [selectedSourceId, setSelectedSourceId] = useState<string | null>(null);
   const [isAddingNew, setIsAddingNew] = useState(false);
   const selectedSource = !isAddingNew
-    ? (sources.find((source) => source.id === selectedSourceId) ?? sources[0])
+    ? (sources.find((source) => source.id === selectedSourceId) ?? null)
     : null;
-  const ingestionPanelRef = useRef<IngestionActivityPanelHandle>(null);
+
+  const isDialogOpen = isAddingNew || selectedSource !== null;
 
   return (
-    <div className="grid gap-6 h-full xl:grid-cols-[18rem_minmax(0,1fr)_18rem]">
-      <SourceList
-        sources={sources}
-        selectedSourceId={selectedSource?.id ?? null}
-        onSelectSource={(id) => {
-          setSelectedSourceId(id);
-          setIsAddingNew(false);
+    <div className="flex flex-col gap-6 h-full">
+      <div className="flex-1 overflow-hidden flex flex-col rounded-[1.35rem] border border-border p-4">
+        <SourceList
+          sources={sources}
+          selectedSourceId={selectedSource?.id ?? null}
+          onSelectSource={(id) => {
+            setSelectedSourceId(id);
+            setIsAddingNew(false);
+          }}
+          onAddNew={() => setIsAddingNew(true)}
+        />
+      </div>
+
+      <Dialog
+        open={isDialogOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            setIsAddingNew(false);
+            setSelectedSourceId(null);
+          }
         }}
-        onAddNew={() => setIsAddingNew(true)}
-      />
+      >
+        <DialogContent className="sm:max-w-[700px] h-[80vh] flex flex-col p-0 gap-0 overflow-hidden bg-background">
+          <DialogHeader className="p-4 pb-0 border-b border-border shrink-0 text-left">
+            <div className="flex shrink-0 flex-col gap-2 pb-3">
+              <div className="space-y-1">
+                <span className="font-mono text-[0.65rem] tabular-nums tracking-[0.18em] uppercase text-brand-accent-foreground">
+                  {isAddingNew ? 'new source' : 'source editor'}
+                </span>
+                <DialogTitle className="text-lg font-medium tracking-tight text-foreground truncate">
+                  {isAddingNew
+                    ? 'Add new source'
+                    : selectedSource
+                      ? selectedSource.title
+                      : 'Source'}
+                </DialogTitle>
+              </div>
+              {selectedSource && !isAddingNew && (
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card/50 px-2.5 py-1 text-[0.7rem] text-muted-foreground w-fit">
+                  <FileText className="size-3" />
+                  {getTextCounts(selectedSource.content ?? '').words} words
+                </span>
+              )}
+            </div>
+          </DialogHeader>
 
-      <section className="flex min-w-0 flex-col gap-5 overflow-hidden rounded-[1.75rem] border border-border bg-card/50 p-6 xl:h-full">
-        <div className="flex shrink-0 flex-col gap-3 border-b border-border pb-5 lg:flex-row lg:items-end lg:justify-between">
-          <div className="space-y-2">
-            <span className="font-mono text-[0.65rem] tabular-nums tracking-[0.18em] uppercase text-brand-accent-foreground">
-              {isAddingNew ? 'new source' : 'source editor'}
-            </span>
-            <h3 className="text-xl font-medium tracking-tight text-foreground">
-              {isAddingNew
-                ? 'Add new source'
-                : selectedSource
-                  ? selectedSource.title
-                  : 'Select a source'}
-            </h3>
+          <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4 pt-4">
+            {isAddingNew ? (
+              <ProjectSourceAddForm
+                projectId={projectId}
+                onIngestionTrigger={(sourceId, title, type, content) => {
+                  setIsAddingNew(false);
+                  onIngestionTrigger(sourceId, title, type, content);
+                }}
+              />
+            ) : selectedSource ? (
+              <ProjectSourceEditForm
+                key={selectedSource.id}
+                source={selectedSource}
+                onIngestionTrigger={onIngestionTrigger}
+              />
+            ) : null}
           </div>
-          {selectedSource && !isAddingNew && (
-            <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card/50 px-3 py-1.5 text-xs text-muted-foreground">
-              <FileText className="size-3.5" />
-              {getTextCounts(selectedSource.content ?? '').words} words
-            </span>
-          )}
-        </div>
-
-        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
-          {isAddingNew ? (
-            <ProjectSourceAddForm
-              projectId={projectId}
-              onIngestionTrigger={(sourceId, title, type, content) => {
-                setIsAddingNew(false);
-                ingestionPanelRef.current?.startIngestion(sourceId, title, type, content);
-              }}
-            />
-          ) : selectedSource ? (
-            <ProjectSourceEditForm
-              key={selectedSource.id}
-              source={selectedSource}
-              onIngestionTrigger={(sourceId, title, type, content) =>
-                ingestionPanelRef.current?.startIngestion(sourceId, title, type, content)
-              }
-            />
-          ) : (
-            <p className="py-8 text-center text-sm text-muted-foreground">
-              Select a source from the left or add a new one.
-            </p>
-          )}
-        </div>
-      </section>
-
-      <aside className="h-[480px] min-w-0 overflow-hidden rounded-[1.35rem] border border-border bg-card xl:h-full">
-        <IngestionActivityPanel projectId={projectId} ref={ingestionPanelRef} />
-      </aside>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

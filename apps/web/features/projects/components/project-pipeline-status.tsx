@@ -61,22 +61,18 @@ export function ProjectPipelineStatus({
             />
             <PipelineRow
               cite="02"
-              copy="Source changes trigger direct ingestion into the knowledgebase projection."
-              icon={Sparkles}
+              copy="Source changes trigger ingestion to build the concept graph workspace."
+              icon={GitBranch}
               ready={ingestionStatus.ready}
-              stat={ingestionStatus.value}
-              title="Ingestion"
+              stat={
+                ingestionStatus.ready
+                  ? `${knowledgebaseGraph.concepts.length} concepts`
+                  : ingestionStatus.value
+              }
+              title="Workspace"
             />
             <PipelineRow
               cite="03"
-              copy="Graph review stays grounded with evidence and confidence."
-              icon={GitBranch}
-              ready={graphReady}
-              stat={`${knowledgebaseGraph.concepts.length} concepts`}
-              title="Graph"
-            />
-            <PipelineRow
-              cite="04"
               copy="Lesson and publish layer on top of the reviewed graph."
               icon={Layers3}
               ready={false}
@@ -97,9 +93,9 @@ export function ProjectPipelineStatus({
             </div>
             <Link
               className="group inline-flex items-center gap-2 rounded-full border border-border bg-card/50 px-4 py-2 text-sm font-medium text-muted-foreground transition-all duration-200 hover:border-brand-accent-border hover:bg-brand-accent-surface hover:text-brand-accent-foreground"
-              href={buildStageHref(projectId, 'graph')}
+              href={buildStageHref(projectId, 'workspace')}
             >
-              Open graph
+              Open workspace
               <ArrowUpRight
                 className="size-4 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
                 strokeWidth={1.5}
@@ -134,8 +130,8 @@ export function ProjectPipelineStatus({
             />
             <GuidanceRow
               cite="02"
-              copy="Generate, refine, and approve the concept structure."
-              label="Graph"
+              copy="Ingest sources and refine the concept structure."
+              label="Workspace"
             />
             <GuidanceRow
               cite="03"
@@ -149,8 +145,7 @@ export function ProjectPipelineStatus({
           <Eyebrow>Current readiness</Eyebrow>
           <ul className="space-y-2">
             <ReadinessRow label="Source saved" ready={sourceReady} />
-            <ReadinessRow label="Ingestion completed" ready={ingestionStatus.ready} />
-            <ReadinessRow label="Graph generated" ready={graphReady} />
+            <ReadinessRow label="Workspace synced" ready={ingestionStatus.ready && graphReady} />
             <ReadinessRow label="Lesson review" ready={false} />
             <ReadinessRow label="Publish gate" ready={false} />
           </ul>
