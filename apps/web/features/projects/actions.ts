@@ -5,6 +5,8 @@ import { redirect } from 'next/navigation';
 import {
   addProjectSource,
   addProjectSourceDto,
+  addProjectSourceFromUrl,
+  addProjectSourceFromUrlDto,
   canCreateProject,
   createProject,
   createProjectDto,
@@ -32,6 +34,7 @@ export type CreateProjectFormState = {
 export type ProjectSourceFormState = {
   error: string | null;
   sourceId?: string;
+  content?: string;
   success: boolean;
 };
 
@@ -169,6 +172,55 @@ export async function addProjectSourceFormAction(
     revalidatePath(`/dashboard/projects/${source.projectId}`);
 
     return { error: null, sourceId: source.id, success: true };
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : 'Source creation failed.',
+      success: false,
+    };
+  }
+}
+
+export async function addProjectSourceFromUrlFormAction(
+  _state: ProjectSourceFormState,
+  formData: FormData
+): Promise<ProjectSourceFormState> {
+  const actor = await auth();
+
+  if (!actor) {
+    return { error: 'Unauthorized.', success: false };
+  }
+
+  const parsed = addProjectSourceFromUrlDto.safeParse({
+    url: formData.get('url')?.toString() ?? '',
+    projectId: formData.get('projectId')?.toString() ?? '',
+    title: formData.get('title')?.toString() ?? '',
+  });
+
+  if (!parsed.success) {
+    return { error: 'Source title and valid URL are required.', success: false };
+  }
+
+  try {
+    const deps = createProjectDeps();
+    
+    const { extractWebpageContent } = await import('@grasp/ai');
+    const text = await extractWebpageContent(parsed.data.url);
+
+    const source = await addProjectSourceFromUrl(
+      {
+        projectId: parsed.data.projectId,
+        title: parsed.data.title,
+        url: parsed.data.url,
+        content: text,
+      },
+      deps,
+      actor
+    );
+
+    revalidatePath('/dashboard/projects');
+    revalidatePath(`/dashboard/projects/${source.projectId}`);
+
+    return { error: null, sourceId: source.id, content: text, success: true };
   } catch (error) {
     return {
       error: error instanceof Error ? error.message : 'Source creation failed.',

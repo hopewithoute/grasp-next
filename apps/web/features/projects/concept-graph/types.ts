@@ -35,6 +35,12 @@ export type ProposalPayload = {
   actions: ProposalAction[];
 };
 
+export type SourceProposalPayload = {
+  url: string;
+  title: string;
+  snippet: string;
+};
+
 export type ChatItem =
   | {
       id: string;
@@ -52,6 +58,12 @@ export type ChatItem =
       id: string;
       kind: 'proposal';
       proposal: ProposalPayload;
+      status: 'pending' | 'approved' | 'rejected';
+    }
+  | {
+      id: string;
+      kind: 'source_proposal';
+      proposal: SourceProposalPayload;
       status: 'pending' | 'approved' | 'rejected';
     };
 

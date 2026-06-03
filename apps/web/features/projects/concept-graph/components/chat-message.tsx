@@ -3,8 +3,9 @@
 import { memo } from 'react';
 import { Bot } from 'lucide-react';
 import { type ChatItem } from '../types';
-import { type ProposalPayload } from '../types';
+import { type ProposalPayload, type SourceProposalPayload } from '../types';
 import { ProposalCard } from './proposal-card';
+import { SourceProposalCard } from './source-proposal-card';
 import { MarkdownText } from './chat-markdown';
 import { ChatEvent } from './chat-event';
 
@@ -15,11 +16,15 @@ export const ChatItemRow = memo(function ChatItemRow({
   item,
   onApproveProposal,
   onRejectProposal,
+  onApproveSourceProposal,
+  onRejectSourceProposal,
 }: {
   isLoading: boolean;
   item: ChatItem;
   onApproveProposal: (id: string, proposal: ProposalPayload) => void;
   onRejectProposal: (id: string) => void;
+  onApproveSourceProposal?: (id: string, proposal: SourceProposalPayload) => void;
+  onRejectSourceProposal?: (id: string) => void;
 }) {
   if (item.kind === 'message') {
     return (
@@ -38,6 +43,20 @@ export const ChatItemRow = memo(function ChatItemRow({
           isProcessing={item.status !== 'pending' || isLoading}
           onApprove={() => onApproveProposal(item.id, item.proposal)}
           onReject={() => onRejectProposal(item.id)}
+        />
+      </li>
+    );
+  }
+
+  if (item.kind === 'source_proposal') {
+    return (
+      <li>
+        <SourceProposalCard
+          proposal={item.proposal}
+          status={item.status}
+          isProcessing={item.status !== 'pending' || isLoading}
+          onApprove={() => onApproveSourceProposal?.(item.id, item.proposal)}
+          onReject={() => onRejectSourceProposal?.(item.id)}
         />
       </li>
     );

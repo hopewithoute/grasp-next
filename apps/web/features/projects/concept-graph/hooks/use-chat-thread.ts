@@ -4,8 +4,8 @@ import { useCallback, useEffect, useRef, useState, type RefObject } from 'react'
 import { useRouter } from 'next/navigation';
 import { consumeUIMessageChunks } from '@/lib/ui-message-stream';
 import { type ConceptRow, type ChatItem, type StreamEvent } from '../types';
-import { type ProposalPayload } from '../types';
-import { executeGraphProposalAction } from '../../actions';
+import { type ProposalPayload, type SourceProposalPayload } from '../types';
+import { executeGraphProposalAction, addProjectSourceFromUrlFormAction } from '../../actions';
 import { readStoredChatMessages, writeStoredChatMessages } from '../chat-storage';
 import { useClientHydrated } from './use-concept-graph-state';
 
@@ -15,6 +15,8 @@ export type UseChatThreadResult = {
   handleSubmit: (input: string) => Promise<void>;
   handleApproveProposal: (id: string, proposal: ProposalPayload) => Promise<void>;
   handleRejectProposal: (id: string) => void;
+  handleApproveSourceProposal: (id: string, proposal: SourceProposalPayload) => Promise<void>;
+  handleRejectSourceProposal: (id: string) => void;
   isLoading: boolean;
   scrollRef: RefObject<HTMLDivElement | null>;
 };
@@ -133,6 +135,15 @@ export function useChatThread(
             setMessages((prev) => [
               ...prev,
               { id: `proposal-${Date.now()}`, kind: 'proposal', proposal, status: 'pending' },
+            ]);
+            return;
+          }
+
+          if (chunk.type === 'data-source-proposal') {
+            const proposal = chunk.data as SourceProposalPayload;
+            setMessages((prev) => [
+              ...prev,
+              { id: `source-proposal-${Date.now()}`, kind: 'source_proposal', proposal, status: 'pending' },
             ]);
             return;
           }
@@ -294,12 +305,93 @@ export function useChatThread(
     ]);
   }, []);
 
+  const handleApproveSourceProposal = useCallback(
+    async (id: string, proposal: SourceProposalPayload) => {
+      setIsLoading(true);
+      try {
+        const formData = new FormData();
+        formData.append('projectId', projectId);
+        formData.append('url', proposal.url);
+        formData.append('title', proposal.title);
+
+        const result = await addProjectSourceFromUrlFormAction({ error: null, success: false }, formData);
+
+        if (!result.success) {
+          setMessages((prev) => [
+            ...prev.map((m) => (m.id === id ? { ...m, status: 'pending' as const } : m)),
+            {
+              id: `sys-error-${Date.now()}`,
+              kind: 'message',
+              role: 'agent',
+              text: `Gagal menambahkan web source: ${result.error || 'Terjadi kesalahan jaringan.'}`,
+              streaming: false,
+            },
+          ]);
+          return;
+        }
+
+        const sysUserMsg = {
+          id: `sys-${Date.now()}`,
+          kind: 'message' as const,
+          role: 'user' as const,
+          text: `[System: User approved adding the web source. URL: ${proposal.url}]`,
+          streaming: false,
+        };
+        setMessages((prev) => [
+          ...prev.map((m) => (m.id === id ? { ...m, status: 'approved' as const } : m)),
+          sysUserMsg,
+          {
+            id: `sys-reply-${Date.now()}`,
+            kind: 'message',
+            role: 'agent',
+            text: `Web source has been successfully saved to the library and is queued for background ingestion. I can now propose graph changes if needed.`,
+            streaming: false,
+          },
+        ]);
+        refresh();
+      } catch (e) {
+        console.error(e);
+        setMessages((prev) => [
+          ...prev.map((m) => (m.id === id ? { ...m, status: 'pending' as const } : m)),
+          {
+            id: `sys-error-${Date.now()}`,
+            kind: 'message',
+            role: 'agent',
+            text: `Gagal memproses persetujuan: ${e instanceof Error ? e.message : 'Unknown error'}`,
+            streaming: false,
+          },
+        ]);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [projectId, refresh]
+  );
+
+  const handleRejectSourceProposal = useCallback((id: string) => {
+    setMessages((prev) =>
+      prev.map((m) => (m.id === id ? { ...m, status: 'rejected' as const } : m))
+    );
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: `sys-${Date.now()}`,
+        kind: 'message',
+        role: 'user',
+        text: 'I reject adding this web source. Please do not add it.',
+        streaming: false,
+      },
+    ]);
+  }, []);
+
   return {
     messages,
     setMessages,
     handleSubmit,
     handleApproveProposal,
     handleRejectProposal,
+    handleApproveSourceProposal,
+    handleRejectSourceProposal,
     isLoading,
     scrollRef,
   };

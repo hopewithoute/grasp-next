@@ -36,6 +36,8 @@ export function ChatPane({
     handleSubmit,
     handleApproveProposal,
     handleRejectProposal,
+    handleApproveSourceProposal,
+    handleRejectSourceProposal,
     isLoading,
     scrollRef,
   } = useChatThread(projectId, chatContextConcepts);
@@ -57,7 +59,7 @@ export function ChatPane({
   }
 
   const hasPendingProposal = messages.some(
-    (m) => m.kind === 'proposal' && m.status === 'pending'
+    (m) => (m.kind === 'proposal' || m.kind === 'source_proposal') && m.status === 'pending'
   );
 
   return (
@@ -92,6 +94,8 @@ export function ChatPane({
               key={item.id}
               onApproveProposal={handleApproveProposal}
               onRejectProposal={handleRejectProposal}
+              onApproveSourceProposal={handleApproveSourceProposal}
+              onRejectSourceProposal={handleRejectSourceProposal}
             />
           ))}
           {messages.map((item) => (
@@ -101,6 +105,8 @@ export function ChatPane({
               key={item.id}
               onApproveProposal={handleApproveProposal}
               onRejectProposal={handleRejectProposal}
+              onApproveSourceProposal={handleApproveSourceProposal}
+              onRejectSourceProposal={handleRejectSourceProposal}
             />
           ))}
         </ol>

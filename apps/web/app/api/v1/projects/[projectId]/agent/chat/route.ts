@@ -1,9 +1,20 @@
 import { getActor } from '@/server/actor';
 import { createProjectDeps } from '@/server/project-deps';
 import { readMastraTextDelta } from '@/server/refinement-chat-stream';
-import { refinementAgent, createRefinementTools, type GraphProposalPayload } from '@grasp/ai/refinement';
+import { refinementAgent, createRefinementTools } from '@grasp/ai/refinement';
 import { robustStream } from '@grasp/ai/mastra';
 import { createUIMessageStream, createUIMessageStreamResponse } from 'ai';
+
+type MastraChunk = {
+  type?: string;
+  data?: unknown;
+  payload?: {
+    output?: {
+      type?: string;
+      data?: unknown;
+    } | null;
+  };
+};
 
 type ChatMessage = {
   role: 'user' | 'assistant' | 'system';
@@ -15,12 +26,7 @@ type SelectedConcept = {
   name: string;
 };
 
-type AgentActivityEvent = {
-  type: 'agent_activity';
-  label: string;
-  detail: string;
-  status: 'started' | 'completed';
-};
+
 
 type ChatRequestBody = {
   messages: ChatMessage[];
@@ -74,30 +80,6 @@ export async function POST(
         const tools = createRefinementTools({
           knowledgebaseRepository: deps.knowledgebaseRepository,
           projectId,
-          onAddWebSource: async (url, title, text, skipIngestion) => {
-            const source = await deps.projectSourceRepository.createForProjectOwner(projectId, actor.id, {
-              title,
-              content: text,
-              type: 'markdown',
-              fileRef: url,
-            });
-            if (!source) throw new Error('Failed to create source');
-
-            if (!skipIngestion) {
-              // Fire and forget the background ingestion
-              import('@/server/source-ingestion-runner').then(({ runSourceIngestion }) => {
-                runSourceIngestion({
-                  projectId,
-                  sourceId: source.id,
-                  sourceTitle: source.title,
-                  sourceType: 'markdown',
-                  content: source.content ?? '',
-                }, deps).catch(console.error);
-              });
-            }
-
-            return source.id;
-          }
         });
 
         try {
@@ -110,10 +92,11 @@ export async function POST(
             maxSteps: 10,
           });
 
-          for await (const chunk of result.fullStream as AsyncIterable<any>) {
+          for await (const chunk of result.fullStream as AsyncIterable<unknown>) {
+            const mastraChunk = chunk as MastraChunk;
             // Check for native Mastra tool streaming chunks
-            const customType = chunk?.type ?? chunk?.payload?.output?.type;
-            const customData = chunk?.data ?? chunk?.payload?.output?.data ?? chunk?.payload?.output;
+            const customType = mastraChunk.type ?? mastraChunk.payload?.output?.type;
+            const customData = mastraChunk.data ?? mastraChunk.payload?.output?.data ?? mastraChunk.payload?.output;
 
             if (customType === 'data-agent-activity') {
               if (wroteText) needsNewline = true;
@@ -129,6 +112,15 @@ export async function POST(
               if (wroteText) needsNewline = true;
               writer.write({
                 type: 'data-agent-proposal',
+                data: customData,
+              });
+              continue;
+            }
+
+            if (customType === 'data-source-proposal') {
+              if (wroteText) needsNewline = true;
+              writer.write({
+                type: 'data-source-proposal',
                 data: customData,
               });
               continue;

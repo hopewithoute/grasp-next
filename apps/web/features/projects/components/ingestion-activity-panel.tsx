@@ -1,16 +1,11 @@
 'use client';
 
 import {
-  forwardRef,
-  useCallback,
   useEffect,
-  useImperativeHandle,
   useRef,
   useState,
 } from 'react';
-import { useRouter } from 'next/navigation';
 import { Bot, GitBranch, Loader2, Sparkles, CheckCircle2, XCircle } from 'lucide-react';
-import { consumeUIMessageChunks } from '@/lib/ui-message-stream';
 import { cn } from '@/lib/utils';
 
 export type IngestionStreamEvent =
@@ -88,7 +83,6 @@ type IngestionActivityPanelProps = {
 };
 
 export function IngestionActivityPanel({
-  projectId,
   feed,
   isRunning,
 }: IngestionActivityPanelProps) {

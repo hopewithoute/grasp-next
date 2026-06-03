@@ -62,7 +62,7 @@ describe('mergeProposals', () => {
         },
       ];
 
-      const result = mergeProposals(concepts, relationships, proposals as any);
+      const result = mergeProposals(concepts, relationships, proposals as unknown);
 
       expect(result.mergedConcepts.length).toBe(3);
       expect(result.ghostAddIds.size).toBe(1);
@@ -92,7 +92,7 @@ describe('mergeProposals', () => {
         },
       ];
 
-      const result = mergeProposals(concepts, relationships, proposals as any);
+      const result = mergeProposals(concepts, relationships, proposals as unknown);
 
       expect(result.mergedConcepts.length).toBe(3);
       expect(result.ghostAddIds.has('Velocity')).toBeTruthy();
@@ -115,7 +115,7 @@ describe('mergeProposals', () => {
         },
       ];
 
-      const result = mergeProposals(concepts, relationships, proposals as any);
+      const result = mergeProposals(concepts, relationships, proposals as unknown);
 
       expect(result.mergedConcepts.length).toBe(3);
       expect(result.ghostAddIds.size).toBe(1);
@@ -142,7 +142,7 @@ describe('mergeProposals', () => {
         },
       ];
 
-      const result = mergeProposals(concepts, relationships, proposals as any);
+      const result = mergeProposals(concepts, relationships, proposals as unknown);
 
       expect(result.mergedConcepts.length).toBe(2);
       expect(result.ghostUpdateIds.size).toBe(1);
@@ -170,7 +170,7 @@ describe('mergeProposals', () => {
         },
       ];
 
-      const result = mergeProposals(concepts, relationships, proposals as any);
+      const result = mergeProposals(concepts, relationships, proposals as unknown);
 
       expect(result.ghostUpdateIds.size).toBe(1);
       expect(result.ghostUpdateIds.has('c1')).toBeTruthy();
@@ -192,7 +192,7 @@ describe('mergeProposals', () => {
         },
       ];
 
-      const result = mergeProposals(concepts, relationships, proposals as any);
+      const result = mergeProposals(concepts, relationships, proposals as unknown);
 
       expect(result.ghostUpdateIds.size).toBe(0);
       expect(result.mergedConcepts.length).toBe(2);
@@ -213,7 +213,7 @@ describe('mergeProposals', () => {
         },
       ];
 
-      const result = mergeProposals(concepts, relationships, proposals as any);
+      const result = mergeProposals(concepts, relationships, proposals as unknown);
 
       expect(result.ghostDeleteIds.size).toBe(1);
       expect(result.ghostDeleteIds.has('c2')).toBeTruthy();
@@ -239,7 +239,7 @@ describe('mergeProposals', () => {
         },
       ];
 
-      const result = mergeProposals(concepts, relationships, proposals as any);
+      const result = mergeProposals(concepts, relationships, proposals as unknown);
 
       expect(result.mergedRelationships.length).toBe(2);
       expect(result.ghostRelAddIds.size).toBe(1);
@@ -267,7 +267,7 @@ describe('mergeProposals', () => {
         },
       ];
 
-      const result = mergeProposals(concepts, relationships, proposals as any);
+      const result = mergeProposals(concepts, relationships, proposals as unknown);
 
       expect(result.mergedRelationships.length).toBe(1);
       expect(result.ghostRelAddIds.size).toBe(0);
@@ -290,7 +290,7 @@ describe('mergeProposals', () => {
         },
       ];
 
-      const result = mergeProposals(concepts, relationships, proposals as any);
+      const result = mergeProposals(concepts, relationships, proposals as unknown);
 
       expect(result.mergedRelationships.length).toBe(1);
       expect(result.ghostRelAddIds.size).toBe(0);
@@ -315,7 +315,7 @@ describe('mergeProposals', () => {
         },
       ];
 
-      const result = mergeProposals(concepts, relationships, proposals as any);
+      const result = mergeProposals(concepts, relationships, proposals as unknown);
 
       expect(result.ghostRelDeleteIds.size).toBe(1);
       expect(result.ghostRelDeleteIds.has('r1')).toBeTruthy();
@@ -350,7 +350,7 @@ describe('mergeProposals', () => {
         },
       ];
 
-      const result = mergeProposals(concepts, relationships, proposals as any);
+      const result = mergeProposals(concepts, relationships, proposals as unknown);
 
       expect(result.mergedConcepts.length).toBe(3);
       expect(result.mergedRelationships.length).toBe(2);
@@ -377,7 +377,7 @@ describe('mergeProposals', () => {
         },
       ];
 
-      const result = mergeProposals(concepts, relationships, proposals as any);
+      const result = mergeProposals(concepts, relationships, proposals as unknown);
 
       expect(result.ghostAddIds.size).toBe(1);
       expect(result.ghostAddIds.has('work')).toBeTruthy();
@@ -407,7 +407,7 @@ describe('mergeProposals', () => {
       const conceptsCopy = [...concepts];
       const relationshipsCopy = [...relationships];
 
-      mergeProposals(concepts, relationships, proposals as any);
+      mergeProposals(concepts, relationships, proposals as unknown);
 
       expect(concepts).toEqual(conceptsCopy);
       expect(relationships).toEqual(relationshipsCopy);

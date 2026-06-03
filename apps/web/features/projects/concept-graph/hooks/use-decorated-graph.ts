@@ -299,6 +299,9 @@ export function useDecoratedGraph({
     ghostDeleteIds,
     ghostRelAddIds,
     ghostRelDeleteIds,
+    nodeProposalMap,
+    onAcceptProposal,
+    onRejectProposal
   ]);
 
   return {

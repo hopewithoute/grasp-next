@@ -28,6 +28,7 @@ export function DashboardShell({ children, topBarSlot, viewer }: DashboardShellP
   useEffect(() => {
     const stored = localStorage.getItem(COLLAPSE_STORAGE_KEY);
     if (stored === "true") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsCollapsed(true);
     }
   }, []);

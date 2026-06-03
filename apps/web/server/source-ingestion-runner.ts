@@ -43,7 +43,7 @@ export async function runSourceIngestion(
     ['aiPort', aiAdapter],
     ['ingestionRunRepository', deps.ingestionRunRepository],
     ['knowledgebaseRepository', deps.knowledgebaseRepository],
-  ]) as any;
+  ]) as unknown;
 
   const run = await sourceIngestionWorkflow.createRun();
 
@@ -56,7 +56,7 @@ export async function runSourceIngestion(
         content: input.content,
       },
       requestContext,
-    } as any);
+    } as unknown);
 
     for await (const chunk of stream) {
       if (
@@ -88,6 +88,6 @@ export async function runSourceIngestion(
         content: input.content,
       },
       requestContext,
-    } as any);
+    } as unknown);
   }
 }

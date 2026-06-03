@@ -37,16 +37,8 @@ export function createFixtureRefinementTools(fixture: RefinementToolFixture = {}
 
 export function createRefinementToolOverrides(fixture: RefinementToolFixture = {}) {
   return {
-    'read-webpage': async (input: unknown) => {
-      const url =
-        input && typeof input === 'object' && typeof (input as { url?: unknown }).url === 'string'
-          ? (input as { url: string }).url
-          : '';
-      return {
-        text:
-          fixture.webpages?.[url] ??
-          'React was originally created by Facebook in 2013. React is a UI library for web and native user interfaces.',
-      };
+    'search-wiki-concepts': async (_input: unknown) => {
+      return { concepts: [] };
     },
     'search-web-ddg': async () => ({
       results: fixture.webSearchResults ?? [

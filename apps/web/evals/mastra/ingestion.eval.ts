@@ -1,16 +1,16 @@
 import { randomUUID } from 'node:crypto';
+import { serverEnv } from '../../server/env';
 import { readFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { canUseAgent, mastra } from '@grasp/ai';
-import { embedText, embedTexts } from '@grasp/ai/embeddings';
+import { embedText } from '@grasp/ai/embeddings';
 import {
   createIngestionRetrievalTools,
   extractChunk,
   ingestionAgentInstructions,
 } from '@grasp/ai/ingestion';
 import {
-  buildLinkCandidates,
   mergeDraft,
   type LinkTrace,
 } from '@grasp/domain';
@@ -27,7 +27,6 @@ import {
   ingestionAgentOutputDto,
   normalizeMarkdownSource,
   type IngestionAgentOutput,
-  type IngestionConceptContext,
 } from '@grasp/domain';
 import {
   createScorer,
@@ -339,7 +338,7 @@ async function runGraphWalk({
   sourceB: string;
   sourceC: string;
 }): Promise<RetrievalActivity> {
-  const db = createDbClient(normalizeLocalDatabaseUrl(process.env.DATABASE_URL!));
+  const db = createDbClient(normalizeLocalDatabaseUrl(serverEnv.DATABASE_URL!));
   const knowledgebaseRepository = createKnowledgebaseRepository(db);
   const projectRepository = createProjectRepository(db);
   const projectSourceRepository = createProjectSourceRepository(db);
@@ -432,7 +431,7 @@ async function ingestSourceWithRetrieval({
   sourceId,
 }: {
   knowledgebaseRepository: ReturnType<typeof createKnowledgebaseRepository>;
-  ingestionRunRepository: any;
+  ingestionRunRepository: unknown;
   projectId: string;
   retrievalActivity: RetrievalActivity;
   source: { content: string; title: string };
@@ -445,15 +444,15 @@ async function ingestSourceWithRetrieval({
   
   const trackingRepo = {
     ...knowledgebaseRepository,
-    searchConceptsForIngestion: async (input: any) => {
+    searchConceptsForIngestion: async (input: Parameters<typeof originalSearch>[0]) => {
       retrievalActivity.conceptSearchCalls++;
       return originalSearch(input);
     },
-    getConceptContext: async (input: any) => {
+    getConceptContext: async (input: Parameters<typeof originalGetContext>[0]) => {
       retrievalActivity.conceptContextCalls++;
       return originalGetContext(input);
     }
-  } as any;
+  } as unknown;
 
   await runSourceIngestion(
     {
@@ -466,7 +465,7 @@ async function ingestSourceWithRetrieval({
     {
       ingestionRunRepository,
       knowledgebaseRepository: trackingRepo,
-    } as any
+    } as unknown
   );
 }
 
@@ -504,10 +503,10 @@ function normalizeLocalDatabaseUrl(databaseUrl: string) {
 
 function resolveModelLabel() {
   return (
-    process.env.INGESTION_AGENT_MODEL ??
-    process.env.AI_MODEL ??
-    process.env.OPENAI_MODEL ??
-    process.env.ANTHROPIC_MODEL ??
+    serverEnv.INGESTION_AGENT_MODEL ??
+    serverEnv.AI_MODEL ??
+    serverEnv.OPENAI_MODEL ??
+    serverEnv.ANTHROPIC_MODEL ??
     process.env.OPENAI_COMPATIBLE_MODEL ??
     'ingestionAgent:default'
   );
@@ -675,7 +674,7 @@ async function main() {
 
   // Case 3: Graph walk (real mode only)
   console.error(`[Eval] Checking graph-walk...`);
-  if (options.mode === 'real' && process.env.DATABASE_URL && hasEmbeddingProvider(process.env)) {
+  if (options.mode === 'real' && serverEnv.DATABASE_URL && hasEmbeddingProvider(process.env)) {
     const embeddingPreflight = await checkEmbeddingProvider();
     if (!embeddingPreflight.ok) {
       results.push({

@@ -1,15 +1,18 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { randomUUID } from 'node:crypto';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+vi.mock('server-only', () => ({}));
 import { createDbClient, createKnowledgebaseRepository, eq, schema } from '@grasp/db';
 import { refinementAgent, createRefinementTools } from '@grasp/ai/refinement';
 
-const hasDatabase = Boolean(process.env.DATABASE_URL);
+import { serverEnv } from './env';
+
+const hasDatabase = Boolean(serverEnv.DATABASE_URL);
 const hasLlm = Boolean(
-  process.env.OPENAI_API_KEY ||
-  process.env.ANTHROPIC_API_KEY ||
-  process.env.GOOGLE_GENERATIVE_AI_API_KEY ||
-  process.env.GEMINI_API_KEY
+  serverEnv.OPENAI_API_KEY ||
+  serverEnv.ANTHROPIC_API_KEY ||
+  serverEnv.GOOGLE_GENERATIVE_AI_API_KEY ||
+  serverEnv.GEMINI_API_KEY
 );
 const shouldRun = hasDatabase && hasLlm;
 
@@ -21,7 +24,7 @@ describeIfReady('Refinement Agent - Real Provider (Graph Proposals)', () => {
   let ownerId: string;
 
   beforeAll(async () => {
-    db = createDbClient(process.env.DATABASE_URL!);
+    db = createDbClient(serverEnv.DATABASE_URL!);
     repo = createKnowledgebaseRepository(db);
 
     ownerId = randomUUID();
@@ -94,7 +97,7 @@ describeIfReady('Refinement Agent - Real Provider (Graph Proposals)', () => {
     });
   });
 
-  it('can process web URL as a WEB evidence proposal', async () => {
+  it('can propose a web source', async () => {
     const proposalCalls: any[] = [];
     const tools = createRecordingRefinementTools({ repo, projectId, proposalCalls });
 
@@ -102,9 +105,9 @@ describeIfReady('Refinement Agent - Real Provider (Graph Proposals)', () => {
       {
         role: 'system',
         content:
-          'You are an agent. You MUST use the "propose-graph-changes" tool. Propose exactly one add_evidence action with conceptKey="react", sourceType="web", url="https://react.dev", title="React Official Site", evidenceText="The library for web and native user interfaces", and rationale explaining that this supports React as a UI library. Do not use any direct mutation tool.',
+          'You are an agent. You MUST use the "propose-web-source" tool. Propose to add "https://react.dev" with title "React Official Site" and snippet "The library for web and native user interfaces". Do not use any other tool.',
       },
-      { role: 'user', content: 'Please draft the web evidence proposal now.' },
+      { role: 'user', content: 'Please draft the web source proposal now.' },
     ];
 
     const result = await refinementAgent.stream(messages, {
@@ -118,13 +121,11 @@ describeIfReady('Refinement Agent - Real Provider (Graph Proposals)', () => {
       }
     }
 
-    assertAddEvidenceProposal(proposalCalls, {
-      conceptKey: 'react',
-      sourceType: 'web',
-      title: 'React Official Site',
-      url: 'https://react.dev',
-      evidenceText: /web and native user interfaces/i,
-    });
+    expect(proposalCalls.length > 0).toBeTruthy();
+    const proposal = proposalCalls.at(-1);
+    expect(proposal.url).toBe('https://react.dev');
+    expect(proposal.title).toBe('React Official Site');
+    expect(proposal.snippet).toMatch(/user interfaces/i);
   });
 });
 
@@ -138,6 +139,7 @@ function createRecordingRefinementTools({
   proposalCalls: any[];
 }) {
   const tools = createRefinementTools({ knowledgebaseRepository: repo, projectId }) as any;
+  
   const proposalTool = tools['propose-graph-changes'];
   const originalExecute = proposalTool.execute.bind(proposalTool);
 
@@ -149,6 +151,18 @@ function createRecordingRefinementTools({
     },
   };
   tools.proposeGraphChangesTool = tools['propose-graph-changes'];
+
+  const webProposalTool = tools['propose-web-source'];
+  if (webProposalTool) {
+    const originalWebExecute = webProposalTool.execute.bind(webProposalTool);
+    tools['propose-web-source'] = {
+      ...webProposalTool,
+      execute: async (...args: any[]) => {
+        proposalCalls.push(args[0]);
+        return originalWebExecute(...args);
+      },
+    };
+  }
 
   return tools;
 }

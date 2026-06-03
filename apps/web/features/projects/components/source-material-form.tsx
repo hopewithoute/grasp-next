@@ -16,6 +16,7 @@ import {
   addProjectSourceFormAction,
   deleteProjectSourceFormAction,
   updateProjectSourceFormAction,
+  addProjectSourceFromUrlFormAction,
 } from '../actions';
 import { sourceModeButtonVariants, sourceTextareaVariants } from '../project-style-variants';
 import { SourceList } from './source-list';
@@ -125,10 +126,17 @@ function ProjectSourceAddForm({
   projectId: string;
   onIngestionTrigger?: (sourceId: string, title: string, type: string, content: string) => void;
 }) {
+  const [activeTab, setActiveTab] = useState<'text' | 'web'>('text');
+
   const [state, formAction, isPending] = useActionState(addProjectSourceFormAction, {
     error: null,
     success: false,
   });
+  const [urlState, urlFormAction, isUrlPending] = useActionState(addProjectSourceFromUrlFormAction, {
+    error: null,
+    success: false,
+  });
+
   const formRef = useRef<HTMLFormElement>(null);
   const lastSourceIdRef = useRef<string | null>(null);
   const submittedValuesRef = useRef<{ title: string; type: string; content: string } | null>(null);
@@ -142,27 +150,151 @@ function ProjectSourceAddForm({
     formAction(formData);
   };
 
+  const wrappedUrlAction = (formData: FormData) => {
+    submittedValuesRef.current = {
+      title: formData.get('title')?.toString() ?? 'Untitled',
+      type: 'web',
+      content: formData.get('url')?.toString() ?? '', // Just passing URL as content for ingestion trigger
+    };
+    urlFormAction(formData);
+  };
+
   useLayoutEffect(() => {
-    if (state.success && state.sourceId && state.sourceId !== lastSourceIdRef.current) {
-      lastSourceIdRef.current = state.sourceId;
+    const currentState = activeTab === 'text' ? state : urlState;
+    if (currentState.success && currentState.sourceId && currentState.sourceId !== lastSourceIdRef.current) {
+      lastSourceIdRef.current = currentState.sourceId;
       const values = submittedValuesRef.current;
 
       if (values && onIngestionTrigger) {
-        onIngestionTrigger(state.sourceId, values.title, values.type, values.content);
+        onIngestionTrigger(currentState.sourceId, values.title, values.type, currentState.content ?? values.content);
       }
     }
-  }, [state.success, state.sourceId, onIngestionTrigger]);
+  }, [state.success, state.sourceId, urlState.success, urlState.sourceId, activeTab, onIngestionTrigger, state, urlState]);
 
   return (
-    <ProjectSourceFields
-      action={wrappedAction}
-      error={state.error}
-      formRef={formRef}
-      isPending={isPending}
-      projectId={projectId}
-      submitLabel="Add source"
-      success={state.success ? 'Source added.' : null}
-    />
+    <div className="flex flex-col flex-1 h-full gap-4">
+      <div className="flex gap-2 shrink-0 border-b border-border/50 pb-2">
+        <button
+          type="button"
+          onClick={() => setActiveTab('text')}
+          className={`text-sm px-3 py-1.5 rounded-md font-medium transition-colors ${
+            activeTab === 'text' ? 'bg-brand-accent/10 text-brand-accent' : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          Raw Text / Markdown
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('web')}
+          className={`text-sm px-3 py-1.5 rounded-md font-medium transition-colors ${
+            activeTab === 'web' ? 'bg-brand-accent/10 text-brand-accent' : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          Web URL
+        </button>
+      </div>
+
+      {activeTab === 'text' ? (
+        <ProjectSourceFields
+          action={wrappedAction}
+          error={state.error}
+          formRef={formRef}
+          isPending={isPending}
+          projectId={projectId}
+          submitLabel="Add source"
+          success={state.success ? 'Source added.' : null}
+        />
+      ) : (
+        <ProjectSourceUrlFields
+          action={wrappedUrlAction}
+          error={urlState.error}
+          formRef={formRef}
+          isPending={isUrlPending}
+          projectId={projectId}
+          submitLabel="Fetch from URL"
+          success={urlState.success ? 'Web source added.' : null}
+        />
+      )}
+    </div>
+  );
+}
+
+function ProjectSourceUrlFields({
+  action,
+  error,
+  formRef,
+  isPending,
+  projectId,
+  submitLabel,
+  success,
+}: {
+  action: (payload: FormData) => void;
+  error: string | null;
+  formRef?: React.RefObject<HTMLFormElement | null>;
+  isPending: boolean;
+  projectId: string;
+  submitLabel: string;
+  success: string | null;
+}) {
+  return (
+    <form action={action} className="flex flex-1 flex-col gap-4" ref={formRef}>
+      <input name="projectId" type="hidden" value={projectId} />
+
+      <div className="space-y-2 shrink-0">
+        <label
+          className="text-sm font-medium text-muted-foreground"
+          htmlFor="new-url-title"
+        >
+          Title
+        </label>
+        <Input
+          className="h-11 rounded-2xl border-border bg-card px-4 text-sm text-foreground placeholder:text-foreground/30 shadow-none focus-visible:border-brand-accent-border/60 focus-visible:ring-[#53d1cb]/20"
+          id="new-url-title"
+          name="title"
+          placeholder="e.g. Wikipedia: Quantum Mechanics"
+          required
+        />
+      </div>
+
+      <div className="space-y-2 shrink-0">
+        <label
+          className="text-sm font-medium text-muted-foreground"
+          htmlFor="new-url"
+        >
+          Web URL
+        </label>
+        <Input
+          className="h-11 rounded-2xl border-border bg-card px-4 text-sm text-foreground placeholder:text-foreground/30 shadow-none focus-visible:border-brand-accent-border/60 focus-visible:ring-[#53d1cb]/20"
+          id="new-url"
+          name="url"
+          type="url"
+          placeholder="https://..."
+          required
+        />
+      </div>
+
+      {error ? (
+        <p className="rounded-[1rem] border border-[#e5685b]/30 bg-[#e5685b]/10 px-3 py-2 text-sm text-foreground">
+          {error}
+        </p>
+      ) : null}
+
+      {success ? (
+        <p className="rounded-[1rem] border border-[#00bb7f]/30 bg-[#00bb7f]/10 px-3 py-2 text-sm text-foreground">
+          {success}
+        </p>
+      ) : null}
+
+      <div className="mt-auto flex shrink-0 items-center gap-3 pt-2">
+        <Button
+          className="h-9 rounded-full bg-brand-accent px-4 text-[#041018] hover:bg-[#7ceae3]"
+          disabled={isPending}
+          type="submit"
+        >
+          {isPending ? 'Fetching...' : submitLabel}
+        </Button>
+      </div>
+    </form>
   );
 }
 

@@ -1,14 +1,12 @@
 import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+
+vi.mock('server-only', () => ({}));
+import { serverEnv } from './env';
 import { fileURLToPath } from 'node:url';
-import {
-  chunkNormalizedBlocks,
-  type IngestionConceptContext,
-  normalizeMarkdownSource,
-  type IngestionAgentOutput,
-} from '@grasp/domain';
+
 import {
   createDbClient,
   createKnowledgebaseRepository,
@@ -17,17 +15,7 @@ import {
   eq,
   schema,
 } from '@grasp/db';
-import { embedText, embedTexts } from '@grasp/ai/embeddings';
-import {
-  createIngestionRetrievalTools,
-  extractChunk,
-  sourceLinkingWorkflow,
-} from '@grasp/ai/ingestion';
-import {
-  buildLinkCandidates,
-  mergeDraft,
-  type LinkTrace,
-} from '@grasp/domain';
+import { embedText } from '@grasp/ai/embeddings';
 
 const DOCS_DIR = resolve(dirname(fileURLToPath(import.meta.url)), '../../../docs/example');
 const sourceA = readFileSync(resolve(DOCS_DIR, 'source-a-economics-basics.md'), 'utf-8');
@@ -39,17 +27,17 @@ const debugRealTest = (...args: unknown[]) => {
   }
 };
 
-const hasDatabase = Boolean(process.env.DATABASE_URL);
+const hasDatabase = Boolean(serverEnv.DATABASE_URL);
 const hasLlm = Boolean(
-  process.env.OPENAI_API_KEY || process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_AUTH_TOKEN
+  serverEnv.OPENAI_API_KEY || serverEnv.ANTHROPIC_API_KEY
 );
 const hasEmbedding = Boolean(
-  process.env.GOOGLE_GENERATIVE_AI_API_KEY ||
-  process.env.GEMINI_API_KEY ||
-  process.env.OPENAI_API_KEY
+  serverEnv.GOOGLE_GENERATIVE_AI_API_KEY ||
+  serverEnv.GEMINI_API_KEY ||
+  serverEnv.OPENAI_API_KEY
 );
-const databaseUrl = process.env.DATABASE_URL
-  ? normalizeLocalDatabaseUrl(process.env.DATABASE_URL)
+const databaseUrl = serverEnv.DATABASE_URL
+  ? normalizeLocalDatabaseUrl(serverEnv.DATABASE_URL)
   : undefined;
 
 const describeIfReal = hasDatabase && hasLlm && hasEmbedding ? describe : describe.skip;
@@ -215,15 +203,15 @@ describeIfReal('real ingestion graph walking', { timeout: 240_000 }, () => {
     
     const trackingRepo = {
       ...knowledgebaseRepository,
-      searchConceptsForIngestion: async (input: any) => {
+      searchConceptsForIngestion: async (input: Parameters<typeof originalSearch>[0]) => {
         searchCalls++;
         return originalSearch(input);
       },
-      getConceptContext: async (input: any) => {
+      getConceptContext: async (input: Parameters<typeof originalGetContext>[0]) => {
         contextCalls++;
         return originalGetContext(input);
       }
-    } as any;
+    } as unknown;
 
     const { runSourceIngestion } = await import('./source-ingestion-runner');
 
@@ -237,7 +225,7 @@ describeIfReal('real ingestion graph walking', { timeout: 240_000 }, () => {
       },
       {
         knowledgebaseRepository: trackingRepo,
-      } as any
+      } as unknown
     );
 
     return {

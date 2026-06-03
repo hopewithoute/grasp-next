@@ -39,7 +39,6 @@
         "forbiddenTools": [
           "search-wiki-concepts",
           "search-web-ddg",
-          "read-webpage",
           "propose-graph-changes"
         ],
         "actions": [],
@@ -280,19 +279,17 @@
       "expect": {
         "requiredTools": [
           "search-web-ddg",
-          "read-webpage",
           "search-wiki-concepts",
           "propose-graph-changes"
         ],
         "requiredToolOrder": [
           "search-web-ddg",
           "search-wiki-concepts",
-          "read-webpage",
           "propose-graph-changes"
         ],
         "allowedToolOrders": [
-          ["search-web-ddg", "search-wiki-concepts", "read-webpage", "propose-graph-changes"],
-          ["search-wiki-concepts", "search-web-ddg", "read-webpage", "propose-graph-changes"]
+          ["search-web-ddg", "search-wiki-concepts", "propose-graph-changes"],
+          ["search-wiki-concepts", "search-web-ddg", "propose-graph-changes"]
         ],
         "actions": [
           {

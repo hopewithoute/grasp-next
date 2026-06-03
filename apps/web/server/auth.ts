@@ -11,8 +11,8 @@ export const auth = betterAuth({
   }),
   socialProviders: {
     google: {
-      clientId: serverEnv.GOOGLE_CLIENT_ID,
-      clientSecret: serverEnv.GOOGLE_CLIENT_SECRET,
+      clientId: serverEnv.GOOGLE_CLIENT_ID as string,
+      clientSecret: serverEnv.GOOGLE_CLIENT_SECRET as string,
     },
   },
   plugins: [nextCookies()],

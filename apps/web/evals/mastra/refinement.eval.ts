@@ -1,3 +1,4 @@
+import { serverEnv } from '../../server/env';
 import { readFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -430,10 +431,10 @@ async function compareLatest(options: EvalCliOptions) {
 
 function resolveModelLabel() {
   return (
-    process.env.REFINEMENT_AGENT_MODEL ??
-    process.env.AI_MODEL ??
-    process.env.OPENAI_MODEL ??
-    process.env.ANTHROPIC_MODEL ??
+    serverEnv.REFINEMENT_AGENT_MODEL ??
+    serverEnv.AI_MODEL ??
+    serverEnv.OPENAI_MODEL ??
+    serverEnv.ANTHROPIC_MODEL ??
     process.env.OPENAI_COMPATIBLE_MODEL ??
     'refinementAgent:default'
   );

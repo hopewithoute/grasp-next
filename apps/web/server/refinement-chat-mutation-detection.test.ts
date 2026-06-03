@@ -25,9 +25,6 @@ describe('refinement chat mutation detection', () => {
           {
             toolName: 'search-wiki-concepts',
           },
-          {
-            toolName: 'read-webpage',
-          },
         ],
       })
     ).toBe(false);
