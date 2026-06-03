@@ -169,6 +169,7 @@ export type KnowledgebaseMutationRepository = {
     metadata?: unknown;
   }): Promise<void>;
   deleteConcept(input: { projectId: string; conceptKey: string }): Promise<void>;
+  tombstoneConcept(input: { projectId: string; conceptKey: string }): Promise<void>;
   cleanupOrphans(projectId: string): Promise<void>;
   addRelationship(input: {
     projectId: string;

@@ -366,6 +366,7 @@ function createKnowledgebaseRepository(): KnowledgebaseRepository {
     async addConcept() {},
     async updateConcept() {},
     async deleteConcept() {},
+    async tombstoneConcept() {},
     async addRelationship() {},
     async deleteRelationship() {},
     async findCurrentGraphByProject() {

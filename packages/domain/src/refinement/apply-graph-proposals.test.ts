@@ -38,6 +38,9 @@ function createMockRepository(): KnowledgebaseRepository & { calls: MockCall[] }
     deleteConcept: async (input) => {
       calls.push({ method: 'deleteConcept', args: [input] });
     },
+    tombstoneConcept: async (input) => {
+      calls.push({ method: 'tombstoneConcept', args: [input] });
+    },
     cleanupOrphans: async (input) => {
       calls.push({ method: 'cleanupOrphans', args: [input] });
     },
@@ -104,7 +107,7 @@ describe('applyGraphProposals', () => {
       { knowledgebaseRepository: repo }
     );
 
-    expect(repo.calls[0]?.method).toBe('deleteConcept');
+    expect(repo.calls[0]?.method).toBe('tombstoneConcept');
   });
 
   it('applies add_relationship action', async () => {

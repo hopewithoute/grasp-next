@@ -8,6 +8,7 @@ export const projectSourceTypeDto = z.enum(PROJECT_SOURCE_TYPES);
 export const supportedManualProjectSourceTypeDto = z.enum([
   PROJECT_SOURCE_TYPE.MARKDOWN,
   PROJECT_SOURCE_TYPE.TEXT,
+  PROJECT_SOURCE_TYPE.WEB,
 ]);
 
 export const addProjectSourceDto = z.object({
@@ -23,6 +24,13 @@ export const updateProjectSourceDto = z.object({
   title: requiredText.max(160),
   type: supportedManualProjectSourceTypeDto.default(PROJECT_SOURCE_TYPE.MARKDOWN),
 });
+
+export const addProjectSourceFromUrlDto = z.object({
+  url: z.string().url(),
+  projectId: z.uuid(),
+  title: requiredText.max(160),
+});
+export type AddProjectSourceFromUrlDto = z.infer<typeof addProjectSourceFromUrlDto>;
 
 export const deleteProjectSourceDto = z.object({
   sourceId: z.uuid(),

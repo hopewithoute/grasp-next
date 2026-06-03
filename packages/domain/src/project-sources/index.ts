@@ -1,16 +1,19 @@
 export {
   addProjectSourceDto,
+  addProjectSourceFromUrlDto,
   deleteProjectSourceDto,
   projectSourceTypeDto,
   supportedManualProjectSourceTypeDto,
   updateProjectSourceDto,
   type AddProjectSourceDto,
+  type AddProjectSourceFromUrlDto,
   type DeleteProjectSourceDto,
   type ProjectSourceTypeDto,
   type UpdateProjectSourceDto,
 } from './project-source.dto';
 export {
   addProjectSource,
+  addProjectSourceFromUrl,
   deleteProjectSource,
   updateProjectSource,
   type ProjectSourceActionDeps,

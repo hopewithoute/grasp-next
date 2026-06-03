@@ -47,17 +47,19 @@ export async function applyGraphProposals(
     switch (action.type) {
       case 'add_concept': {
         const payload = addConceptProposalDto.parse(action.payload);
-        await knowledgebaseRepository.addConcept({ projectId, ...payload });
+        const metadata = payload.metadata ? { ...payload.metadata, isUserEdited: true } : { isUserEdited: true };
+        await knowledgebaseRepository.addConcept({ projectId, ...payload, metadata });
         break;
       }
       case 'update_concept': {
         const payload = updateConceptProposalDto.parse(action.payload);
-        await knowledgebaseRepository.updateConcept({ projectId, ...payload });
+        const metadata = payload.metadata ? { ...payload.metadata, isUserEdited: true } : { isUserEdited: true };
+        await knowledgebaseRepository.updateConcept({ projectId, ...payload, metadata });
         break;
       }
       case 'delete_concept': {
         const payload = deleteConceptProposalDto.parse(action.payload);
-        await knowledgebaseRepository.deleteConcept({
+        await knowledgebaseRepository.tombstoneConcept({
           projectId,
           conceptKey: payload.conceptKey,
         });

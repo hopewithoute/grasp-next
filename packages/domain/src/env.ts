@@ -18,8 +18,13 @@ export const serverEnvSchema = z.object({
   CONCEPT_EXTRACTOR_PROVIDER: z.string().optional(),
   CONCEPT_EXTRACTOR_MODEL: z.string().optional(),
   MASTRA_STORAGE_URL: z.string().url(),
-  GOOGLE_CLIENT_ID: z.string().min(1),
-  GOOGLE_CLIENT_SECRET: z.string().min(1),
+  GOOGLE_CLIENT_ID: z.string().min(1).optional(),
+  GOOGLE_CLIENT_SECRET: z.string().min(1).optional(),
+  CLOUDFLARE_ACCOUNT_ID: z.string().optional(),
+  CLOUDFLARE_API_TOKEN: z.string().optional(),
+  JINA_API_KEY: z.string().optional(),
+  INGESTION_AGENT_MODEL: z.string().optional(),
+  REFINEMENT_AGENT_MODEL: z.string().optional(),
 });
 
 export type ServerEnv = z.infer<typeof serverEnvSchema>;

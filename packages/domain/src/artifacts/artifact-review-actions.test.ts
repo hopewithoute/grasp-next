@@ -583,6 +583,7 @@ function createKnowledgebaseRepository(state: TestState): KnowledgebaseRepositor
     async addConcept() {},
     async updateConcept() {},
     async deleteConcept() {},
+    async tombstoneConcept() {},
     async addRelationship() {},
     async deleteRelationship() {},
     async findCurrentGraphByProject() {
