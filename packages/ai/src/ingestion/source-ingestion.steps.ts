@@ -14,7 +14,7 @@ export const ingestionStateSchema = z.object({
   totalDroppedConceptKeys: z.array(z.string()).default([]),
 });
 
-function getDep<T>(ctx: { get(key: string): any } | undefined, key: string): T {
+function getDep<T>(ctx: { get(key: string): unknown } | undefined, key: string): T {
   const dep = ctx?.get(key);
   if (!dep) throw new Error(`${key} not found in request context`);
   return dep as T;

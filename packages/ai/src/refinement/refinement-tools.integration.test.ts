@@ -38,20 +38,4 @@ describe('Refinement Tools (Integration)', () => {
     }
   });
 
-  it('readWebpageTool can fetch and extract text from a real URL', async () => {
-    const tools = createRefinementTools({
-      projectId: 'test-project',
-      knowledgebaseRepository: {} as any,
-    });
-
-    const result = (await (tools.readWebpageTool as any).execute(
-      { url: 'https://example.com' },
-      {} as any
-    )) as any;
-
-    expect(result.text).toBeTruthy();
-    expect(typeof result.text === 'string').toBeTruthy();
-    expect(result.text).toMatch(/Example Domain/i);
-    expect(result.text).toMatch(/documentation examples/i);
-  });
 });

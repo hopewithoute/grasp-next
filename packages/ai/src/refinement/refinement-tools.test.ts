@@ -17,7 +17,6 @@ describe('refinement tools contract', () => {
     expect(tools['search-wiki-concepts']).toBeTruthy();
     expect(tools['propose-graph-changes']).toBeTruthy();
     expect(tools['search-web-ddg']).toBeTruthy();
-    expect(tools['read-webpage']).toBeTruthy();
 
     expect('add-evidence' in tools).toBe(false);
     expect('add-concept' in tools).toBe(false);

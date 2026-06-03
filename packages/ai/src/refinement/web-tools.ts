@@ -74,104 +74,39 @@ export function createSearchWebTool() {
   });
 }
 
-export function createReadWebpageTool() {
+export function createProposeWebSourceTool() {
   return createTool({
-    id: 'read-webpage',
+    id: 'propose-web-source',
     description:
-      'Fetch the text content of a given URL. Use this to read the full article of a search result URL.',
-    inputSchema: z.object({
-      url: z.string().url().describe('The URL of the webpage to read'),
-    }),
-    execute: async ({ url }, context) => {
-      await context?.writer?.custom({
-        type: 'data-agent-activity',
-        data: {
-          type: 'agent_activity',
-          label: 'Reading source',
-          detail: 'Reviewing a web page for context.',
-          status: 'started',
-        },
-        transient: true,
-      });
-
-      const response = await fetch(url);
-      if (!response.ok) {
-        await context?.writer?.custom({
-          type: 'data-agent-activity',
-          data: {
-            type: 'agent_activity',
-            label: 'Read source',
-            detail: 'Reviewed a web page for context.',
-            status: 'completed',
-          },
-          transient: true,
-        });
-        throw new Error(`Failed to fetch URL: ${response.statusText}`);
-      }
-      const html = await response.text();
-      const { compile } = await import('html-to-text');
-      const convert = compile({ wordwrap: 130 });
-      const text = convert(html);
-
-      await context?.writer?.custom({
-        type: 'data-agent-activity',
-        data: {
-          type: 'agent_activity',
-          label: 'Read source',
-          detail: 'Reviewed a web page for context.',
-          status: 'completed',
-        },
-        transient: true,
-      });
-
-      return { text: text.substring(0, 10000) };
-    },
-  });
-}
-
-export function createAddWebSourceTool(deps: { onAddWebSource?: (url: string, title: string, text: string, skipIngestion?: boolean) => Promise<string> }) {
-  return createTool({
-    id: 'add-web-source-to-library',
-    description:
-      'Download a web page and add it to the project library as a permanent source. By default, this triggers background ingestion. Set skipBackgroundIngestion to true if you plan to manually extract and propose specific concepts right now.',
+      'Propose a web page to be downloaded and added to the project library. You MUST use this tool to ask the user for permission before adding a source. The user will see a UI card with the URL, Title, and Snippet.',
     inputSchema: z.object({
       url: z.string().url().describe('The URL of the webpage to ingest'),
       title: z.string().describe('A descriptive title for this source'),
-      skipBackgroundIngestion: z.boolean().optional().describe('If true, saves the source but skips automatic concept extraction.'),
+      snippet: z.string().describe('A short summary snippet of what this source contains'),
     }),
-    execute: async ({ url, title, skipBackgroundIngestion }, context) => {
-      if (!deps.onAddWebSource) {
-        throw new Error('add-web-source-to-library tool is not supported in this environment (missing callback).');
-      }
-
+    execute: async ({ url, title, snippet }, context) => {
       await context?.writer?.custom({
         type: 'data-agent-activity',
         data: {
           type: 'agent_activity',
-          label: 'Adding web source',
-          detail: 'Downloading and saving article to library...',
+          label: 'Preparing source proposal',
+          detail: 'Drafting web source addition for your review.',
           status: 'started',
         },
         transient: true,
       });
 
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch URL: ${response.statusText}`);
-      }
-      const html = await response.text();
-      const { compile } = await import('html-to-text');
-      const convert = compile({ wordwrap: 130 });
-      const text = convert(html);
-
-      const sourceId = await deps.onAddWebSource(url, title, text, skipBackgroundIngestion);
+      await context?.writer?.custom({
+        type: 'data-source-proposal',
+        data: { url, title, snippet },
+      });
 
       await context?.writer?.custom({
         type: 'data-agent-activity',
         data: {
           type: 'agent_activity',
-          label: 'Added web source',
-          detail: skipBackgroundIngestion ? 'Source saved. Skipping auto-ingestion.' : 'Source saved. Background ingestion started.',
+          label: 'Source proposal ready',
+          detail: 'Source proposal submitted for approval.',
           status: 'completed',
         },
         transient: true,
@@ -179,10 +114,7 @@ export function createAddWebSourceTool(deps: { onAddWebSource?: (url: string, ti
 
       return {
         success: true,
-        sourceId,
-        message: skipBackgroundIngestion 
-          ? 'The web page has been saved to the library. Automatic ingestion was skipped. You MUST now use propose-graph-changes to extract the specific information.'
-          : 'The web page has been saved to the library and is currently being ingested in the background. The system will extract concepts from it automatically.',
+        message: 'The web source proposal has been sent to the user. You must wait for the user to approve it. Do NOT proceed with extraction until the user approves and the system returns the extracted text to you.',
       };
     },
   });

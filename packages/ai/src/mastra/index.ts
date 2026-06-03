@@ -1,4 +1,5 @@
 import { Mastra } from '@mastra/core';
+import { Observability, MastraStorageExporter } from '@mastra/observability';
 export { robustStream } from './stream-utils';
 import { ConsoleLogger } from '@mastra/core/logger';
 import { setupGlobalLlmQueue } from './llm-queue';
@@ -14,6 +15,14 @@ import { sourceIngestionWorkflow } from '../ingestion/source-ingestion.workflow'
 import { refinementAgent } from '../refinement/refinement-agent';
 
 export const mastra = new Mastra({
+  observability: new Observability({
+    configs: {
+      default: {
+        serviceName: 'grasp-local',
+        exporters: [new MastraStorageExporter()],
+      },
+    },
+  }),
   logger: new ConsoleLogger({ level: 'warn' }),
   agents: {
     linkAdjudicatorAgent,

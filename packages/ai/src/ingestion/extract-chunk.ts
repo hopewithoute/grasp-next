@@ -8,7 +8,6 @@ import {
   type IngestionRelationClaim,
   type IngestionRelationship,
 } from '@grasp/domain';
-import type { MastraDBMessage } from '@mastra/core/agent';
 import { ingestionAgent } from './ingestion.agent';
 import { buildIngestionPrompt } from './ingestion.agent';
 import type { createIngestionRetrievalTools } from './ingestion-retrieval.tools';
@@ -120,9 +119,9 @@ export async function extractChunk(
       const validated = validateAgainstBlocks(result, input.blocks);
       
       return { ...validated, thinking };
-    } catch (error: any) {
-      lastError = error;
-      console.warn(`[extractChunk] Attempt ${attempt} failed: ${error.message}`);
+    } catch (error: unknown) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      console.warn(`[extractChunk] Attempt ${attempt} failed: ${lastError.message}`);
     }
   }
 
