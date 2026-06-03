@@ -168,6 +168,7 @@ export function createKnowledgebaseQueryMethods(db: DbClient): KnowledgebaseQuer
         .where(
           and(
             eq(wikiConcepts.knowledgebaseId, knowledgebase.id),
+            sql<boolean>`coalesce(${wikiConcepts.metadata}->>'status', '') != 'deleted'`,
             or(
               ilike(wikiConcepts.conceptKey, pattern),
               ilike(wikiConcepts.name, pattern),

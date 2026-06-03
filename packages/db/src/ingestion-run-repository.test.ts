@@ -7,8 +7,9 @@ import { createIngestionRunRepository } from './ingestion-run-repository';
 import { createProjectRepository } from './project-repository';
 import * as schema from './schema';
 import { projects, user } from './schema';
+import { env } from './env';
 
-const databaseUrl = process.env.DATABASE_URL;
+const databaseUrl = env.DATABASE_URL;
 const describeIfDatabase = databaseUrl ? describe : describe.skip;
 
 describeIfDatabase('createIngestionRunRepository', () => {

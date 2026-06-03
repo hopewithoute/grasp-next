@@ -17,8 +17,9 @@ import {
   wikiConcepts,
   wikiRelationships,
 } from './schema';
+import { env } from './env';
 
-const databaseUrl = process.env.DATABASE_URL;
+const databaseUrl = env.DATABASE_URL;
 const describeIfDatabase = databaseUrl ? describe : describe.skip;
 
 describeIfDatabase('createKnowledgebaseRepository', () => {

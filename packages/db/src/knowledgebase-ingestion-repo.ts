@@ -44,7 +44,7 @@ export function createKnowledgebaseIngestionMethods(db: DbClient): Knowledgebase
 
           // Delete orphan concepts (no remaining source refs)
           const conceptsInKb = await tx
-            .select({ id: wikiConcepts.id })
+            .select({ id: wikiConcepts.id, metadata: wikiConcepts.metadata })
             .from(wikiConcepts)
             .where(eq(wikiConcepts.knowledgebaseId, knowledgebase.id));
 
@@ -55,7 +55,9 @@ export function createKnowledgebaseIngestionMethods(db: DbClient): Knowledgebase
               .where(eq(wikiConceptSourceRefs.conceptId, concept.id))
               .limit(1);
 
-            if (!hasRefs) {
+            const isUserEdited = (concept.metadata as Record<string, unknown>)?.isUserEdited === true;
+
+            if (!hasRefs && !isUserEdited) {
               await tx.delete(wikiConcepts).where(eq(wikiConcepts.id, concept.id));
             }
           }
@@ -90,30 +92,42 @@ export function createKnowledgebaseIngestionMethods(db: DbClient): Knowledgebase
 
         // Resolve concept IDs (existing + newly extracted)
         const existingConcepts = await tx
-          .select({ id: wikiConcepts.id, conceptKey: wikiConcepts.conceptKey })
+          .select({ id: wikiConcepts.id, conceptKey: wikiConcepts.conceptKey, metadata: wikiConcepts.metadata })
           .from(wikiConcepts)
           .where(eq(wikiConcepts.knowledgebaseId, knowledgebase.id));
+        const conceptByKey = new Map(existingConcepts.map((c) => [c.conceptKey, c]));
         const conceptIdByKey = new Map(existingConcepts.map((c) => [c.conceptKey, c.id]));
 
         // Upsert concepts from extraction output
         for (const concept of input.output.concepts) {
-          const existing = conceptIdByKey.get(concept.conceptKey);
+          const existing = conceptByKey.get(concept.conceptKey);
           const lookupKey = concept.mergesWith ?? concept.conceptKey;
           const embedding = input.conceptEmbeddingsByKey?.[lookupKey] ?? input.conceptEmbeddingsByKey?.[concept.conceptKey] ?? null;
           console.log(`[mergeIngestionOutput] concept: ${concept.conceptKey}, lookupKey: ${lookupKey}, hasEmbedding: ${!!embedding}`);
 
           if (existing) {
-            await tx
-              .update(wikiConcepts)
-              .set({
-                confidence: concept.confidence,
-                definition: concept.definition,
-                difficulty: concept.difficulty,
-                name: concept.name,
-                embedding,
-                updatedAt: new Date(),
-              })
-              .where(eq(wikiConcepts.id, existing));
+            const isUserEdited = (existing.metadata as Record<string, unknown>)?.isUserEdited === true;
+            if (!isUserEdited) {
+              await tx
+                .update(wikiConcepts)
+                .set({
+                  confidence: concept.confidence,
+                  definition: concept.definition,
+                  difficulty: concept.difficulty,
+                  name: concept.name,
+                  embedding,
+                  updatedAt: new Date(),
+                })
+                .where(eq(wikiConcepts.id, existing.id));
+            } else if (embedding !== null) {
+              await tx
+                .update(wikiConcepts)
+                .set({
+                  embedding,
+                  updatedAt: new Date(),
+                })
+                .where(eq(wikiConcepts.id, existing.id));
+            }
           } else {
             const [inserted] = await tx
               .insert(wikiConcepts)

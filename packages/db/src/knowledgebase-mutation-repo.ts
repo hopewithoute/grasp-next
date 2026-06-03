@@ -97,6 +97,42 @@ export function createKnowledgebaseMutationMethods(db: DbClient): KnowledgebaseM
         );
     },
 
+    async tombstoneConcept(input) {
+      const [knowledgebase] = await db
+        .select()
+        .from(knowledgebases)
+        .where(eq(knowledgebases.projectId, input.projectId))
+        .limit(1);
+
+      if (!knowledgebase) return;
+
+      const [existing] = await db
+        .select({ metadata: wikiConcepts.metadata })
+        .from(wikiConcepts)
+        .where(
+          and(
+            eq(wikiConcepts.knowledgebaseId, knowledgebase.id),
+            eq(wikiConcepts.conceptKey, input.conceptKey)
+          )
+        )
+        .limit(1);
+
+      if (!existing) return;
+
+      const currentMetadata = (existing.metadata as Record<string, unknown>) || {};
+      const newMetadata = { ...currentMetadata, status: 'deleted' };
+
+      await db
+        .update(wikiConcepts)
+        .set({ metadata: newMetadata, updatedAt: new Date() })
+        .where(
+          and(
+            eq(wikiConcepts.knowledgebaseId, knowledgebase.id),
+            eq(wikiConcepts.conceptKey, input.conceptKey)
+          )
+        );
+    },
+
     async cleanupOrphans(projectId: string) {
       const [knowledgebase] = await db
         .select()
