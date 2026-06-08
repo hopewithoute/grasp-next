@@ -1,8 +1,13 @@
 import { and, asc, eq, exists, ilike, isNotNull, or, sql } from 'drizzle-orm';
-import type {
-  KnowledgebaseQueryRepository,
-} from '@grasp/domain';
+import type { KnowledgebaseQueryRepository } from '@grasp/domain';
 import type { DbClient } from './client';
+import {
+  getConceptEvidence,
+  getConceptEvidenceCounts,
+  getMappedId,
+  getRelationshipEvidenceCounts,
+  toConceptDifficulty,
+} from './knowledgebase-helpers';
 import {
   knowledgebases,
   sourcePassages,
@@ -11,13 +16,6 @@ import {
   wikiRelationships,
   wikiRelationshipSourceRefs,
 } from './schema';
-import {
-  getConceptEvidence,
-  getConceptEvidenceCounts,
-  getMappedId,
-  getRelationshipEvidenceCounts,
-  toConceptDifficulty,
-} from './knowledgebase-helpers';
 
 export function createKnowledgebaseQueryMethods(db: DbClient): KnowledgebaseQueryRepository {
   return {
@@ -188,9 +186,13 @@ export function createKnowledgebaseQueryMethods(db: DbClient): KnowledgebaseQuer
         .orderBy(input.embedding ? distance : asc(wikiConcepts.createdAt))
         .limit(input.limit ?? 10);
 
-      console.log(`[searchConceptsForIngestion] projectId: ${input.projectId}, query: ${input.query}, hasEmbedding: ${!!input.embedding}, results: ${rows.length}`);
+      console.log(
+        `[searchConceptsForIngestion] projectId: ${input.projectId}, query: ${input.query}, hasEmbedding: ${!!input.embedding}, results: ${rows.length}`
+      );
       if (rows.length === 0) {
-        console.log(`[searchConceptsForIngestion] No results found! Knowledgebase ID: ${knowledgebase.id}`);
+        console.log(
+          `[searchConceptsForIngestion] No results found! Knowledgebase ID: ${knowledgebase.id}`
+        );
       }
 
       const evidenceByConceptId = await getConceptEvidence(

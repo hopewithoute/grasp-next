@@ -100,9 +100,7 @@ export async function getConceptEvidence(db: DbClient, conceptIds: string[]) {
 }
 
 export function relationshipMetadata(relationship: { evidenceQuality?: unknown }) {
-  return relationship.evidenceQuality
-    ? { evidenceQuality: relationship.evidenceQuality }
-    : null;
+  return relationship.evidenceQuality ? { evidenceQuality: relationship.evidenceQuality } : null;
 }
 
 export async function findOrCreateKnowledgebase(

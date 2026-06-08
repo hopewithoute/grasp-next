@@ -1,7 +1,13 @@
-import { and, eq, max } from "drizzle-orm";
-import type { KnowledgebaseIngestionRepository } from "@grasp/domain";
+import { and, eq, max } from 'drizzle-orm';
+import type { KnowledgebaseIngestionRepository } from '@grasp/domain';
 import { KNOWLEDGEBASE_VERSION_STATUS } from '@grasp/domain';
 import type { DbClient } from './client';
+import {
+  findOrCreateKnowledgebase,
+  insertWikiProjection,
+  relationshipMetadata,
+  upsertSourcePassages as upsertSourcePassagesFromContent,
+} from './knowledgebase-helpers';
 import {
   knowledgebases,
   knowledgebaseVersions,
@@ -11,14 +17,10 @@ import {
   wikiRelationships,
   wikiRelationshipSourceRefs,
 } from './schema';
-import {
-  findOrCreateKnowledgebase,
-  insertWikiProjection,
-  relationshipMetadata,
-  upsertSourcePassages as upsertSourcePassagesFromContent,
-} from './knowledgebase-helpers';
 
-export function createKnowledgebaseIngestionMethods(db: DbClient): KnowledgebaseIngestionRepository {
+export function createKnowledgebaseIngestionMethods(
+  db: DbClient
+): KnowledgebaseIngestionRepository {
   return {
     async mergeIngestionOutput(input) {
       return db.transaction(async (tx) => {
@@ -55,7 +57,8 @@ export function createKnowledgebaseIngestionMethods(db: DbClient): Knowledgebase
               .where(eq(wikiConceptSourceRefs.conceptId, concept.id))
               .limit(1);
 
-            const isUserEdited = (concept.metadata as Record<string, unknown>)?.isUserEdited === true;
+            const isUserEdited =
+              (concept.metadata as Record<string, unknown>)?.isUserEdited === true;
 
             if (!hasRefs && !isUserEdited) {
               await tx.delete(wikiConcepts).where(eq(wikiConcepts.id, concept.id));
@@ -92,7 +95,11 @@ export function createKnowledgebaseIngestionMethods(db: DbClient): Knowledgebase
 
         // Resolve concept IDs (existing + newly extracted)
         const existingConcepts = await tx
-          .select({ id: wikiConcepts.id, conceptKey: wikiConcepts.conceptKey, metadata: wikiConcepts.metadata })
+          .select({
+            id: wikiConcepts.id,
+            conceptKey: wikiConcepts.conceptKey,
+            metadata: wikiConcepts.metadata,
+          })
           .from(wikiConcepts)
           .where(eq(wikiConcepts.knowledgebaseId, knowledgebase.id));
         const conceptByKey = new Map(existingConcepts.map((c) => [c.conceptKey, c]));
@@ -102,11 +109,17 @@ export function createKnowledgebaseIngestionMethods(db: DbClient): Knowledgebase
         for (const concept of input.output.concepts) {
           const existing = conceptByKey.get(concept.conceptKey);
           const lookupKey = concept.mergesWith ?? concept.conceptKey;
-          const embedding = input.conceptEmbeddingsByKey?.[lookupKey] ?? input.conceptEmbeddingsByKey?.[concept.conceptKey] ?? null;
-          console.log(`[mergeIngestionOutput] concept: ${concept.conceptKey}, lookupKey: ${lookupKey}, hasEmbedding: ${!!embedding}`);
+          const embedding =
+            input.conceptEmbeddingsByKey?.[lookupKey] ??
+            input.conceptEmbeddingsByKey?.[concept.conceptKey] ??
+            null;
+          console.log(
+            `[mergeIngestionOutput] concept: ${concept.conceptKey}, lookupKey: ${lookupKey}, hasEmbedding: ${!!embedding}`
+          );
 
           if (existing) {
-            const isUserEdited = (existing.metadata as Record<string, unknown>)?.isUserEdited === true;
+            const isUserEdited =
+              (existing.metadata as Record<string, unknown>)?.isUserEdited === true;
             if (!isUserEdited) {
               await tx
                 .update(wikiConcepts)
@@ -196,7 +209,9 @@ export function createKnowledgebaseIngestionMethods(db: DbClient): Knowledgebase
           if (!conceptId || !concept.sourceRefs?.length) continue;
 
           for (const ref of concept.sourceRefs) {
-            const passageId = passageByBlockId.get(ref.blockId) || passageByBlockId.get(`${input.sourceId}:${ref.blockId}`);
+            const passageId =
+              passageByBlockId.get(ref.blockId) ||
+              passageByBlockId.get(`${input.sourceId}:${ref.blockId}`);
             if (!passageId) continue;
 
             await tx

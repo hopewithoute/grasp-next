@@ -1,23 +1,23 @@
 import { randomUUID } from 'node:crypto';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { drizzle } from 'drizzle-orm/postgres-js';
 import { and, eq } from 'drizzle-orm';
+import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
-import { knowledgebaseArtifactContentDto } from '@grasp/domain';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { knowledgebaseArtifactContentDto, parse } from '@grasp/domain';
+import { env } from './env';
 import { createKnowledgebaseRepository } from './knowledgebase-repository';
 import { createProjectRepository } from './project-repository';
 import { createProjectSourceRepository } from './project-source-repository';
 import * as schema from './schema';
 import {
-  knowledgebaseVersions,
   knowledgebases,
+  knowledgebaseVersions,
   projects,
   sourcePassages,
   user,
   wikiConcepts,
   wikiRelationships,
 } from './schema';
-import { env } from './env';
 
 const databaseUrl = env.DATABASE_URL;
 const describeIfDatabase = databaseUrl ? describe : describe.skip;
@@ -386,13 +386,15 @@ describeIfDatabase('createKnowledgebaseRepository', () => {
         projectId: project.id,
       });
 
-      await expect(knowledgebaseRepository.addRelationship({
+      await expect(
+        knowledgebaseRepository.addRelationship({
           projectId: project.id,
           relationshipKey: 'market:missing:prerequisite',
           sourceConceptKey: 'market',
           targetConceptKey: 'missing',
           relationshipType: 'prerequisite',
-        })).rejects.toThrow(/target \(missing\) concept not found/);
+        })
+      ).rejects.toThrow(/target \(missing\) concept not found/);
 
       const relationships = await db
         .select()
@@ -426,14 +428,16 @@ describeIfDatabase('createKnowledgebaseRepository', () => {
         projectId: project.id,
       });
 
-      await expect(knowledgebaseRepository.addConceptEvidence({
+      await expect(
+        knowledgebaseRepository.addConceptEvidence({
           projectId: project.id,
           conceptKey: 'missing',
           sourceType: 'text',
           title: 'Missing evidence',
           quote: 'This quote should not be attached.',
           locationLabel: 'Missing evidence source',
-        })).rejects.toThrow(/concept missing not found/);
+        })
+      ).rejects.toThrow(/concept missing not found/);
     } finally {
       await db.delete(projects).where(eq(projects.id, project.id));
     }
@@ -449,7 +453,7 @@ function knowledgebaseArtifactContent(sourceId: string) {
     sourceId,
   };
 
-  return knowledgebaseArtifactContentDto.parse({
+  return parse(knowledgebaseArtifactContentDto, {
     graphProjection: {
       edges: [],
       nodes: [

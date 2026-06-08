@@ -1,4 +1,4 @@
-import { and, eq, asc } from 'drizzle-orm';
+import { and, asc, eq } from 'drizzle-orm';
 import type { ProjectSourceType } from '@grasp/domain';
 import type { DbClient } from './client';
 import { projects, projectSources, type NewProjectSource } from './schema';

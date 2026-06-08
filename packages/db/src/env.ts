@@ -1,7 +1,7 @@
-import { z } from 'zod';
+import { parse, urlString, v } from '@grasp/domain';
 
-const envSchema = z.object({
-  DATABASE_URL: z.string().url().optional(),
+const envSchema = v.object({
+  DATABASE_URL: v.optional(urlString),
 });
 
-export const env = envSchema.parse(process.env);
+export const env = parse(envSchema, process.env);

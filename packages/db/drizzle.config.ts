@@ -1,6 +1,7 @@
-import { defineConfig } from 'drizzle-kit';
 import { join } from 'node:path';
 import { cwd, loadEnvFile } from 'node:process';
+import { defineConfig } from 'drizzle-kit';
+import { env } from './src/env';
 
 for (const envFile of [join(cwd(), '.env'), join(cwd(), '..', '..', '.env')]) {
   try {
@@ -12,7 +13,6 @@ for (const envFile of [join(cwd(), '.env'), join(cwd(), '..', '..', '.env')]) {
     }
   }
 }
-import { env } from './src/env';
 
 const databaseUrl = env.DATABASE_URL;
 

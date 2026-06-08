@@ -1,4 +1,4 @@
-import { and, eq, exists, max } from "drizzle-orm";
+import { and, eq, exists, max } from 'drizzle-orm';
 import type { KnowledgebaseMutationRepository } from '@grasp/domain';
 import { KNOWLEDGEBASE_VERSION_STATUS } from '@grasp/domain';
 import type { DbClient } from './client';

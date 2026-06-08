@@ -1,8 +1,8 @@
 import type { KnowledgebaseRepository } from '@grasp/domain';
 import type { DbClient } from './client';
-import { createKnowledgebaseQueryMethods } from './knowledgebase-query-repo';
-import { createKnowledgebaseMutationMethods } from './knowledgebase-mutation-repo';
 import { createKnowledgebaseIngestionMethods } from './knowledgebase-ingestion-repo';
+import { createKnowledgebaseMutationMethods } from './knowledgebase-mutation-repo';
+import { createKnowledgebaseQueryMethods } from './knowledgebase-query-repo';
 
 export type DbKnowledgebaseRepository = ReturnType<typeof createKnowledgebaseRepository>;
 

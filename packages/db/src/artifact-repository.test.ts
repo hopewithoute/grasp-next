@@ -1,13 +1,13 @@
 import { randomUUID } from 'node:crypto';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { drizzle } from 'drizzle-orm/postgres-js';
 import { eq } from 'drizzle-orm';
+import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createArtifactRepository } from './artifact-repository';
+import { env } from './env';
 import { createProjectRepository } from './project-repository';
 import * as schema from './schema';
 import { projects, user } from './schema';
-import { env } from './env';
 
 const databaseUrl = env.DATABASE_URL;
 const describeIfDatabase = databaseUrl ? describe : describe.skip;
