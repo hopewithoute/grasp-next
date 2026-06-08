@@ -1,14 +1,14 @@
-import { canUseAgent } from '../index';
-import { canUseEmbeddingModel, embedText, embedTexts } from '../utils/embeddings';
-import { createIngestionRetrievalTools } from './ingestion-retrieval.tools';
-import { extractChunk } from './extract-chunk';
 import type {
-  IngestionAiPort,
   ExtractChunkPortInput,
+  IngestionAiPort,
   IngestionConcept,
   IngestionConceptContext,
   IngestionConceptSearchResult,
 } from '@grasp/domain';
+import { canUseAgent } from '../index';
+import { canUseEmbeddingModel, embedText, embedTexts } from '../utils/embeddings';
+import { extractChunk } from './extract-chunk';
+import { createIngestionRetrievalTools } from './ingestion-retrieval.tools';
 
 /**
  * Narrow port for the ingestion AI adapter — only the retrieval methods it actually uses.
@@ -16,7 +16,10 @@ import type {
  * or a focused test double.
  */
 export type IngestionRetrievalPort = {
-  getConceptContext(input: { conceptKey: string; projectId: string }): Promise<IngestionConceptContext | null>;
+  getConceptContext(input: {
+    conceptKey: string;
+    projectId: string;
+  }): Promise<IngestionConceptContext | null>;
   searchConceptsForIngestion(input: {
     embedding?: number[];
     limit?: number;
@@ -109,7 +112,10 @@ export class IngestionAiAdapter implements IngestionAiPort {
 
       return {
         embeddingsByKey,
-        metadata: { status: 'completed' as const, embeddedConceptCount: Object.keys(embeddingsByKey).length },
+        metadata: {
+          status: 'completed' as const,
+          embeddedConceptCount: Object.keys(embeddingsByKey).length,
+        },
       };
     } catch (error) {
       return {
@@ -154,16 +160,22 @@ export class IngestionAiAdapter implements IngestionAiPort {
     }
 
     const rawContexts = await Promise.all(
-      concepts.slice(0, 2).map(async (concept: { conceptKey: string; name: string; definition: string }) => {
-        const context = await this.retrievalPort.getConceptContext({
-          conceptKey: concept.conceptKey,
-          projectId: input.projectId,
-        });
-        if (input.onRetrieval) {
-          input.onRetrieval(context?.neighbors.length ?? 0, concept.conceptKey, 'concept_neighbors');
-        }
-        return context;
-      })
+      concepts
+        .slice(0, 2)
+        .map(async (concept: { conceptKey: string; name: string; definition: string }) => {
+          const context = await this.retrievalPort.getConceptContext({
+            conceptKey: concept.conceptKey,
+            projectId: input.projectId,
+          });
+          if (input.onRetrieval) {
+            input.onRetrieval(
+              context?.neighbors.length ?? 0,
+              concept.conceptKey,
+              'concept_neighbors'
+            );
+          }
+          return context;
+        })
     );
 
     return rawContexts.filter((c): c is IngestionConceptContext => c !== null);

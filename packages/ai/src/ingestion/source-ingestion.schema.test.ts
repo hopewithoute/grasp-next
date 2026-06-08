@@ -1,10 +1,14 @@
-import { describe, it, expect } from 'vitest';
-import { ingestionWorkflowInputSchema, ingestionWorkflowContextSchema } from './source-ingestion.schema';
+import { describe, expect, it } from 'vitest';
+import { safeParse } from '@grasp/domain';
+import {
+  ingestionWorkflowContextSchema,
+  ingestionWorkflowInputSchema,
+} from './source-ingestion.schema';
 
 describe('Source Ingestion Schema', () => {
   describe('ingestionWorkflowInputSchema', () => {
     it('validates correct input', () => {
-      const result = ingestionWorkflowInputSchema.safeParse({
+      const result = safeParse(ingestionWorkflowInputSchema, {
         projectId: 'proj-123',
         sourceId: 'src-123',
         sourceTitle: 'Test Title',
@@ -14,7 +18,7 @@ describe('Source Ingestion Schema', () => {
     });
 
     it('rejects invalid input', () => {
-      const result = ingestionWorkflowInputSchema.safeParse({
+      const result = safeParse(ingestionWorkflowInputSchema, {
         projectId: 'proj-123',
       });
       expect(result.success).toBe(false);
@@ -29,7 +33,7 @@ describe('Source Ingestion Schema', () => {
         aiPort: {} as unknown,
       };
 
-      const result = ingestionWorkflowContextSchema.safeParse(mockRepo);
+      const result = safeParse(ingestionWorkflowContextSchema, mockRepo);
       expect(result.success).toBe(true);
     });
   });

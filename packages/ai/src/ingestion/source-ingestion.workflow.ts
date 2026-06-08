@@ -1,21 +1,22 @@
 import { createWorkflow } from '@mastra/core/workflows';
-import { z } from 'zod';
+import { v } from '@grasp/domain';
 import { ingestionWorkflowInputSchema, type WorkflowChunk } from './source-ingestion.schema';
 import {
-  initializeRunStep,
-  normalizeAndChunkStep,
-  extractChunkStep,
-  mergeExtractionsStep,
-  prepareLinkCandidatesStep,
   embedAndSaveStep,
+  extractChunkOutputSchema,
+  extractChunkStep,
   ingestionStateSchema,
+  initializeRunStep,
+  mergeExtractionsStep,
+  normalizeAndChunkStep,
+  prepareLinkCandidatesStep,
 } from './source-ingestion.steps';
 import { sourceLinkingWorkflow } from './source-linking.workflow';
 
 export const processChunkWorkflow = createWorkflow({
   id: 'process-chunk-workflow',
-  inputSchema: z.object({ chunk: z.any(), totalChunks: z.number() }),
-  outputSchema: z.any(),
+  inputSchema: v.object({ chunk: v.any(), totalChunks: v.number() }),
+  outputSchema: extractChunkOutputSchema,
 })
   .then(extractChunkStep)
   .commit();
@@ -23,7 +24,7 @@ export const processChunkWorkflow = createWorkflow({
 export const sourceIngestionWorkflow = createWorkflow({
   id: 'source-ingestion-workflow',
   inputSchema: ingestionWorkflowInputSchema,
-  outputSchema: z.object({ success: z.boolean() }),
+  outputSchema: v.object({ success: v.boolean() }),
   stateSchema: ingestionStateSchema,
 })
   .then(initializeRunStep)
@@ -41,4 +42,3 @@ export const sourceIngestionWorkflow = createWorkflow({
   .then(sourceLinkingWorkflow)
   .then(embedAndSaveStep)
   .commit();
-

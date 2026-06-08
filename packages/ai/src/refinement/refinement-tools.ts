@@ -1,21 +1,21 @@
 import type { KnowledgebaseRepository } from '@grasp/domain';
 import {
-  createSearchWikiConceptsTool,
-  createProposeGraphChangesTool,
-  GraphProposalSchema,
-  GraphProposalActionSchema,
   AddConceptSchema,
-  UpdateConceptSchema,
-  DeleteConceptSchema,
-  AddRelationshipSchema,
-  DeleteRelationshipSchema,
   AddEvidenceSchema,
-  UpdateEvidenceSchema,
+  AddRelationshipSchema,
+  createProposeGraphChangesTool,
+  createSearchWikiConceptsTool,
+  DeleteConceptSchema,
   DeleteEvidenceSchema,
+  DeleteRelationshipSchema,
+  GraphProposalActionSchema,
+  GraphProposalSchema,
+  UpdateConceptSchema,
+  UpdateEvidenceSchema,
   type GraphProposalAction,
   type GraphProposalPayload,
 } from './graph-tools';
-import { createSearchWebTool, createProposeWebSourceTool } from './web-tools';
+import { createProposeWebSourceTool, createSearchWebTool } from './web-tools';
 
 // Re-export schemas and types from graph-tools for backward compatibility
 export {

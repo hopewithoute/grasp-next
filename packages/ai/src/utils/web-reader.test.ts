@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { extractWebpageContent } from './web-reader';
 import { env } from '../env';
+import { extractWebpageContent } from './web-reader';
 
 // Allow tests to mutate env
 vi.mock('../env', () => {
@@ -35,7 +35,12 @@ describe('extractWebpageContent', () => {
 
   it('strips Jina AI prefix from URL', async () => {
     mockGet.mockResolvedValueOnce(
-      new Response('<html><body>' + 'Hello long enough string to bypass SPA length check. '.repeat(10) + '</body></html>', { status: 200 }) as unknown as Response
+      new Response(
+        '<html><body>' +
+          'Hello long enough string to bypass SPA length check. '.repeat(10) +
+          '</body></html>',
+        { status: 200 }
+      )
     );
 
     const result = await extractWebpageContent('https://r.jina.ai/https://example.com');
@@ -45,9 +50,14 @@ describe('extractWebpageContent', () => {
 
   it('returns text on successful Layer 1 extraction', async () => {
     mockGet.mockResolvedValueOnce(
-      new Response('<html><body><h1>Test Title</h1><p>Some valid long content goes here to pass length check. '.repeat(10) + '</p></body></html>', {
-        status: 200,
-      }) as unknown as Response
+      new Response(
+        '<html><body><h1>Test Title</h1><p>Some valid long content goes here to pass length check. '.repeat(
+          10
+        ) + '</p></body></html>',
+        {
+          status: 200,
+        }
+      )
     );
 
     const result = await extractWebpageContent('https://example.com');
@@ -61,7 +71,7 @@ describe('extractWebpageContent', () => {
 
     // Layer 1 mock (too short)
     mockGet.mockResolvedValueOnce(
-      new Response('<div id="root"></div>', { status: 200 }) as unknown as Response
+      new Response('<div id="root"></div>', { status: 200 })
     );
 
     // Layer 2 mock
@@ -84,7 +94,10 @@ describe('extractWebpageContent', () => {
 
     // Layer 1 mock (WAF)
     mockGet.mockResolvedValueOnce(
-      new Response('<html><body><p>Just a moment...</p><p>Cloudflare Ray ID: 12345</p></body></html>', { status: 200 }) as unknown as Response
+      new Response(
+        '<html><body><p>Just a moment...</p><p>Cloudflare Ray ID: 12345</p></body></html>',
+        { status: 200 }
+      )
     );
 
     // Layer 2 mock
@@ -106,7 +119,7 @@ describe('extractWebpageContent', () => {
 
     // Layer 1 mock (403 Forbidden)
     mockGet.mockResolvedValueOnce(
-      new Response('Forbidden', { status: 403 }) as unknown as Response
+      new Response('Forbidden', { status: 403 })
     );
 
     // Layer 2 mock
@@ -128,7 +141,7 @@ describe('extractWebpageContent', () => {
 
     // Layer 1 mock (403 Forbidden)
     mockGet.mockResolvedValueOnce(
-      new Response('Forbidden', { status: 403, statusText: 'Forbidden' }) as unknown as Response
+      new Response('Forbidden', { status: 403, statusText: 'Forbidden' })
     );
 
     await expect(extractWebpageContent('https://example.com')).rejects.toThrow(

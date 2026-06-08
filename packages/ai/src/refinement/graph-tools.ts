@@ -1,131 +1,130 @@
 import { createTool } from '@mastra/core/tools';
-import { z } from 'zod';
-import type { KnowledgebaseRepository } from '@grasp/domain';
+import { requiredString, v, type KnowledgebaseRepository } from '@grasp/domain';
+
+const described = <TSchema extends v.GenericSchema>(schema: TSchema, description: string) =>
+  v.pipe(schema, v.description(description));
+
+const confidenceInputSchema = described(
+  v.union([v.number(), v.string()]),
+  'Confidence score between 0.0 and 1.0.'
+);
 
 /**
  * AI-facing schemas for the refinement agent's graph proposal tool.
  *
  * These schemas mirror the domain proposal DTOs in `@grasp/domain/refinement/proposal.dto.ts`
  * but are kept separate because:
- * 1. Domain DTOs use `z.preprocess()` for robustness (e.g., "HIGH" → 0.9) which is
- *    incompatible with Zod's `.extend()` and `.shape` APIs.
- * 2. AI schemas need `.describe()` on each field for LLM tool-use context.
- * 3. The AI schemas accept `z.union([z.number(), z.string()])` for confidence,
+ * 1. Domain DTOs preprocess robust inputs (e.g., "HIGH" → 0.9).
+ * 2. AI schemas need descriptions on each field for LLM tool-use context.
+ * 3. The AI schemas accept number|string for confidence,
  *    while domain DTOs preprocess strings to numbers.
  *
  * Both layers are needed: AI schemas shape LLM output, domain DTOs validate before DB writes.
  * If you change a field name or type here, update the corresponding domain DTO too.
  */
 
-export const AddConceptSchema = z.object({
-  type: z.literal('add_concept'),
-  payload: z.object({
-    conceptKey: z.string().describe('Exact URL-friendly unique key (kebab-case).'),
-    name: z.string().describe('Human readable name of the concept.'),
-    definition: z.string().describe('Clear, concise definition of the concept.'),
-    difficulty: z.string().describe('Must be: beginner, intermediate, or advanced.'),
-    confidence: z
-      .union([z.number(), z.string()])
-      .describe('Confidence score between 0.0 and 1.0.'),
+export const AddConceptSchema = v.object({
+  type: v.literal('add_concept'),
+  payload: v.object({
+    conceptKey: described(v.string(), 'Exact URL-friendly unique key (kebab-case).'),
+    name: described(v.string(), 'Human readable name of the concept.'),
+    definition: described(v.string(), 'Clear, concise definition of the concept.'),
+    difficulty: described(v.string(), 'Must be: beginner, intermediate, or advanced.'),
+    confidence: confidenceInputSchema,
   }),
 });
 
-export const UpdateConceptSchema = z.object({
-  type: z.literal('update_concept'),
-  payload: z.object({
-    conceptKey: z
-      .string()
-      .describe(
-        'The EXACT key of the existing concept to update. For multiple updates, create multiple update_concept actions.'
-      ),
-    name: z.string().optional(),
-    definition: z.string().optional(),
-    difficulty: z.string().optional(),
-    confidence: z
-      .union([z.number(), z.string()])
-      .optional()
-      .describe('Confidence score between 0.0 and 1.0.'),
-    metadata: z
-      .record(z.string(), z.unknown())
-      .optional()
-      .describe('Arbitrary key-value metadata for the concept.'),
+export const UpdateConceptSchema = v.object({
+  type: v.literal('update_concept'),
+  payload: v.object({
+    conceptKey: described(
+      v.string(),
+      'The EXACT key of the existing concept to update. For multiple updates, create multiple update_concept actions.'
+    ),
+    name: v.optional(v.string()),
+    definition: v.optional(v.string()),
+    difficulty: v.optional(v.string()),
+    confidence: v.optional(confidenceInputSchema),
+    metadata: described(
+      v.optional(v.record(v.string(), v.unknown())),
+      'Arbitrary key-value metadata for the concept.'
+    ),
   }),
 });
 
-export const DeleteConceptSchema = z.object({
-  type: z.literal('delete_concept'),
-  payload: z.object({
-    conceptKey: z
-      .string()
-      .describe(
-        'The EXACT key of the concept to delete. To delete multiple concepts, create multiple separate delete_concept actions.'
-      ),
+export const DeleteConceptSchema = v.object({
+  type: v.literal('delete_concept'),
+  payload: v.object({
+    conceptKey: described(
+      v.string(),
+      'The EXACT key of the concept to delete. To delete multiple concepts, create multiple separate delete_concept actions.'
+    ),
   }),
 });
 
-export const AddRelationshipSchema = z.object({
-  type: z.literal('add_relationship'),
-  payload: z.object({
-    sourceConceptKey: z.string().describe('The EXACT key of the source concept.'),
-    targetConceptKey: z.string().describe('The EXACT key of the target concept.'),
-    relationshipType: z
-      .string()
-      .describe('Must be: prerequisite, part_of, related_to, or explains.'),
-    rationale: z.string().describe('Explanation of why this relationship exists.'),
+export const AddRelationshipSchema = v.object({
+  type: v.literal('add_relationship'),
+  payload: v.object({
+    sourceConceptKey: described(v.string(), 'The EXACT key of the source concept.'),
+    targetConceptKey: described(v.string(), 'The EXACT key of the target concept.'),
+    relationshipType: described(
+      v.string(),
+      'Must be: prerequisite, part_of, related_to, or explains.'
+    ),
+    rationale: described(v.string(), 'Explanation of why this relationship exists.'),
   }),
 });
 
-export const DeleteRelationshipSchema = z.object({
-  type: z.literal('delete_relationship'),
-  payload: z.object({
-    sourceConceptKey: z.string().describe('The EXACT key of the source concept.'),
-    targetConceptKey: z.string().describe('The EXACT key of the target concept.'),
-    relationshipType: z
-      .string()
-      .describe('Must be: prerequisite, part_of, related_to, or explains.'),
+export const DeleteRelationshipSchema = v.object({
+  type: v.literal('delete_relationship'),
+  payload: v.object({
+    sourceConceptKey: described(v.string(), 'The EXACT key of the source concept.'),
+    targetConceptKey: described(v.string(), 'The EXACT key of the target concept.'),
+    relationshipType: described(
+      v.string(),
+      'Must be: prerequisite, part_of, related_to, or explains.'
+    ),
   }),
 });
 
-export const AddEvidenceSchema = z.object({
-  type: z.literal('add_evidence'),
-  payload: z.object({
-    conceptKey: z
-      .string()
-      .describe('The EXACT key of the concept this evidence supports.'),
-    evidenceText: z
-      .string()
-      .describe('A direct quote or factual statement extracted from the source.'),
-    rationale: z.string().describe('Why this evidence proves the concept.'),
-    url: z.string().optional().describe('Source URL if available.'),
-    title: z.string().optional().describe('Title of the source document or webpage.'),
-    sourceType: z.string().optional().describe('Must be "web" or "text".'),
+export const AddEvidenceSchema = v.object({
+  type: v.literal('add_evidence'),
+  payload: v.object({
+    conceptKey: described(v.string(), 'The EXACT key of the concept this evidence supports.'),
+    evidenceText: described(
+      v.string(),
+      'A direct quote or factual statement extracted from the source.'
+    ),
+    rationale: described(v.string(), 'Why this evidence proves the concept.'),
+    url: described(v.optional(v.string()), 'Source URL if available.'),
+    title: described(v.optional(v.string()), 'Title of the source document or webpage.'),
+    sourceType: described(v.optional(v.string()), 'Must be "web" or "text".'),
   }),
 });
 
-export const UpdateEvidenceSchema = z.object({
-  type: z.literal('update_evidence'),
-  payload: z.object({
-    evidenceId: z.string().describe('The EXACT ID of the evidence to update.'),
-    evidenceText: z
-      .string()
-      .optional()
-      .describe('A direct quote or factual statement extracted from the source.'),
-    rationale: z.string().optional().describe('Why this evidence proves the concept.'),
+export const UpdateEvidenceSchema = v.object({
+  type: v.literal('update_evidence'),
+  payload: v.object({
+    evidenceId: described(v.string(), 'The EXACT ID of the evidence to update.'),
+    evidenceText: described(
+      v.optional(v.string()),
+      'A direct quote or factual statement extracted from the source.'
+    ),
+    rationale: described(v.optional(v.string()), 'Why this evidence proves the concept.'),
   }),
 });
 
-export const DeleteEvidenceSchema = z.object({
-  type: z.literal('delete_evidence'),
-  payload: z.object({
-    evidenceId: z
-      .string()
-      .describe(
-        'The EXACT ID of the evidence to delete. To delete multiple, create separate delete_evidence actions.'
-      ),
+export const DeleteEvidenceSchema = v.object({
+  type: v.literal('delete_evidence'),
+  payload: v.object({
+    evidenceId: described(
+      v.string(),
+      'The EXACT ID of the evidence to delete. To delete multiple, create separate delete_evidence actions.'
+    ),
   }),
 });
 
-export const GraphProposalActionSchema = z.discriminatedUnion('type', [
+export const GraphProposalActionSchema = v.variant('type', [
   AddConceptSchema,
   UpdateConceptSchema,
   DeleteConceptSchema,
@@ -136,13 +135,13 @@ export const GraphProposalActionSchema = z.discriminatedUnion('type', [
   DeleteEvidenceSchema,
 ]);
 
-export const GraphProposalSchema = z.object({
-  rationale: z.string().describe('A short message explaining what you are changing and why.'),
-  actions: z.array(GraphProposalActionSchema),
+export const GraphProposalSchema = v.object({
+  rationale: described(v.string(), 'A short message explaining what you are changing and why.'),
+  actions: v.array(GraphProposalActionSchema),
 });
 
-export type GraphProposalAction = z.infer<typeof GraphProposalActionSchema>;
-export type GraphProposalPayload = z.infer<typeof GraphProposalSchema>;
+export type GraphProposalAction = v.InferOutput<typeof GraphProposalActionSchema>;
+export type GraphProposalPayload = v.InferOutput<typeof GraphProposalSchema>;
 
 export function createSearchWikiConceptsTool(deps: {
   knowledgebaseRepository: KnowledgebaseRepository;
@@ -152,30 +151,30 @@ export function createSearchWikiConceptsTool(deps: {
     id: 'search-wiki-concepts',
     description:
       'Search the concept graph to find existing nodes. You MUST use this tool before modifying, adding, or deleting concepts to retrieve their exact conceptKey and prevent duplicates.',
-    inputSchema: z.object({
-      limit: z.number().int().min(1).max(20).default(10),
-      query: z.string().trim().min(1),
+    inputSchema: v.object({
+      limit: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(20)), 10),
+      query: requiredString,
     }),
-    outputSchema: z.object({
-      concepts: z.array(
-        z.object({
-          conceptKey: z.string(),
-          confidence: z.number(),
-          definition: z.string(),
-          difficulty: z.string(),
-          evidenceCount: z.number(),
-          name: z.string(),
-          evidence: z
-            .array(
-              z.object({
-                id: z.string(),
-                blockId: z.string().nullable(),
-                excerpt: z.string(),
-                location: z.string().nullable(),
-                sourceId: z.string(),
+    outputSchema: v.object({
+      concepts: v.array(
+        v.object({
+          conceptKey: v.string(),
+          confidence: v.number(),
+          definition: v.string(),
+          difficulty: v.string(),
+          evidenceCount: v.number(),
+          name: v.string(),
+          evidence: v.optional(
+            v.array(
+              v.object({
+                id: v.string(),
+                blockId: v.nullable(v.string()),
+                excerpt: v.string(),
+                location: v.nullable(v.string()),
+                sourceId: v.string(),
               })
             )
-            .optional(),
+          ),
         })
       ),
     }),

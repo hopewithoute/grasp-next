@@ -2,10 +2,10 @@ import PQueue from 'p-queue';
 
 // Global queue with a strict concurrency limit for LLM requests
 // Limited to exactly 1 request per second to prevent aggressive rate limits.
-const llmQueue = new PQueue({ 
+const llmQueue = new PQueue({
   concurrency: 1,
   intervalCap: 10,
-  interval: 1000 
+  interval: 1000,
 });
 
 // Keep a reference to the original native fetch
@@ -13,7 +13,7 @@ const originalFetch = global.fetch;
 
 /**
  * Intercepts global.fetch to queue outbound LLM requests.
- * This ensures that all Vercel AI SDK requests, including internal tool 
+ * This ensures that all Vercel AI SDK requests, including internal tool
  * loops and retries, respect the global concurrency limit.
  */
 export function setupGlobalLlmQueue() {
@@ -26,11 +26,7 @@ export function setupGlobalLlmQueue() {
   global.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
     // Determine the URL string safely
     const urlStr =
-      typeof input === 'string'
-        ? input
-        : input instanceof URL
-          ? input.toString()
-          : input.url;
+      typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
 
     // Identify LLM API endpoints.
     // Matches common Vercel AI SDK domains and standard OpenAI-compatible paths.
@@ -44,7 +40,7 @@ export function setupGlobalLlmQueue() {
 
     if (isLlmRequest) {
       // Add the fetch call to the queue and return its promise
-      return llmQueue.add(async () => originalFetch(input, init)) as Promise<Response>;
+      return llmQueue.add(async () => originalFetch(input, init));
     }
 
     // Pass through non-LLM requests immediately

@@ -1,4 +1,5 @@
 import { compile } from 'html-to-text';
+import { safeParse, v } from '@grasp/domain';
 import { env } from '../env';
 
 /**
@@ -24,8 +25,8 @@ export async function extractWebpageContent(url: string): Promise<string> {
 
     // WAF & SPA detection heuristics
     const isTooShort = text.trim().length < 50;
-    const isWafChallenge = 
-      text.includes('Just a moment...') || 
+    const isWafChallenge =
+      text.includes('Just a moment...') ||
       text.includes('Enable JavaScript and cookies to continue') ||
       text.includes('DDoS protection by Cloudflare');
 
@@ -56,20 +57,19 @@ export async function extractWebpageContent(url: string): Promise<string> {
     );
 
     if (cfResponse.ok) {
-      const { z } = await import('zod');
-      const CloudflareResponseSchema = z.object({
-        success: z.boolean(),
-        result: z.string().optional(),
-        errors: z.array(z.unknown()).optional(),
+      const CloudflareResponseSchema = v.object({
+        success: v.boolean(),
+        result: v.optional(v.string()),
+        errors: v.optional(v.array(v.unknown())),
       });
-      
+
       const cfDataRaw = await cfResponse.json();
-      const parsed = CloudflareResponseSchema.safeParse(cfDataRaw);
-      
-      if (parsed.success && parsed.data.success && parsed.data.result) {
-        return parsed.data.result;
+      const parsed = safeParse(CloudflareResponseSchema, cfDataRaw);
+
+      if (parsed.success && parsed.output.success && parsed.output.result) {
+        return parsed.output.result;
       } else {
-        const errors = parsed.success ? parsed.data.errors : parsed.error.errors;
+        const errors = parsed.success ? parsed.output.errors : parsed.issues;
         throw new Error(`Failed to extract markdown via Browser Run: ${JSON.stringify(errors)}`);
       }
     } else {

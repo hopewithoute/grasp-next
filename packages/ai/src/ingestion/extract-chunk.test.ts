@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { validateAgainstBlocks } from './extract-chunk';
 import type { IngestionAgentOutput } from '@grasp/domain';
+import { validateAgainstBlocks } from './extract-chunk';
 
 describe('validateAgainstBlocks', () => {
   it('retains a concept whose quote remains grounded in at least one block', () => {
@@ -14,7 +14,12 @@ describe('validateAgainstBlocks', () => {
           confidence: 0.9,
           sourceRefs: [
             { blockId: 'blk-1', quote: 'Elasticity', locationLabel: 'heading' },
-            { blockId: 'blk-2', quote: 'Price elasticity measures responsiveness of quantity demanded to price changes.', locationLabel: 'paragraph' },
+            {
+              blockId: 'blk-2',
+              quote:
+                'Price elasticity measures responsiveness of quantity demanded to price changes.',
+              locationLabel: 'paragraph',
+            },
           ],
         },
       ],
@@ -24,7 +29,10 @@ describe('validateAgainstBlocks', () => {
 
     const blocks = [
       { id: 'blk-1', text: 'Elasticity' },
-      { id: 'blk-2', text: 'Price elasticity measures responsiveness of quantity demanded to price changes.' },
+      {
+        id: 'blk-2',
+        text: 'Price elasticity measures responsiveness of quantity demanded to price changes.',
+      },
     ];
 
     const result = validateAgainstBlocks(agentOutput, blocks);
@@ -45,7 +53,11 @@ describe('validateAgainstBlocks', () => {
           difficulty: 'beginner',
           confidence: 0.9,
           sourceRefs: [
-            { blockId: 'blk-2', quote: 'Supply and Demand establishes market equilibrium conditions.', locationLabel: 'paragraph' },
+            {
+              blockId: 'blk-2',
+              quote: 'Supply and Demand establishes market equilibrium conditions.',
+              locationLabel: 'paragraph',
+            },
           ],
         },
         {
@@ -55,7 +67,11 @@ describe('validateAgainstBlocks', () => {
           difficulty: 'beginner',
           confidence: 0.9,
           sourceRefs: [
-            { blockId: 'blk-2', quote: 'Supply and Demand establishes market equilibrium conditions.', locationLabel: 'paragraph' },
+            {
+              blockId: 'blk-2',
+              quote: 'Supply and Demand establishes market equilibrium conditions.',
+              locationLabel: 'paragraph',
+            },
           ],
         },
       ],
@@ -68,7 +84,11 @@ describe('validateAgainstBlocks', () => {
           rationale: 'market equilibrium depends on demand relationships',
           sourceRefs: [
             { blockId: 'blk-1', quote: 'Supply and Demand', locationLabel: 'heading' },
-            { blockId: 'blk-2', quote: 'Supply and Demand establishes market equilibrium conditions.', locationLabel: 'paragraph' },
+            {
+              blockId: 'blk-2',
+              quote: 'Supply and Demand establishes market equilibrium conditions.',
+              locationLabel: 'paragraph',
+            },
           ],
         },
       ],
@@ -76,7 +96,10 @@ describe('validateAgainstBlocks', () => {
 
     const blocks = [
       { id: 'blk-1', text: 'Supply and Demand' },
-      { blockId: 'blk-2', text: 'Supply and Demand establishes market equilibrium conditions.' } as unknown as { id: string; text: string },
+      {
+        blockId: 'blk-2',
+        text: 'Supply and Demand establishes market equilibrium conditions.',
+      } as unknown as { id: string; text: string },
     ];
 
     const result = validateAgainstBlocks(agentOutput, blocks);
@@ -84,7 +107,11 @@ describe('validateAgainstBlocks', () => {
     expect(result.relationships.length).toBe(1);
     const keptQuotes = result.relationships[0]?.sourceRefs.map((ref) => ref.quote) ?? [];
     expect(keptQuotes.every((quote) => quote !== 'Supply and Demand')).toBeTruthy();
-    expect(keptQuotes.some((quote) => quote === 'Supply and Demand establishes market equilibrium conditions.')).toBeTruthy();
+    expect(
+      keptQuotes.some(
+        (quote) => quote === 'Supply and Demand establishes market equilibrium conditions.'
+      )
+    ).toBeTruthy();
     expect(result.droppedRefCount >= 1).toBeTruthy();
   });
 });

@@ -1,6 +1,10 @@
 import { createTool } from '@mastra/core/tools';
-import { z } from 'zod';
-import type { IngestionConceptContext, IngestionConceptSearchResult } from '@grasp/domain';
+import {
+  requiredString,
+  v,
+  type IngestionConceptContext,
+  type IngestionConceptSearchResult,
+} from '@grasp/domain';
 
 export type IngestionRetrieval = {
   getConceptContext(conceptKey: string): Promise<IngestionConceptContext | null>;
@@ -12,20 +16,20 @@ export function createIngestionRetrievalTools(retrieval: IngestionRetrieval) {
     id: 'search-wiki-concepts',
     description:
       'Search existing knowledgebase concepts before deciding whether a candidate concept is new or should reuse an existing conceptKey.',
-    inputSchema: z.object({
-      limit: z.number().int().min(1).max(10).default(5),
-      query: z.string().trim().min(1),
+    inputSchema: v.object({
+      limit: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(10)), 5),
+      query: requiredString,
     }),
-    outputSchema: z.object({
-      concepts: z.array(
-        z.object({
-          conceptKey: z.string(),
-          confidence: z.number(),
-          definition: z.string(),
-          distance: z.number().optional(),
-          difficulty: z.string(),
-          evidenceCount: z.number(),
-          name: z.string(),
+    outputSchema: v.object({
+      concepts: v.array(
+        v.object({
+          conceptKey: v.string(),
+          confidence: v.number(),
+          definition: v.string(),
+          distance: v.optional(v.number()),
+          difficulty: v.string(),
+          evidenceCount: v.number(),
+          name: v.string(),
         })
       ),
     }),
@@ -39,38 +43,38 @@ export function createIngestionRetrievalTools(retrieval: IngestionRetrieval) {
     id: 'get-concept-context',
     description:
       'Load an existing concept with its evidence quotes and graph neighbors before proposing an update or relationship.',
-    inputSchema: z.object({
-      conceptKey: z.string().trim().min(1),
+    inputSchema: v.object({
+      conceptKey: requiredString,
     }),
-    outputSchema: z.object({
-      context: z
-        .object({
-          concept: z.object({
-            conceptKey: z.string(),
-            confidence: z.number(),
-            definition: z.string(),
-            difficulty: z.string(),
-            evidenceCount: z.number(),
-            name: z.string(),
+    outputSchema: v.object({
+      context: v.nullable(
+        v.object({
+          concept: v.object({
+            conceptKey: v.string(),
+            confidence: v.number(),
+            definition: v.string(),
+            difficulty: v.string(),
+            evidenceCount: v.number(),
+            name: v.string(),
           }),
-          evidence: z.array(
-            z.object({
-              blockId: z.string(),
-              excerpt: z.string(),
-              location: z.string(),
-              sourceId: z.string(),
+          evidence: v.array(
+            v.object({
+              blockId: v.string(),
+              excerpt: v.string(),
+              location: v.string(),
+              sourceId: v.string(),
             })
           ),
-          neighbors: z.array(
-            z.object({
-              conceptKey: z.string(),
-              direction: z.enum(['incoming', 'outgoing']),
-              name: z.string(),
-              relationshipType: z.string(),
+          neighbors: v.array(
+            v.object({
+              conceptKey: v.string(),
+              direction: v.picklist(['incoming', 'outgoing']),
+              name: v.string(),
+              relationshipType: v.string(),
             })
           ),
         })
-        .nullable(),
+      ),
     }),
     execute: async ({ conceptKey }) => {
       const context = await retrieval.getConceptContext(conceptKey);
@@ -82,16 +86,16 @@ export function createIngestionRetrievalTools(retrieval: IngestionRetrieval) {
     id: 'get-concept-neighbors',
     description:
       'Walk one graph hop from an existing concept and return incoming/outgoing neighboring concepts before proposing typed relationships.',
-    inputSchema: z.object({
-      conceptKey: z.string().trim().min(1),
+    inputSchema: v.object({
+      conceptKey: requiredString,
     }),
-    outputSchema: z.object({
-      neighbors: z.array(
-        z.object({
-          conceptKey: z.string(),
-          direction: z.enum(['incoming', 'outgoing']),
-          name: z.string(),
-          relationshipType: z.string(),
+    outputSchema: v.object({
+      neighbors: v.array(
+        v.object({
+          conceptKey: v.string(),
+          direction: v.picklist(['incoming', 'outgoing']),
+          name: v.string(),
+          relationshipType: v.string(),
         })
       ),
     }),

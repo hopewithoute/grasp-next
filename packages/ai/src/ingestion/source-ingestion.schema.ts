@@ -1,27 +1,27 @@
-import { z } from 'zod';
+import { v } from '@grasp/domain';
 
-export const ingestionWorkflowInputSchema = z.object({
-  projectId: z.string(),
-  sourceId: z.string(),
-  sourceTitle: z.string(),
-  content: z.string(),
+export const ingestionWorkflowInputSchema = v.object({
+  projectId: v.string(),
+  sourceId: v.string(),
+  sourceTitle: v.string(),
+  content: v.string(),
 });
 
-export type IngestionWorkflowInput = z.infer<typeof ingestionWorkflowInputSchema>;
+export type IngestionWorkflowInput = v.InferOutput<typeof ingestionWorkflowInputSchema>;
 
-export const chunkSchema = z.object({
-  index: z.number(),
-  blockIndexes: z.array(z.number()),
-  text: z.string(),
-  tokens: z.number(),
+export const chunkSchema = v.object({
+  index: v.number(),
+  blockIndexes: v.array(v.number()),
+  text: v.string(),
+  tokens: v.number(),
 });
 
-export type WorkflowChunk = z.infer<typeof chunkSchema>;
+export type WorkflowChunk = v.InferOutput<typeof chunkSchema>;
 
-export const ingestionWorkflowContextSchema = z.object({
-  ingestionRunRepository: z.any(),
-  knowledgebaseRepository: z.any(),
-  aiPort: z.any(),
+export const ingestionWorkflowContextSchema = v.object({
+  ingestionRunRepository: v.any(),
+  knowledgebaseRepository: v.any(),
+  aiPort: v.any(),
 });
 
-export type IngestionWorkflowContext = z.infer<typeof ingestionWorkflowContextSchema>;
+export type IngestionWorkflowContext = v.InferOutput<typeof ingestionWorkflowContextSchema>;

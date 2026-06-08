@@ -6,11 +6,11 @@ const DEFAULT_XIAOMI_BASE_URL = 'https://token-plan-sgp.xiaomimimo.com/v1';
 export function canUseEmbeddingModel(env: NodeJS.ProcessEnv = process.env) {
   return Boolean(
     env.OPENAI_API_KEY ||
-      env.OPENAI_EMBEDDING_API_KEY ||
-      env.XIAOMI_API_KEY ||
-      (env.OPENAI_COMPATIBLE_BASE_URL && env.OPENAI_COMPATIBLE_API_KEY) ||
-      env.GOOGLE_GENERATIVE_AI_API_KEY ||
-      env.GEMINI_API_KEY
+    env.OPENAI_EMBEDDING_API_KEY ||
+    env.XIAOMI_API_KEY ||
+    (env.OPENAI_COMPATIBLE_BASE_URL && env.OPENAI_COMPATIBLE_API_KEY) ||
+    env.GOOGLE_GENERATIVE_AI_API_KEY ||
+    env.GEMINI_API_KEY
   );
 }
 

@@ -1,8 +1,10 @@
 import { Agent } from '@mastra/core/agent';
-import { createGraspMemory } from '../mastra/memory';
 import { knowledgebaseRelationshipTypeDto } from '@grasp/domain';
+import { createGraspMemory } from '../mastra/memory';
 
-const allowedRelationships = knowledgebaseRelationshipTypeDto.options.map((opt) => `'${opt}'`).join(', ');
+const allowedRelationships = knowledgebaseRelationshipTypeDto.options
+  .map((opt) => `'${opt}'`)
+  .join(', ');
 
 export const refinementAgentInstructions = [
   {
@@ -47,15 +49,15 @@ When a user asks to explain, define, summarize, compare, or give examples of a t
 When a user sends a vague message, greeting, test phrase, or short query without a clear graph-edit instruction:
 1. Output a <thought>...</thought> recognizing the vague intent.
 2. Do not call tools just to echo or test the system.
-3. Ask what they want to inspect or change in the graph, or explain that they can ask you to add, update, connect, or remove concepts.`
-  }
+3. Ask what they want to inspect or change in the graph, or explain that they can ask you to add, update, connect, or remove concepts.`,
+  },
 ] as const;
 
 export const refinementAgent = new Agent({
   id: 'refinement-agent',
   maxRetries: 3,
   name: 'Refinement Agent',
-  instructions: refinementAgentInstructions.map(i => i.content).join('\n\n'),
+  instructions: refinementAgentInstructions.map((i) => i.content).join('\n\n'),
   memory: createGraspMemory({
     generateTitle: true,
     lastMessages: 20,

@@ -1,8 +1,4 @@
-export {
-  extractChunk,
-  type ExtractChunkInput,
-  type ExtractChunkResult,
-} from './extract-chunk';
+export { extractChunk, type ExtractChunkInput, type ExtractChunkResult } from './extract-chunk';
 export { ingestionAgent, ingestionAgentInstructions } from './ingestion.agent';
 
 export {

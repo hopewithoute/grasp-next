@@ -57,6 +57,44 @@ describe('parseReviewedLinkList', () => {
     expect(result.links[0]?.evidenceQuality.relationshipTypeConfidence).toBe(0.88);
   });
 
+  it('trims model string fields before matching candidates', () => {
+    const result = parseReviewedLinkList(
+      {
+        links: [
+          {
+            ...reviewed,
+            candidateId: ` ${candidate.candidateId} `,
+            rationale: ' The source directly states the prerequisite. ',
+          },
+        ],
+      },
+      [candidate]
+    );
+
+    expect(result.links[0]?.candidateId).toBe(candidate.candidateId);
+    expect(result.links[0]?.rationale).toBe('The source directly states the prerequisite.');
+  });
+
+  it('falls back to confidence when specific confidence fields are omitted', () => {
+    const result = parseReviewedLinkList(
+      {
+        links: [
+          {
+            candidateId: candidate.candidateId,
+            confidence: 0.72,
+            decision: 'accept',
+            rationale: 'The source directly states the prerequisite.',
+          },
+        ],
+      },
+      [candidate]
+    );
+
+    expect(result.links[0]?.confidence).toBe(0.72);
+    expect(result.links[0]?.evidenceQuality.semanticSupportConfidence).toBe(0.72);
+    expect(result.links[0]?.evidenceQuality.relationshipTypeConfidence).toBe(0.72);
+  });
+
   it('fails when a candidate decision is missing', () => {
     expect(() => parseReviewedLinkList({ links: [] }, [candidate])).toThrow(
       /link_adjudicator_incomplete/
@@ -65,9 +103,9 @@ describe('parseReviewedLinkList', () => {
 
   it('fails when the model returns an unknown candidate', () => {
     expect(() =>
-        parseReviewedLinkList({ links: [{ ...reviewed, candidateId: 'candidate:unknown' }] }, [
-          candidate,
-        ])
+      parseReviewedLinkList({ links: [{ ...reviewed, candidateId: 'candidate:unknown' }] }, [
+        candidate,
+      ])
     ).toThrow(/link_adjudicator_unknown_candidate/);
   });
 

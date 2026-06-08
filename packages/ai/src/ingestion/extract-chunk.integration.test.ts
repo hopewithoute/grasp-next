@@ -4,11 +4,12 @@ import { describe, expect, it } from 'vitest';
 import {
   chunkNormalizedBlocks,
   ingestionAgentOutputDto,
+  mergeDraft,
   normalizeMarkdownSource,
+  safeParse,
   type IngestionAgentOutput,
 } from '@grasp/domain';
 import { extractChunk } from './extract-chunk';
-import { mergeDraft } from '@grasp/domain';
 
 const DOCS_DIR = resolve(import.meta.dirname, '../../../../docs/example');
 
@@ -51,12 +52,14 @@ describeIfLlm('ingestion extraction (real agent)', () => {
     }
 
     // Validate output shape
-    const parsed = ingestionAgentOutputDto.safeParse(draft);
+    const parsed = safeParse(ingestionAgentOutputDto, draft);
     expect(parsed.success).toBeTruthy();
 
     // Verify concepts were extracted
-    expect(draft.concepts.length >= 2,
-      `Expected at least 2 concepts, got ${draft.concepts.length}`).toBeTruthy();
+    expect(
+      draft.concepts.length >= 2,
+      `Expected at least 2 concepts, got ${draft.concepts.length}`
+    ).toBeTruthy();
 
     // Verify each concept has required fields
     for (const concept of draft.concepts) {
@@ -64,8 +67,10 @@ describeIfLlm('ingestion extraction (real agent)', () => {
       expect(concept.name).toBeTruthy();
       expect(concept.definition).toBeTruthy();
       expect(concept.sourceRefs.length > 0).toBeTruthy();
-      expect(concept.confidence >= 0 && concept.confidence <= 1,
-        `Confidence out of range: ${concept.confidence}`).toBeTruthy();
+      expect(
+        concept.confidence >= 0 && concept.confidence <= 1,
+        `Confidence out of range: ${concept.confidence}`
+      ).toBeTruthy();
     }
 
     // Verify sourceRefs quote from actual text
@@ -73,8 +78,10 @@ describeIfLlm('ingestion extraction (real agent)', () => {
       for (const ref of concept.sourceRefs) {
         expect(ref.blockId).toBeTruthy();
         expect(ref.quote).toBeTruthy();
-        expect(ref.locationLabel,
-          `sourceRef missing locationLabel for concept ${concept.conceptKey}`).toBeTruthy();
+        expect(
+          ref.locationLabel,
+          `sourceRef missing locationLabel for concept ${concept.conceptKey}`
+        ).toBeTruthy();
       }
     }
 
@@ -90,108 +97,114 @@ describeIfLlm('ingestion extraction (real agent)', () => {
     }
   });
 
-  it('case 2: incremental source — existing concepts from source A', { timeout: 120_000 }, async () => {
-    // First, extract from source A to get existing concepts
-    const sourceIdA = 'src-a';
-    const normalizedA = normalizeMarkdownSource({
-      sourceId: sourceIdA,
-      sourceMaterial: sourceA,
-      title: 'Economics Basics',
-    });
-    const chunksA = chunkNormalizedBlocks(normalizedA.blocks);
-
-    let draftA: IngestionAgentOutput = { concepts: [], relationClaims: [], relationships: [] };
-    for (const chunk of chunksA) {
-      const result = await extractChunk({
-        blocks: chunk.blocks.map((b) => ({ id: b.id, text: b.text })),
-        chunkIndex: chunk.chunkIndex,
-        draftConcepts: draftA.concepts,
-        draftRelationships: draftA.relationships,
+  it(
+    'case 2: incremental source — existing concepts from source A',
+    { timeout: 120_000 },
+    async () => {
+      // First, extract from source A to get existing concepts
+      const sourceIdA = 'src-a';
+      const normalizedA = normalizeMarkdownSource({
         sourceId: sourceIdA,
-        totalChunks: chunksA.length,
+        sourceMaterial: sourceA,
+        title: 'Economics Basics',
       });
-      if (result.concepts.length > 0) {
-        draftA = mergeDraft(draftA, result);
+      const chunksA = chunkNormalizedBlocks(normalizedA.blocks);
+
+      let draftA: IngestionAgentOutput = { concepts: [], relationClaims: [], relationships: [] };
+      for (const chunk of chunksA) {
+        const result = await extractChunk({
+          blocks: chunk.blocks.map((b) => ({ id: b.id, text: b.text })),
+          chunkIndex: chunk.chunkIndex,
+          draftConcepts: draftA.concepts,
+          draftRelationships: draftA.relationships,
+          sourceId: sourceIdA,
+          totalChunks: chunksA.length,
+        });
+        if (result.concepts.length > 0) {
+          draftA = mergeDraft(draftA, result);
+        }
       }
-    }
 
-    // Now ingest source B. DB-wide existing concepts are retrieved by tools in the web runner;
-    // this direct agent test only carries same-run draft concepts.
-    const sourceIdB = 'src-b';
-    const normalizedB = normalizeMarkdownSource({
-      sourceId: sourceIdB,
-      sourceMaterial: sourceB,
-      title: 'Elasticity',
-    });
-    const chunksB = chunkNormalizedBlocks(normalizedB.blocks);
-
-    let draftB: IngestionAgentOutput = { concepts: [], relationClaims: [], relationships: [] };
-    for (const chunk of chunksB) {
-      const result = await extractChunk({
-        blocks: chunk.blocks.map((b) => ({ id: b.id, text: b.text })),
-        chunkIndex: chunk.chunkIndex,
-        draftConcepts: draftB.concepts,
-        draftRelationships: draftB.relationships,
+      // Now ingest source B. DB-wide existing concepts are retrieved by tools in the web runner;
+      // this direct agent test only carries same-run draft concepts.
+      const sourceIdB = 'src-b';
+      const normalizedB = normalizeMarkdownSource({
         sourceId: sourceIdB,
-        totalChunks: chunksB.length,
+        sourceMaterial: sourceB,
+        title: 'Elasticity',
       });
-      if (result.concepts.length > 0) {
-        draftB = mergeDraft(draftB, result);
+      const chunksB = chunkNormalizedBlocks(normalizedB.blocks);
+
+      let draftB: IngestionAgentOutput = { concepts: [], relationClaims: [], relationships: [] };
+      for (const chunk of chunksB) {
+        const result = await extractChunk({
+          blocks: chunk.blocks.map((b) => ({ id: b.id, text: b.text })),
+          chunkIndex: chunk.chunkIndex,
+          draftConcepts: draftB.concepts,
+          draftRelationships: draftB.relationships,
+          sourceId: sourceIdB,
+          totalChunks: chunksB.length,
+        });
+        if (result.concepts.length > 0) {
+          draftB = mergeDraft(draftB, result);
+        }
       }
-    }
 
-    // Validate output shape
-    const parsed = ingestionAgentOutputDto.safeParse(draftB);
-    expect(parsed.success).toBeTruthy();
+      // Validate output shape
+      const parsed = safeParse(ingestionAgentOutputDto, draftB);
+      expect(parsed.success).toBeTruthy();
 
-    // Verify new concepts were extracted
-    expect(draftB.concepts.length >= 1,
-      `Expected at least 1 concept, got ${draftB.concepts.length}`).toBeTruthy();
+      // Verify new concepts were extracted
+      expect(
+        draftB.concepts.length >= 1,
+        `Expected at least 1 concept, got ${draftB.concepts.length}`
+      ).toBeTruthy();
 
-    // This direct test has no retrieval tools, so compare with source A only for reporting.
-    const existingKeys = new Set(draftA.concepts.map((c) => c.conceptKey));
-    const reusedKeys = draftB.concepts.filter(
-      (c) => existingKeys.has(c.conceptKey) || (c.mergesWith && existingKeys.has(c.mergesWith))
-    );
-    const newKeys = draftB.concepts.filter(
-      (c) => !existingKeys.has(c.conceptKey) && !(c.mergesWith && existingKeys.has(c.mergesWith))
-    );
-
-    console.log('\n=== Case 2: Incremental source ===');
-    console.log(`Concepts from A: ${draftA.concepts.length}`);
-    console.log(`  ${draftA.concepts.map((c) => c.conceptKey).join(', ')}`);
-    console.log(`Chunks in B: ${chunksB.length}`);
-    console.log(`Concepts from B: ${draftB.concepts.length}`);
-    console.log(`  Reused/merged: ${reusedKeys.length}`);
-    for (const c of reusedKeys) {
-      console.log(
-        `    [${c.conceptKey}]${c.mergesWith ? ` (mergesWith: ${c.mergesWith})` : ''} ${c.name}`
+      // This direct test has no retrieval tools, so compare with source A only for reporting.
+      const existingKeys = new Set(draftA.concepts.map((c) => c.conceptKey));
+      const reusedKeys = draftB.concepts.filter(
+        (c) => existingKeys.has(c.conceptKey) || (c.mergesWith && existingKeys.has(c.mergesWith))
       );
-    }
-    console.log(`  New: ${newKeys.length}`);
-    for (const c of newKeys) {
-      console.log(`    [${c.conceptKey}] ${c.name}`);
-    }
-    console.log(`Relationships: ${draftB.relationships.length}`);
-    for (const r of draftB.relationships) {
-      console.log(`  ${r.sourceConceptKey} → ${r.targetConceptKey}`);
-    }
+      const newKeys = draftB.concepts.filter(
+        (c) => !existingKeys.has(c.conceptKey) && !(c.mergesWith && existingKeys.has(c.mergesWith))
+      );
 
-    // Verify the merged state makes sense
-    const finalDraft = mergeDraft(
-      {
-        concepts: draftA.concepts,
-        relationClaims: draftA.relationClaims,
-        relationships: draftA.relationships,
-      },
-      draftB
-    );
+      console.log('\n=== Case 2: Incremental source ===');
+      console.log(`Concepts from A: ${draftA.concepts.length}`);
+      console.log(`  ${draftA.concepts.map((c) => c.conceptKey).join(', ')}`);
+      console.log(`Chunks in B: ${chunksB.length}`);
+      console.log(`Concepts from B: ${draftB.concepts.length}`);
+      console.log(`  Reused/merged: ${reusedKeys.length}`);
+      for (const c of reusedKeys) {
+        console.log(
+          `    [${c.conceptKey}]${c.mergesWith ? ` (mergesWith: ${c.mergesWith})` : ''} ${c.name}`
+        );
+      }
+      console.log(`  New: ${newKeys.length}`);
+      for (const c of newKeys) {
+        console.log(`    [${c.conceptKey}] ${c.name}`);
+      }
+      console.log(`Relationships: ${draftB.relationships.length}`);
+      for (const r of draftB.relationships) {
+        console.log(`  ${r.sourceConceptKey} → ${r.targetConceptKey}`);
+      }
 
-    console.log(`\n=== Final merged KB state ===`);
-    console.log(`Total concepts: ${finalDraft.concepts.length}`);
-    for (const c of finalDraft.concepts) {
-      console.log(`  [${c.conceptKey}] ${c.name} — refs: ${c.sourceRefs.length}`);
+      // Verify the merged state makes sense
+      const finalDraft = mergeDraft(
+        {
+          concepts: draftA.concepts,
+          relationClaims: draftA.relationClaims,
+          relationships: draftA.relationships,
+        },
+        draftB
+      );
+
+      console.log(`\n=== Final merged KB state ===`);
+      console.log(`Total concepts: ${finalDraft.concepts.length}`);
+      for (const c of finalDraft.concepts) {
+        console.log(`  [${c.conceptKey}] ${c.name} — refs: ${c.sourceRefs.length}`);
+      }
+      console.log(`Total relationships: ${finalDraft.relationships.length}`);
     }
-    console.log(`Total relationships: ${finalDraft.relationships.length}`);
-  });
+  );
 });

@@ -1,18 +1,18 @@
 import { Mastra } from '@mastra/core';
-import { Observability, MastraStorageExporter } from '@mastra/observability';
-export { robustStream } from './stream-utils';
 import { ConsoleLogger } from '@mastra/core/logger';
-import { setupGlobalLlmQueue } from './llm-queue';
-
-import { getMastraStorage } from './storage';
+import { MastraStorageExporter, Observability } from '@mastra/observability';
+import { ingestionAgent } from '../ingestion/ingestion.agent';
 import { linkAdjudicatorAgent } from '../ingestion/link-adjudicator.agent';
+import { sourceIngestionWorkflow } from '../ingestion/source-ingestion.workflow';
+import { sourceLinkingWorkflow } from '../ingestion/source-linking.workflow';
+import { refinementAgent } from '../refinement/refinement-agent';
+import { setupGlobalLlmQueue } from './llm-queue';
+import { getMastraStorage } from './storage';
+
+export { robustStream } from './stream-utils';
 
 // Apply global rate limiting to all outgoing LLM requests before initializing Mastra
 setupGlobalLlmQueue();
-import { ingestionAgent } from '../ingestion/ingestion.agent';
-import { sourceLinkingWorkflow } from '../ingestion/source-linking.workflow';
-import { sourceIngestionWorkflow } from '../ingestion/source-ingestion.workflow';
-import { refinementAgent } from '../refinement/refinement-agent';
 
 export const mastra = new Mastra({
   observability: new Observability({
@@ -35,4 +35,3 @@ export const mastra = new Mastra({
     sourceIngestionWorkflow,
   },
 });
-

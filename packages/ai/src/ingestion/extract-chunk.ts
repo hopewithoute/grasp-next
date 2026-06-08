@@ -1,18 +1,17 @@
 import {
   ingestionAgentOutputDto,
+  safeParse,
+  scoreLinkEvidence,
   validateAndAnchorSourceRefs,
-  type SourceBlockForValidation,
-  type IngestionConceptContext,
   type IngestionAgentOutput,
   type IngestionConcept,
+  type IngestionConceptContext,
   type IngestionRelationClaim,
   type IngestionRelationship,
+  type SourceBlockForValidation,
 } from '@grasp/domain';
-import { ingestionAgent } from './ingestion.agent';
-import { buildIngestionPrompt } from './ingestion.agent';
 import type { createIngestionRetrievalTools } from './ingestion-retrieval.tools';
-
-import { scoreLinkEvidence } from '@grasp/domain';
+import { buildIngestionPrompt, ingestionAgent } from './ingestion.agent';
 
 export type ExtractChunkInput = {
   blocks: SourceBlockForValidation[];
@@ -39,9 +38,7 @@ export type ExtractChunkResult = {
   droppedRefCount: number;
 };
 
-export async function extractChunk(
-  input: ExtractChunkInput
-): Promise<ExtractChunkResult> {
+export async function extractChunk(input: ExtractChunkInput): Promise<ExtractChunkResult> {
   const prompt = buildIngestionPrompt({
     blocks: input.blocks,
     chunkIndex: input.chunkIndex,
@@ -63,12 +60,15 @@ export async function extractChunk(
   let lastError: Error | undefined;
   for (let attempt = 1; attempt <= 3; attempt++) {
     try {
-      const retryInstructions = attempt > 1 ? `\n\nPrevious response failed validation. Return a valid JSON object matching the requested schema.` : '';
-      
+      const retryInstructions =
+        attempt > 1
+          ? `\n\nPrevious response failed validation. Return a valid JSON object matching the requested schema.`
+          : '';
+
       const response = input.retrievalTools
         ? await ingestionAgent.generate(prompt + retryInstructions, {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            structuredOutput: { schema: ingestionAgentOutputDto as any },
+
+            structuredOutput: { schema: ingestionAgentOutputDto },
             maxSteps: 5,
             memory: input.memory,
             toolsets: {
@@ -76,8 +76,8 @@ export async function extractChunk(
             },
           })
         : await ingestionAgent.generate(prompt + retryInstructions, {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            structuredOutput: { schema: ingestionAgentOutputDto as any },
+
+            structuredOutput: { schema: ingestionAgentOutputDto },
             memory: input.memory,
           });
 
@@ -107,17 +107,19 @@ export async function extractChunk(
       }
 
       if (!parsedObj) {
-        throw new Error(`LLM returned undefined object. Raw text: ${response.text ? response.text.substring(0, 500) : 'none'}`);
+        throw new Error(
+          `LLM returned undefined object. Raw text: ${response.text ? response.text.substring(0, 500) : 'none'}`
+        );
       }
 
-      const parsed = ingestionAgentOutputDto.safeParse(parsedObj);
+      const parsed = safeParse(ingestionAgentOutputDto, parsedObj);
       if (!parsed.success) {
-        throw parsed.error;
+        throw new Error(`ingestion_agent_schema_invalid: ${JSON.stringify(parsed.issues)}`);
       }
-      
-      const result = parsed.data as IngestionAgentOutput;
+
+      const result = parsed.output;
       const validated = validateAgainstBlocks(result, input.blocks);
-      
+
       return { ...validated, thinking };
     } catch (error: unknown) {
       lastError = error instanceof Error ? error : new Error(String(error));
@@ -257,5 +259,3 @@ function estimateLocalRelationshipTypeConfidence(relationship: IngestionRelation
 
   return relationship.relationshipType === 'related_to' ? 0.78 : 0.72;
 }
-
-

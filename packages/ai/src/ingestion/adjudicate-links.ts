@@ -1,13 +1,18 @@
 import {
-  reviewLinksDeterministically,
+  confidenceScore,
   linkCandidateDto,
+  parse,
+  RELATIONSHIP_TYPES,
+  requiredString,
+  reviewLinksDeterministically,
+  safeParse,
   scoreLinkEvidence,
+  v,
   type LinkCandidate,
   type ReviewedLink,
 } from '@grasp/domain';
+import { PromptTemplate } from '../utils/prompt-template';
 import { linkAdjudicatorAgent } from './link-adjudicator.agent';
-
-import { z } from 'zod';
 
 export async function adjudicateLinks(input: {
   candidates: LinkCandidate[];
@@ -27,12 +32,9 @@ export async function adjudicateLinks(input: {
     try {
       const response = await linkAdjudicatorAgent.generate(
         buildReviewPrompt(input.candidates, attempt),
-        { structuredOutput: { schema: z.object({ links: z.array(linkDecisionDto) }) } }
+        { structuredOutput: { schema: linkDecisionListDto } }
       );
-      const result = parseReviewedLinkList(
-        response.object as { links: Array<z.infer<typeof linkDecisionDto>> },
-        input.candidates
-      );
+      const result = parseReviewedLinkList(response.object, input.candidates);
 
       return result.links;
     } catch (error) {
@@ -43,15 +45,13 @@ export async function adjudicateLinks(input: {
   throw lastError;
 }
 
-export function parseReviewedLinkList(
-  record: { links: Array<z.infer<typeof linkDecisionDto>> },
-  candidates: LinkCandidate[]
-) {
+export function parseReviewedLinkList(record: unknown, candidates: LinkCandidate[]) {
+  const parsedRecord = parseLinkDecisionList(record);
   const candidatesById = new Map(candidates.map((candidate) => [candidate.candidateId, candidate]));
   const seenCandidateIds = new Set<string>();
   const links: ReviewedLink[] = [];
 
-  for (const parsed of record.links) {
+  for (const parsed of parsedRecord.links) {
     const candidate = candidatesById.get(parsed.candidateId);
     if (!candidate) {
       throw new Error('link_adjudicator_unknown_candidate');
@@ -84,33 +84,57 @@ export function parseReviewedLinkList(
   return { links };
 }
 
-const linkDecisionDto = z
-  .object({
-    candidateId: z.string().trim().min(1),
-    confidence: z.number().min(0).max(1).optional(),
-    decision: z.enum(['accept', 'reject']),
-    relationshipTypeConfidence: z.number().min(0).max(1).optional(),
-    rationale: z.string().trim().min(1),
-    semanticSupportConfidence: z.number().min(0).max(1).optional(),
-    suggestedRelationshipType: z
-      .enum(['prerequisite', 'part_of', 'related_to', 'explains'])
-      .optional(),
-  })
-  .transform((decision) => {
-    const fallbackConfidence = decision.confidence ?? 0;
+const linkDecisionDto = v.object({
+  candidateId: requiredString,
+  confidence: v.optional(confidenceScore),
+  decision: v.picklist(['accept', 'reject']),
+  relationshipTypeConfidence: v.optional(confidenceScore),
+  rationale: requiredString,
+  semanticSupportConfidence: v.optional(confidenceScore),
+  suggestedRelationshipType: v.optional(v.picklist(RELATIONSHIP_TYPES)),
+});
 
-    return {
-      ...decision,
-      relationshipTypeConfidence: decision.relationshipTypeConfidence ?? fallbackConfidence,
-      semanticSupportConfidence: decision.semanticSupportConfidence ?? fallbackConfidence,
-    };
-  })
-  .refine(
-    (decision) => decision.relationshipTypeConfidence >= 0 && decision.semanticSupportConfidence >= 0,
-    'semanticSupportConfidence and relationshipTypeConfidence are required'
-  );
+const linkDecisionListDto = v.object({
+  links: v.array(linkDecisionDto),
+});
 
-import { PromptTemplate } from '../utils/prompt-template';
+type LinkDecision = v.InferOutput<typeof linkDecisionDto>;
+type NormalizedLinkDecision = LinkDecision & {
+  relationshipTypeConfidence: number;
+  semanticSupportConfidence: number;
+};
+
+function parseLinkDecisionList(record: unknown): { links: NormalizedLinkDecision[] } {
+  const parsed = safeParse(linkDecisionListDto, record);
+
+  if (!parsed.success) {
+    throw new Error(`link_adjudicator_schema_invalid: ${v.summarize(parsed.issues)}`);
+  }
+
+  return {
+    links: parsed.output.links.map(normalizeLinkDecision),
+  };
+}
+
+function normalizeLinkDecision(decision: LinkDecision): NormalizedLinkDecision {
+  const fallbackConfidence = decision.confidence ?? 0;
+  const relationshipTypeConfidence = decision.relationshipTypeConfidence ?? fallbackConfidence;
+  const semanticSupportConfidence = decision.semanticSupportConfidence ?? fallbackConfidence;
+  const candidateId = decision.candidateId.trim();
+  const rationale = decision.rationale.trim();
+
+  if (!candidateId || !rationale) {
+    throw new Error('link_adjudicator_schema_invalid: candidateId and rationale are required');
+  }
+
+  return {
+    ...decision,
+    candidateId,
+    rationale,
+    relationshipTypeConfidence,
+    semanticSupportConfidence,
+  };
+}
 
 type LinkReviewPromptVars = {
   retryInstructions: string;
@@ -119,26 +143,15 @@ type LinkReviewPromptVars = {
 
 const LINK_REVIEW_PROMPT = new PromptTemplate<LinkReviewPromptVars>(`Review these link candidates.
 
-{{retryInstructions}}Return only JSON:
-{
-  "links": [
-    {
-      "rationale": string,
-      "candidateId": string,
-      "decision": "accept" | "reject",
-      "semanticSupportConfidence": number,
-      "relationshipTypeConfidence": number,
-      "suggestedRelationshipType": "prerequisite" | "part_of" | "related_to" | "explains"
-    }
-  ]
-}
-
-Candidates:
+{{retryInstructions}}Candidates:
 {{candidatesJson}}`);
 
 function buildReviewPrompt(candidates: LinkCandidate[], attempt = 0) {
-  const compactCandidates = candidates.map((candidate) => linkCandidateDto.parse(candidate));
-  const retryInstructions = attempt > 0 ? 'Previous response failed validation. Return one valid link decision for every candidateId and no extra candidateIds.\n\n' : '';
+  const compactCandidates = candidates.map((candidate) => parse(linkCandidateDto, candidate));
+  const retryInstructions =
+    attempt > 0
+      ? 'Previous response failed validation. Return one valid link decision for every candidateId and no extra candidateIds.\n\n'
+      : '';
 
   return LINK_REVIEW_PROMPT.format({
     retryInstructions,

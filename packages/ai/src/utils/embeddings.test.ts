@@ -41,7 +41,7 @@ describe('embeddings', () => {
           status: 200,
         }
       );
-    }) as typeof fetch;
+    });
 
     const embeddings = await embedTexts(['alpha', 'beta'], {
       OPENAI_API_KEY: 'test-key',
@@ -79,7 +79,7 @@ describe('embeddings', () => {
           status: 200,
         }
       );
-    }) as typeof fetch;
+    });
 
     const embeddings = await embedTexts(['alpha', 'beta'], {
       GOOGLE_GENERATIVE_AI_API_KEY: 'google-key',

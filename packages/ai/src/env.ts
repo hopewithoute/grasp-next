@@ -1,30 +1,32 @@
-import { z } from 'zod';
+import { parse, v } from '@grasp/domain';
 import { loadAiEnv } from './load-env';
 
 // Pastikan .env sudah ter-load (terutama saat dijalankan di luar framework seperti Next.js)
 loadAiEnv();
 
-const envSchema = z.object({
+const optionalString = v.optional(v.string());
+
+const envSchema = v.object({
   // Database / Storage
-  DATABASE_URL: z.string().optional(),
-  MASTRA_STORAGE_URL: z.string().optional(),
+  DATABASE_URL: optionalString,
+  MASTRA_STORAGE_URL: optionalString,
 
   // LLM API Keys
-  OPENAI_API_KEY: z.string().optional(),
-  ANTHROPIC_API_KEY: z.string().optional(),
-  XIAOMI_API_KEY: z.string().optional(),
-  
+  OPENAI_API_KEY: optionalString,
+  ANTHROPIC_API_KEY: optionalString,
+  XIAOMI_API_KEY: optionalString,
+
   // Jina AI Ecosystem
-  JINA_API_KEY: z.string().optional(),
+  JINA_API_KEY: optionalString,
 
   // Model Defaults
-  AI_MODEL: z.string().default('xiaomi/mimo-v2.5-pro'),
-  INGESTION_AGENT_MODEL: z.string().optional(),
-  REFINEMENT_AGENT_MODEL: z.string().optional(),
+  AI_MODEL: v.optional(v.string(), 'xiaomi/mimo-v2.5-pro'),
+  INGESTION_AGENT_MODEL: optionalString,
+  REFINEMENT_AGENT_MODEL: optionalString,
 
   // Cloudflare Web Reader (Browser Run)
-  CLOUDFLARE_ACCOUNT_ID: z.string().optional(),
-  CLOUDFLARE_API_TOKEN: z.string().optional(),
+  CLOUDFLARE_ACCOUNT_ID: optionalString,
+  CLOUDFLARE_API_TOKEN: optionalString,
 });
 
-export const env = envSchema.parse(process.env);
+export const env = parse(envSchema, process.env);

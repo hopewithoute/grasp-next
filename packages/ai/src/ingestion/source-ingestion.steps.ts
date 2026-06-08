@@ -1,17 +1,34 @@
 import { createStep } from '@mastra/core/workflows';
-import { z } from 'zod';
-import { ingestionWorkflowInputSchema } from './source-ingestion.schema';
-import type { IngestionRunRepository, KnowledgebaseRepository, IngestionAiPort } from '@grasp/domain';
-import { normalizeMarkdownSource, chunkNormalizedBlocks, mergeDraft, buildLinkCandidates } from '@grasp/domain';
+import {
+  buildLinkCandidates,
+  chunkNormalizedBlocks,
+  mergeDraft,
+  normalizeMarkdownSource,
+  v,
+  type IngestionAiPort,
+  type IngestionRunRepository,
+  type KnowledgebaseRepository,
+} from '@grasp/domain';
 import type { IngestionAgentOutput } from '@grasp/domain';
+import { ingestionWorkflowInputSchema } from './source-ingestion.schema';
+import { linkingWorkflowInputDto } from './source-linking.workflow';
 
-export const ingestionStateSchema = z.object({
-  projectId: z.string().optional(),
-  sourceId: z.string().optional(),
-  runId: z.string().optional(),
-  chunkCount: z.number().optional(),
-  totalDroppedRefs: z.number().default(0),
-  totalDroppedConceptKeys: z.array(z.string()).default([]),
+export const ingestionStateSchema = v.object({
+  projectId: v.optional(v.string()),
+  sourceId: v.optional(v.string()),
+  runId: v.optional(v.string()),
+  chunkCount: v.optional(v.number()),
+  totalDroppedRefs: v.optional(v.number(), 0),
+  totalDroppedConceptKeys: v.optional(v.array(v.string()), []),
+});
+
+export const extractChunkOutputSchema = v.object({
+  concepts: v.array(v.any()),
+  droppedConceptKeys: v.array(v.string()),
+  droppedRefCount: v.number(),
+  relationClaims: v.array(v.any()),
+  relationships: v.array(v.any()),
+  thinking: v.optional(v.string(), ''),
 });
 
 function getDep<T>(ctx: { get(key: string): unknown } | undefined, key: string): T {
@@ -23,9 +40,9 @@ function getDep<T>(ctx: { get(key: string): unknown } | undefined, key: string):
 export const initializeRunStep = createStep({
   id: 'initialize-run',
   inputSchema: ingestionWorkflowInputSchema,
-  outputSchema: z.object({
-    content: z.string(),
-    sourceTitle: z.string(),
+  outputSchema: v.object({
+    content: v.string(),
+    sourceTitle: v.string(),
   }),
   stateSchema: ingestionStateSchema,
   execute: async ({ inputData, requestContext, setState, state, writer }) => {
@@ -34,13 +51,13 @@ export const initializeRunStep = createStep({
 
     const ingestionRun = await repo.create({ projectId, sourceId });
 
-    await setState({ 
+    await setState({
       ...state,
-      projectId, 
-      sourceId, 
+      projectId,
+      sourceId,
       runId: ingestionRun.id,
       totalDroppedRefs: 0,
-      totalDroppedConceptKeys: []
+      totalDroppedConceptKeys: [],
     });
 
     await writer?.write({
@@ -55,17 +72,17 @@ export const initializeRunStep = createStep({
 
 export const normalizeAndChunkStep = createStep({
   id: 'normalize-and-chunk',
-  inputSchema: z.object({
-    content: z.string(),
-    sourceTitle: z.string(),
+  inputSchema: v.object({
+    content: v.string(),
+    sourceTitle: v.string(),
   }),
-  outputSchema: z.object({
-    chunks: z.array(z.any()),
+  outputSchema: v.object({
+    chunks: v.array(v.any()),
   }),
   stateSchema: ingestionStateSchema,
   execute: async ({ inputData, requestContext, state, setState }) => {
     const { content, sourceTitle } = inputData;
-    
+
     if (!content.trim()) {
       await setState({ ...state, chunkCount: 0 });
       return { chunks: [] };
@@ -76,7 +93,7 @@ export const normalizeAndChunkStep = createStep({
       sourceMaterial: content,
       title: sourceTitle,
     });
-    
+
     const kbRepo = getDep<KnowledgebaseRepository>(requestContext, 'knowledgebaseRepository');
 
     await kbRepo.upsertSourcePassages({
@@ -94,11 +111,11 @@ export const normalizeAndChunkStep = createStep({
 
 export const extractChunkStep = createStep({
   id: 'extract-chunk',
-  inputSchema: z.object({
-    chunk: z.any(),
-    totalChunks: z.number(),
+  inputSchema: v.object({
+    chunk: v.any(),
+    totalChunks: v.number(),
   }),
-  outputSchema: z.any(),
+  outputSchema: extractChunkOutputSchema,
   stateSchema: ingestionStateSchema,
   execute: async ({ inputData, requestContext, state, writer }) => {
     const { chunk, totalChunks } = inputData;
@@ -109,26 +126,30 @@ export const extractChunkStep = createStep({
       sourceId: state.sourceId!,
       chunkIndex: chunk.chunkIndex,
       totalChunks,
-      blocks: chunk.blocks || [], 
-      draftConcepts: [], 
+      blocks: chunk.blocks || [],
+      draftConcepts: [],
       draftRelationships: [],
       onRetrieval: (hitCount, query, retrievalType) => {
         if (writer) {
-          writer.write({
-            type: 'retrieval_activity',
-            hitCount,
-            query,
-            retrievalType,
-          }).catch(console.error);
+          writer
+            .write({
+              type: 'retrieval_activity',
+              hitCount,
+              query,
+              retrievalType,
+            })
+            .catch(console.error);
         }
       },
       onThinking: (thinking) => {
         if (writer) {
-          writer.write({
-            type: 'agent_thinking',
-            chunkIndex: chunk.chunkIndex,
-            thinking,
-          }).catch(console.error);
+          writer
+            .write({
+              type: 'agent_thinking',
+              chunkIndex: chunk.chunkIndex,
+              thinking,
+            })
+            .catch(console.error);
         }
       },
     });
@@ -158,18 +179,20 @@ export const extractChunkStep = createStep({
 
 export const mergeExtractionsStep = createStep({
   id: 'merge-extractions',
-  inputSchema: z.object({
-    extractions: z.array(z.any()),
+  inputSchema: v.object({
+    extractions: v.array(v.any()),
   }),
-  outputSchema: z.object({
-    draft: z.any(),
+  outputSchema: v.object({
+    draft: v.any(),
   }),
   stateSchema: ingestionStateSchema,
   execute: async ({ inputData, state, setState }) => {
     let draft: IngestionAgentOutput = { concepts: [], relationships: [], relationClaims: [] };
     let totalDroppedRefs = state.totalDroppedRefs || 0;
-    const totalDroppedConceptKeys = state.totalDroppedConceptKeys ? [...state.totalDroppedConceptKeys] : [];
-    
+    const totalDroppedConceptKeys = state.totalDroppedConceptKeys
+      ? [...state.totalDroppedConceptKeys]
+      : [];
+
     for (const extraction of inputData.extractions) {
       if (extraction.concepts?.length) {
         draft = mergeDraft(draft, extraction);
@@ -183,12 +206,10 @@ export const mergeExtractionsStep = createStep({
   },
 });
 
-import { linkingWorkflowInputDto } from './source-linking.workflow';
-
 export const prepareLinkCandidatesStep = createStep({
   id: 'prepare-link-candidates',
-  inputSchema: z.object({
-    draft: z.any(),
+  inputSchema: v.object({
+    draft: v.any(),
   }),
   outputSchema: linkingWorkflowInputDto,
   stateSchema: ingestionStateSchema,
@@ -215,17 +236,17 @@ export const prepareLinkCandidatesStep = createStep({
 
 export const embedAndSaveStep = createStep({
   id: 'embed-and-save',
-  inputSchema: z.object({
-    patchedExtraction: z.any(),
-    trace: z.any(),
+  inputSchema: v.object({
+    patchedExtraction: v.any(),
+    trace: v.any(),
   }),
-  outputSchema: z.object({
-    success: z.boolean(),
+  outputSchema: v.object({
+    success: v.boolean(),
   }),
   stateSchema: ingestionStateSchema,
   execute: async ({ inputData, requestContext, state, writer }) => {
     const { patchedExtraction, trace } = inputData;
-    
+
     const kbRepo = getDep<KnowledgebaseRepository>(requestContext, 'knowledgebaseRepository');
     const aiPort = getDep<IngestionAiPort>(requestContext, 'aiPort');
     const runRepo = getDep<IngestionRunRepository>(requestContext, 'ingestionRunRepository');
@@ -260,6 +281,3 @@ export const embedAndSaveStep = createStep({
     return { success: true };
   },
 });
-
-
-

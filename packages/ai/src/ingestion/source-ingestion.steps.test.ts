@@ -1,6 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { describe, it, expect, vi } from 'vitest';
-import { initializeRunStep, normalizeAndChunkStep, prepareLinkCandidatesStep, embedAndSaveStep } from './source-ingestion.steps';
+import { describe, expect, it, vi } from 'vitest';
+import {
+  embedAndSaveStep,
+  initializeRunStep,
+  normalizeAndChunkStep,
+  prepareLinkCandidatesStep,
+} from './source-ingestion.steps';
 
 describe('Source Ingestion Steps', () => {
   describe('initializeRunStep', () => {
@@ -36,11 +41,13 @@ describe('Source Ingestion Steps', () => {
         sourceId: 'src-1',
       });
 
-      expect(setStateMock).toHaveBeenCalledWith(expect.objectContaining({
-        runId: 'run-123',
-        projectId: 'proj-1',
-        sourceId: 'src-1',
-      }));
+      expect(setStateMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          runId: 'run-123',
+          projectId: 'proj-1',
+          sourceId: 'src-1',
+        })
+      );
 
       expect((result as any).content).toBe('Content');
     });
@@ -51,7 +58,7 @@ describe('Source Ingestion Steps', () => {
       const mockKbRepo = {
         upsertSourcePassages: vi.fn().mockResolvedValue({}),
       };
-      
+
       const requestContext = {
         get: vi.fn((key) => {
           if (key === 'knowledgebaseRepository') return mockKbRepo;
@@ -93,14 +100,16 @@ describe('Source Ingestion Steps', () => {
     it('calls AI port to extract concepts', async () => {
       const mockAiPort = {
         extractConceptsFromChunk: vi.fn().mockResolvedValue({
-          concepts: [{ conceptKey: 'test', name: 'Test', definition: 'A test concept', type: 'entity' }],
+          concepts: [
+            { conceptKey: 'test', name: 'Test', definition: 'A test concept', type: 'entity' },
+          ],
           relationships: [],
           relationClaims: [],
           droppedConceptKeys: [],
           droppedRefCount: 0,
         }),
       };
-      
+
       const requestContext = {
         get: vi.fn((key) => {
           if (key === 'aiPort') return mockAiPort;
@@ -108,14 +117,16 @@ describe('Source Ingestion Steps', () => {
         }),
       };
 
-      const result = await (await import('./source-ingestion.steps')).extractChunkStep.execute({
+      const result = await (
+        await import('./source-ingestion.steps')
+      ).extractChunkStep.execute({
         inputData: {
           chunk: {
             index: 0,
             blockIndexes: [0],
             text: 'Test',
             tokens: 1,
-            blocks: [{ id: 'b1', text: 'Test' }]
+            blocks: [{ id: 'b1', text: 'Test' }],
           },
           totalChunks: 1,
         },
@@ -124,19 +135,35 @@ describe('Source Ingestion Steps', () => {
         setState: vi.fn(),
       } as any);
 
+      const output = result as { concepts: unknown[] };
+
       expect(mockAiPort.extractConceptsFromChunk).toHaveBeenCalled();
-      expect(result.concepts.length).toBe(1);
+      expect(output.concepts.length).toBe(1);
     });
   });
 
   describe('mergeExtractionsStep', () => {
     it('merges an array of extractions into one draft', async () => {
-      const result = await (await import('./source-ingestion.steps')).mergeExtractionsStep.execute({
+      const result = await (
+        await import('./source-ingestion.steps')
+      ).mergeExtractionsStep.execute({
         inputData: {
           extractions: [
-            { concepts: [{ conceptKey: 'a' }], relationships: [], relationClaims: [], droppedConceptKeys: [], droppedRefCount: 0 },
-            { concepts: [{ conceptKey: 'b' }], relationships: [], relationClaims: [], droppedConceptKeys: [], droppedRefCount: 0 }
-          ]
+            {
+              concepts: [{ conceptKey: 'a' }],
+              relationships: [],
+              relationClaims: [],
+              droppedConceptKeys: [],
+              droppedRefCount: 0,
+            },
+            {
+              concepts: [{ conceptKey: 'b' }],
+              relationships: [],
+              relationClaims: [],
+              droppedConceptKeys: [],
+              droppedRefCount: 0,
+            },
+          ],
         },
         state: { totalDroppedRefs: 0, totalDroppedConceptKeys: [] },
         setState: vi.fn(),
@@ -152,14 +179,23 @@ describe('Source Ingestion Steps', () => {
         getConceptContext: vi.fn().mockResolvedValue(null),
         searchConceptsForIngestion: vi.fn().mockResolvedValue([]),
       };
-      
-      const mockDraft = { concepts: [{ conceptKey: 'test-concept', name: 'Test', definition: 'A test concept', sourceRefs: [] }], relationships: [], relationClaims: [] };
+
+      const mockDraft = {
+        concepts: [
+          {
+            conceptKey: 'test-concept',
+            name: 'Test',
+            definition: 'A test concept',
+            sourceRefs: [],
+          },
+        ],
+        relationships: [],
+        relationClaims: [],
+      };
 
       const result = (await prepareLinkCandidatesStep.execute({
         inputData: { draft: mockDraft },
-        requestContext: new Map([
-          ['knowledgebaseRepository', mockKbRepo],
-        ]) as any,
+        requestContext: new Map([['knowledgebaseRepository', mockKbRepo]]) as any,
         runId: 'run-id',
         setState: vi.fn(),
         state: { projectId: 'project-1' },
@@ -179,14 +215,14 @@ describe('Source Ingestion Steps', () => {
       };
       const mockAiPort = {
         embedConcepts: vi.fn().mockResolvedValue({
-          embeddingsByKey: { 'c1': [0.1, 0.2] },
+          embeddingsByKey: { c1: [0.1, 0.2] },
           metadata: { status: 'completed' },
         }),
       };
       const mockRunRepo = {
         markCompleted: vi.fn().mockResolvedValue(undefined),
       };
-      
+
       const requestContext = {
         get: vi.fn((key) => {
           if (key === 'knowledgebaseRepository') return mockKbRepo;
@@ -201,10 +237,16 @@ describe('Source Ingestion Steps', () => {
           machineContext: {},
           stepResults: {},
           attempts: 0,
-          triggerData: {}
+          triggerData: {},
         },
         inputData: {
-          patchedExtraction: { concepts: [{ conceptKey: 'c1', name: 'Concept 1', definition: 'Def 1', sourceRefs: [] }], relationships: [], relationClaims: [] },
+          patchedExtraction: {
+            concepts: [
+              { conceptKey: 'c1', name: 'Concept 1', definition: 'Def 1', sourceRefs: [] },
+            ],
+            relationships: [],
+            relationClaims: [],
+          },
           trace: { appliedLinks: [] },
         },
         requestContext,

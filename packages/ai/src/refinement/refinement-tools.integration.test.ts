@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, expect, it } from 'vitest';
-import { createRefinementTools } from './refinement-tools';
 import type { KnowledgebaseRepository } from '@grasp/domain';
+import { createRefinementTools } from './refinement-tools';
 
 // A mock repository since we're only testing the web tools
 const mockKnowledgebaseRepository = {} as unknown as KnowledgebaseRepository;
@@ -18,7 +18,7 @@ describe('Refinement Tools (Integration)', () => {
       const result = (await (tools.searchWebTool as any).execute(
         { query: 'React web framework' },
         {} as any
-      )) as any;
+      ));
 
       expect(result.results).toBeTruthy();
       expect(Array.isArray(result.results)).toBeTruthy();
@@ -37,5 +37,4 @@ describe('Refinement Tools (Integration)', () => {
       throw e;
     }
   });
-
 });

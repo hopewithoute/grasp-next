@@ -1,13 +1,16 @@
 import { createTool } from '@mastra/core/tools';
-import { z } from 'zod';
+import { urlString, v } from '@grasp/domain';
+
+const described = <TSchema extends v.GenericSchema>(schema: TSchema, description: string) =>
+  v.pipe(schema, v.description(description));
 
 export function createSearchWebTool() {
   return createTool({
     id: 'search-web-ddg',
     description:
       'Search the internet via DuckDuckGo (or fallback to Wikipedia) for factual information or current events to augment concepts.',
-    inputSchema: z.object({
-      query: z.string().describe('The search query string'),
+    inputSchema: v.object({
+      query: described(v.string(), 'The search query string'),
     }),
     execute: async ({ query }, context) => {
       await context?.writer?.custom({
@@ -79,10 +82,10 @@ export function createProposeWebSourceTool() {
     id: 'propose-web-source',
     description:
       'Propose a web page to be downloaded and added to the project library. You MUST use this tool to ask the user for permission before adding a source. The user will see a UI card with the URL, Title, and Snippet.',
-    inputSchema: z.object({
-      url: z.string().url().describe('The URL of the webpage to ingest'),
-      title: z.string().describe('A descriptive title for this source'),
-      snippet: z.string().describe('A short summary snippet of what this source contains'),
+    inputSchema: v.object({
+      url: described(urlString, 'The URL of the webpage to ingest'),
+      title: described(v.string(), 'A descriptive title for this source'),
+      snippet: described(v.string(), 'A short summary snippet of what this source contains'),
     }),
     execute: async ({ url, title, snippet }, context) => {
       await context?.writer?.custom({
@@ -114,7 +117,8 @@ export function createProposeWebSourceTool() {
 
       return {
         success: true,
-        message: 'The web source proposal has been sent to the user. You must wait for the user to approve it. Do NOT proceed with extraction until the user approves and the system returns the extracted text to you.',
+        message:
+          'The web source proposal has been sent to the user. You must wait for the user to approve it. Do NOT proceed with extraction until the user approves and the system returns the extracted text to you.',
       };
     },
   });
