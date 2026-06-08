@@ -1,3 +1,4 @@
+import { parse } from '../validation';
 import { normalizedSourceDto, type NormalizedSourceBlockDto } from './normalized-source.dto';
 
 const headingPattern = /^(#{1,6})\s+(.+)$/;
@@ -16,7 +17,7 @@ export function normalizeMarkdownSource(input: NormalizeMarkdownSourceInput) {
     buildNormalizedBlock(rawBlock, index, input.sourceId)
   );
 
-  return normalizedSourceDto.parse({
+  return parse(normalizedSourceDto, {
     blocks,
     id: input.sourceId,
     sourceType: detectMarkdownSyntax(input.sourceMaterial) ? 'markdown' : 'text',

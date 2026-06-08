@@ -1,6 +1,5 @@
 import type { NormalizedSourceDto } from '../sources';
 import {
-  knowledgebaseArtifactContentDto,
   type KnowledgebaseArtifactContentDto,
   type KnowledgebaseDto,
   type KnowledgebaseGraphProjectionDto,
@@ -12,11 +11,11 @@ export function buildKnowledgebaseArtifactContent(input: {
 }): KnowledgebaseArtifactContentDto {
   const graphProjection = projectKnowledgebaseGraph(input.knowledgebase);
 
-  return knowledgebaseArtifactContentDto.parse({
+  return {
     graphProjection,
     knowledgebase: input.knowledgebase,
     normalizedSource: input.normalizedSource,
-  });
+  };
 }
 
 export function projectKnowledgebaseGraph(

@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import type {
-  KnowledgebaseRepository,
-  KnowledgebaseQueryRepository,
-  KnowledgebaseMutationRepository,
   KnowledgebaseIngestionRepository,
+  KnowledgebaseMutationRepository,
+  KnowledgebaseQueryRepository,
+  KnowledgebaseRepository,
 } from './knowledgebase.types';
 
 describe('KnowledgebaseRepository sub-interfaces', () => {
@@ -21,7 +21,8 @@ describe('KnowledgebaseRepository sub-interfaces', () => {
   });
 
   it('KnowledgebaseRepository satisfies KnowledgebaseIngestionRepository', () => {
-    const checkIngestion = (repo: KnowledgebaseRepository): KnowledgebaseIngestionRepository => repo;
+    const checkIngestion = (repo: KnowledgebaseRepository): KnowledgebaseIngestionRepository =>
+      repo;
     expect(typeof checkIngestion === 'function').toBeTruthy();
   });
 
@@ -65,6 +66,8 @@ describe('KnowledgebaseRepository sub-interfaces', () => {
     expect(expectedQueryMethods.length).toBe(6);
     expect(expectedMutationMethods.length).toBe(9);
     expect(expectedIngestionMethods.length).toBe(4);
-    expect(expectedQueryMethods.length + expectedMutationMethods.length + expectedIngestionMethods.length).toBe(19);
+    expect(
+      expectedQueryMethods.length + expectedMutationMethods.length + expectedIngestionMethods.length
+    ).toBe(19);
   });
 });

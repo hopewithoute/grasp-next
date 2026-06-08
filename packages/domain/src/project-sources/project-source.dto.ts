@@ -1,42 +1,42 @@
-import { z } from 'zod';
-import { PROJECT_SOURCE_TYPES, PROJECT_SOURCE_TYPE } from '../constants';
+import { PROJECT_SOURCE_TYPE, PROJECT_SOURCE_TYPES } from '../constants';
+import { requiredString, urlString, uuidString, v } from '../validation';
 
-const requiredText = z.string().trim().min(1);
+const requiredText = requiredString;
 
-export const projectSourceTypeDto = z.enum(PROJECT_SOURCE_TYPES);
+export const projectSourceTypeDto = v.picklist(PROJECT_SOURCE_TYPES);
 
-export const supportedManualProjectSourceTypeDto = z.enum([
+export const supportedManualProjectSourceTypeDto = v.picklist([
   PROJECT_SOURCE_TYPE.MARKDOWN,
   PROJECT_SOURCE_TYPE.TEXT,
   PROJECT_SOURCE_TYPE.WEB,
 ]);
 
-export const addProjectSourceDto = z.object({
+export const addProjectSourceDto = v.object({
   content: requiredText,
-  projectId: z.uuid(),
-  title: requiredText.max(160),
-  type: supportedManualProjectSourceTypeDto.default(PROJECT_SOURCE_TYPE.MARKDOWN),
+  projectId: uuidString,
+  title: v.pipe(requiredText, v.maxLength(160)),
+  type: v.optional(supportedManualProjectSourceTypeDto, PROJECT_SOURCE_TYPE.MARKDOWN),
 });
 
-export const updateProjectSourceDto = z.object({
+export const updateProjectSourceDto = v.object({
   content: requiredText,
-  sourceId: z.uuid(),
-  title: requiredText.max(160),
-  type: supportedManualProjectSourceTypeDto.default(PROJECT_SOURCE_TYPE.MARKDOWN),
+  sourceId: uuidString,
+  title: v.pipe(requiredText, v.maxLength(160)),
+  type: v.optional(supportedManualProjectSourceTypeDto, PROJECT_SOURCE_TYPE.MARKDOWN),
 });
 
-export const addProjectSourceFromUrlDto = z.object({
-  url: z.string().url(),
-  projectId: z.uuid(),
-  title: requiredText.max(160),
+export const addProjectSourceFromUrlDto = v.object({
+  url: urlString,
+  projectId: uuidString,
+  title: v.pipe(requiredText, v.maxLength(160)),
 });
-export type AddProjectSourceFromUrlDto = z.infer<typeof addProjectSourceFromUrlDto>;
+export type AddProjectSourceFromUrlDto = v.InferOutput<typeof addProjectSourceFromUrlDto>;
 
-export const deleteProjectSourceDto = z.object({
-  sourceId: z.uuid(),
+export const deleteProjectSourceDto = v.object({
+  sourceId: uuidString,
 });
 
-export type AddProjectSourceDto = z.infer<typeof addProjectSourceDto>;
-export type DeleteProjectSourceDto = z.infer<typeof deleteProjectSourceDto>;
-export type ProjectSourceTypeDto = z.infer<typeof projectSourceTypeDto>;
-export type UpdateProjectSourceDto = z.infer<typeof updateProjectSourceDto>;
+export type AddProjectSourceDto = v.InferOutput<typeof addProjectSourceDto>;
+export type DeleteProjectSourceDto = v.InferOutput<typeof deleteProjectSourceDto>;
+export type ProjectSourceTypeDto = v.InferOutput<typeof projectSourceTypeDto>;
+export type UpdateProjectSourceDto = v.InferOutput<typeof updateProjectSourceDto>;

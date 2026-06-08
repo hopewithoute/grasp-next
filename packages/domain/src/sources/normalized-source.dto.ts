@@ -1,8 +1,8 @@
-import { z } from 'zod';
+import { requiredString, v } from '../validation';
 
-export const normalizedSourceTypeDto = z.enum(['markdown', 'text', 'pdf', 'video', 'web']);
+export const normalizedSourceTypeDto = v.picklist(['markdown', 'text', 'pdf', 'video', 'web']);
 
-export const normalizedSourceBlockKindDto = z.enum([
+export const normalizedSourceBlockKindDto = v.picklist([
   'heading',
   'paragraph',
   'list',
@@ -11,32 +11,32 @@ export const normalizedSourceBlockKindDto = z.enum([
   'transcript_segment',
 ]);
 
-export const normalizedSourceLocationDto = z.object({
-  label: z.string().trim().min(1),
-  pageNumber: z.number().int().positive().optional(),
-  timestampEndSeconds: z.number().nonnegative().optional(),
-  timestampStartSeconds: z.number().nonnegative().optional(),
+export const normalizedSourceLocationDto = v.object({
+  label: requiredString,
+  pageNumber: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1))),
+  timestampEndSeconds: v.optional(v.pipe(v.number(), v.minValue(0))),
+  timestampStartSeconds: v.optional(v.pipe(v.number(), v.minValue(0))),
 });
 
-export const normalizedSourceBlockDto = z.object({
-  id: z.string().trim().min(1),
+export const normalizedSourceBlockDto = v.object({
+  id: requiredString,
   kind: normalizedSourceBlockKindDto,
   location: normalizedSourceLocationDto,
-  metadata: z.record(z.string(), z.unknown()).optional(),
-  order: z.number().int().nonnegative(),
-  sourceId: z.string().trim().min(1).optional(),
-  text: z.string().trim().min(1),
+  metadata: v.optional(v.record(v.string(), v.unknown())),
+  order: v.pipe(v.number(), v.integer(), v.minValue(0)),
+  sourceId: v.optional(requiredString),
+  text: requiredString,
 });
 
-export const normalizedSourceDto = z.object({
-  blocks: z.array(normalizedSourceBlockDto).min(1),
-  id: z.string().trim().min(1),
+export const normalizedSourceDto = v.object({
+  blocks: v.pipe(v.array(normalizedSourceBlockDto), v.minLength(1)),
+  id: requiredString,
   sourceType: normalizedSourceTypeDto,
-  title: z.string().trim().min(1),
+  title: requiredString,
 });
 
-export type NormalizedSourceBlockDto = z.infer<typeof normalizedSourceBlockDto>;
-export type NormalizedSourceBlockKindDto = z.infer<typeof normalizedSourceBlockKindDto>;
-export type NormalizedSourceDto = z.infer<typeof normalizedSourceDto>;
-export type NormalizedSourceLocationDto = z.infer<typeof normalizedSourceLocationDto>;
-export type NormalizedSourceTypeDto = z.infer<typeof normalizedSourceTypeDto>;
+export type NormalizedSourceBlockDto = v.InferOutput<typeof normalizedSourceBlockDto>;
+export type NormalizedSourceBlockKindDto = v.InferOutput<typeof normalizedSourceBlockKindDto>;
+export type NormalizedSourceDto = v.InferOutput<typeof normalizedSourceDto>;
+export type NormalizedSourceLocationDto = v.InferOutput<typeof normalizedSourceLocationDto>;
+export type NormalizedSourceTypeDto = v.InferOutput<typeof normalizedSourceTypeDto>;

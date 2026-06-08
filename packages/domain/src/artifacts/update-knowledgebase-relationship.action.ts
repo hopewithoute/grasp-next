@@ -1,4 +1,3 @@
-import { canEditOwnedProject, type Actor } from '../projects/project.policy';
 import { ARTIFACT_STATUS, ARTIFACT_TYPE, AUDIT_ACTION, AUDIT_ENTITY_TYPE } from '../constants';
 import {
   knowledgebaseArtifactContentDto,
@@ -6,17 +5,16 @@ import {
   type KnowledgebaseArtifactContentDto,
 } from '../knowledgebase';
 import type { KnowledgebaseRepository } from '../knowledgebase';
-import type { ArtifactRecord, ArtifactRepository } from './artifact.types';
+import { canEditOwnedProject, type Actor } from '../projects/project.policy';
 import type { AuditLogRepository, ProjectRepository } from '../projects/project.types';
+import { parse } from '../validation';
 import {
   ArtifactApprovalForbiddenError,
   ArtifactApprovalInvalidStateError,
   ArtifactNotFoundError,
 } from './approve-artifact.action';
-import {
-  updateKnowledgebaseRelationshipDto,
-  type UpdateKnowledgebaseRelationshipInput,
-} from './update-knowledgebase-relationship.dto';
+import type { ArtifactRecord, ArtifactRepository } from './artifact.types';
+import { type UpdateKnowledgebaseRelationshipInput } from './update-knowledgebase-relationship.dto';
 
 export type UpdateKnowledgebaseRelationshipDeps = {
   artifactRepository: ArtifactRepository;
@@ -30,8 +28,7 @@ export async function updateKnowledgebaseRelationship(
   deps: UpdateKnowledgebaseRelationshipDeps,
   actor: Actor
 ): Promise<ArtifactRecord> {
-  const dto = updateKnowledgebaseRelationshipDto.parse(input);
-  const artifact = await deps.artifactRepository.findById(dto.artifactId);
+  const artifact = await deps.artifactRepository.findById(input.artifactId);
 
   if (!artifact) {
     throw new ArtifactNotFoundError();
@@ -63,19 +60,19 @@ export async function updateKnowledgebaseRelationship(
   }
 
   const currentVersion = await findCurrentVersion(deps.artifactRepository, artifact);
-  const currentContent = knowledgebaseArtifactContentDto.parse(currentVersion.content);
+  const currentContent = parse(knowledgebaseArtifactContentDto, currentVersion.content);
   const nextContent = patchKnowledgebaseRelationship(currentContent, {
-    relationshipId: dto.relationshipId,
-    relationshipType: dto.relationshipType,
-    sourceConceptId: dto.sourceConceptId,
-    targetConceptId: dto.targetConceptId,
+    relationshipId: input.relationshipId,
+    relationshipType: input.relationshipType,
+    sourceConceptId: input.sourceConceptId,
+    targetConceptId: input.targetConceptId,
   });
 
   const nextVersion = await deps.artifactRepository.createVersion({
     artifactId: artifact.id,
     content: nextContent,
     extractionMode: currentVersion.extractionMode,
-    revisionFeedback: `Manual knowledgebase relationship update: ${dto.relationshipId}`,
+    revisionFeedback: `Manual knowledgebase relationship update: ${input.relationshipId}`,
   });
 
   await deps.knowledgebaseRepository.replaceVersionFromContent({
@@ -100,9 +97,9 @@ export async function updateKnowledgebaseRelationship(
     metadata: {
       nextArtifactVersionId: nextVersion.id,
       previousArtifactVersionId: currentVersion.id,
-      relationshipId: dto.relationshipId,
-      sourceConceptId: dto.sourceConceptId,
-      targetConceptId: dto.targetConceptId,
+      relationshipId: input.relationshipId,
+      sourceConceptId: input.sourceConceptId,
+      targetConceptId: input.targetConceptId,
     },
   });
 
@@ -163,9 +160,9 @@ function patchKnowledgebaseRelationship(
     throw new ArtifactApprovalInvalidStateError('Knowledgebase relationship was not found.');
   }
 
-  return knowledgebaseArtifactContentDto.parse({
+  return {
     ...content,
     graphProjection: projectKnowledgebaseGraph(knowledgebase),
     knowledgebase,
-  });
+  };
 }

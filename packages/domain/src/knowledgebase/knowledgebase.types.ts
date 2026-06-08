@@ -1,8 +1,8 @@
-import type { KnowledgebaseArtifactContentDto } from './knowledgebase.dto';
-import type { IngestionRunStatus } from '../constants';
 import type { ConceptDifficultyDto } from '../concepts';
+import type { IngestionRunStatus } from '../constants';
 import type { IngestionAgentOutput } from '../ingestion';
 import type { NormalizedSourceBlockDto } from '../sources';
+import type { KnowledgebaseArtifactContentDto } from './knowledgebase.dto';
 
 export type IngestionRunRecord = {
   completedAt: Date | null;

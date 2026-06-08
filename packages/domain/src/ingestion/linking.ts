@@ -5,6 +5,14 @@ import type {
   IngestionRelationship,
   KnowledgebaseRelationshipTypeDto,
 } from '../index';
+import {
+  MIN_LINK_CONFIDENCE,
+  MIN_LINK_EVIDENCE_SCORE,
+  type EvidenceQuality,
+  type LinkCandidate,
+  type ReviewedLink,
+} from './linking.dto';
+import { type ExistingConceptContextLoader, type ExistingConceptSearch } from './linking.types';
 
 // DTOs, types, and constants are in linking.dto.ts
 export {
@@ -20,19 +28,8 @@ export {
   type ReviewedLink,
   type LinkPolicyResult,
   type LinkTrace,
-  type ExistingConceptSearch,
-  type ExistingConceptContextLoader,
 } from './linking.dto';
-
-import {
-  MIN_LINK_CONFIDENCE,
-  MIN_LINK_EVIDENCE_SCORE,
-  type EvidenceQuality,
-  type ExistingConceptContextLoader,
-  type ExistingConceptSearch,
-  type LinkCandidate,
-  type ReviewedLink,
-} from './linking.dto';
+export { type ExistingConceptSearch, type ExistingConceptContextLoader } from './linking.types';
 
 export async function buildLinkCandidates(input: {
   getConceptContext: ExistingConceptContextLoader;
@@ -54,12 +51,12 @@ export async function buildLinkCandidates(input: {
 
     const relationshipType = relationshipTypeForPredicate(claim.predicate);
     const dbMatches = await input.searchConcepts({ limit: 5, query: claim.objectText });
-    
+
     // Cross-chunk linking: Also look in the local extraction (spanning all chunks) for the target concept
     const localMatch = findLocalConcept(claim.objectText, input.localExtraction.concepts);
     const allMatches = [...dbMatches];
-    
-    if (localMatch && !allMatches.some(m => m.conceptKey === localMatch.conceptKey)) {
+
+    if (localMatch && !allMatches.some((m) => m.conceptKey === localMatch.conceptKey)) {
       allMatches.unshift({
         conceptKey: localMatch.conceptKey,
         name: localMatch.name,
@@ -120,7 +117,11 @@ export function applyLinkPolicy(input: {
   );
 
   const acceptedRelationshipKeys = new Set<string>();
-  const policyResults: Array<{ candidateId: string; decision: 'accept' | 'reject'; reason: string }> = [];
+  const policyResults: Array<{
+    candidateId: string;
+    decision: 'accept' | 'reject';
+    reason: string;
+  }> = [];
 
   for (const link of input.reviewedLinks) {
     const rejectionReason = linkPolicyRejectionReason(
@@ -180,7 +181,8 @@ export function buildLinkTrace(input: {
       rejectedCount: input.rejectedLinks.length,
       relationClaimCount: input.extraction.relationClaims.length,
       reviewedCount: input.reviewedLinks.length,
-      semanticCandidateCount: input.candidates.filter((c) => c.resolutionType === 'semantic').length,
+      semanticCandidateCount: input.candidates.filter((c) => c.resolutionType === 'semantic')
+        .length,
       weakEvidenceCount: input.reviewedLinks.filter(
         (l) => l.evidenceQuality.evidenceStrength === 'weak'
       ).length,
@@ -220,12 +222,14 @@ export function applyAcceptedLinks(
 export function reviewLinksDeterministically(candidates: LinkCandidate[]): ReviewedLink[] {
   return candidates.map((candidate) => {
     const isSelfEdge = candidate.sourceConceptKey === candidate.targetConceptKey;
-    const isHeading = candidate.evidence.locationLabel?.toLowerCase().includes('heading') && !candidate.evidence.quote.includes(' ');
+    const isHeading =
+      candidate.evidence.locationLabel?.toLowerCase().includes('heading') &&
+      !candidate.evidence.quote.includes(' ');
 
     const relationshipTypeConfidence = isSelfEdge ? 0.1 : 0.9;
     const semanticSupportConfidence = isSelfEdge ? 0.1 : 0.9;
     const confidence = isSelfEdge || isHeading ? 0.5 : 0.9;
-    
+
     const evidenceQuality = scoreLinkEvidence({
       quote: candidate.evidence.quote,
       relationshipType: candidate.relationshipType,
@@ -285,9 +289,7 @@ export function scoreLinkEvidence(input: {
 
 // --- Private helpers ---
 
-function relationshipTypeForPredicate(
-  predicate: string
-): KnowledgebaseRelationshipTypeDto {
+function relationshipTypeForPredicate(predicate: string): KnowledgebaseRelationshipTypeDto {
   const normalized = predicate.toLowerCase().trim();
   if (['prerequisite', 'requires', 'depends_on', 'builds_on'].includes(normalized)) {
     return 'prerequisite';

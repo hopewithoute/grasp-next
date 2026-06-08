@@ -1,17 +1,17 @@
-import { canEditOwnedProject, type Actor } from '../projects/project.policy';
 import {
   ARTIFACT_REVIEW_RUN_STATUS,
   ARTIFACT_STATUS,
   AUDIT_ACTION,
   AUDIT_ENTITY_TYPE,
 } from '../constants';
+import { canEditOwnedProject, type Actor } from '../projects/project.policy';
+import type { AuditLogRepository, ProjectRepository } from '../projects/project.types';
+import { type ApproveArtifactInput } from './approve-artifact.dto';
 import type {
   ArtifactRecord,
   ArtifactRepository,
   ArtifactReviewRunRepository,
 } from './artifact.types';
-import type { AuditLogRepository, ProjectRepository } from '../projects/project.types';
-import { approveArtifactDto, type ApproveArtifactInput } from './approve-artifact.dto';
 
 export type ArtifactReviewWorkflow = {
   resumeReview(input: {
@@ -62,8 +62,7 @@ export async function approveArtifact(
   deps: ApproveArtifactDeps,
   actor: Actor
 ): Promise<ArtifactRecord> {
-  const dto = approveArtifactDto.parse(input);
-  const artifact = await deps.artifactRepository.findById(dto.artifactId);
+  const artifact = await deps.artifactRepository.findById(input.artifactId);
 
   if (!artifact) {
     throw new ArtifactNotFoundError();

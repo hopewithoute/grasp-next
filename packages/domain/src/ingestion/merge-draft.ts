@@ -1,8 +1,8 @@
 import type {
   IngestionAgentOutput,
   IngestionConcept,
-  IngestionRelationship,
   IngestionRelationClaim,
+  IngestionRelationship,
 } from '../index';
 
 export type ExtractChunkResult = {

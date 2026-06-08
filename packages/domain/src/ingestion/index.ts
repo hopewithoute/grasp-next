@@ -20,5 +20,6 @@ export * from './linking';
 export * from './validate-source-refs';
 export * from './ingestion-ai.port';
 
-export * from "./linking.dto";
-export * from "./ingestion-events";
+export * from './linking.dto';
+export * from './linking.types';
+export * from './ingestion-events';

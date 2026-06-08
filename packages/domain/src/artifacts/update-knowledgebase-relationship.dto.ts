@@ -1,14 +1,14 @@
-import { z } from 'zod';
 import { knowledgebaseRelationshipTypeDto } from '../knowledgebase';
+import { requiredString, uuidString, v } from '../validation';
 
-export const updateKnowledgebaseRelationshipDto = z.object({
-  artifactId: z.uuid(),
-  relationshipId: z.string().trim().min(1),
+export const updateKnowledgebaseRelationshipDto = v.object({
+  artifactId: uuidString,
+  relationshipId: requiredString,
   relationshipType: knowledgebaseRelationshipTypeDto,
-  sourceConceptId: z.string().trim().min(1),
-  targetConceptId: z.string().trim().min(1),
+  sourceConceptId: requiredString,
+  targetConceptId: requiredString,
 });
 
-export type UpdateKnowledgebaseRelationshipInput = z.infer<
+export type UpdateKnowledgebaseRelationshipInput = v.InferOutput<
   typeof updateKnowledgebaseRelationshipDto
 >;

@@ -25,7 +25,6 @@ export {
 } from './delete-project.action';
 export {
   loadProjectDetail,
-  loadProjectDetailDto,
   type LoadProjectDetailDeps,
   type LoadProjectDetailInput,
   type LoadProjectDetailResult,

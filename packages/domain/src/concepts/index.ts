@@ -1,1 +1,5 @@
-export { conceptDifficultyDto, type ConceptDifficultyDto } from './concept.dto';
+export {
+  CONCEPT_DIFFICULTIES,
+  conceptDifficultyDto,
+  type ConceptDifficultyDto,
+} from './concept.dto';

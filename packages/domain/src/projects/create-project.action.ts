@@ -1,5 +1,5 @@
 import { AUDIT_ACTION, AUDIT_ENTITY_TYPE } from '../constants';
-import { createProjectDto, type CreateProjectDto } from './project.dto';
+import { type CreateProjectDto } from './project.dto';
 import type { AuditLogRepository, ProjectRecord, ProjectRepository } from './project.types';
 
 export type CreateProjectDeps = {
@@ -12,12 +12,10 @@ export async function createProject(
   deps: CreateProjectDeps,
   actorId: string
 ): Promise<ProjectRecord> {
-  const dto = createProjectDto.parse(input);
-
   const project = await deps.projectRepository.create({
     ownerId: actorId,
-    title: dto.title,
-    description: dto.description,
+    title: input.title,
+    description: input.description,
   });
 
   await deps.auditLogRepository.write({

@@ -1,34 +1,40 @@
-import { z } from 'zod';
+import { parse, urlString, v } from './validation';
 
-export const serverEnvSchema = z.object({
-  DATABASE_URL: z.string().url(),
-  BETTER_AUTH_SECRET: z.string().min(32),
-  BETTER_AUTH_URL: z.string().url(),
-  AI_PROVIDER: z.string().optional(),
-  AI_MODEL: z.string().optional(),
-  OPENAI_API_KEY: z.string().optional(),
-  OPENAI_MODEL: z.string().optional(),
-  ANTHROPIC_API_KEY: z.string().optional(),
-  ANTHROPIC_MODEL: z.string().optional(),
-  XIAOMI_API_KEY: z.string().optional(),
-  GOOGLE_GENERATIVE_AI_API_KEY: z.string().optional(),
-  GEMINI_API_KEY: z.string().optional(),
-  GOOGLE_EMBEDDING_MODEL: z.string().optional(),
-  GOOGLE_EMBEDDING_DIMENSIONS: z.coerce.number().int().positive().optional(),
-  CONCEPT_EXTRACTOR_PROVIDER: z.string().optional(),
-  CONCEPT_EXTRACTOR_MODEL: z.string().optional(),
-  MASTRA_STORAGE_URL: z.string().url(),
-  GOOGLE_CLIENT_ID: z.string().min(1).optional(),
-  GOOGLE_CLIENT_SECRET: z.string().min(1).optional(),
-  CLOUDFLARE_ACCOUNT_ID: z.string().optional(),
-  CLOUDFLARE_API_TOKEN: z.string().optional(),
-  JINA_API_KEY: z.string().optional(),
-  INGESTION_AGENT_MODEL: z.string().optional(),
-  REFINEMENT_AGENT_MODEL: z.string().optional(),
+const optionalString = v.optional(v.string());
+const optionalNonEmptyString = v.optional(v.pipe(v.string(), v.minLength(1)));
+const optionalPositiveInteger = v.optional(
+  v.pipe(v.unknown(), v.transform(Number), v.number(), v.integer(), v.minValue(1))
+);
+
+export const serverEnvSchema = v.object({
+  DATABASE_URL: urlString,
+  BETTER_AUTH_SECRET: v.pipe(v.string(), v.minLength(32)),
+  BETTER_AUTH_URL: urlString,
+  AI_PROVIDER: optionalString,
+  AI_MODEL: optionalString,
+  OPENAI_API_KEY: optionalString,
+  OPENAI_MODEL: optionalString,
+  ANTHROPIC_API_KEY: optionalString,
+  ANTHROPIC_MODEL: optionalString,
+  XIAOMI_API_KEY: optionalString,
+  GOOGLE_GENERATIVE_AI_API_KEY: optionalString,
+  GEMINI_API_KEY: optionalString,
+  GOOGLE_EMBEDDING_MODEL: optionalString,
+  GOOGLE_EMBEDDING_DIMENSIONS: optionalPositiveInteger,
+  CONCEPT_EXTRACTOR_PROVIDER: optionalString,
+  CONCEPT_EXTRACTOR_MODEL: optionalString,
+  MASTRA_STORAGE_URL: urlString,
+  GOOGLE_CLIENT_ID: optionalNonEmptyString,
+  GOOGLE_CLIENT_SECRET: optionalNonEmptyString,
+  CLOUDFLARE_ACCOUNT_ID: optionalString,
+  CLOUDFLARE_API_TOKEN: optionalString,
+  JINA_API_KEY: optionalString,
+  INGESTION_AGENT_MODEL: optionalString,
+  REFINEMENT_AGENT_MODEL: optionalString,
 });
 
-export type ServerEnv = z.infer<typeof serverEnvSchema>;
+export type ServerEnv = v.InferOutput<typeof serverEnvSchema>;
 
 export function parseServerEnv(env: Record<string, string | undefined>): ServerEnv {
-  return serverEnvSchema.parse(env);
+  return parse(serverEnvSchema, env);
 }

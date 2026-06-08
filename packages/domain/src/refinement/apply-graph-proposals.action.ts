@@ -1,14 +1,15 @@
+import type { KnowledgebaseRepository } from '../knowledgebase/knowledgebase.types';
+import { parse } from '../validation';
 import {
   addConceptProposalDto,
-  updateConceptProposalDto,
-  deleteConceptProposalDto,
-  addRelationshipProposalDto,
-  deleteRelationshipProposalDto,
   addEvidenceProposalDto,
-  updateEvidenceProposalDto,
+  addRelationshipProposalDto,
+  deleteConceptProposalDto,
   deleteEvidenceProposalDto,
+  deleteRelationshipProposalDto,
+  updateConceptProposalDto,
+  updateEvidenceProposalDto,
 } from './proposal.dto';
-import type { KnowledgebaseRepository } from '../knowledgebase/knowledgebase.types';
 
 export type GraphProposalAction = {
   type: string;
@@ -46,19 +47,23 @@ export async function applyGraphProposals(
   for (const action of actions) {
     switch (action.type) {
       case 'add_concept': {
-        const payload = addConceptProposalDto.parse(action.payload);
-        const metadata = payload.metadata ? { ...payload.metadata, isUserEdited: true } : { isUserEdited: true };
+        const payload = parse(addConceptProposalDto, action.payload);
+        const metadata = payload.metadata
+          ? { ...payload.metadata, isUserEdited: true }
+          : { isUserEdited: true };
         await knowledgebaseRepository.addConcept({ projectId, ...payload, metadata });
         break;
       }
       case 'update_concept': {
-        const payload = updateConceptProposalDto.parse(action.payload);
-        const metadata = payload.metadata ? { ...payload.metadata, isUserEdited: true } : { isUserEdited: true };
+        const payload = parse(updateConceptProposalDto, action.payload);
+        const metadata = payload.metadata
+          ? { ...payload.metadata, isUserEdited: true }
+          : { isUserEdited: true };
         await knowledgebaseRepository.updateConcept({ projectId, ...payload, metadata });
         break;
       }
       case 'delete_concept': {
-        const payload = deleteConceptProposalDto.parse(action.payload);
+        const payload = parse(deleteConceptProposalDto, action.payload);
         await knowledgebaseRepository.tombstoneConcept({
           projectId,
           conceptKey: payload.conceptKey,
@@ -66,7 +71,7 @@ export async function applyGraphProposals(
         break;
       }
       case 'add_relationship': {
-        const payload = addRelationshipProposalDto.parse(action.payload);
+        const payload = parse(addRelationshipProposalDto, action.payload);
         await knowledgebaseRepository.addRelationship({
           projectId,
           relationshipKey: `${payload.sourceConceptKey}:${payload.targetConceptKey}:${payload.relationshipType}`,
@@ -75,7 +80,7 @@ export async function applyGraphProposals(
         break;
       }
       case 'delete_relationship': {
-        const payload = deleteRelationshipProposalDto.parse(action.payload);
+        const payload = parse(deleteRelationshipProposalDto, action.payload);
         await knowledgebaseRepository.deleteRelationship({
           projectId,
           relationshipKey: `${payload.sourceConceptKey}:${payload.targetConceptKey}:${payload.relationshipType}`,
@@ -83,7 +88,7 @@ export async function applyGraphProposals(
         break;
       }
       case 'add_evidence': {
-        const payload = addEvidenceProposalDto.parse(action.payload);
+        const payload = parse(addEvidenceProposalDto, action.payload);
         await knowledgebaseRepository.addConceptEvidence({
           projectId,
           conceptKey: payload.conceptKey,
@@ -96,7 +101,7 @@ export async function applyGraphProposals(
         break;
       }
       case 'update_evidence': {
-        const payload = updateEvidenceProposalDto.parse(action.payload);
+        const payload = parse(updateEvidenceProposalDto, action.payload);
         await knowledgebaseRepository.updateConceptEvidence({
           projectId,
           evidenceId: payload.evidenceId,
@@ -105,7 +110,7 @@ export async function applyGraphProposals(
         break;
       }
       case 'delete_evidence': {
-        const payload = deleteEvidenceProposalDto.parse(action.payload);
+        const payload = parse(deleteEvidenceProposalDto, action.payload);
         await knowledgebaseRepository.deleteConceptEvidence({
           projectId,
           evidenceId: payload.evidenceId,

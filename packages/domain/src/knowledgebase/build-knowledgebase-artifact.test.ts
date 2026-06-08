@@ -15,8 +15,13 @@ describe('buildKnowledgebaseArtifactContent', () => {
     expect('conceptGraph' in content).toBe(false);
     expect('learningWiki' in content).toBe(false);
     expect(content.knowledgebase.concepts[0]?.id).toBeTruthy();
-    expect(content.graphProjection.nodes.map((node) => node.conceptId)).toEqual(['market', 'demand']);
-    expect(content.graphProjection.edges.map((edge) => edge.relationshipId)).toEqual(['relationship-0001']);
+    expect(content.graphProjection.nodes.map((node) => node.conceptId)).toEqual([
+      'market',
+      'demand',
+    ]);
+    expect(content.graphProjection.edges.map((edge) => edge.relationshipId)).toEqual([
+      'relationship-0001',
+    ]);
   });
 });
 

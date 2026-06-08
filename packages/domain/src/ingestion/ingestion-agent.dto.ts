@@ -1,73 +1,64 @@
-import { z } from 'zod';
 import { conceptDifficultyDto } from '../concepts';
+import { RELATIONSHIP_TYPES } from '../constants';
 import { knowledgebaseRelationshipTypeDto } from '../knowledgebase';
+import { confidenceScore, requiredString, v } from '../validation';
 
-export const ingestionSourceRefDto = z.object({
-  blockId: z.string().trim().min(1),
-  quote: z.string().trim().min(1),
-  locationLabel: z.string().trim().default('unknown'),
+export const ingestionSourceRefDto = v.object({
+  blockId: requiredString,
+  quote: requiredString,
+  locationLabel: v.optional(v.pipe(v.string(), v.trim()), 'unknown'),
 });
 
-export const ingestionEvidenceQualityDto = z.object({
-  evidenceKind: z.enum(['heading', 'sentence', 'paragraph', 'list', 'unknown']),
-  evidenceReason: z.string().trim().min(1),
-  evidenceStrength: z.enum(['strong', 'usable', 'weak', 'rejected']),
-  finalEvidenceScore: z.number().min(0).max(1),
-  grounded: z.boolean(),
-  groundingReason: z.enum(['exact_quote', 'quote_not_found', 'missing_block', 'empty_quote']),
-  relationshipTypeConfidence: z.number().min(0).max(1),
-  semanticSupportConfidence: z.number().min(0).max(1),
-  shapeScore: z.number().min(0).max(1),
-  suggestedRelationshipType: knowledgebaseRelationshipTypeDto.optional(),
+export const ingestionEvidenceQualityDto = v.object({
+  evidenceKind: v.picklist(['heading', 'sentence', 'paragraph', 'list', 'unknown']),
+  evidenceReason: requiredString,
+  evidenceStrength: v.picklist(['strong', 'usable', 'weak', 'rejected']),
+  finalEvidenceScore: confidenceScore,
+  grounded: v.boolean(),
+  groundingReason: v.picklist(['exact_quote', 'quote_not_found', 'missing_block', 'empty_quote']),
+  relationshipTypeConfidence: confidenceScore,
+  semanticSupportConfidence: confidenceScore,
+  shapeScore: confidenceScore,
+  suggestedRelationshipType: v.optional(knowledgebaseRelationshipTypeDto),
 });
 
-export const ingestionConceptDto = z.object({
-  conceptKey: z.string().trim().min(1),
-  name: z.string().trim().min(1),
-  definition: z.string().trim().min(1),
+export const ingestionConceptDto = v.object({
+  conceptKey: requiredString,
+  name: requiredString,
+  definition: requiredString,
   difficulty: conceptDifficultyDto,
-  confidence: z.number().min(0).max(1),
-  sourceRefs: z.array(ingestionSourceRefDto).min(1),
-  mergesWith: z.string().trim().min(1).optional().catch(undefined),
+  confidence: confidenceScore,
+  sourceRefs: v.pipe(v.array(ingestionSourceRefDto), v.minLength(1)),
+  mergesWith: v.fallback(v.optional(requiredString), undefined),
 });
 
-export const ingestionRelationshipDto = z.object({
-  sourceConceptKey: z.string().trim().min(1),
-  targetConceptKey: z.string().trim().min(1),
+export const ingestionRelationshipDto = v.object({
+  sourceConceptKey: requiredString,
+  targetConceptKey: requiredString,
   relationshipType: knowledgebaseRelationshipTypeDto,
-  rationale: z.string().trim().min(1).optional(),
-  sourceRefs: z.array(ingestionSourceRefDto).default([]),
-  evidenceQuality: ingestionEvidenceQualityDto.optional(),
+  rationale: v.optional(requiredString),
+  sourceRefs: v.optional(v.array(ingestionSourceRefDto), []),
+  evidenceQuality: v.optional(ingestionEvidenceQualityDto),
 });
 
-export const ingestionRelationClaimPredicateDto = z.enum([
-  'prerequisite',
-  'part_of',
-  'related_to',
-  'explains',
-  'connects_to',
-  'builds_on',
-  'influences',
-  'requires',
-  'depends_on',
-]);
+export const ingestionRelationClaimPredicateDto = v.picklist(RELATIONSHIP_TYPES);
 
-export const ingestionRelationClaimDto = z.object({
-  subjectText: z.string().trim().min(1),
+export const ingestionRelationClaimDto = v.object({
+  subjectText: requiredString,
   predicate: ingestionRelationClaimPredicateDto,
-  objectText: z.string().trim().min(1),
-  sourceRefs: z.array(ingestionSourceRefDto).default([]),
+  objectText: requiredString,
+  sourceRefs: v.optional(v.array(ingestionSourceRefDto), []),
 });
 
-export const ingestionAgentOutputDto = z.object({
-  concepts: z.array(ingestionConceptDto).default([]),
-  relationClaims: z.array(ingestionRelationClaimDto).default([]),
-  relationships: z.array(ingestionRelationshipDto).default([]),
+export const ingestionAgentOutputDto = v.object({
+  concepts: v.optional(v.array(ingestionConceptDto), []),
+  relationClaims: v.optional(v.array(ingestionRelationClaimDto), []),
+  relationships: v.optional(v.array(ingestionRelationshipDto), []),
 });
 
-export type IngestionAgentOutput = z.infer<typeof ingestionAgentOutputDto>;
-export type IngestionConcept = z.infer<typeof ingestionConceptDto>;
-export type IngestionRelationClaim = z.infer<typeof ingestionRelationClaimDto>;
-export type IngestionRelationship = z.infer<typeof ingestionRelationshipDto>;
-export type IngestionSourceRef = z.infer<typeof ingestionSourceRefDto>;
-export type IngestionEvidenceQuality = z.infer<typeof ingestionEvidenceQualityDto>;
+export type IngestionAgentOutput = v.InferOutput<typeof ingestionAgentOutputDto>;
+export type IngestionConcept = v.InferOutput<typeof ingestionConceptDto>;
+export type IngestionRelationClaim = v.InferOutput<typeof ingestionRelationClaimDto>;
+export type IngestionRelationship = v.InferOutput<typeof ingestionRelationshipDto>;
+export type IngestionSourceRef = v.InferOutput<typeof ingestionSourceRefDto>;
+export type IngestionEvidenceQuality = v.InferOutput<typeof ingestionEvidenceQualityDto>;

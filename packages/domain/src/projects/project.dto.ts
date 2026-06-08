@@ -1,22 +1,22 @@
-import { z } from 'zod';
+import { requiredString, uuidString, v } from '../validation';
 
-const requiredText = z.string().trim().min(1);
+const requiredText = requiredString;
 
-export const createProjectDto = z.object({
-  title: requiredText.max(160),
-  description: z.string().trim().max(1_000).optional(),
+export const createProjectDto = v.object({
+  title: v.pipe(requiredText, v.maxLength(160)),
+  description: v.optional(v.pipe(v.string(), v.trim(), v.maxLength(1_000))),
 });
 
-export const updateProjectDetailsDto = z.object({
-  description: z.string().trim().max(1_000).optional(),
-  projectId: z.uuid(),
-  title: requiredText.max(160),
+export const updateProjectDetailsDto = v.object({
+  description: v.optional(v.pipe(v.string(), v.trim(), v.maxLength(1_000))),
+  projectId: uuidString,
+  title: v.pipe(requiredText, v.maxLength(160)),
 });
 
-export const deleteProjectDto = z.object({
-  projectId: z.uuid(),
+export const deleteProjectDto = v.object({
+  projectId: uuidString,
 });
 
-export type CreateProjectDto = z.infer<typeof createProjectDto>;
-export type DeleteProjectDto = z.infer<typeof deleteProjectDto>;
-export type UpdateProjectDetailsDto = z.infer<typeof updateProjectDetailsDto>;
+export type CreateProjectDto = v.InferOutput<typeof createProjectDto>;
+export type DeleteProjectDto = v.InferOutput<typeof deleteProjectDto>;
+export type UpdateProjectDetailsDto = v.InferOutput<typeof updateProjectDetailsDto>;

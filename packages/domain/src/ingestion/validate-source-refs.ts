@@ -37,7 +37,7 @@ export function validateAndAnchorSourceRefs(
     const normalize = (s: string) => s.replace(/\s+/g, ' ').trim().toLowerCase();
     const normQuote = normalize(quote);
     const fuzzyFallback = blocks.find((block) => normalize(block.text).includes(normQuote));
-    
+
     if (fuzzyFallback) {
       validated.push({ ...ref, blockId: fuzzyFallback.id, quote });
       continue;

@@ -1,17 +1,17 @@
-import { z } from 'zod';
+import { requiredString, uuidString, v } from '../validation';
 
-export const updateKnowledgebaseRelationshipEvidenceDto = z.object({
-  artifactId: z.uuid(),
-  blockId: z.string().trim().min(1),
-  locationLabel: z.string().trim().min(1),
-  originalBlockId: z.string().trim().min(1),
-  originalQuote: z.string().trim().min(1).max(2000),
-  originalSourceId: z.string().trim().min(1),
-  quote: z.string().trim().min(1).max(2000),
-  relationshipId: z.string().trim().min(1),
-  sourceId: z.string().trim().min(1),
+export const updateKnowledgebaseRelationshipEvidenceDto = v.object({
+  artifactId: uuidString,
+  blockId: requiredString,
+  locationLabel: requiredString,
+  originalBlockId: requiredString,
+  originalQuote: v.pipe(requiredString, v.maxLength(2000)),
+  originalSourceId: requiredString,
+  quote: v.pipe(requiredString, v.maxLength(2000)),
+  relationshipId: requiredString,
+  sourceId: requiredString,
 });
 
-export type UpdateKnowledgebaseRelationshipEvidenceInput = z.infer<
+export type UpdateKnowledgebaseRelationshipEvidenceInput = v.InferOutput<
   typeof updateKnowledgebaseRelationshipEvidenceDto
 >;

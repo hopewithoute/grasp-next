@@ -1,4 +1,3 @@
-import { canEditOwnedProject, type Actor } from '../projects/project.policy';
 import { ARTIFACT_STATUS, ARTIFACT_TYPE, AUDIT_ACTION, AUDIT_ENTITY_TYPE } from '../constants';
 import {
   knowledgebaseArtifactContentDto,
@@ -6,17 +5,16 @@ import {
   type KnowledgebaseArtifactContentDto,
 } from '../knowledgebase';
 import type { KnowledgebaseRepository } from '../knowledgebase';
-import type { ArtifactRecord, ArtifactRepository } from './artifact.types';
+import { canEditOwnedProject, type Actor } from '../projects/project.policy';
 import type { AuditLogRepository, ProjectRepository } from '../projects/project.types';
+import { parse } from '../validation';
 import {
   ArtifactApprovalForbiddenError,
   ArtifactApprovalInvalidStateError,
   ArtifactNotFoundError,
 } from './approve-artifact.action';
-import {
-  updateKnowledgebaseRelationshipEvidenceDto,
-  type UpdateKnowledgebaseRelationshipEvidenceInput,
-} from './update-knowledgebase-relationship-evidence.dto';
+import type { ArtifactRecord, ArtifactRepository } from './artifact.types';
+import { type UpdateKnowledgebaseRelationshipEvidenceInput } from './update-knowledgebase-relationship-evidence.dto';
 
 export type UpdateKnowledgebaseRelationshipEvidenceDeps = {
   artifactRepository: ArtifactRepository;
@@ -30,8 +28,7 @@ export async function updateKnowledgebaseRelationshipEvidence(
   deps: UpdateKnowledgebaseRelationshipEvidenceDeps,
   actor: Actor
 ): Promise<ArtifactRecord> {
-  const dto = updateKnowledgebaseRelationshipEvidenceDto.parse(input);
-  const artifact = await deps.artifactRepository.findById(dto.artifactId);
+  const artifact = await deps.artifactRepository.findById(input.artifactId);
 
   if (!artifact) {
     throw new ArtifactNotFoundError();
@@ -63,23 +60,23 @@ export async function updateKnowledgebaseRelationshipEvidence(
   }
 
   const currentVersion = await findCurrentVersion(deps.artifactRepository, artifact);
-  const currentContent = knowledgebaseArtifactContentDto.parse(currentVersion.content);
+  const currentContent = parse(knowledgebaseArtifactContentDto, currentVersion.content);
   const nextContent = patchKnowledgebaseRelationshipEvidence(currentContent, {
-    blockId: dto.blockId,
-    locationLabel: dto.locationLabel,
-    originalBlockId: dto.originalBlockId,
-    originalQuote: dto.originalQuote,
-    originalSourceId: dto.originalSourceId,
-    quote: dto.quote,
-    relationshipId: dto.relationshipId,
-    sourceId: dto.sourceId,
+    blockId: input.blockId,
+    locationLabel: input.locationLabel,
+    originalBlockId: input.originalBlockId,
+    originalQuote: input.originalQuote,
+    originalSourceId: input.originalSourceId,
+    quote: input.quote,
+    relationshipId: input.relationshipId,
+    sourceId: input.sourceId,
   });
 
   const nextVersion = await deps.artifactRepository.createVersion({
     artifactId: artifact.id,
     content: nextContent,
     extractionMode: currentVersion.extractionMode,
-    revisionFeedback: `Manual knowledgebase relationship evidence update: ${dto.relationshipId}`,
+    revisionFeedback: `Manual knowledgebase relationship evidence update: ${input.relationshipId}`,
   });
 
   await deps.knowledgebaseRepository.replaceVersionFromContent({
@@ -102,13 +99,13 @@ export async function updateKnowledgebaseRelationshipEvidence(
     entityType: AUDIT_ENTITY_TYPE.ARTIFACT,
     entityId: updatedArtifact.id,
     metadata: {
-      blockId: dto.blockId,
+      blockId: input.blockId,
       nextArtifactVersionId: nextVersion.id,
-      originalBlockId: dto.originalBlockId,
-      originalSourceId: dto.originalSourceId,
+      originalBlockId: input.originalBlockId,
+      originalSourceId: input.originalSourceId,
       previousArtifactVersionId: currentVersion.id,
-      relationshipId: dto.relationshipId,
-      sourceId: dto.sourceId,
+      relationshipId: input.relationshipId,
+      sourceId: input.sourceId,
     },
   });
 
@@ -193,11 +190,11 @@ function patchKnowledgebaseRelationshipEvidence(
     throw new ArtifactApprovalInvalidStateError('Knowledgebase relationship was not found.');
   }
 
-  return knowledgebaseArtifactContentDto.parse({
+  return {
     ...content,
     graphProjection: projectKnowledgebaseGraph(knowledgebase),
     knowledgebase,
-  });
+  };
 }
 
 function isSameSourceRef(

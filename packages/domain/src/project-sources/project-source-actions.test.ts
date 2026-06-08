@@ -1,11 +1,10 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { AUDIT_ACTION, PROJECT_STATUS, type ProjectSourceType } from '../constants';
+import { AUDIT_ACTION, PROJECT_STATUS } from '../constants';
 import { ProjectForbiddenError } from '../projects/project.errors';
 import type {
   AuditLogRepository,
   ProjectRecord,
   ProjectRepository,
-  ProjectStatus,
 } from '../projects/project.types';
 import {
   addProjectSource,
@@ -78,7 +77,8 @@ describe('project source actions', () => {
   });
 
   it('rejects source writes for non-owners', async () => {
-    await expect(addProjectSource(
+    await expect(
+      addProjectSource(
         {
           content: 'Plants use light.',
           projectId: state.project.id,
@@ -87,7 +87,8 @@ describe('project source actions', () => {
         },
         createDeps(state),
         { id: 'other-user' }
-      )).rejects.toThrow(ProjectForbiddenError);
+      )
+    ).rejects.toThrow(ProjectForbiddenError);
 
     expect(state.sources.length).toBe(0);
     expect(state.auditLogs.length).toBe(0);
@@ -188,7 +189,7 @@ function createProjectRepository(state: TestState): ProjectRepository {
 
       state.project = {
         ...state.project,
-        status: status as ProjectStatus,
+        status: status,
       };
 
       return state.project;
@@ -259,7 +260,7 @@ function createProjectSourceRepository(state: TestState): ProjectSourceRepositor
       source.fileRef = input.fileRef ?? null;
       source.metadata = input.metadata ?? null;
       source.title = input.title;
-      source.type = input.type as ProjectSourceType;
+      source.type = input.type;
       source.updatedAt = new Date('2026-05-18T01:00:00.000Z');
 
       return source;

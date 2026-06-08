@@ -1,79 +1,72 @@
-import { z } from 'zod';
 import { conceptDifficultyDto } from '../concepts';
+import { RELATIONSHIP_TYPES } from '../constants';
 import { normalizedSourceDto } from '../sources';
+import { confidenceScore, requiredString, v } from '../validation';
 
-export const sourceReferenceDto = z.object({
-  blockId: z.string().trim().min(1),
-  locationLabel: z.string().trim().min(1),
-  quote: z.string().trim().min(1),
-  sourceId: z.string().trim().min(1),
+export const sourceReferenceDto = v.object({
+  blockId: requiredString,
+  locationLabel: requiredString,
+  quote: requiredString,
+  sourceId: requiredString,
 });
 
-export const knowledgebaseRelationshipTypeDto = z.enum([
-  'prerequisite',
-  'part_of',
-  'related_to',
-  'explains',
-  'connects_to',
-  'builds_on',
-  'influences',
-  'requires',
-  'depends_on',
-]);
+export const knowledgebaseRelationshipTypeDto = v.picklist(RELATIONSHIP_TYPES);
 
-export const knowledgebaseConceptDto = z.object({
-  confidence: z.number().min(0).max(1),
-  definition: z.string().trim().min(1),
+export const knowledgebaseConceptDto = v.object({
+  confidence: confidenceScore,
+  definition: requiredString,
   difficulty: conceptDifficultyDto,
-  id: z.string().trim().min(1),
-  name: z.string().trim().min(1),
-  sourceRefs: z.array(sourceReferenceDto).min(1),
+  id: requiredString,
+  name: requiredString,
+  sourceRefs: v.pipe(v.array(sourceReferenceDto), v.minLength(1)),
 });
 
-export const knowledgebaseRelationshipDto = z.object({
-  id: z.string().trim().min(1),
-  rationale: z.string().trim().min(1).optional(),
+export const knowledgebaseRelationshipDto = v.object({
+  id: requiredString,
+  rationale: v.optional(requiredString),
   relationshipType: knowledgebaseRelationshipTypeDto,
-  sourceConceptId: z.string().trim().min(1),
-  sourceRefs: z.array(sourceReferenceDto).min(1),
-  targetConceptId: z.string().trim().min(1),
+  sourceConceptId: requiredString,
+  sourceRefs: v.pipe(v.array(sourceReferenceDto), v.minLength(1)),
+  targetConceptId: requiredString,
 });
 
-export const knowledgebaseDto = z.object({
-  concepts: z.array(knowledgebaseConceptDto).min(1),
-  overview: z.string().trim().min(1),
-  relationships: z.array(knowledgebaseRelationshipDto).default([]),
+export const knowledgebaseDto = v.object({
+  concepts: v.pipe(v.array(knowledgebaseConceptDto), v.minLength(1)),
+  overview: requiredString,
+  relationships: v.optional(v.array(knowledgebaseRelationshipDto), []),
 });
 
-export const knowledgebaseGraphProjectionDto = z.object({
-  edges: z.array(
-    z.object({
-      id: z.string().trim().min(1),
-      relationshipId: z.string().trim().min(1),
+export const knowledgebaseGraphProjectionDto = v.object({
+  edges: v.array(
+    v.object({
+      id: requiredString,
+      relationshipId: requiredString,
       relationshipType: knowledgebaseRelationshipTypeDto,
-      sourceNodeId: z.string().trim().min(1),
-      targetNodeId: z.string().trim().min(1),
+      sourceNodeId: requiredString,
+      targetNodeId: requiredString,
     })
   ),
-  nodes: z.array(
-    z.object({
-      conceptId: z.string().trim().min(1),
-      id: z.string().trim().min(1),
-      label: z.string().trim().min(1),
+  nodes: v.array(
+    v.object({
+      conceptId: requiredString,
+      id: requiredString,
+      label: requiredString,
     })
   ),
 });
 
-export const knowledgebaseArtifactContentDto = z.object({
+export const knowledgebaseArtifactContentDto = v.object({
   graphProjection: knowledgebaseGraphProjectionDto,
   knowledgebase: knowledgebaseDto,
   normalizedSource: normalizedSourceDto,
 });
 
-export type KnowledgebaseArtifactContentDto = z.infer<typeof knowledgebaseArtifactContentDto>;
-export type KnowledgebaseConceptDto = z.infer<typeof knowledgebaseConceptDto>;
-export type KnowledgebaseDto = z.infer<typeof knowledgebaseDto>;
-export type KnowledgebaseGraphProjectionDto = z.infer<typeof knowledgebaseGraphProjectionDto>;
-export type KnowledgebaseRelationshipDto = z.infer<typeof knowledgebaseRelationshipDto>;
-export type KnowledgebaseRelationshipTypeDto = z.infer<typeof knowledgebaseRelationshipTypeDto>;
-export type SourceReferenceDto = z.infer<typeof sourceReferenceDto>;
+export type KnowledgebaseArtifactContentDto = v.InferOutput<typeof knowledgebaseArtifactContentDto>;
+export type KnowledgebaseConceptDto = v.InferOutput<typeof knowledgebaseConceptDto>;
+export type KnowledgebaseDto = v.InferOutput<typeof knowledgebaseDto>;
+export type KnowledgebaseGraphProjectionDto = v.InferOutput<typeof knowledgebaseGraphProjectionDto>;
+export type KnowledgebaseRelationshipDto = v.InferOutput<typeof knowledgebaseRelationshipDto>;
+export type KnowledgebaseRelationshipTypeDto = v.InferOutput<
+  typeof knowledgebaseRelationshipTypeDto
+>;
+export type SourceReferenceDto = v.InferOutput<typeof sourceReferenceDto>;

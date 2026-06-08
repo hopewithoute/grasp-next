@@ -4,13 +4,12 @@ import type { ProjectSourceRepository } from '../project-sources';
 import { deleteProject, ProjectDeleteBlockedError } from './delete-project.action';
 import { loadProjectDetail } from './load-project-detail.action';
 import { ProjectForbiddenError } from './project.errors';
-import { updateProjectDetails } from './update-project-details.action';
 import type {
   AuditLogRepository,
   ProjectRecord,
   ProjectRepository,
-  ProjectStatus,
 } from './project.types';
+import { updateProjectDetails } from './update-project-details.action';
 
 const actor = { id: 'owner-1' };
 
@@ -43,7 +42,8 @@ describe('updateProjectDetails', () => {
   it('rejects actors that do not own the project', async () => {
     const existingProject = requireProject(state);
 
-    await expect(updateProjectDetails(
+    await expect(
+      updateProjectDetails(
         {
           description: 'Updated description',
           projectId: existingProject.id,
@@ -51,7 +51,8 @@ describe('updateProjectDetails', () => {
         },
         createDeps(state),
         { id: 'other-user' }
-      )).rejects.toThrow(ProjectForbiddenError);
+      )
+    ).rejects.toThrow(ProjectForbiddenError);
 
     expect(requireProject(state).title).toBe('Original title');
     expect(state.auditLogs.length).toBe(0);
@@ -89,13 +90,15 @@ describe('deleteProject', () => {
       status: 'processing',
     };
 
-    await expect(deleteProject(
+    await expect(
+      deleteProject(
         {
           projectId: existingProject.id,
         },
         createDeps(state),
         actor
-      )).rejects.toThrow(ProjectDeleteBlockedError);
+      )
+    ).rejects.toThrow(ProjectDeleteBlockedError);
 
     expect(requireProject(state).status).toBe('processing');
     expect(state.deletedProject).toBe(null);
@@ -105,13 +108,15 @@ describe('deleteProject', () => {
   it('rejects actors that do not own the project', async () => {
     const existingProject = requireProject(state);
 
-    await expect(deleteProject(
+    await expect(
+      deleteProject(
         {
           projectId: existingProject.id,
         },
         createDeps(state),
         { id: 'other-user' }
-      )).rejects.toThrow(ProjectForbiddenError);
+      )
+    ).rejects.toThrow(ProjectForbiddenError);
 
     expect(state.deletedProject).toBe(null);
     expect(state.auditLogs.length).toBe(0);
@@ -464,7 +469,7 @@ function createProjectRepository(state: TestState): ProjectRepository {
 
       state.project = {
         ...state.project,
-        status: status as ProjectStatus,
+        status: status,
       };
 
       return state.project;

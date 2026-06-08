@@ -1,4 +1,3 @@
-import { canEditOwnedProject, type Actor } from '../projects/project.policy';
 import { ARTIFACT_STATUS, ARTIFACT_TYPE, AUDIT_ACTION, AUDIT_ENTITY_TYPE } from '../constants';
 import {
   knowledgebaseArtifactContentDto,
@@ -6,17 +5,16 @@ import {
   type KnowledgebaseArtifactContentDto,
 } from '../knowledgebase';
 import type { KnowledgebaseRepository } from '../knowledgebase';
-import type { ArtifactRecord, ArtifactRepository } from './artifact.types';
+import { canEditOwnedProject, type Actor } from '../projects/project.policy';
 import type { AuditLogRepository, ProjectRepository } from '../projects/project.types';
+import { parse } from '../validation';
 import {
   ArtifactApprovalForbiddenError,
   ArtifactApprovalInvalidStateError,
   ArtifactNotFoundError,
 } from './approve-artifact.action';
-import {
-  updateKnowledgebaseConceptDto,
-  type UpdateKnowledgebaseConceptInput,
-} from './update-knowledgebase-concept.dto';
+import type { ArtifactRecord, ArtifactRepository } from './artifact.types';
+import { type UpdateKnowledgebaseConceptInput } from './update-knowledgebase-concept.dto';
 
 export type UpdateKnowledgebaseConceptDeps = {
   artifactRepository: ArtifactRepository;
@@ -30,8 +28,7 @@ export async function updateKnowledgebaseConcept(
   deps: UpdateKnowledgebaseConceptDeps,
   actor: Actor
 ): Promise<ArtifactRecord> {
-  const dto = updateKnowledgebaseConceptDto.parse(input);
-  const artifact = await deps.artifactRepository.findById(dto.artifactId);
+  const artifact = await deps.artifactRepository.findById(input.artifactId);
 
   if (!artifact) {
     throw new ArtifactNotFoundError();
@@ -63,19 +60,19 @@ export async function updateKnowledgebaseConcept(
   }
 
   const currentVersion = await findCurrentVersion(deps.artifactRepository, artifact);
-  const currentContent = knowledgebaseArtifactContentDto.parse(currentVersion.content);
+  const currentContent = parse(knowledgebaseArtifactContentDto, currentVersion.content);
   const nextContent = patchKnowledgebaseConcept(currentContent, {
-    conceptId: dto.conceptId,
-    definition: dto.definition,
-    difficulty: dto.difficulty,
-    name: dto.name,
+    conceptId: input.conceptId,
+    definition: input.definition,
+    difficulty: input.difficulty,
+    name: input.name,
   });
 
   const nextVersion = await deps.artifactRepository.createVersion({
     artifactId: artifact.id,
     content: nextContent,
     extractionMode: currentVersion.extractionMode,
-    revisionFeedback: `Manual knowledgebase concept update: ${dto.name}`,
+    revisionFeedback: `Manual knowledgebase concept update: ${input.name}`,
   });
 
   await deps.knowledgebaseRepository.replaceVersionFromContent({
@@ -98,7 +95,7 @@ export async function updateKnowledgebaseConcept(
     entityType: AUDIT_ENTITY_TYPE.ARTIFACT,
     entityId: updatedArtifact.id,
     metadata: {
-      conceptId: dto.conceptId,
+      conceptId: input.conceptId,
       nextArtifactVersionId: nextVersion.id,
       previousArtifactVersionId: currentVersion.id,
     },
@@ -152,9 +149,9 @@ function patchKnowledgebaseConcept(
     throw new ArtifactApprovalInvalidStateError('Knowledgebase concept was not found.');
   }
 
-  return knowledgebaseArtifactContentDto.parse({
+  return {
     ...content,
     graphProjection: projectKnowledgebaseGraph(knowledgebase),
     knowledgebase,
-  });
+  };
 }

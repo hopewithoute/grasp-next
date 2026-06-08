@@ -1,93 +1,100 @@
-import { z } from 'zod';
 import { conceptDifficultyDto } from '../concepts';
 import { knowledgebaseRelationshipTypeDto } from '../knowledgebase';
+import { confidenceScore, requiredString, v } from '../validation';
 
-// Preprocessor for difficulty to handle case and defaults
-export const proposalDifficultyDto = z
-  .preprocess((val) => {
-    if (typeof val === 'string') return val.toLowerCase();
-    return val;
-  }, conceptDifficultyDto)
-  .default('beginner');
+export const proposalDifficultyDto = v.optional(
+  v.pipe(
+    v.unknown(),
+    v.transform((value) => (typeof value === 'string' ? value.toLowerCase() : value)),
+    conceptDifficultyDto
+  ),
+  'beginner'
+);
 
-// Preprocessor for confidence to handle strings like 'HIGH', '0.85', and defaulting
-export const proposalConfidenceDto = z.preprocess((val) => {
-  if (typeof val === 'number') return val;
-  if (typeof val === 'string') {
-    const upper = val.toUpperCase();
-    if (upper === 'HIGH') return 0.9;
-    if (upper === 'MEDIUM') return 0.6;
-    if (upper === 'LOW') return 0.3;
-    const parsed = parseFloat(val);
-    return isNaN(parsed) ? 0.5 : Math.max(0, Math.min(1, parsed));
-  }
-  return 0.5;
-}, z.number().min(0).max(1));
+export const proposalConfidenceDto = v.pipe(
+  v.unknown(),
+  v.transform((value) => {
+    if (typeof value === 'number') return value;
+    if (typeof value === 'string') {
+      const upper = value.toUpperCase();
+      if (upper === 'HIGH') return 0.9;
+      if (upper === 'MEDIUM') return 0.6;
+      if (upper === 'LOW') return 0.3;
+      const parsed = Number.parseFloat(value);
+      return Number.isNaN(parsed) ? 0.5 : Math.max(0, Math.min(1, parsed));
+    }
+    return 0.5;
+  }),
+  confidenceScore
+);
 
-export const addConceptProposalDto = z.object({
-  conceptKey: z.string().trim().min(1),
-  name: z.string().trim().min(1),
-  definition: z.string().trim().min(1),
+export const addConceptProposalDto = v.object({
+  conceptKey: requiredString,
+  name: requiredString,
+  definition: requiredString,
   difficulty: proposalDifficultyDto,
   confidence: proposalConfidenceDto,
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: v.optional(v.record(v.string(), v.unknown())),
 });
 
-export const updateConceptProposalDto = z.object({
-  conceptKey: z.string().trim().min(1),
-  name: z.string().trim().min(1).optional(),
-  definition: z.string().trim().min(1).optional(),
-  difficulty: proposalDifficultyDto.optional(),
-  confidence: proposalConfidenceDto.optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+export const updateConceptProposalDto = v.object({
+  conceptKey: requiredString,
+  name: v.optional(requiredString),
+  definition: v.optional(requiredString),
+  difficulty: v.optional(proposalDifficultyDto),
+  confidence: v.optional(proposalConfidenceDto),
+  metadata: v.optional(v.record(v.string(), v.unknown())),
 });
 
-export const deleteConceptProposalDto = z.object({
-  conceptKey: z.string().trim().min(1),
+export const deleteConceptProposalDto = v.object({
+  conceptKey: requiredString,
 });
 
-export const addRelationshipProposalDto = z.object({
-  sourceConceptKey: z.string().trim().min(1),
-  targetConceptKey: z.string().trim().min(1),
+export const addRelationshipProposalDto = v.object({
+  sourceConceptKey: requiredString,
+  targetConceptKey: requiredString,
   relationshipType: knowledgebaseRelationshipTypeDto,
-  rationale: z.string().trim().min(1).optional(),
+  rationale: v.optional(requiredString),
 });
 
-export const deleteRelationshipProposalDto = z.object({
-  sourceConceptKey: z.string().trim().min(1),
-  targetConceptKey: z.string().trim().min(1),
+export const deleteRelationshipProposalDto = v.object({
+  sourceConceptKey: requiredString,
+  targetConceptKey: requiredString,
   relationshipType: knowledgebaseRelationshipTypeDto,
 });
 
-export const addEvidenceProposalDto = z.preprocess(
-  (val: unknown) => {
-    if (val && typeof val === 'object') {
-      const obj = val as Record<string, unknown>;
-      if (!obj.evidenceText && obj.excerpt) {
-        obj.evidenceText = obj.excerpt;
-      }
-      if (!obj.rationale && obj.reasoning) {
-        obj.rationale = obj.reasoning;
-      }
+export const addEvidenceProposalDto = v.pipe(
+  v.unknown(),
+  v.transform((value) => {
+    if (!value || typeof value !== 'object') {
+      return value;
     }
-    return val;
-  },
-  z.object({
-    conceptKey: z.string().trim().min(1),
-    evidenceText: z.string().trim().min(1).default('AI extracted evidence'),
-    rationale: z.string().trim().min(1).default('AI extracted rationale'),
-    url: z.string().trim().optional(),
-    title: z.string().trim().min(1).default('AI Search Result').optional(),
-    sourceType: z.string().trim().optional(),
+
+    const object = { ...(value as Record<string, unknown>) };
+    if (!object.evidenceText && object.excerpt) {
+      object.evidenceText = object.excerpt;
+    }
+    if (!object.rationale && object.reasoning) {
+      object.rationale = object.reasoning;
+    }
+    return object;
+  }),
+  v.object({
+    conceptKey: requiredString,
+    evidenceText: v.optional(requiredString, 'AI extracted evidence'),
+    rationale: v.optional(requiredString, 'AI extracted rationale'),
+    url: v.optional(v.pipe(v.string(), v.trim())),
+    title: v.optional(requiredString, 'AI Search Result'),
+    sourceType: v.optional(v.pipe(v.string(), v.trim())),
   })
 );
 
-export const updateEvidenceProposalDto = z.object({
-  evidenceId: z.string().trim().min(1),
-  evidenceText: z.string().trim().min(1).optional(),
-  rationale: z.string().trim().min(1).optional(),
+export const updateEvidenceProposalDto = v.object({
+  evidenceId: requiredString,
+  evidenceText: v.optional(requiredString),
+  rationale: v.optional(requiredString),
 });
 
-export const deleteEvidenceProposalDto = z.object({
-  evidenceId: z.string().trim().min(1),
+export const deleteEvidenceProposalDto = v.object({
+  evidenceId: requiredString,
 });

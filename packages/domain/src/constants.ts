@@ -138,3 +138,29 @@ export type ArtifactReviewRunStatus = (typeof ARTIFACT_REVIEW_RUN_STATUSES)[numb
 export type ExtractionMode = (typeof EXTRACTION_MODES)[number];
 export type IngestionRunStatus = (typeof INGESTION_RUN_STATUSES)[number];
 export type KnowledgebaseVersionStatus = (typeof KNOWLEDGEBASE_VERSION_STATUSES)[number];
+
+export const RELATIONSHIP_TYPE = {
+  PREREQUISITE: 'prerequisite',
+  PART_OF: 'part_of',
+  RELATED_TO: 'related_to',
+  EXPLAINS: 'explains',
+  CONNECTS_TO: 'connects_to',
+  BUILDS_ON: 'builds_on',
+  INFLUENCES: 'influences',
+  REQUIRES: 'requires',
+  DEPENDS_ON: 'depends_on',
+} as const;
+
+export const RELATIONSHIP_TYPES = [
+  RELATIONSHIP_TYPE.PREREQUISITE,
+  RELATIONSHIP_TYPE.PART_OF,
+  RELATIONSHIP_TYPE.RELATED_TO,
+  RELATIONSHIP_TYPE.EXPLAINS,
+  RELATIONSHIP_TYPE.CONNECTS_TO,
+  RELATIONSHIP_TYPE.BUILDS_ON,
+  RELATIONSHIP_TYPE.INFLUENCES,
+  RELATIONSHIP_TYPE.REQUIRES,
+  RELATIONSHIP_TYPE.DEPENDS_ON,
+] as const;
+
+export type RelationshipType = (typeof RELATIONSHIP_TYPES)[number];

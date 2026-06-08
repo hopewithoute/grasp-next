@@ -1,12 +1,12 @@
-import { z } from 'zod';
 import { conceptDifficultyDto } from '../concepts';
+import { requiredString, uuidString, v } from '../validation';
 
-export const updateKnowledgebaseConceptDto = z.object({
-  artifactId: z.uuid(),
-  conceptId: z.string().trim().min(1),
-  definition: z.string().trim().min(1).max(2000),
+export const updateKnowledgebaseConceptDto = v.object({
+  artifactId: uuidString,
+  conceptId: requiredString,
+  definition: v.pipe(requiredString, v.maxLength(2000)),
   difficulty: conceptDifficultyDto,
-  name: z.string().trim().min(1).max(160),
+  name: v.pipe(requiredString, v.maxLength(160)),
 });
 
-export type UpdateKnowledgebaseConceptInput = z.infer<typeof updateKnowledgebaseConceptDto>;
+export type UpdateKnowledgebaseConceptInput = v.InferOutput<typeof updateKnowledgebaseConceptDto>;

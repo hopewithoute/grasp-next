@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { applyGraphProposals, type GraphProposalAction } from './apply-graph-proposals.action';
 import type { KnowledgebaseRepository } from '../knowledgebase/knowledgebase.types';
+import { applyGraphProposals, type GraphProposalAction } from './apply-graph-proposals.action';
 
 type MockCall = { method: string; args: unknown[] };
 
@@ -102,10 +102,7 @@ describe('applyGraphProposals', () => {
       },
     ];
 
-    await applyGraphProposals(
-      { projectId: 'p1', actions },
-      { knowledgebaseRepository: repo }
-    );
+    await applyGraphProposals({ projectId: 'p1', actions }, { knowledgebaseRepository: repo });
 
     expect(repo.calls[0]?.method).toBe('tombstoneConcept');
   });
@@ -123,10 +120,7 @@ describe('applyGraphProposals', () => {
       },
     ];
 
-    await applyGraphProposals(
-      { projectId: 'p1', actions },
-      { knowledgebaseRepository: repo }
-    );
+    await applyGraphProposals({ projectId: 'p1', actions }, { knowledgebaseRepository: repo });
 
     expect(repo.calls[0]?.method).toBe('addRelationship');
   });
@@ -144,10 +138,7 @@ describe('applyGraphProposals', () => {
       },
     ];
 
-    await applyGraphProposals(
-      { projectId: 'p1', actions },
-      { knowledgebaseRepository: repo }
-    );
+    await applyGraphProposals({ projectId: 'p1', actions }, { knowledgebaseRepository: repo });
 
     expect(repo.calls[0]?.method).toBe('addConceptEvidence');
   });
@@ -167,10 +158,7 @@ describe('applyGraphProposals', () => {
       },
     ];
 
-    await applyGraphProposals(
-      { projectId: 'p1', actions },
-      { knowledgebaseRepository: repo }
-    );
+    await applyGraphProposals({ projectId: 'p1', actions }, { knowledgebaseRepository: repo });
 
     const snapshotCall = repo.calls.find((c) => c.method === 'createSnapshot');
     expect(snapshotCall).toBeTruthy();
@@ -178,15 +166,11 @@ describe('applyGraphProposals', () => {
 
   it('throws on unknown action type', async () => {
     const repo = createMockRepository();
-    const actions: GraphProposalAction[] = [
-      { type: 'unknown_action', payload: {} },
-    ];
+    const actions: GraphProposalAction[] = [{ type: 'unknown_action', payload: {} }];
 
     await expect(() =>
-        applyGraphProposals(
-          { projectId: 'p1', actions },
-          { knowledgebaseRepository: repo }
-        )).rejects.toThrow('Unknown action type: unknown_action');
+      applyGraphProposals({ projectId: 'p1', actions }, { knowledgebaseRepository: repo })
+    ).rejects.toThrow('Unknown action type: unknown_action');
   });
 
   it('handles multiple actions in sequence', async () => {

@@ -1,5 +1,5 @@
 import { AUDIT_ACTION, AUDIT_ENTITY_TYPE } from '../constants';
-import { updateProjectDetailsDto, type UpdateProjectDetailsDto } from './project.dto';
+import { type UpdateProjectDetailsDto } from './project.dto';
 import { ProjectForbiddenError, ProjectNotFoundError } from './project.errors';
 import { canEditOwnedProject, type Actor } from './project.policy';
 import type { AuditLogRepository, ProjectRecord, ProjectRepository } from './project.types';
@@ -14,8 +14,7 @@ export async function updateProjectDetails(
   deps: UpdateProjectDetailsDeps,
   actor: Actor
 ): Promise<ProjectRecord> {
-  const dto = updateProjectDetailsDto.parse(input);
-  const existingProject = await deps.projectRepository.findById(dto.projectId);
+  const existingProject = await deps.projectRepository.findById(input.projectId);
 
   if (!existingProject) {
     throw new ProjectNotFoundError();
@@ -25,9 +24,9 @@ export async function updateProjectDetails(
     throw new ProjectForbiddenError();
   }
 
-  const project = await deps.projectRepository.updateDetailsForOwner(dto.projectId, actor.id, {
-    description: dto.description ?? null,
-    title: dto.title,
+  const project = await deps.projectRepository.updateDetailsForOwner(input.projectId, actor.id, {
+    description: input.description ?? null,
+    title: input.title,
   });
 
   if (!project) {

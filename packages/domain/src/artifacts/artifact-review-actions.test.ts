@@ -1,14 +1,15 @@
 import { beforeEach, describe, expect, it } from 'vitest';
+import type { KnowledgebaseArtifactContentDto, KnowledgebaseRepository } from '../knowledgebase';
+import type {
+  AuditLogRepository,
+  ProjectRecord,
+  ProjectRepository,
+} from '../projects/project.types';
 import {
   approveArtifact,
   ArtifactApprovalForbiddenError,
   ArtifactApprovalInvalidStateError,
 } from './approve-artifact.action';
-import { requestConceptRevision } from './request-concept-revision.action';
-import { updateKnowledgebaseConcept } from './update-knowledgebase-concept.action';
-import { updateKnowledgebaseConceptEvidence } from './update-knowledgebase-concept-evidence.action';
-import { updateKnowledgebaseRelationship } from './update-knowledgebase-relationship.action';
-import { updateKnowledgebaseRelationshipEvidence } from './update-knowledgebase-relationship-evidence.action';
 import type {
   ArtifactRecord,
   ArtifactRepository,
@@ -16,13 +17,11 @@ import type {
   ArtifactReviewRunRepository,
   ArtifactVersionRecord,
 } from './artifact.types';
-import type {
-  AuditLogRepository,
-  ProjectRecord,
-  ProjectRepository,
-  ProjectStatus,
-} from '../projects/project.types';
-import type { KnowledgebaseArtifactContentDto, KnowledgebaseRepository } from '../knowledgebase';
+import { requestConceptRevision } from './request-concept-revision.action';
+import { updateKnowledgebaseConceptEvidence } from './update-knowledgebase-concept-evidence.action';
+import { updateKnowledgebaseConcept } from './update-knowledgebase-concept.action';
+import { updateKnowledgebaseRelationshipEvidence } from './update-knowledgebase-relationship-evidence.action';
+import { updateKnowledgebaseRelationship } from './update-knowledgebase-relationship.action';
 
 const actor = { id: 'owner-1' };
 
@@ -56,20 +55,24 @@ describe('approveArtifact', () => {
   });
 
   it('rejects actors that do not own the artifact project', async () => {
-    await expect(approveArtifact({ artifactId: state.artifact.id }, createDeps(state), { id: 'other-user' })).rejects.toThrow(ArtifactApprovalForbiddenError);
+    await expect(
+      approveArtifact({ artifactId: state.artifact.id }, createDeps(state), { id: 'other-user' })
+    ).rejects.toThrow(ArtifactApprovalForbiddenError);
 
     expect(state.resumeCalls.length).toBe(0);
     expect(state.artifact.status).toBe('generated');
   });
 
   it('marks the review run failed when workflow resume does not complete', async () => {
-    await expect(approveArtifact(
+    await expect(
+      approveArtifact(
         { artifactId: state.artifact.id },
         createDeps(state, {
           reviewStatus: 'failed',
         }),
         actor
-      )).rejects.toThrow(ArtifactApprovalInvalidStateError);
+      )
+    ).rejects.toThrow(ArtifactApprovalInvalidStateError);
 
     expect(state.reviewRun.status).toBe('failed');
     expect(state.artifact.status).toBe('generated');
@@ -98,20 +101,24 @@ describe('requestConceptRevision', () => {
     expect(state.project.status).toBe('reviewing');
     expect(state.auditLogs.length).toBe(1);
     expect(state.auditLogs[0]?.action).toBe('artifact.revision_requested');
-    expect(state.auditLogs[0]?.metadata?.revisionFeedback).toBe('Split atom and molecule concepts more clearly.');
+    expect(state.auditLogs[0]?.metadata?.revisionFeedback).toBe(
+      'Split atom and molecule concepts more clearly.'
+    );
   });
 
   it('rejects approval-state artifacts that cannot be revised', async () => {
     state.artifact.status = 'approved';
 
-    await expect(requestConceptRevision(
+    await expect(
+      requestConceptRevision(
         {
           artifactId: state.artifact.id,
           revisionFeedback: 'Try again.',
         },
         createDeps(state),
         actor
-      )).rejects.toThrow(ArtifactApprovalInvalidStateError);
+      )
+    ).rejects.toThrow(ArtifactApprovalInvalidStateError);
 
     expect(state.reviewRun.status).toBe('suspended');
   });
@@ -119,14 +126,16 @@ describe('requestConceptRevision', () => {
   it('requires a suspended review run before requesting re-extraction', async () => {
     state.reviewRun.status = 'completed';
 
-    await expect(requestConceptRevision(
+    await expect(
+      requestConceptRevision(
         {
           artifactId: state.artifact.id,
           revisionFeedback: 'Try again.',
         },
         createDeps(state),
         actor
-      )).rejects.toThrow(ArtifactApprovalInvalidStateError);
+      )
+    ).rejects.toThrow(ArtifactApprovalInvalidStateError);
 
     expect(state.artifact.status).toBe('generated');
   });
@@ -176,7 +185,8 @@ describe('updateKnowledgebaseConcept', () => {
   it('rejects approved artifacts', async () => {
     state.artifact.status = 'approved';
 
-    await expect(updateKnowledgebaseConcept(
+    await expect(
+      updateKnowledgebaseConcept(
         {
           artifactId: state.artifact.id,
           conceptId: 'atom',
@@ -186,7 +196,8 @@ describe('updateKnowledgebaseConcept', () => {
         },
         createDeps(state),
         actor
-      )).rejects.toThrow(ArtifactApprovalInvalidStateError);
+      )
+    ).rejects.toThrow(ArtifactApprovalInvalidStateError);
 
     expect(state.versions.length).toBe(1);
   });
@@ -233,7 +244,8 @@ describe('updateKnowledgebaseRelationship', () => {
   });
 
   it('rejects self-referential relationship patches', async () => {
-    await expect(updateKnowledgebaseRelationship(
+    await expect(
+      updateKnowledgebaseRelationship(
         {
           artifactId: state.artifact.id,
           relationshipId: 'rel-atom-molecule',
@@ -243,7 +255,8 @@ describe('updateKnowledgebaseRelationship', () => {
         },
         createDeps(state),
         actor
-      )).rejects.toThrow(ArtifactApprovalInvalidStateError);
+      )
+    ).rejects.toThrow(ArtifactApprovalInvalidStateError);
 
     expect(state.versions.length).toBe(1);
   });
@@ -300,7 +313,7 @@ describe('updateKnowledgebaseConceptEvidence', () => {
       sourceId: 'source-1',
       text: 'Atoms can join into molecules.',
     });
-    content.knowledgebase.concepts[0]!.sourceRefs = [
+    content.knowledgebase.concepts[0].sourceRefs = [
       {
         blockId: 'source-1:block-0001',
         locationLabel: 'Chemistry source / Block 1',
@@ -334,12 +347,15 @@ describe('updateKnowledgebaseConceptEvidence', () => {
     );
 
     const nextContent = state.versions[1]?.content as KnowledgebaseArtifactContentDto;
-    expect(nextContent.knowledgebase.concepts[0]?.sourceRefs[0]?.quote).toBe('Atoms are the basic units of matter.');
+    expect(nextContent.knowledgebase.concepts[0]?.sourceRefs[0]?.quote).toBe(
+      'Atoms are the basic units of matter.'
+    );
     expect(nextContent.knowledgebase.concepts[0]?.sourceRefs[1]?.quote).toBe('join into molecules');
   });
 
   it('rejects evidence quotes that are not exact source block substrings', async () => {
-    await expect(updateKnowledgebaseConceptEvidence(
+    await expect(
+      updateKnowledgebaseConceptEvidence(
         {
           artifactId: state.artifact.id,
           blockId: 'source-1:block-0001',
@@ -353,7 +369,8 @@ describe('updateKnowledgebaseConceptEvidence', () => {
         },
         createDeps(state),
         actor
-      )).rejects.toThrow(ArtifactApprovalInvalidStateError);
+      )
+    ).rejects.toThrow(ArtifactApprovalInvalidStateError);
 
     expect(state.versions.length).toBe(1);
   });
@@ -392,7 +409,9 @@ describe('updateKnowledgebaseRelationshipEvidence', () => {
     expect(state.versions.length).toBe(2);
 
     const content = state.versions[1]?.content as KnowledgebaseArtifactContentDto;
-    expect(content.knowledgebase.relationships[0]?.sourceRefs[0]?.quote).toBe('Atoms are the basic units');
+    expect(content.knowledgebase.relationships[0]?.sourceRefs[0]?.quote).toBe(
+      'Atoms are the basic units'
+    );
     expect(state.auditLogs[0]?.action).toBe('artifact.knowledgebase_relationship_evidence.updated');
   });
 
@@ -406,7 +425,7 @@ describe('updateKnowledgebaseRelationshipEvidence', () => {
       sourceId: 'source-1',
       text: 'Atoms combine before molecules emerge.',
     });
-    content.knowledgebase.relationships[0]!.sourceRefs = [
+    content.knowledgebase.relationships[0].sourceRefs = [
       {
         blockId: 'source-1:block-0001',
         locationLabel: 'Chemistry source / Block 1',
@@ -440,12 +459,17 @@ describe('updateKnowledgebaseRelationshipEvidence', () => {
     );
 
     const nextContent = state.versions[1]?.content as KnowledgebaseArtifactContentDto;
-    expect(nextContent.knowledgebase.relationships[0]?.sourceRefs[0]?.quote).toBe('Atoms are the basic units of matter.');
-    expect(nextContent.knowledgebase.relationships[0]?.sourceRefs[1]?.quote).toBe('combine before molecules');
+    expect(nextContent.knowledgebase.relationships[0]?.sourceRefs[0]?.quote).toBe(
+      'Atoms are the basic units of matter.'
+    );
+    expect(nextContent.knowledgebase.relationships[0]?.sourceRefs[1]?.quote).toBe(
+      'combine before molecules'
+    );
   });
 
   it('rejects relationship evidence quotes that are not exact source block substrings', async () => {
-    await expect(updateKnowledgebaseRelationshipEvidence(
+    await expect(
+      updateKnowledgebaseRelationshipEvidence(
         {
           artifactId: state.artifact.id,
           blockId: 'source-1:block-0001',
@@ -459,7 +483,8 @@ describe('updateKnowledgebaseRelationshipEvidence', () => {
         },
         createDeps(state),
         actor
-      )).rejects.toThrow(ArtifactApprovalInvalidStateError);
+      )
+    ).rejects.toThrow(ArtifactApprovalInvalidStateError);
 
     expect(state.versions.length).toBe(1);
   });
@@ -798,7 +823,7 @@ function createProjectRepository(state: TestState): ProjectRepository {
 
       state.project = {
         ...state.project,
-        status: status as ProjectStatus,
+        status: status,
       };
 
       return state.project;

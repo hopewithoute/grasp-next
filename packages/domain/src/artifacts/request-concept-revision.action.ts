@@ -1,4 +1,3 @@
-import { canEditOwnedProject, type Actor } from '../projects/project.policy';
 import {
   ARTIFACT_REVIEW_RUN_STATUS,
   ARTIFACT_STATUS,
@@ -6,22 +5,20 @@ import {
   AUDIT_ACTION,
   AUDIT_ENTITY_TYPE,
 } from '../constants';
+import { canEditOwnedProject, type Actor } from '../projects/project.policy';
 import type { AuditLogRepository, ProjectRepository } from '../projects/project.types';
-import type {
-  ArtifactRecord,
-  ArtifactRepository,
-  ArtifactReviewRunRepository,
-} from './artifact.types';
 import {
   ArtifactApprovalForbiddenError,
   ArtifactApprovalInvalidStateError,
   ArtifactApprovalReviewRunNotFoundError,
   ArtifactNotFoundError,
 } from './approve-artifact.action';
-import {
-  requestConceptRevisionDto,
-  type RequestConceptRevisionInput,
-} from './request-concept-revision.dto';
+import type {
+  ArtifactRecord,
+  ArtifactRepository,
+  ArtifactReviewRunRepository,
+} from './artifact.types';
+import { type RequestConceptRevisionInput } from './request-concept-revision.dto';
 
 export type RequestConceptRevisionDeps = {
   artifactRepository: ArtifactRepository;
@@ -35,8 +32,7 @@ export async function requestConceptRevision(
   deps: RequestConceptRevisionDeps,
   actor: Actor
 ): Promise<ArtifactRecord> {
-  const dto = requestConceptRevisionDto.parse(input);
-  const artifact = await deps.artifactRepository.findById(dto.artifactId);
+  const artifact = await deps.artifactRepository.findById(input.artifactId);
 
   if (!artifact) {
     throw new ArtifactNotFoundError();
@@ -103,7 +99,7 @@ export async function requestConceptRevision(
     metadata: {
       artifactVersionId: artifact.currentVersionId,
       reviewRunId: reviewRun.id,
-      revisionFeedback: dto.revisionFeedback,
+      revisionFeedback: input.revisionFeedback,
       workflowId: reviewRun.workflowId,
       workflowRunId: reviewRun.workflowRunId,
     },

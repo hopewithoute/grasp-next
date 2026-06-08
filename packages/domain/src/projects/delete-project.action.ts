@@ -1,5 +1,5 @@
 import { AUDIT_ACTION, AUDIT_ENTITY_TYPE, PROJECT_STATUS } from '../constants';
-import { deleteProjectDto, type DeleteProjectDto } from './project.dto';
+import { type DeleteProjectDto } from './project.dto';
 import { ProjectForbiddenError, ProjectNotFoundError } from './project.errors';
 import { canEditOwnedProject, type Actor } from './project.policy';
 import type { AuditLogRepository, ProjectRecord, ProjectRepository } from './project.types';
@@ -21,8 +21,7 @@ export async function deleteProject(
   deps: DeleteProjectDeps,
   actor: Actor
 ): Promise<ProjectRecord> {
-  const dto = deleteProjectDto.parse(input);
-  const existingProject = await deps.projectRepository.findById(dto.projectId);
+  const existingProject = await deps.projectRepository.findById(input.projectId);
 
   if (!existingProject) {
     throw new ProjectNotFoundError();
@@ -47,7 +46,7 @@ export async function deleteProject(
     },
   });
 
-  const deletedProject = await deps.projectRepository.deleteForOwner(dto.projectId, actor.id);
+  const deletedProject = await deps.projectRepository.deleteForOwner(input.projectId, actor.id);
 
   if (!deletedProject) {
     throw new ProjectForbiddenError();

@@ -1,4 +1,3 @@
-import { z } from 'zod';
 import type { ConceptDifficultyDto } from '../concepts/concept.dto';
 import type {
   IngestionRunRecord,
@@ -6,15 +5,13 @@ import type {
   KnowledgebaseRepository,
 } from '../knowledgebase';
 import type { ProjectSourceRecord, ProjectSourceRepository } from '../project-sources';
-import type { ProjectRecord, ProjectRepository } from './project.types';
 import { ProjectNotFoundError } from './project.errors';
+import type { ProjectRecord, ProjectRepository } from './project.types';
 
-export const loadProjectDetailDto = z.object({
-  projectId: z.uuid(),
-  ownerId: z.string().trim().min(1),
-});
-
-export type LoadProjectDetailInput = z.infer<typeof loadProjectDetailDto>;
+export type LoadProjectDetailInput = {
+  projectId: string;
+  ownerId: string;
+};
 
 export type LoadProjectDetailDeps = {
   ingestionRunRepository?: IngestionRunRepository;
@@ -60,9 +57,7 @@ export async function loadProjectDetail(
   input: LoadProjectDetailInput,
   deps: LoadProjectDetailDeps
 ): Promise<LoadProjectDetailResult> {
-  const dto = loadProjectDetailDto.parse(input);
-
-  const project = await deps.projectRepository.findByIdForOwner(dto.projectId, dto.ownerId);
+  const project = await deps.projectRepository.findByIdForOwner(input.projectId, input.ownerId);
 
   if (!project) {
     throw new ProjectNotFoundError();

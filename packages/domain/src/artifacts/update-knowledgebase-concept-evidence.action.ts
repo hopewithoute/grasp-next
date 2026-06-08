@@ -1,4 +1,3 @@
-import { canEditOwnedProject, type Actor } from '../projects/project.policy';
 import { ARTIFACT_STATUS, ARTIFACT_TYPE, AUDIT_ACTION, AUDIT_ENTITY_TYPE } from '../constants';
 import {
   knowledgebaseArtifactContentDto,
@@ -6,17 +5,16 @@ import {
   type KnowledgebaseArtifactContentDto,
 } from '../knowledgebase';
 import type { KnowledgebaseRepository } from '../knowledgebase';
-import type { ArtifactRecord, ArtifactRepository } from './artifact.types';
+import { canEditOwnedProject, type Actor } from '../projects/project.policy';
 import type { AuditLogRepository, ProjectRepository } from '../projects/project.types';
+import { parse } from '../validation';
 import {
   ArtifactApprovalForbiddenError,
   ArtifactApprovalInvalidStateError,
   ArtifactNotFoundError,
 } from './approve-artifact.action';
-import {
-  updateKnowledgebaseConceptEvidenceDto,
-  type UpdateKnowledgebaseConceptEvidenceInput,
-} from './update-knowledgebase-concept-evidence.dto';
+import type { ArtifactRecord, ArtifactRepository } from './artifact.types';
+import { type UpdateKnowledgebaseConceptEvidenceInput } from './update-knowledgebase-concept-evidence.dto';
 
 export type UpdateKnowledgebaseConceptEvidenceDeps = {
   artifactRepository: ArtifactRepository;
@@ -30,8 +28,7 @@ export async function updateKnowledgebaseConceptEvidence(
   deps: UpdateKnowledgebaseConceptEvidenceDeps,
   actor: Actor
 ): Promise<ArtifactRecord> {
-  const dto = updateKnowledgebaseConceptEvidenceDto.parse(input);
-  const artifact = await deps.artifactRepository.findById(dto.artifactId);
+  const artifact = await deps.artifactRepository.findById(input.artifactId);
 
   if (!artifact) {
     throw new ArtifactNotFoundError();
@@ -63,23 +60,23 @@ export async function updateKnowledgebaseConceptEvidence(
   }
 
   const currentVersion = await findCurrentVersion(deps.artifactRepository, artifact);
-  const currentContent = knowledgebaseArtifactContentDto.parse(currentVersion.content);
+  const currentContent = parse(knowledgebaseArtifactContentDto, currentVersion.content);
   const nextContent = patchKnowledgebaseConceptEvidence(currentContent, {
-    blockId: dto.blockId,
-    conceptId: dto.conceptId,
-    locationLabel: dto.locationLabel,
-    originalBlockId: dto.originalBlockId,
-    originalQuote: dto.originalQuote,
-    originalSourceId: dto.originalSourceId,
-    quote: dto.quote,
-    sourceId: dto.sourceId,
+    blockId: input.blockId,
+    conceptId: input.conceptId,
+    locationLabel: input.locationLabel,
+    originalBlockId: input.originalBlockId,
+    originalQuote: input.originalQuote,
+    originalSourceId: input.originalSourceId,
+    quote: input.quote,
+    sourceId: input.sourceId,
   });
 
   const nextVersion = await deps.artifactRepository.createVersion({
     artifactId: artifact.id,
     content: nextContent,
     extractionMode: currentVersion.extractionMode,
-    revisionFeedback: `Manual knowledgebase evidence update: ${dto.conceptId}`,
+    revisionFeedback: `Manual knowledgebase evidence update: ${input.conceptId}`,
   });
 
   await deps.knowledgebaseRepository.replaceVersionFromContent({
@@ -102,13 +99,13 @@ export async function updateKnowledgebaseConceptEvidence(
     entityType: AUDIT_ENTITY_TYPE.ARTIFACT,
     entityId: updatedArtifact.id,
     metadata: {
-      blockId: dto.blockId,
-      conceptId: dto.conceptId,
+      blockId: input.blockId,
+      conceptId: input.conceptId,
       nextArtifactVersionId: nextVersion.id,
-      originalBlockId: dto.originalBlockId,
-      originalSourceId: dto.originalSourceId,
+      originalBlockId: input.originalBlockId,
+      originalSourceId: input.originalSourceId,
       previousArtifactVersionId: currentVersion.id,
-      sourceId: dto.sourceId,
+      sourceId: input.sourceId,
     },
   });
 
@@ -191,11 +188,11 @@ function patchKnowledgebaseConceptEvidence(
     throw new ArtifactApprovalInvalidStateError('Knowledgebase concept was not found.');
   }
 
-  return knowledgebaseArtifactContentDto.parse({
+  return {
     ...content,
     graphProjection: projectKnowledgebaseGraph(knowledgebase),
     knowledgebase,
-  });
+  };
 }
 
 function isSameSourceRef(
