@@ -5,16 +5,20 @@
   "scripts": {
     "build": "turbo build",
     "dev": "turbo dev",
-    "lint": "turbo lint",
+    "lint": "pnpm validate:validation-libs && turbo lint",
     "test": "node --env-file=.env node_modules/vitest/vitest.mjs run",
     "typecheck": "turbo typecheck",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
-    "doctor": "npx react-doctor@latest"
+    "doctor": "npx react-doctor@latest",
+    "validate:validation-libs": "node scripts/check-validation-libs.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",
+    "@ianvs/prettier-plugin-sort-imports": "^4.7.1",
     "@typescript/native-preview": "7.0.0-dev.20260527.2",
+    "eslint-plugin-unused-imports": "^4.4.1",
     "prettier": "^3.8.3",
+    "prettier-plugin-tailwindcss": "^0.8.0",
     "react-doctor": "^0.2.14",
     "turbo": "^2.9.16",
     "typescript": "^5.9.3",
