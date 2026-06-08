@@ -5,11 +5,12 @@ Use `next/image` for automatic image optimization.
 ## Always Use next/image
 
 ```tsx
+// Good: Use next/image
+import Image from 'next/image';
+
 // Bad: Avoid native img
 <img src="/hero.png" alt="Hero" />;
 
-// Good: Use next/image
-import Image from 'next/image';
 <Image src="/hero.png" alt="Hero" width={800} height={400} />;
 ```
 

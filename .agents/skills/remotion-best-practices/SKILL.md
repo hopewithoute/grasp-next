@@ -24,7 +24,7 @@ Replace `my-video` with a suitable project name.
 Animate properties using `useCurrentFrame()` and `interpolate()`. Use Easing to customize the timing of the animation.
 
 ```tsx
-import { useCurrentFrame, Easing } from 'remotion';
+import { Easing, useCurrentFrame } from 'remotion';
 
 export const FadeIn = () => {
   const frame = useCurrentFrame();
@@ -155,7 +155,7 @@ export const RemotionRoot = () => {
 Metadata can also be calculated dynamically:
 
 ```tsx
-import { Composition, CalculateMetadataFunction } from 'remotion';
+import { CalculateMetadataFunction, Composition } from 'remotion';
 import { MyComposition, MyCompositionProps } from './MyComposition';
 
 const calculateMetadata: CalculateMetadataFunction<MyCompositionProps> = async ({

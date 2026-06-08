@@ -16,12 +16,13 @@ In development, click the hydration error to see the server/client diff.
 ### Browser-only APIs
 
 ```tsx
+import { useEffect, useState } from 'react';
+
 // Bad: Causes mismatch - window doesn't exist on server
 <div>{window.innerWidth}</div>;
 
 // Good: Use client component with mounted check
 ('use client');
-import { useState, useEffect } from 'react';
 
 export function ClientOnly({ children }: { children: React.ReactNode }) {
   const [mounted, setMounted] = useState(false);

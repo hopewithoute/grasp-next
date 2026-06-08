@@ -53,11 +53,11 @@ Reference: https://nextjs.org/docs/app/api-reference/functions
 Use `next/link` for internal navigation instead of `<a>` tags.
 
 ```tsx
-// Bad: Plain anchor tag
-<a href="/about">About</a>;
-
 // Good: Next.js Link
 import Link from 'next/link';
+
+// Bad: Plain anchor tag
+<a href="/about">About</a>;
 
 <Link href="/about">About</Link>;
 ```

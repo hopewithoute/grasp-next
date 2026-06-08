@@ -82,7 +82,7 @@ export const RemotionRoot = () => {
 Use `calculateMetadata` to make dimensions, duration, or props dynamic based on data.
 
 ```tsx
-import { Composition, CalculateMetadataFunction } from 'remotion';
+import { CalculateMetadataFunction, Composition } from 'remotion';
 import { MyComposition, MyCompositionProps } from './MyComposition';
 
 const calculateMetadata: CalculateMetadataFunction<MyCompositionProps> = async ({

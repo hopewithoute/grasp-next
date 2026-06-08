@@ -133,7 +133,7 @@ async function action() {
 ## Redirects
 
 ```tsx
-import { redirect, permanentRedirect } from 'next/navigation';
+import { permanentRedirect, redirect } from 'next/navigation';
 
 // 307 Temporary - use for most cases
 redirect('/new-path');

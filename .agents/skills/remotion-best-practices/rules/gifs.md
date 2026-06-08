@@ -102,7 +102,7 @@ This is useful for setting the composition duration to match the GIF:
 
 ```tsx
 import { getGifDurationInSeconds } from '@remotion/gif';
-import { staticFile, CalculateMetadataFunction } from 'remotion';
+import { CalculateMetadataFunction, staticFile } from 'remotion';
 
 const calculateMetadata: CalculateMetadataFunction = async () => {
   const duration = await getGifDurationInSeconds(staticFile('animation.gif'));

@@ -252,6 +252,7 @@ function ClientComponent({ initialData }) {
 
 ```tsx
 'use client';
+
 import { useEffect, useState } from 'react';
 
 function ClientComponent() {
@@ -274,8 +275,9 @@ Server Actions can be called from Client Components for reads, but this is not t
 
 ```tsx
 'use client';
-import { getData } from './actions';
+
 import { useEffect, useState } from 'react';
+import { getData } from './actions';
 
 function ClientComponent() {
   const [data, setData] = useState(null);

@@ -7,11 +7,11 @@ Loading third-party scripts in Next.js.
 Always use `next/script` instead of native `<script>` tags for better performance.
 
 ```tsx
-// Bad: Native script tag
-<script src="https://example.com/script.js"></script>;
-
 // Good: Next.js Script component
 import Script from 'next/script';
+
+// Bad: Native script tag
+<script src="https://example.com/script.js"></script>;
 
 <Script src="https://example.com/script.js" />;
 ```
@@ -116,12 +116,10 @@ export default function Layout({ children }) {
 
 ```tsx
 // YouTube embed
-import { YouTubeEmbed } from '@next/third-parties/google';
+// Google Maps
+import { GoogleMapsEmbed, YouTubeEmbed } from '@next/third-parties/google';
 
 <YouTubeEmbed videoid="dQw4w9WgXcQ" />;
-
-// Google Maps
-import { GoogleMapsEmbed } from '@next/third-parties/google';
 
 <GoogleMapsEmbed apiKey="YOUR_API_KEY" mode="place" q="Brooklyn+Bridge,New+York,NY" />;
 ```

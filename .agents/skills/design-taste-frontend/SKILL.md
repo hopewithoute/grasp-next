@@ -393,7 +393,8 @@ These are tools, not defaults. Use them when the design read calls for them. **N
 
 ```tsx
 'use client';
-import { useRef, useEffect } from 'react';
+
+import { useEffect, useRef } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useReducedMotion } from 'motion/react';
@@ -439,7 +440,7 @@ export function StickyStack({ cards }: { cards: React.ReactNode[] }) {
       {cards.map((card, i) => (
         <div
           key={i}
-          className="stack-card sticky top-0 min-h-[100dvh] flex items-center justify-center"
+          className="stack-card sticky top-0 flex min-h-[100dvh] items-center justify-center"
         >
           {card}
         </div>
@@ -455,7 +456,8 @@ Critical points: `start: "top top"`, `pin: true`, every card except the last is 
 
 ```tsx
 'use client';
-import { useRef, useEffect } from 'react';
+
+import { useEffect, useRef } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useReducedMotion } from 'motion/react';
@@ -505,6 +507,7 @@ For simple "items appear as they enter viewport" (no pinning), prefer Motion's `
 
 ```tsx
 'use client';
+
 import { motion, useReducedMotion } from 'motion/react';
 
 export function RevealStagger({ items }: { items: string[] }) {

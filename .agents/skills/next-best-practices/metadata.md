@@ -207,9 +207,9 @@ export default async function Image({ params }: Props) {
 ## Custom Fonts
 
 ```tsx
-import { ImageResponse } from 'next/og';
-import { join } from 'path';
 import { readFile } from 'fs/promises';
+import { join } from 'path';
+import { ImageResponse } from 'next/og';
 
 export default async function Image() {
   const fontPath = join(process.cwd(), 'assets/fonts/Inter-Bold.ttf');

@@ -40,6 +40,7 @@ Requires Suspense boundary when route has dynamic parameters.
 // In dynamic route [slug]
 // Bad: No Suspense
 'use client';
+
 import { usePathname } from 'next/navigation';
 
 export function Breadcrumb() {

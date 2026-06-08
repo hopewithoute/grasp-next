@@ -21,14 +21,14 @@ If the package is only needed on client:
 
 ```tsx
 // Bad: Fails - package uses window
+
+// Good: Use dynamic import with ssr: false
+import dynamic from 'next/dynamic';
 import SomeChart from 'some-chart-library';
 
 export default function Page() {
   return <SomeChart />;
 }
-
-// Good: Use dynamic import with ssr: false
-import dynamic from 'next/dynamic';
 
 const SomeChart = dynamic(() => import('some-chart-library'), {
   ssr: false,
@@ -65,13 +65,12 @@ Wrap the entire usage in a client component:
 'use client';
 
 import { Chart } from 'chart-library';
+// app/page.tsx (server component)
+import { ChartWrapper } from '@/components/ChartWrapper';
 
 export function ChartWrapper(props) {
   return <Chart {...props} />;
 }
-
-// app/page.tsx (server component)
-import { ChartWrapper } from '@/components/ChartWrapper';
 
 export default function Page() {
   return <ChartWrapper data={data} />;
@@ -83,14 +82,13 @@ export default function Page() {
 Import CSS files instead of using `<link>` tags. Next.js handles bundling and optimization.
 
 ```tsx
-// Bad: Manual link tag
-<link rel="stylesheet" href="/styles.css" />;
-
 // Good: Import CSS
 import './styles.css';
-
 // Good: CSS Modules
 import styles from './Button.module.css';
+
+// Bad: Manual link tag
+<link rel="stylesheet" href="/styles.css" />;
 ```
 
 ## Polyfills

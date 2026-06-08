@@ -25,9 +25,9 @@ npx remotion add @remotion/captions
 First, fetch your captions JSON file. Use [`useDelayRender()`](https://www.remotion.dev/docs/use-delay-render) to hold the render until the captions are loaded:
 
 ```tsx
-import { useState, useEffect, useCallback } from 'react';
-import { AbsoluteFill, staticFile, useDelayRender } from 'remotion';
+import { useCallback, useEffect, useState } from 'react';
 import type { Caption } from '@remotion/captions';
+import { AbsoluteFill, staticFile, useDelayRender } from 'remotion';
 
 export const MyComponent: React.FC = () => {
   const [captions, setCaptions] = useState<Caption[] | null>(null);
@@ -85,8 +85,8 @@ const { pages } = useMemo(() => {
 Map over the pages and render each one in a `<Sequence>`. Calculate the start frame and duration from the page timing:
 
 ```tsx
-import { Sequence, useVideoConfig, AbsoluteFill } from 'remotion';
 import type { TikTokPage } from '@remotion/captions';
+import { AbsoluteFill, Sequence, useVideoConfig } from 'remotion';
 
 const CaptionedContent: React.FC = () => {
   const { fps } = useVideoConfig();
@@ -131,8 +131,8 @@ Make a new file for it.
 A caption page contains `tokens` which you can use to highlight the currently spoken word:
 
 ```tsx
-import { AbsoluteFill, useCurrentFrame, useVideoConfig } from 'remotion';
 import type { TikTokPage } from '@remotion/captions';
+import { AbsoluteFill, useCurrentFrame, useVideoConfig } from 'remotion';
 
 const HIGHLIGHT_COLOR = '#39E508';
 

@@ -129,12 +129,14 @@ Functions marked with `'use server'` CAN be passed to client components.
 // Valid: Server Action can be passed
 // actions.ts
 'use server';
+
+// page.tsx (server)
+import { submitForm } from './actions';
+
 export async function submitForm(formData: FormData) {
   // server-side logic
 }
 
-// page.tsx (server)
-import { submitForm } from './actions';
 export default function Page() {
   return <ClientForm onSubmit={submitForm} />; // OK!
 }
