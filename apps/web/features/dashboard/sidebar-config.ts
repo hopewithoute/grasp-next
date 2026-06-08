@@ -1,5 +1,5 @@
-import { FolderKanban } from 'lucide-react';
 import { cva } from 'class-variance-authority';
+import { FolderKanban } from 'lucide-react';
 
 export type NavItem = {
   href: string;

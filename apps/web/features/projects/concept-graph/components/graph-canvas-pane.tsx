@@ -1,41 +1,31 @@
 'use client';
 
-import { useCallback, memo, type MouseEvent } from 'react';
+import { memo, useCallback, type MouseEvent } from 'react';
+import { Background, MiniMap, ReactFlow, type Node } from '@xyflow/react';
 import { useTheme } from 'next-themes';
-import { usePendingProposals } from '../hooks/use-pending-proposals-context';
-import {
-  Background,
-  MiniMap,
-  ReactFlow,
-  type Node,
-} from '@xyflow/react';
-import {
-  type ConceptRow,
-  type RelationshipRow,
-  type ConceptNodeData,
-} from '../types';
-import { PaneHeader, DifficultyChip, ConfidencePill } from './shared-components';
-import { useClientHydrated } from '../hooks/use-concept-graph-state';
-import { useEvidenceLoader } from '../hooks/use-evidence-loader';
-import { useDecoratedGraph } from '../hooks/use-decorated-graph';
-import { nodeTypes } from './node-types';
-import { FlowToolbar } from './flow-toolbar';
-import { GraphListFallback, GraphCanvasEmpty } from './graph-list-fallback';
-import {
-  ConceptDetailStrip,
-  GraphCanvasSkeleton,
-  RelationshipsStrip,
-  EvidenceSkeleton,
-  EvidenceStack,
-} from './evidence-dialog-components';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
 } from '@/components/ui/dialog';
-
+import { useClientHydrated } from '../hooks/use-concept-graph-state';
+import { useDecoratedGraph } from '../hooks/use-decorated-graph';
+import { useEvidenceLoader } from '../hooks/use-evidence-loader';
+import { usePendingProposals } from '../hooks/use-pending-proposals-context';
+import { type ConceptNodeData, type ConceptRow, type RelationshipRow } from '../types';
+import {
+  ConceptDetailStrip,
+  EvidenceSkeleton,
+  EvidenceStack,
+  GraphCanvasSkeleton,
+  RelationshipsStrip,
+} from './evidence-dialog-components';
+import { FlowToolbar } from './flow-toolbar';
+import { GraphCanvasEmpty, GraphListFallback } from './graph-list-fallback';
+import { nodeTypes } from './node-types';
+import { ConfidencePill, DifficultyChip, PaneHeader } from './shared-components';
 
 const FIT_VIEW_OPTIONS = { padding: 0.22 };
 const PRO_OPTIONS = { hideAttribution: true };
@@ -90,17 +80,17 @@ export const GraphCanvasPane = memo(function GraphCanvasPane({
   return (
     <section
       aria-label="Concept graph canvas"
-      className="flex flex-1 min-h-[520px] flex-col border-b border-border bg-background lg:min-h-0 lg:border-b-0 lg:border-r"
+      className="border-border bg-background flex min-h-[520px] flex-1 flex-col border-b lg:min-h-0 lg:border-r lg:border-b-0"
     >
       <PaneHeader eyebrow="Concept graph" meta={null} title="Interactive Canvas" />
 
       {isRunning || proposalCount > 0 ? (
-        <div className="hairline-shimmer mx-4 mb-3 flex items-center gap-3 rounded-full border border-brand-accent-border bg-brand-accent-surface px-3.5 py-1.5">
-          <span aria-hidden className="size-1.5 rounded-full bg-brand-accent pulse-soft" />
-          <span className="font-mono text-[0.62rem] tabular-nums tracking-[0.16em] uppercase text-brand-accent-foreground">
+        <div className="hairline-shimmer border-brand-accent-border bg-brand-accent-surface mx-4 mb-3 flex items-center gap-3 rounded-full border px-3.5 py-1.5">
+          <span aria-hidden className="bg-brand-accent pulse-soft size-1.5 rounded-full" />
+          <span className="text-brand-accent-foreground font-mono text-[0.62rem] tracking-[0.16em] uppercase tabular-nums">
             {isRunning ? 'Streaming' : 'Buffered'}
           </span>
-          <span className="text-xs text-muted-foreground">
+          <span className="text-muted-foreground text-xs">
             {proposalCount === 0
               ? 'agent is reading source'
               : `${proposalCount} concept${proposalCount === 1 ? '' : 's'} proposed`}
@@ -119,26 +109,26 @@ export const GraphCanvasPane = memo(function GraphCanvasPane({
                     if (!open) closeEvidenceDialog();
                   }}
                 >
-                  <DialogContent className="w-[95vw] max-w-2xl sm:max-w-4xl md:max-w-5xl lg:max-w-[1200px] max-h-[85vh] overflow-hidden !p-0 gap-0 border-white/10 shadow-[inset_0_1px_0_rgba(255,255,255,0.1),0_20px_40px_-15px_rgba(0,0,0,0.3)] bg-card/95 backdrop-blur-xl">
-                    <div className="flex flex-col md:flex-row h-full max-h-[85vh]">
+                  <DialogContent className="bg-card/95 max-h-[85vh] w-[95vw] max-w-2xl gap-0 overflow-hidden border-white/10 !p-0 shadow-[inset_0_1px_0_rgba(255,255,255,0.1),0_20px_40px_-15px_rgba(0,0,0,0.3)] backdrop-blur-xl sm:max-w-4xl md:max-w-5xl lg:max-w-[1200px]">
+                    <div className="flex h-full max-h-[85vh] flex-col md:flex-row">
                       {/* Left Side: Context / Asymmetric layout */}
-                      <div className="w-full md:w-1/3 border-b md:border-b-0 md:border-r border-border/40 p-8 md:p-10 flex flex-col bg-muted/20 h-auto md:h-full md:overflow-y-auto">
-                        <DialogHeader className="text-left space-y-4">
+                      <div className="border-border/40 bg-muted/20 flex h-auto w-full flex-col border-b p-8 md:h-full md:w-1/3 md:overflow-y-auto md:border-r md:border-b-0 md:p-10">
+                        <DialogHeader className="space-y-4 text-left">
                           <div className="space-y-2">
-                            <span className="font-mono text-[0.65rem] tracking-[0.2em] uppercase text-muted-foreground">
+                            <span className="text-muted-foreground font-mono text-[0.65rem] tracking-[0.2em] uppercase">
                               Concept Analysis
                             </span>
-                            <DialogTitle className="text-2xl md:text-3xl tracking-tight leading-none text-foreground">
+                            <DialogTitle className="text-foreground text-2xl leading-none tracking-tight md:text-3xl">
                               {modalConcept.name}
                             </DialogTitle>
                           </div>
-                          <DialogDescription className="text-sm leading-relaxed text-foreground/60 mt-4">
+                          <DialogDescription className="text-foreground/60 mt-4 text-sm leading-relaxed">
                             {modalConcept.definition}
                           </DialogDescription>
                         </DialogHeader>
 
-                        <div className="mt-8 pt-8 border-t border-border/40">
-                          <span className="block mb-4 font-mono text-[0.65rem] tracking-[0.2em] uppercase text-muted-foreground">
+                        <div className="border-border/40 mt-8 border-t pt-8">
+                          <span className="text-muted-foreground mb-4 block font-mono text-[0.65rem] tracking-[0.2em] uppercase">
                             Connections
                           </span>
                           <RelationshipsStrip
@@ -149,23 +139,20 @@ export const GraphCanvasPane = memo(function GraphCanvasPane({
                           />
                         </div>
 
-                        <div className="mt-10 flex flex-wrap gap-3 mt-auto pt-8">
+                        <div className="mt-10 mt-auto flex flex-wrap gap-3 pt-8">
                           <DifficultyChip difficulty={modalConcept.difficulty} />
                           <ConfidencePill confidence={modalConcept.confidence} />
                         </div>
                       </div>
 
                       {/* Right Side: Evidence List */}
-                      <div className="w-full md:w-2/3 p-8 md:p-10 h-auto md:h-full md:overflow-y-auto">
+                      <div className="h-auto w-full p-8 md:h-full md:w-2/3 md:overflow-y-auto md:p-10">
                         {isLoadingEvidence ? (
                           <EvidenceSkeleton />
                         ) : evidenceData.length > 0 ? (
-                          <EvidenceStack
-                            evidence={evidenceData}
-                            totalCount={evidenceData.length}
-                          />
+                          <EvidenceStack evidence={evidenceData} totalCount={evidenceData.length} />
                         ) : (
-                          <div className="py-8 text-sm leading-relaxed text-muted-foreground/60 border-t border-border/50">
+                          <div className="text-muted-foreground/60 border-border/50 border-t py-8 text-sm leading-relaxed">
                             No source evidence attached.
                           </div>
                         )}

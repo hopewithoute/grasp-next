@@ -1,12 +1,12 @@
 'use client';
 
-import { useId, useRef, useEffect, useState, useCallback } from 'react';
-import { type ConceptRow, type RelationshipRow, type DifficultyFilter } from '../types';
-import { PaneHeader, DifficultyChip, ConfidencePill } from './shared-components';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { BrainCircuit, ListFilter, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useDebounce } from '../hooks/use-concept-graph-state';
 import { searchKnowledgebaseConceptsAction } from '../../actions';
+import { useDebounce } from '../hooks/use-concept-graph-state';
+import { type ConceptRow, type DifficultyFilter, type RelationshipRow } from '../types';
+import { ConfidencePill, DifficultyChip, PaneHeader } from './shared-components';
 
 const DIFFICULTY_FILTER_ORDER: DifficultyFilter[] = ['all', 'beginner', 'intermediate', 'advanced'];
 
@@ -49,7 +49,7 @@ export function ConceptDataGridPane({
         const result = await searchKnowledgebaseConceptsAction({
           projectId,
           query,
-          difficulty: difficulty === 'all' ? undefined : (difficulty as ConceptRow['difficulty']),
+          difficulty: difficulty === 'all' ? undefined : (difficulty),
           offset,
           limit: 20, // using 20 for grid view instead of 5
         });
@@ -122,20 +122,24 @@ export function ConceptDataGridPane({
   return (
     <section
       aria-label="Concept data grid"
-      className="flex flex-1 min-h-[520px] flex-col border-b border-border bg-background lg:min-h-0 lg:border-b-0 lg:border-r"
+      className="border-border bg-background flex min-h-[520px] flex-1 flex-col border-b lg:min-h-0 lg:border-r lg:border-b-0"
     >
-      <PaneHeader eyebrow="Concept data grid" meta={`${filteredConcepts.length} Concepts`} title="Inventory Grid" />
+      <PaneHeader
+        eyebrow="Concept data grid"
+        meta={`${filteredConcepts.length} Concepts`}
+        title="Inventory Grid"
+      />
 
       {/* Filter and Search Bar */}
-      <div className="space-y-3 border-b border-border px-6 py-4">
+      <div className="border-border space-y-3 border-b px-6 py-4">
         <label className="sr-only" htmlFor={searchInputId}>
           Search concepts
         </label>
-        <div className="flex h-9 items-center gap-2 rounded-full border border-border bg-card/50 px-3 transition-colors focus-within:border-brand-accent-border focus-within:bg-card/50">
-          <Search className="size-3.5 shrink-0 text-muted-foreground" strokeWidth={1.5} />
+        <div className="border-border bg-card/50 focus-within:border-brand-accent-border focus-within:bg-card/50 flex h-9 items-center gap-2 rounded-full border px-3 transition-colors">
+          <Search className="text-muted-foreground size-3.5 shrink-0" strokeWidth={1.5} />
           <input
             aria-label="Input field"
-            className="flex-1 border-0 bg-transparent text-sm leading-5 text-foreground outline-none placeholder:text-muted-foreground"
+            className="text-foreground placeholder:text-muted-foreground flex-1 border-0 bg-transparent text-sm leading-5 outline-none"
             id={searchInputId}
             onChange={(event) => setSearchQuery(event.target.value)}
             placeholder="Search concept or definition"
@@ -162,7 +166,7 @@ export function ConceptDataGridPane({
               {value === 'all' ? (
                 <ListFilter className="size-3" strokeWidth={1.5} />
               ) : (
-                <span aria-hidden className="size-1.5 rounded-full bg-brand-accent" />
+                <span aria-hidden className="bg-brand-accent size-1.5 rounded-full" />
               )}
               {DIFFICULTY_FILTER_LABEL[value]}
             </button>
@@ -171,17 +175,17 @@ export function ConceptDataGridPane({
       </div>
 
       <div className="flex-1 overflow-auto p-6 pt-4">
-        <div className="rounded-xl border border-border bg-card overflow-hidden">
-          <table className="w-full text-sm text-left relative">
-            <thead className="bg-muted/50 text-muted-foreground border-b border-border sticky top-0 z-10 shadow-sm">
+        <div className="border-border bg-card overflow-hidden rounded-xl border">
+          <table className="relative w-full text-left text-sm">
+            <thead className="bg-muted/50 text-muted-foreground border-border sticky top-0 z-10 border-b shadow-sm">
               <tr>
                 <th className="px-4 py-3 font-medium">Concept</th>
                 <th className="px-4 py-3 font-medium">Definition</th>
-                <th className="px-4 py-3 font-medium w-24">Difficulty</th>
-                <th className="px-4 py-3 font-medium w-24">Confidence</th>
+                <th className="w-24 px-4 py-3 font-medium">Difficulty</th>
+                <th className="w-24 px-4 py-3 font-medium">Confidence</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-border">
+            <tbody className="divide-border divide-y">
               {filteredConcepts.map((concept) => {
                 const isSelected = selectedConceptId === concept.id;
                 return (
@@ -189,22 +193,30 @@ export function ConceptDataGridPane({
                     key={concept.id}
                     onClick={() => onSelectConcept(concept.id)}
                     className={cn(
-                      "group transition-colors cursor-pointer hover:bg-muted/30",
-                      isSelected && "bg-brand-accent/5"
+                      'group hover:bg-muted/30 cursor-pointer transition-colors',
+                      isSelected && 'bg-brand-accent/5'
                     )}
                   >
                     <td className="px-4 py-4 align-top">
                       <div className="flex items-start gap-2">
-                        <BrainCircuit className={cn("mt-0.5 size-4 shrink-0", isSelected ? "text-brand-accent" : "text-muted-foreground")} />
-                        <span className={cn("font-medium", isSelected ? "text-foreground" : "text-foreground/80")}>
+                        <BrainCircuit
+                          className={cn(
+                            'mt-0.5 size-4 shrink-0',
+                            isSelected ? 'text-brand-accent' : 'text-muted-foreground'
+                          )}
+                        />
+                        <span
+                          className={cn(
+                            'font-medium',
+                            isSelected ? 'text-foreground' : 'text-foreground/80'
+                          )}
+                        >
                           {concept.name}
                         </span>
                       </div>
                     </td>
-                    <td className="px-4 py-4 align-top text-muted-foreground">
-                      <p className="line-clamp-2 leading-relaxed">
-                        {concept.definition}
-                      </p>
+                    <td className="text-muted-foreground px-4 py-4 align-top">
+                      <p className="line-clamp-2 leading-relaxed">{concept.definition}</p>
                     </td>
                     <td className="px-4 py-4 align-top">
                       <DifficultyChip difficulty={concept.difficulty} />
@@ -217,7 +229,7 @@ export function ConceptDataGridPane({
               })}
               {filteredConcepts.length === 0 && !isLoadingMore && (
                 <tr>
-                  <td colSpan={4} className="px-4 py-8 text-center text-muted-foreground">
+                  <td colSpan={4} className="text-muted-foreground px-4 py-8 text-center">
                     No concepts found in the current project matching your filters.
                   </td>
                 </tr>
@@ -227,7 +239,7 @@ export function ConceptDataGridPane({
                 <td colSpan={4} className="p-0">
                   <div ref={loadMoreRef} className="flex h-16 items-center justify-center">
                     {isLoadingMore ? (
-                      <span className="font-mono text-xs text-muted-foreground">Loading…</span>
+                      <span className="text-muted-foreground font-mono text-xs">Loading…</span>
                     ) : null}
                   </div>
                 </td>

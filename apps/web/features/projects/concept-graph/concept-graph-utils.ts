@@ -1,6 +1,6 @@
-import dagre from 'dagre';
 import { MarkerType, type Edge, type Node } from '@xyflow/react';
-import type { ConceptRow, RelationshipRow, ConceptNodeData, SourceEvidence } from './types';
+import dagre from 'dagre';
+import type { ConceptNodeData, ConceptRow, RelationshipRow, SourceEvidence } from './types';
 
 const NODE_WIDTH = 224;
 const NODE_HEIGHT = 88;

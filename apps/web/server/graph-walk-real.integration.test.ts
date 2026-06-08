@@ -1,21 +1,21 @@
 import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
-import { describe, expect, it, vi } from 'vitest';
-
-vi.mock('server-only', () => ({}));
-import { serverEnv } from './env';
 import { fileURLToPath } from 'node:url';
-
+import { describe, expect, it, vi } from 'vitest';
+import { embedText } from '@grasp/ai/embeddings';
 import {
   createDbClient,
+  createIngestionRunRepository,
   createKnowledgebaseRepository,
   createProjectRepository,
   createProjectSourceRepository,
   eq,
   schema,
 } from '@grasp/db';
-import { embedText } from '@grasp/ai/embeddings';
+import { serverEnv } from './env';
+
+vi.mock('server-only', () => ({}));
 
 const DOCS_DIR = resolve(dirname(fileURLToPath(import.meta.url)), '../../../docs/example');
 const sourceA = readFileSync(resolve(DOCS_DIR, 'source-a-economics-basics.md'), 'utf-8');
@@ -28,13 +28,9 @@ const debugRealTest = (...args: unknown[]) => {
 };
 
 const hasDatabase = Boolean(serverEnv.DATABASE_URL);
-const hasLlm = Boolean(
-  serverEnv.OPENAI_API_KEY || serverEnv.ANTHROPIC_API_KEY
-);
+const hasLlm = Boolean(serverEnv.OPENAI_API_KEY || serverEnv.ANTHROPIC_API_KEY);
 const hasEmbedding = Boolean(
-  serverEnv.GOOGLE_GENERATIVE_AI_API_KEY ||
-  serverEnv.GEMINI_API_KEY ||
-  serverEnv.OPENAI_API_KEY
+  serverEnv.GOOGLE_GENERATIVE_AI_API_KEY || serverEnv.GEMINI_API_KEY || serverEnv.OPENAI_API_KEY
 );
 const databaseUrl = serverEnv.DATABASE_URL
   ? normalizeLocalDatabaseUrl(serverEnv.DATABASE_URL)
@@ -62,6 +58,7 @@ describeIfReal('real ingestion graph walking', { timeout: 240_000 }, () => {
 
       const db = createDbClient(databaseUrl);
       knowledgebaseRepository = createKnowledgebaseRepository(db);
+      const ingestionRunRepository = createIngestionRunRepository(db);
       const projectRepository = createProjectRepository(db);
       const projectSourceRepository = createProjectSourceRepository(db);
       const ownerId = `graph-walk-real-test-${randomUUID()}`;
@@ -106,14 +103,21 @@ describeIfReal('real ingestion graph walking', { timeout: 240_000 }, () => {
         expect(sourceThree).toBeTruthy();
 
         debugRealTest('ingest source 1 start');
-        await ingestSource(project.id, sourceOne!.id, 'Economics Basics', sourceA);
+        await ingestSource(
+          project.id,
+          sourceOne!.id,
+          'Economics Basics',
+          sourceA,
+          ingestionRunRepository
+        );
         debugRealTest('ingest source 1 done');
         debugRealTest('ingest source 2 start');
         const sourceTwoRetrieval = await ingestSource(
           project.id,
           sourceTwo!.id,
           'Elasticity',
-          sourceB
+          sourceB,
+          ingestionRunRepository
         );
         debugRealTest('ingest source 2 done', sourceTwoRetrieval);
         expect(sourceTwoRetrieval.conceptSearchCalls > 0).toBeTruthy();
@@ -123,7 +127,8 @@ describeIfReal('real ingestion graph walking', { timeout: 240_000 }, () => {
           project.id,
           sourceThree!.id,
           'Total Revenue',
-          sourceC
+          sourceC,
+          ingestionRunRepository
         );
         debugRealTest('ingest source 3 done', sourceThreeRetrieval);
         expect(sourceThreeRetrieval.conceptSearchCalls > 0).toBeTruthy();
@@ -133,14 +138,17 @@ describeIfReal('real ingestion graph walking', { timeout: 240_000 }, () => {
         expect(graph).toBeTruthy();
         expect(graph!.concepts.length >= 4).toBeTruthy();
         expect(graph!.relationships.length >= 1).toBeTruthy();
-        
+
         // In a real LLM test, the exact relationship types and directions can vary.
         // We verify that the concepts from the sources were extracted and SOME relationships exist.
-        const hasElasticity = graph!.concepts.some(c => c.id.includes('elasticity'));
-        const hasSupplyDemand = graph!.concepts.some(c => c.id.includes('supply_and_demand') || c.id.includes('supply') || c.id.includes('demand'));
+        const hasElasticity = graph!.concepts.some((c) => c.id.includes('elasticity'));
+        const hasSupplyDemand = graph!.concepts.some(
+          (c) =>
+            c.id.includes('supply_and_demand') || c.id.includes('supply') || c.id.includes('demand')
+        );
         expect(hasElasticity).toBeTruthy();
         expect(hasSupplyDemand).toBeTruthy();
-        
+
         for (const relationship of graph!.relationships) {
           expect(relationship.evidenceCount).toBeGreaterThanOrEqual(0);
         }
@@ -155,7 +163,7 @@ describeIfReal('real ingestion graph walking', { timeout: 240_000 }, () => {
         expect(semanticMatches.length > 0).toBeTruthy();
         expect(typeof semanticMatches[0]?.distance).toBe('number');
 
-        const elasticityConcept = graph!.concepts.find(c => c.id.includes('elasticity'));
+        const elasticityConcept = graph!.concepts.find((c) => c.id.includes('elasticity'));
         const context = await knowledgebaseRepository.getConceptContext({
           conceptKey: elasticityConcept?.id ?? 'elasticity',
           projectId: project.id,
@@ -190,18 +198,21 @@ describeIfReal('real ingestion graph walking', { timeout: 240_000 }, () => {
     projectId: string,
     sourceId: string,
     sourceTitle: string,
-    content: string
+    content: string,
+    ingestionRunRepository: ReturnType<typeof createIngestionRunRepository>
   ): Promise<{ conceptContextCalls: number; conceptSearchCalls: number }> {
     debugRealTest(sourceTitle, 'start ingestion workflow');
-    
+
     // Create a wrapper for knowledgebaseRepository to track retrieval calls
-    const originalSearch = knowledgebaseRepository.searchConceptsForIngestion.bind(knowledgebaseRepository);
-    const originalGetContext = knowledgebaseRepository.getConceptContext.bind(knowledgebaseRepository);
-    
+    const originalSearch =
+      knowledgebaseRepository.searchConceptsForIngestion.bind(knowledgebaseRepository);
+    const originalGetContext =
+      knowledgebaseRepository.getConceptContext.bind(knowledgebaseRepository);
+
     let searchCalls = 0;
     let contextCalls = 0;
-    
-    const trackingRepo = {
+
+    const trackingRepo: typeof knowledgebaseRepository = {
       ...knowledgebaseRepository,
       searchConceptsForIngestion: async (input: Parameters<typeof originalSearch>[0]) => {
         searchCalls++;
@@ -210,8 +221,8 @@ describeIfReal('real ingestion graph walking', { timeout: 240_000 }, () => {
       getConceptContext: async (input: Parameters<typeof originalGetContext>[0]) => {
         contextCalls++;
         return originalGetContext(input);
-      }
-    } as unknown;
+      },
+    };
 
     const { runSourceIngestion } = await import('./source-ingestion-runner');
 
@@ -224,8 +235,9 @@ describeIfReal('real ingestion graph walking', { timeout: 240_000 }, () => {
         sourceType: 'markdown',
       },
       {
+        ingestionRunRepository,
         knowledgebaseRepository: trackingRepo,
-      } as unknown
+      }
     );
 
     return {

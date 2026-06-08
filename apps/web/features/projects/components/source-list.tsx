@@ -10,21 +10,26 @@ type SourceListProps = {
   sources: ProjectSourceItem[];
 };
 
-export function SourceList({ onSelectSource, onAddNew, selectedSourceId, sources }: SourceListProps) {
+export function SourceList({
+  onSelectSource,
+  onAddNew,
+  selectedSourceId,
+  sources,
+}: SourceListProps) {
   return (
-    <aside className="flex min-w-0 flex-col gap-3 overflow-hidden h-full">
+    <aside className="flex h-full min-w-0 flex-col gap-3 overflow-hidden">
       <div className="flex shrink-0 items-center justify-between gap-3">
-        <span className="font-mono text-[0.65rem] tabular-nums tracking-[0.18em] uppercase text-muted-foreground">
+        <span className="text-muted-foreground font-mono text-[0.65rem] tracking-[0.18em] uppercase tabular-nums">
           Sources
         </span>
-        <span className="font-mono text-[0.65rem] tabular-nums tracking-[0.16em] uppercase text-muted-foreground">
+        <span className="text-muted-foreground font-mono text-[0.65rem] tracking-[0.16em] uppercase tabular-nums">
           {sources.length} total
         </span>
       </div>
 
       <button
         aria-label="Button"
-        className="flex w-full shrink-0 items-center justify-center gap-2 rounded-[1.1rem] border border-dashed border-brand-accent-border/30 bg-brand-accent/[0.04] px-3 py-2.5 text-xs font-medium text-brand-accent-foreground transition hover:border-brand-accent-border hover:bg-brand-accent/[0.08]"
+        className="border-brand-accent-border/30 bg-brand-accent/[0.04] text-brand-accent-foreground hover:border-brand-accent-border hover:bg-brand-accent/[0.08] flex w-full shrink-0 items-center justify-center gap-2 rounded-[1.1rem] border border-dashed px-3 py-2.5 text-xs font-medium transition"
         onClick={onAddNew}
         type="button"
       >
@@ -45,23 +50,23 @@ export function SourceList({ onSelectSource, onAddNew, selectedSourceId, sources
                     className={`w-full rounded-[1.1rem] border px-4 py-3 text-left transition ${
                       selectedSourceId === source.id
                         ? 'border-brand-accent-border bg-brand-accent-surface'
-                        : 'border-border bg-white/[0.035] hover:bg-muted/50'
+                        : 'border-border hover:bg-muted/50 bg-white/[0.035]'
                     }`}
                     onClick={() => onSelectSource(source.id)}
                     type="button"
                   >
                     <span className="mb-2 flex items-center justify-between gap-2">
-                      <span className="truncate text-sm font-medium text-foreground">
+                      <span className="text-foreground truncate text-sm font-medium">
                         {source.title}
                       </span>
-                      <span className="font-mono text-[0.6rem] text-muted-foreground">
+                      <span className="text-muted-foreground font-mono text-[0.6rem]">
                         {String(index + 1).padStart(2, '0')}
                       </span>
                     </span>
-                    <span className="line-clamp-2 text-xs leading-5 text-muted-foreground">
+                    <span className="text-muted-foreground line-clamp-2 text-xs leading-5">
                       {getSourcePreview(source.content)}
                     </span>
-                    <span className="mt-3 flex items-center justify-between font-mono text-[0.6rem] tracking-[0.14em] text-foreground/38 uppercase">
+                    <span className="text-foreground/38 mt-3 flex items-center justify-between font-mono text-[0.6rem] tracking-[0.14em] uppercase">
                       <span>{source.type}</span>
                       <span>{counts.words} words</span>
                     </span>
@@ -71,7 +76,7 @@ export function SourceList({ onSelectSource, onAddNew, selectedSourceId, sources
             })}
           </ul>
         ) : (
-          <div className="rounded-[1.1rem] border border-dashed border-border bg-card/50 px-4 py-5 text-sm leading-6 text-muted-foreground">
+          <div className="border-border bg-card/50 text-muted-foreground rounded-[1.1rem] border border-dashed px-4 py-5 text-sm leading-6">
             No sources yet. Add markdown or pasted text above.
           </div>
         )}

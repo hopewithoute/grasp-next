@@ -1,14 +1,18 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Activity, Loader2 } from 'lucide-react';
-import { consumeUIMessageChunks } from '@/lib/ui-message-stream';
-import { CollapsedPaneRail, PaneHeader } from './shared-components';
-import { ProjectSourcesPanel } from '../../components/source-material-form';
-import { IngestionActivityPanel, type FeedItem, type IngestionStreamEvent } from '../../components/ingestion-activity-panel';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
 import type { ProjectSourceRecord } from '@grasp/domain';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { consumeUIMessageChunks } from '@/lib/ui-message-stream';
+import {
+  IngestionActivityPanel,
+  type FeedItem,
+  type IngestionStreamEvent,
+} from '../../components/ingestion-activity-panel';
+import { ProjectSourcesPanel } from '../../components/source-material-form';
+import { CollapsedPaneRail, PaneHeader } from './shared-components';
 
 type LibraryPaneProps = {
   projectId: string;
@@ -17,12 +21,7 @@ type LibraryPaneProps = {
   sources: ProjectSourceRecord[];
 };
 
-export function LibraryPane({
-  projectId,
-  collapsed,
-  onCollapseToggle,
-  sources,
-}: LibraryPaneProps) {
+export function LibraryPane({ projectId, collapsed, onCollapseToggle, sources }: LibraryPaneProps) {
   const router = useRouter();
   const [isActivityOpen, setIsActivityOpen] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
@@ -88,7 +87,7 @@ export function LibraryPane({
   return (
     <aside
       aria-label="Library"
-      className="flex min-h-[520px] flex-col border-b border-border bg-card lg:min-h-0 lg:border-b-0 lg:border-r"
+      className="border-border bg-card flex min-h-[520px] flex-col border-b lg:min-h-0 lg:border-r lg:border-b-0"
     >
       <PaneHeader
         eyebrow="Sources"
@@ -98,10 +97,10 @@ export function LibraryPane({
             <button
               type="button"
               onClick={() => setIsActivityOpen(true)}
-              className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card/50 px-2.5 py-1 font-mono text-[0.6rem] tracking-[0.16em] uppercase text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+              className="border-border bg-card/50 text-foreground hover:bg-accent hover:text-accent-foreground inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-mono text-[0.6rem] tracking-[0.16em] uppercase transition-colors"
             >
               {isRunning ? (
-                <Loader2 className="size-3 animate-spin text-brand-accent" />
+                <Loader2 className="text-brand-accent size-3 animate-spin" />
               ) : (
                 <Activity className="size-3" />
               )}
@@ -125,12 +124,8 @@ export function LibraryPane({
       </div>
 
       <Dialog open={isActivityOpen} onOpenChange={setIsActivityOpen}>
-        <DialogContent className="sm:max-w-[500px] h-[500px] p-0 overflow-hidden bg-background flex flex-col">
-          <IngestionActivityPanel
-            projectId={projectId}
-            feed={feed}
-            isRunning={isRunning}
-          />
+        <DialogContent className="bg-background flex h-[500px] flex-col overflow-hidden p-0 sm:max-w-[500px]">
+          <IngestionActivityPanel projectId={projectId} feed={feed} isRunning={isRunning} />
         </DialogContent>
       </Dialog>
     </aside>

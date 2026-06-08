@@ -8,14 +8,13 @@ import {
 import { getActor } from '@/server/actor';
 import { createProjectDeps } from '@/server/project-deps';
 import { ConceptGraphWorkspace } from '../concept-graph/components/concept-graph-workspace';
-
+import type { ConceptRow, RelationshipRow } from '../concept-graph/types';
 import { buildStageHref, resolveStage } from '../stages';
 import { ProjectHeader } from './project-header';
-import { ProjectSettings } from './project-settings';
 import { ProjectPipelineStatus } from './project-pipeline-status';
-import { PlannedStagePanel } from './project-stage-panels';
+import { ProjectSettings } from './project-settings';
 import { Eyebrow } from './project-shared';
-import type { ConceptRow, RelationshipRow } from '../concept-graph/types';
+import { PlannedStagePanel } from './project-stage-panels';
 
 type ProjectDetailPageProps = {
   currentStage?: string;
@@ -66,7 +65,7 @@ export async function ProjectDetailPage({ currentStage, projectId }: ProjectDeta
   const ingestionStatus = getIngestionStatus(detail.latestIngestionRun);
 
   return (
-    <section className="flex w-full flex-col gap-10 text-foreground">
+    <section className="text-foreground flex w-full flex-col gap-10">
       {stage === 'overview' ? (
         <>
           <ProjectHeader
@@ -83,15 +82,15 @@ export async function ProjectDetailPage({ currentStage, projectId }: ProjectDeta
       ) : null}
 
       {detail.project.status === PROJECT_STATUS.FAILED && sourceReady ? (
-        <section className="rounded-[1.5rem] border border-status-danger-border bg-status-danger-surface p-5">
+        <section className="border-status-danger-border bg-status-danger-surface rounded-[1.5rem] border p-5">
           <div className="space-y-1">
-            <p className="font-mono text-[0.65rem] tabular-nums tracking-[0.18em] uppercase text-status-danger-foreground">
+            <p className="text-status-danger-foreground font-mono text-[0.65rem] tracking-[0.18em] uppercase tabular-nums">
               Pipeline failure
             </p>
-            <h2 className="text-lg font-medium text-status-danger-foreground">
+            <h2 className="text-status-danger-foreground text-lg font-medium">
               Last graph build failed
             </h2>
-            <p className="text-sm leading-7 text-status-danger-foreground/82">
+            <p className="text-status-danger-foreground/82 text-sm leading-7">
               The source material is still saved. Start a new graph run from the workspace below
               after fixing provider or database errors.
             </p>
@@ -104,15 +103,15 @@ export async function ProjectDetailPage({ currentStage, projectId }: ProjectDeta
           <header className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
             <div className="space-y-3">
               <Eyebrow>Overview</Eyebrow>
-              <h2 className="max-w-[28ch] text-balance text-3xl leading-[1.05] font-medium tracking-[-0.03em] text-foreground md:text-4xl">
+              <h2 className="text-foreground max-w-[28ch] text-3xl leading-[1.05] font-medium tracking-[-0.03em] text-balance md:text-4xl">
                 Project status and pipeline progress.
               </h2>
-              <p className="max-w-[60ch] text-pretty text-sm leading-relaxed text-muted-foreground">
+              <p className="text-muted-foreground max-w-[60ch] text-sm leading-relaxed text-pretty">
                 Monitor the end-to-end knowledge base generation pipeline.
               </p>
             </div>
-            <span className="inline-flex items-center gap-2 self-start rounded-full border border-border bg-card/50 px-3 py-1.5 font-mono text-[0.65rem] tracking-[0.18em] uppercase text-muted-foreground">
-              <span className="size-1.5 rounded-full bg-brand-accent pulse-soft" />
+            <span className="border-border bg-card/50 text-muted-foreground inline-flex items-center gap-2 self-start rounded-full border px-3 py-1.5 font-mono text-[0.65rem] tracking-[0.18em] uppercase">
+              <span className="bg-brand-accent pulse-soft size-1.5 rounded-full" />
               Stage 01 / Overview
             </span>
           </header>
@@ -132,15 +131,16 @@ export async function ProjectDetailPage({ currentStage, projectId }: ProjectDeta
           <header className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
             <div className="space-y-3">
               <Eyebrow>Unified workspace</Eyebrow>
-              <h2 className="max-w-[28ch] text-balance text-2xl leading-[1.05] font-medium tracking-[-0.03em] text-foreground md:text-3xl">
+              <h2 className="text-foreground max-w-[28ch] text-2xl leading-[1.05] font-medium tracking-[-0.03em] text-balance md:text-3xl">
                 Ingest sources and refine the concept graph.
               </h2>
-              <p className="max-w-[60ch] text-pretty text-sm leading-relaxed text-muted-foreground">
-                Manage your documents on the left. The AI will extract concepts and propose them on the canvas for your approval.
+              <p className="text-muted-foreground max-w-[60ch] text-sm leading-relaxed text-pretty">
+                Manage your documents on the left. The AI will extract concepts and propose them on
+                the canvas for your approval.
               </p>
             </div>
-            <span className="inline-flex items-center gap-2 self-start rounded-full border border-border bg-card/50 px-3 py-1.5 font-mono text-[0.65rem] tracking-[0.18em] uppercase text-muted-foreground">
-              <span className="size-1.5 rounded-full bg-brand-accent pulse-soft" />
+            <span className="border-border bg-card/50 text-muted-foreground inline-flex items-center gap-2 self-start rounded-full border px-3 py-1.5 font-mono text-[0.65rem] tracking-[0.18em] uppercase">
+              <span className="bg-brand-accent pulse-soft size-1.5 rounded-full" />
               Stage 02 / Workspace
             </span>
           </header>
@@ -156,7 +156,9 @@ export async function ProjectDetailPage({ currentStage, projectId }: ProjectDeta
       {stage === 'lesson' ? (
         <PlannedStagePanel
           blockers={[
-            graphReady ? 'Concept graph is ready for downstream generation.' : 'Generate the concept graph before lesson generation opens.',
+            graphReady
+              ? 'Concept graph is ready for downstream generation.'
+              : 'Generate the concept graph before lesson generation opens.',
             'Learning objectives and lesson block generation are not implemented yet.',
             'Per-block revision and version history UI still belong to the next slice.',
           ]}
@@ -170,7 +172,9 @@ export async function ProjectDetailPage({ currentStage, projectId }: ProjectDeta
       {stage === 'publish' ? (
         <PlannedStagePanel
           blockers={[
-            graphReady ? 'Graph is in place.' : 'Graph must be generated before publish readiness matters.',
+            graphReady
+              ? 'Graph is in place.'
+              : 'Graph must be generated before publish readiness matters.',
             'Lesson approval is not implemented yet.',
             'Learner preview and publish gate UI are still planned.',
           ]}

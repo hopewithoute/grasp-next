@@ -1,9 +1,11 @@
+import { createUIMessageStream, createUIMessageStreamResponse } from 'ai';
+import { robustStream } from '@grasp/ai/mastra';
+import { createRefinementTools, refinementAgent } from '@grasp/ai/refinement';
+import { safeParse, v } from '@grasp/domain';
 import { getActor } from '@/server/actor';
 import { createProjectDeps } from '@/server/project-deps';
 import { readMastraTextDelta } from '@/server/refinement-chat-stream';
-import { refinementAgent, createRefinementTools } from '@grasp/ai/refinement';
-import { robustStream } from '@grasp/ai/mastra';
-import { createUIMessageStream, createUIMessageStreamResponse } from 'ai';
+import { parseJsonRequest, validationErrorResponse } from '../../../../http';
 
 type MastraChunk = {
   type?: string;
@@ -16,23 +18,21 @@ type MastraChunk = {
   };
 };
 
-type ChatMessage = {
-  role: 'user' | 'assistant' | 'system';
-  content: string;
-};
+const chatMessageSchema = v.object({
+  role: v.picklist(['user', 'assistant', 'system']),
+  content: v.string(),
+});
 
-type SelectedConcept = {
-  id: string;
-  name: string;
-};
+const selectedConceptSchema = v.object({
+  id: v.string(),
+  name: v.string(),
+});
 
-
-
-type ChatRequestBody = {
-  messages: ChatMessage[];
-  selectedConcepts?: SelectedConcept[];
-  threadId?: string;
-};
+const chatRequestBodySchema = v.object({
+  messages: v.array(chatMessageSchema),
+  selectedConcepts: v.optional(v.array(selectedConceptSchema)),
+  threadId: v.optional(v.string()),
+});
 
 export async function POST(
   request: Request,
@@ -51,7 +51,19 @@ export async function POST(
     return new Response('Project not found.', { status: 404 });
   }
 
-  const { messages, selectedConcepts, threadId } = (await request.json()) as ChatRequestBody;
+  const bodyResult = await parseJsonRequest(request);
+  if (!bodyResult.ok) {
+    return bodyResult.response;
+  }
+
+  const parsed = safeParse(chatRequestBodySchema, bodyResult.value);
+  if (!parsed.success) {
+    const errorResponse = validationErrorResponse(parsed);
+    if (errorResponse) return errorResponse;
+    return new Response('Invalid request body.', { status: 400 });
+  }
+
+  const { messages, selectedConcepts, threadId } = parsed.output;
 
   if (
     selectedConcepts &&
@@ -96,7 +108,8 @@ export async function POST(
             const mastraChunk = chunk as MastraChunk;
             // Check for native Mastra tool streaming chunks
             const customType = mastraChunk.type ?? mastraChunk.payload?.output?.type;
-            const customData = mastraChunk.data ?? mastraChunk.payload?.output?.data ?? mastraChunk.payload?.output;
+            const customData =
+              mastraChunk.data ?? mastraChunk.payload?.output?.data ?? mastraChunk.payload?.output;
 
             if (customType === 'data-agent-activity') {
               if (wroteText) needsNewline = true;

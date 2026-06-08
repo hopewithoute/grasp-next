@@ -43,11 +43,11 @@ function ProjectNavigatorContent() {
     <div className="relative min-w-0">
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-y-0 left-0 w-4 bg-gradient-to-r from-background to-transparent md:hidden"
+        className="from-background pointer-events-none absolute inset-y-0 left-0 w-4 bg-gradient-to-r to-transparent md:hidden"
       />
       <nav
         aria-label="Project navigator"
-        className="flex w-full items-center gap-1 overflow-x-auto px-1 no-scrollbar md:px-2"
+        className="no-scrollbar flex w-full items-center gap-1 overflow-x-auto px-1 md:px-2"
       >
         {STAGE_ORDER.map((stage, index) => {
           const Icon = STAGE_ICONS[stage];
@@ -61,14 +61,14 @@ function ProjectNavigatorContent() {
                 'group relative inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full border px-2.5 text-[0.8rem] transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] active:scale-[0.98] md:gap-2 md:px-3.5 md:text-sm',
                 active
                   ? 'border-brand-accent-border bg-brand-accent-surface text-brand-accent-foreground shadow-sm'
-                  : 'border-transparent text-muted-foreground hover:bg-muted/50 hover:text-foreground'
+                  : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground border-transparent'
               )}
               href={buildStageHref(projectId, stage)}
               key={stage}
             >
               <span
                 className={cn(
-                  'hidden items-center gap-1.5 font-mono text-[0.65rem] tabular-nums tracking-[0.16em] uppercase md:inline-flex',
+                  'hidden items-center gap-1.5 font-mono text-[0.65rem] tracking-[0.16em] uppercase tabular-nums md:inline-flex',
                   active ? 'text-brand-accent-foreground' : 'text-muted-foreground'
                 )}
               >
@@ -94,7 +94,7 @@ function ProjectNavigatorContent() {
       </nav>
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-y-0 right-0 w-5 bg-gradient-to-l from-background to-transparent md:hidden"
+        className="from-background pointer-events-none absolute inset-y-0 right-0 w-5 bg-gradient-to-l to-transparent md:hidden"
       />
     </div>
   );

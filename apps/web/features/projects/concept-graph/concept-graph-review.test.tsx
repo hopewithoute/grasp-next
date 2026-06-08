@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { type ConceptRow, type RelationshipRow } from './types';
 import { buildConceptGraph, getEvidence, shortenBlockId } from './concept-graph-utils';
+import { type ConceptRow, type RelationshipRow } from './types';
 
 const concepts: ConceptRow[] = [
   {
@@ -64,7 +64,7 @@ describe('buildConceptGraph', () => {
   });
 
   it('omits edges whose endpoint concepts are outside the rendered graph window', () => {
-    const graph = buildConceptGraph([concepts[0]!], relationships);
+    const graph = buildConceptGraph([concepts[0]], relationships);
 
     expect(graph.nodes.length).toBe(1);
     expect(graph.edges.length).toBe(0);
@@ -126,7 +126,7 @@ describe('buildConceptGraph', () => {
   });
 
   it('handles single node with no edges', () => {
-    const graph = buildConceptGraph([concepts[0]!], []);
+    const graph = buildConceptGraph([concepts[0]], []);
     expect(graph.nodes.length).toBe(1);
     expect(graph.edges.length).toBe(0);
     expect(graph.nodes[0]?.id).toBe('c1');
@@ -135,8 +135,8 @@ describe('buildConceptGraph', () => {
   it('handles cycle in relationships', () => {
     const graph = buildConceptGraph(
       [
-        { ...concepts[0]!, id: 'a', name: 'A' },
-        { ...concepts[1]!, id: 'b', name: 'B' },
+        { ...concepts[0], id: 'a', name: 'A' },
+        { ...concepts[1], id: 'b', name: 'B' },
       ],
       [
         { id: 'r1', relationshipType: 'related_to', sourceConceptId: 'a', targetConceptId: 'b' },

@@ -16,7 +16,6 @@ export type WorkspaceEvent =
 
 export type StreamEvent = Exclude<WorkspaceEvent, { type: 'assistant_message' }>;
 
-
 export type ProposalAction = {
   type:
     | 'add_concept'

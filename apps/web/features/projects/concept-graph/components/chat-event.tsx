@@ -31,13 +31,13 @@ export const ChatEvent = memo(function ChatEvent({ event }: { event: StreamEvent
       <div className="min-w-0 flex-1 space-y-0.5">
         <p
           className={cn(
-            'font-mono text-[0.6rem] tabular-nums tracking-[0.18em] uppercase',
+            'font-mono text-[0.6rem] tracking-[0.18em] uppercase tabular-nums',
             tone.label
           )}
         >
           {tone.title}
         </p>
-        <p className="text-[0.78rem] leading-5 text-muted-foreground">{tone.copy}</p>
+        <p className="text-muted-foreground text-[0.78rem] leading-5">{tone.copy}</p>
       </div>
     </div>
   );

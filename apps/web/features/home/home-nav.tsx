@@ -7,17 +7,17 @@ export function HomeNav() {
   return (
     <nav
       aria-label="Primary"
-      className="mb-16 flex items-center justify-between rounded-full border border-border bg-card/60 px-4 py-3 backdrop-blur"
+      className="border-border bg-card/60 mb-16 flex items-center justify-between rounded-full border px-4 py-3 backdrop-blur"
     >
       <Link className="flex items-center gap-3" href="/">
-        <span className="grid size-9 place-items-center rounded-full border border-brand-accent-border bg-brand-accent-surface text-brand-accent">
-          <BrandMark className="size-5 brand-mark-spin" />
+        <span className="border-brand-accent-border bg-brand-accent-surface text-brand-accent grid size-9 place-items-center rounded-full border">
+          <BrandMark className="brand-mark-spin size-5" />
         </span>
         <span>
-          <span className="block text-sm font-medium tracking-tight text-foreground">
+          <span className="text-foreground block text-sm font-medium tracking-tight">
             Adaptive Learning Studio
           </span>
-          <span className="block font-mono text-[0.65rem] tracking-[0.16em] uppercase text-muted-foreground">
+          <span className="text-muted-foreground block font-mono text-[0.65rem] tracking-[0.16em] uppercase">
             Reviewable AI for creators
           </span>
         </span>
@@ -25,20 +25,20 @@ export function HomeNav() {
 
       <div className="flex items-center gap-3">
         <a
-          className="hidden h-10 items-center rounded-full px-4 text-sm text-muted-foreground transition-colors hover:text-foreground sm:inline-flex"
+          className="text-muted-foreground hover:text-foreground hidden h-10 items-center rounded-full px-4 text-sm transition-colors sm:inline-flex"
           href="#workflow"
         >
           How it works
         </a>
         <a
-          className="hidden h-10 items-center rounded-full px-4 text-sm text-muted-foreground transition-colors hover:text-foreground sm:inline-flex"
+          className="text-muted-foreground hover:text-foreground hidden h-10 items-center rounded-full px-4 text-sm transition-colors sm:inline-flex"
           href="#principles"
         >
           Principles
         </a>
         <ThemeToggle />
         <Link
-          className="inline-flex h-10 items-center rounded-full bg-brand-accent px-5 text-sm font-medium text-background transition-colors hover:opacity-90 active:scale-[0.98]"
+          className="bg-brand-accent text-background inline-flex h-10 items-center rounded-full px-5 text-sm font-medium transition-colors hover:opacity-90 active:scale-[0.98]"
           href="/sign-in"
         >
           Sign in

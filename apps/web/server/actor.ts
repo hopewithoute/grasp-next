@@ -1,7 +1,6 @@
 import 'server-only';
-
-import type { Actor } from '@grasp/domain';
 import { headers } from 'next/headers';
+import type { Actor } from '@grasp/domain';
 import { auth } from './auth';
 
 export type Viewer = {

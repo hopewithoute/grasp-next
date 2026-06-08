@@ -1,11 +1,7 @@
 'use client';
 
-import {
-  useEffect,
-  useRef,
-  useState,
-} from 'react';
-import { Bot, GitBranch, Loader2, Sparkles, CheckCircle2, XCircle } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { Bot, CheckCircle2, GitBranch, Loader2, Sparkles, XCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export type IngestionStreamEvent =
@@ -82,10 +78,7 @@ type IngestionActivityPanelProps = {
   isRunning: boolean;
 };
 
-export function IngestionActivityPanel({
-  feed,
-  isRunning,
-}: IngestionActivityPanelProps) {
+export function IngestionActivityPanel({ feed, isRunning }: IngestionActivityPanelProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -95,9 +88,9 @@ export function IngestionActivityPanel({
 
   return (
     <section className="flex h-full min-h-0 flex-col">
-      <header className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
+      <header className="border-border flex items-center justify-between gap-3 border-b px-4 py-3">
         <div className="space-y-1">
-          <span className="inline-flex items-center gap-2 font-mono text-[0.62rem] tabular-nums tracking-[0.18em] uppercase text-muted-foreground">
+          <span className="text-muted-foreground inline-flex items-center gap-2 font-mono text-[0.62rem] tracking-[0.18em] uppercase tabular-nums">
             <span
               aria-hidden
               className={cn(
@@ -107,20 +100,23 @@ export function IngestionActivityPanel({
             />
             Ingestion
           </span>
-          <h3 className="text-sm font-medium tracking-tight text-foreground">Activity</h3>
+          <h3 className="text-foreground text-sm font-medium tracking-tight">Activity</h3>
         </div>
         {isRunning && (
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-brand-accent-border bg-brand-accent-surface px-2.5 py-1 font-mono text-[0.6rem] tracking-[0.16em] uppercase text-brand-accent-foreground">
+          <span className="border-brand-accent-border bg-brand-accent-surface text-brand-accent-foreground inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-mono text-[0.6rem] tracking-[0.16em] uppercase">
             <Loader2 className="size-3 animate-spin" />
             processing
           </span>
         )}
       </header>
 
-      <div className="min-h-0 flex-1 overflow-y-scroll p-4 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border hover:[&::-webkit-scrollbar-thumb]:bg-muted-foreground/50" ref={scrollRef}>
+      <div
+        className="[&::-webkit-scrollbar-thumb]:bg-border hover:[&::-webkit-scrollbar-thumb]:bg-muted-foreground/50 min-h-0 flex-1 overflow-y-scroll p-4 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent"
+        ref={scrollRef}
+      >
         {feed.length === 0 && !isRunning ? (
           <div className="grid h-full place-items-center px-4">
-            <p className="text-center text-xs leading-5 text-muted-foreground">
+            <p className="text-muted-foreground text-center text-xs leading-5">
               Add or update a source to see ingestion activity here.
             </p>
           </div>
@@ -135,8 +131,8 @@ export function IngestionActivityPanel({
         )}
       </div>
 
-      <footer className="border-t border-border p-3">
-        <p className="font-mono text-[0.58rem] tracking-[0.16em] uppercase text-foreground/32">
+      <footer className="border-border border-t p-3">
+        <p className="text-foreground/32 font-mono text-[0.58rem] tracking-[0.16em] uppercase">
           Edit source content to refine the knowledge graph
         </p>
       </footer>
@@ -161,11 +157,11 @@ function FeedEvent({ event }: { event: IngestionStreamEvent }) {
     case 'agent_thinking':
       return (
         <details className="group">
-          <summary className="flex cursor-pointer items-start gap-2 rounded-lg px-2 py-1.5 text-[0.72rem] leading-5 text-muted-foreground hover:text-muted-foreground">
+          <summary className="text-muted-foreground hover:text-muted-foreground flex cursor-pointer items-start gap-2 rounded-lg px-2 py-1.5 text-[0.72rem] leading-5">
             <Bot className="mt-0.5 size-3 shrink-0" />
             <span>Reasoning (chunk {event.chunkIndex + 1})</span>
           </summary>
-          <p className="ml-5 mt-1 whitespace-pre-wrap rounded-lg bg-white/[0.02] px-2 py-1.5 text-[0.65rem] leading-5 text-muted-foreground">
+          <p className="text-muted-foreground mt-1 ml-5 rounded-lg bg-white/[0.02] px-2 py-1.5 text-[0.65rem] leading-5 whitespace-pre-wrap">
             <TypewriterText text={event.thinking} speed={8} />
           </p>
         </details>

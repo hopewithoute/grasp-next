@@ -1,19 +1,15 @@
 import { randomUUID } from 'node:crypto';
-import { serverEnv } from '../../server/env';
 import { readFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { canUseAgent, mastra } from '@grasp/ai';
 import { embedText } from '@grasp/ai/embeddings';
+import { createFaithfulnessScorer, createHallucinationScorer, createScorer } from '@grasp/ai/evals';
 import {
   createIngestionRetrievalTools,
   extractChunk,
   ingestionAgentInstructions,
 } from '@grasp/ai/ingestion';
-import {
-  mergeDraft,
-  type LinkTrace,
-} from '@grasp/domain';
 import {
   createDbClient,
   createKnowledgebaseRepository,
@@ -25,14 +21,15 @@ import {
 import {
   chunkNormalizedBlocks,
   ingestionAgentOutputDto,
+  mergeDraft,
   normalizeMarkdownSource,
+  safeParse,
   type IngestionAgentOutput,
+  type IngestionRunRepository,
+  type KnowledgebaseRepository,
+  type LinkTrace,
 } from '@grasp/domain';
-import {
-  createScorer,
-  createFaithfulnessScorer,
-  createHallucinationScorer,
-} from '@grasp/ai/evals';
+import { serverEnv } from '../../server/env';
 import { parseEvalCliOptions } from '../lib/cli';
 import { compareReports } from '../lib/compare';
 import { createEvalReport } from '../lib/eval-runner';
@@ -48,7 +45,7 @@ const schemaValidityScorer = createScorer({
   type: 'agent',
 })
   .preprocess(({ run }) => {
-    const parsed = ingestionAgentOutputDto.safeParse(run.output);
+    const parsed = safeParse(ingestionAgentOutputDto, run.output);
     return { valid: parsed.success };
   })
   .analyze(({ results }) => ({
@@ -117,9 +114,7 @@ const duplicateAvoidanceScorer = createScorer({
   .preprocess(({ run }) => {
     const output = run.output as unknown as IngestionAgentOutput;
     const concepts = output.concepts;
-    const existingKeys = new Set(
-      (run.groundTruth as Set<string> | undefined) ?? new Set<string>()
-    );
+    const existingKeys = new Set((run.groundTruth as Set<string> | undefined) ?? new Set<string>());
     const reusedOrMerged = concepts.filter(
       (concept) =>
         existingKeys.has(concept.conceptKey) ||
@@ -136,7 +131,6 @@ const duplicateAvoidanceScorer = createScorer({
     return { score: reusedOrMerged <= maxDuplicates ? 1 : 0 };
   })
   .generateScore(({ results }) => results.analyzeStepResult.score);
-
 
 const emptySourceScorer = createScorer({
   id: 'empty-source-graceful',
@@ -162,7 +156,8 @@ const shortSourceScorer = createScorer({
     return { count: output.concepts?.length ?? 0 };
   })
   .analyze(({ results }) => ({
-    score: results.preprocessStepResult.count >= 1 && results.preprocessStepResult.count <= 3 ? 1 : 0,
+    score:
+      results.preprocessStepResult.count >= 1 && results.preprocessStepResult.count <= 3 ? 1 : 0,
   }))
   .generateScore(({ results }) => results.analyzeStepResult.score);
 
@@ -212,17 +207,27 @@ const crossSourceDedupScorer = createScorer({
 
 const relationshipTypeScorer = createScorer({
   id: 'relationship-type-validity',
-  description: 'Validates all relationship types are valid (prerequisite, part_of, related_to, explains)',
+  description:
+    'Validates all relationship types are valid (prerequisite, part_of, related_to, explains)',
   type: 'agent',
 })
   .preprocess(({ run }) => {
     const output = run.output as unknown as IngestionAgentOutput;
     const validTypes = new Set([
-      'prerequisite', 'part_of', 'related_to', 'explains', 
-      'connects_to', 'builds_on', 'influences', 'requires', 'depends_on'
+      'prerequisite',
+      'part_of',
+      'related_to',
+      'explains',
+      'connects_to',
+      'builds_on',
+      'influences',
+      'requires',
+      'depends_on',
     ]);
     const rels = output.relationships ?? [];
-    const allValid = rels.every((r) => validTypes.has((r as { relationshipType?: string }).relationshipType || ''));
+    const allValid = rels.every((r) =>
+      validTypes.has((r as { relationshipType?: string }).relationshipType || '')
+    );
     return { total: rels.length, allValid };
   })
   .analyze(({ results }) => ({
@@ -254,7 +259,6 @@ const retrievalUsageScorer = createScorer({
     };
   })
   .generateScore(({ results }) => results.analyzeStepResult.score);
-
 
 // ─── LLM Judge scorers (from @mastra/evals) ─────────────────────────────────
 
@@ -338,7 +342,7 @@ async function runGraphWalk({
   sourceB: string;
   sourceC: string;
 }): Promise<RetrievalActivity> {
-  const db = createDbClient(normalizeLocalDatabaseUrl(serverEnv.DATABASE_URL!));
+  const db = createDbClient(normalizeLocalDatabaseUrl(serverEnv.DATABASE_URL));
   const knowledgebaseRepository = createKnowledgebaseRepository(db);
   const projectRepository = createProjectRepository(db);
   const projectSourceRepository = createProjectSourceRepository(db);
@@ -430,19 +434,21 @@ async function ingestSourceWithRetrieval({
   source,
   sourceId,
 }: {
-  knowledgebaseRepository: ReturnType<typeof createKnowledgebaseRepository>;
-  ingestionRunRepository: unknown;
+  knowledgebaseRepository: KnowledgebaseRepository;
+  ingestionRunRepository: IngestionRunRepository;
   projectId: string;
   retrievalActivity: RetrievalActivity;
   source: { content: string; title: string };
   sourceId: string;
 }): Promise<void> {
   const { runSourceIngestion } = await import('../../server/source-ingestion-runner');
-  
-  const originalSearch = knowledgebaseRepository.searchConceptsForIngestion.bind(knowledgebaseRepository);
-  const originalGetContext = knowledgebaseRepository.getConceptContext.bind(knowledgebaseRepository);
-  
-  const trackingRepo = {
+
+  const originalSearch =
+    knowledgebaseRepository.searchConceptsForIngestion.bind(knowledgebaseRepository);
+  const originalGetContext =
+    knowledgebaseRepository.getConceptContext.bind(knowledgebaseRepository);
+
+  const trackingRepo: KnowledgebaseRepository = {
     ...knowledgebaseRepository,
     searchConceptsForIngestion: async (input: Parameters<typeof originalSearch>[0]) => {
       retrievalActivity.conceptSearchCalls++;
@@ -451,8 +457,8 @@ async function ingestSourceWithRetrieval({
     getConceptContext: async (input: Parameters<typeof originalGetContext>[0]) => {
       retrievalActivity.conceptContextCalls++;
       return originalGetContext(input);
-    }
-  } as unknown;
+    },
+  };
 
   await runSourceIngestion(
     {
@@ -465,7 +471,7 @@ async function ingestSourceWithRetrieval({
     {
       ingestionRunRepository,
       knowledgebaseRepository: trackingRepo,
-    } as unknown
+    }
   );
 }
 
@@ -489,9 +495,9 @@ async function checkEmbeddingProvider(): Promise<{ ok: true } | { ok: false; rea
 function hasEmbeddingProvider(env: NodeJS.ProcessEnv) {
   return Boolean(
     env.GOOGLE_GENERATIVE_AI_API_KEY ||
-      env.GEMINI_API_KEY ||
-      env.OPENAI_API_KEY ||
-      (env.OPENAI_COMPATIBLE_BASE_URL && env.OPENAI_COMPATIBLE_API_KEY)
+    env.GEMINI_API_KEY ||
+    env.OPENAI_API_KEY ||
+    (env.OPENAI_COMPATIBLE_BASE_URL && env.OPENAI_COMPATIBLE_API_KEY)
   );
 }
 
@@ -544,7 +550,7 @@ async function scoreCase(
 
   // LLM judges (when source text available)
   if (opts.sourceText) {
-    const draft = output as unknown as IngestionAgentOutput;
+    const draft = output as IngestionAgentOutput;
     const context = draft.concepts.map((c) => `${c.name}: ${c.definition}`);
 
     if (context.length > 0) {
@@ -557,7 +563,8 @@ async function scoreCase(
           });
           const score = (result as { score?: unknown }).score;
           if (typeof score === 'number') dimensions['faithfulness'] = score;
-        } catch (error) { console.error(error);
+        } catch (error) {
+          console.error(error);
         }
       }
 
@@ -572,7 +579,8 @@ async function scoreCase(
           const hallucRaw = (result as { score?: unknown }).score;
           if (typeof hallucRaw === 'number') dimensions['hallucination'] = 1 - hallucRaw;
         }
-      } catch (error) { console.error(error);
+      } catch (error) {
+        console.error(error);
       }
     }
   }
@@ -601,10 +609,17 @@ async function main() {
   }
 
   if (!canUseAgent()) {
-    console.log(JSON.stringify({
-      skipped: true,
-      reason: 'No configured LLM credentials. Set OPENAI_API_KEY, ANTHROPIC_API_KEY, XIAOMI_API_KEY, or AI_MODEL.',
-    }, null, 2));
+    console.log(
+      JSON.stringify(
+        {
+          skipped: true,
+          reason:
+            'No configured LLM credentials. Set OPENAI_API_KEY, ANTHROPIC_API_KEY, XIAOMI_API_KEY, or AI_MODEL.',
+        },
+        null,
+        2
+      )
+    );
     return;
   }
 
@@ -627,22 +642,24 @@ async function main() {
     title: 'Economics Basics',
   });
   results.push(
-    await scoreCase('fresh-source-extraction', freshDraft, [
-      schemaValidityScorer,
-      conceptExtractionScorer,
-      groundingScorer,
-      confidenceRangeScorer,
-    ], {
-      groundTruth: 2,
-      sourceText: sourceA,
-      metrics: {
-        conceptCount: freshDraft.concepts.length,
-        relationshipCount: freshDraft.relationships.length,
-        conceptKeys: freshDraft.concepts.map((c) => c.conceptKey),
-      },
-    })
+    await scoreCase(
+      'fresh-source-extraction',
+      freshDraft,
+      [schemaValidityScorer, conceptExtractionScorer, groundingScorer, confidenceRangeScorer],
+      {
+        groundTruth: 2,
+        sourceText: sourceA,
+        metrics: {
+          conceptCount: freshDraft.concepts.length,
+          relationshipCount: freshDraft.relationships.length,
+          conceptKeys: freshDraft.concepts.map((c) => c.conceptKey),
+        },
+      }
+    )
   );
-  console.error(`[Eval] Case 'fresh-source-extraction' completed: ${results[results.length - 1].passed ? 'PASSED' : 'FAILED'} (Score: ${results[results.length - 1].score.toFixed(2)})`);
+  console.error(
+    `[Eval] Case 'fresh-source-extraction' completed: ${results[results.length - 1].passed ? 'PASSED' : 'FAILED'} (Score: ${results[results.length - 1].score.toFixed(2)})`
+  );
 
   // Case 2: Incremental extraction
   console.error(`[Eval] Running 'incremental-source-extraction'...`);
@@ -656,21 +673,24 @@ async function main() {
   const finalDraft = mergeDraft(draftA, draftB);
 
   results.push(
-    await scoreCase('incremental-source-extraction', finalDraft, [
-      conceptExtractionScorer,
-      schemaValidityScorer,
-      duplicateAvoidanceScorer,
-    ], {
-      groundTruth: existingKeys,
-      metrics: {
-        sourceAConceptCount: draftA.concepts.length,
-        sourceBConceptCount: draftB.concepts.length,
-        finalConceptCount: finalDraft.concepts.length,
-        finalRelationshipCount: finalDraft.relationships.length,
-      },
-    })
+    await scoreCase(
+      'incremental-source-extraction',
+      finalDraft,
+      [conceptExtractionScorer, schemaValidityScorer, duplicateAvoidanceScorer],
+      {
+        groundTruth: existingKeys,
+        metrics: {
+          sourceAConceptCount: draftA.concepts.length,
+          sourceBConceptCount: draftB.concepts.length,
+          finalConceptCount: finalDraft.concepts.length,
+          finalRelationshipCount: finalDraft.relationships.length,
+        },
+      }
+    )
   );
-  console.error(`[Eval] Case 'incremental-source-extraction' completed: ${results[results.length - 1].passed ? 'PASSED' : 'FAILED'} (Score: ${results[results.length - 1].score.toFixed(2)})`);
+  console.error(
+    `[Eval] Case 'incremental-source-extraction' completed: ${results[results.length - 1].passed ? 'PASSED' : 'FAILED'} (Score: ${results[results.length - 1].score.toFixed(2)})`
+  );
 
   // Case 3: Graph walk (real mode only)
   console.error(`[Eval] Checking graph-walk...`);
@@ -690,7 +710,9 @@ async function main() {
       results.push(
         await scoreCase('graph-walk-retrieval-linking', activity, [retrievalUsageScorer])
       );
-      console.error(`[Eval] Case 'graph-walk-retrieval-linking' completed: ${results[results.length - 1].passed ? 'PASSED' : 'FAILED'} (Score: ${results[results.length - 1].score.toFixed(2)})`);
+      console.error(
+        `[Eval] Case 'graph-walk-retrieval-linking' completed: ${results[results.length - 1].passed ? 'PASSED' : 'FAILED'} (Score: ${results[results.length - 1].score.toFixed(2)})`
+      );
     }
   } else if (options.mode === 'real') {
     results.push({
@@ -702,7 +724,6 @@ async function main() {
       metrics: {},
     });
   }
-
 
   // ─── Edge Cases ──────────────────────────────────────────────────────────
   console.error(`[Eval] Running edge cases (empty, short, technical)...`);
@@ -716,8 +737,16 @@ async function main() {
 
   const [emptyDraft, shortDraft, techDraft] = await Promise.all([
     extractSourceWithoutDb({ content: emptySource, sourceId: 'eval-empty', title: 'Empty Source' }),
-    extractSourceWithoutDb({ content: shortSource, sourceId: 'eval-short', title: 'Photosynthesis' }),
-    extractSourceWithoutDb({ content: techSource, sourceId: 'eval-technical', title: 'Kubernetes Architecture' }),
+    extractSourceWithoutDb({
+      content: shortSource,
+      sourceId: 'eval-short',
+      title: 'Photosynthesis',
+    }),
+    extractSourceWithoutDb({
+      content: techSource,
+      sourceId: 'eval-technical',
+      title: 'Kubernetes Architecture',
+    }),
   ]);
 
   results.push(
@@ -727,40 +756,58 @@ async function main() {
   );
 
   results.push(
-    await scoreCase('short-source', shortDraft, [shortSourceScorer, schemaValidityScorer, groundingScorer], {
-      metrics: { conceptCount: shortDraft.concepts.length },
-    })
+    await scoreCase(
+      'short-source',
+      shortDraft,
+      [shortSourceScorer, schemaValidityScorer, groundingScorer],
+      {
+        metrics: { conceptCount: shortDraft.concepts.length },
+      }
+    )
   );
   results.push(
-    await scoreCase('technical-jargon-heavy', techDraft, [
-      technicalDepthScorer,
-      schemaValidityScorer,
-      groundingScorer,
-      confidenceRangeScorer,
-      relationshipTypeScorer,
-    ], {
-      metrics: {
-        conceptCount: techDraft.concepts.length,
-        relationshipCount: techDraft.relationships.length,
-      },
-    })
+    await scoreCase(
+      'technical-jargon-heavy',
+      techDraft,
+      [
+        technicalDepthScorer,
+        schemaValidityScorer,
+        groundingScorer,
+        confidenceRangeScorer,
+        relationshipTypeScorer,
+      ],
+      {
+        metrics: {
+          conceptCount: techDraft.concepts.length,
+          relationshipCount: techDraft.relationships.length,
+        },
+      }
+    )
   );
-  console.error(`[Eval] Case 'technical-jargon-heavy' completed: ${results[results.length - 1].passed ? 'PASSED' : 'FAILED'} (Score: ${results[results.length - 1].score.toFixed(2)})`);
+  console.error(
+    `[Eval] Case 'technical-jargon-heavy' completed: ${results[results.length - 1].passed ? 'PASSED' : 'FAILED'} (Score: ${results[results.length - 1].score.toFixed(2)})`
+  );
 
   // Cross-source dedup (merge source-a with source-b again)
   const crossDedupDraft = mergeDraft(draftA, draftB);
   results.push(
-    await scoreCase('cross-source-dedup', crossDedupDraft, [
-      crossSourceDedupScorer,
-      schemaValidityScorer,
-    ], {
-      metrics: {
-        totalConcepts: crossDedupDraft.concepts.length,
-        mergedConcepts: crossDedupDraft.concepts.filter((c: Record<string, unknown>) => c.mergesWith).length,
-      },
-    })
+    await scoreCase(
+      'cross-source-dedup',
+      crossDedupDraft,
+      [crossSourceDedupScorer, schemaValidityScorer],
+      {
+        metrics: {
+          totalConcepts: crossDedupDraft.concepts.length,
+          mergedConcepts: crossDedupDraft.concepts.filter(
+            (c: Record<string, unknown>) => c.mergesWith
+          ).length,
+        },
+      }
+    )
   );
-  console.error(`[Eval] Case 'cross-source-dedup' completed: ${results[results.length - 1].passed ? 'PASSED' : 'FAILED'} (Score: ${results[results.length - 1].score.toFixed(2)})`);
+  console.error(
+    `[Eval] Case 'cross-source-dedup' completed: ${results[results.length - 1].passed ? 'PASSED' : 'FAILED'} (Score: ${results[results.length - 1].score.toFixed(2)})`
+  );
 
   // Relationship type validity (use tech source which has many relationships)
   results.push(
@@ -772,7 +819,8 @@ async function main() {
   const report = createEvalReport({
     agent: 'ingestionAgent',
     cases: results,
-    fixtureVersion: options.mode === 'real' ? 'ingestion-agent-real-v2' : 'ingestion-agent-fixture-v2',
+    fixtureVersion:
+      options.mode === 'real' ? 'ingestion-agent-real-v2' : 'ingestion-agent-fixture-v2',
     mode: options.mode,
     model: resolveModelLabel(),
     promptHash: hashText(JSON.stringify(ingestionAgentInstructions)),
@@ -784,9 +832,13 @@ async function main() {
     ),
   });
 
-  console.error(`[Eval] Case 'relationship-type-validity' completed: ${results[results.length - 1].passed ? 'PASSED' : 'FAILED'} (Score: ${results[results.length - 1].score.toFixed(2)})`);
+  console.error(
+    `[Eval] Case 'relationship-type-validity' completed: ${results[results.length - 1].passed ? 'PASSED' : 'FAILED'} (Score: ${results[results.length - 1].score.toFixed(2)})`
+  );
   console.error(`\n[Eval] === SUMMARY ===`);
-  console.error(`[Eval] Passed: ${report.summary.passed}/${report.summary.total} | Average Score: ${(report.summary.averageScore * 100).toFixed(1)}%`);
+  console.error(
+    `[Eval] Passed: ${report.summary.passed}/${report.summary.total} | Average Score: ${(report.summary.averageScore * 100).toFixed(1)}%`
+  );
 
   console.log(JSON.stringify(report, null, 2));
   if (options.writeReport) {
@@ -825,32 +877,33 @@ async function compareLatest(options: EvalCliOptions) {
   const finalDraft = mergeDraft(draftA, draftB);
 
   const cases: EvalCaseResult[] = [
-    await scoreCase('fresh-source-extraction', draftA, [
-      schemaValidityScorer,
-      conceptExtractionScorer,
-      groundingScorer,
-      confidenceRangeScorer,
-    ], {
-      groundTruth: 2,
-      metrics: {
-        conceptCount: draftA.concepts.length,
-        relationshipCount: draftA.relationships.length,
-        conceptKeys: draftA.concepts.map((c) => c.conceptKey),
-      },
-    }),
-    await scoreCase('incremental-source-extraction', finalDraft, [
-      conceptExtractionScorer,
-      schemaValidityScorer,
-      duplicateAvoidanceScorer,
-    ], {
-      groundTruth: existingKeys,
-      metrics: {
-        sourceAConceptCount: draftA.concepts.length,
-        sourceBConceptCount: draftB.concepts.length,
-        finalConceptCount: finalDraft.concepts.length,
-        finalRelationshipCount: finalDraft.relationships.length,
-      },
-    }),
+    await scoreCase(
+      'fresh-source-extraction',
+      draftA,
+      [schemaValidityScorer, conceptExtractionScorer, groundingScorer, confidenceRangeScorer],
+      {
+        groundTruth: 2,
+        metrics: {
+          conceptCount: draftA.concepts.length,
+          relationshipCount: draftA.relationships.length,
+          conceptKeys: draftA.concepts.map((c) => c.conceptKey),
+        },
+      }
+    ),
+    await scoreCase(
+      'incremental-source-extraction',
+      finalDraft,
+      [conceptExtractionScorer, schemaValidityScorer, duplicateAvoidanceScorer],
+      {
+        groundTruth: existingKeys,
+        metrics: {
+          sourceAConceptCount: draftA.concepts.length,
+          sourceBConceptCount: draftB.concepts.length,
+          finalConceptCount: finalDraft.concepts.length,
+          finalRelationshipCount: finalDraft.relationships.length,
+        },
+      }
+    ),
   ];
   options.mode = previousMode;
 

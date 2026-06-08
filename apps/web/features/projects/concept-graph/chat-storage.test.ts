@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { type ChatItem } from './types';
 import { readStoredChatMessages, writeStoredChatMessages } from './chat-storage';
+import { type ChatItem } from './types';
 
 // Mock sessionStorage for Node environment
 const store = new Map<string, string>();
@@ -8,12 +8,24 @@ const store = new Map<string, string>();
 Object.defineProperty(globalThis, 'window', {
   value: {
     sessionStorage: {
-      get length() { return store.size; },
-      clear() { store.clear(); },
-      getItem(key: string) { return store.get(key) ?? null; },
-      setItem(key: string, value: string) { store.set(key, value); },
-      removeItem(key: string) { store.delete(key); },
-      key(index: number) { return [...store.keys()][index] ?? null; },
+      get length() {
+        return store.size;
+      },
+      clear() {
+        store.clear();
+      },
+      getItem(key: string) {
+        return store.get(key) ?? null;
+      },
+      setItem(key: string, value: string) {
+        store.set(key, value);
+      },
+      removeItem(key: string) {
+        store.delete(key);
+      },
+      key(index: number) {
+        return [...store.keys()][index] ?? null;
+      },
     },
   },
   writable: true,

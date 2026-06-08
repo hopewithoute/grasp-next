@@ -1,10 +1,22 @@
 import 'server-only';
-
-import type { IngestionStreamEvent } from '@grasp/domain';
 import { IngestionAiAdapter, sourceIngestionWorkflow } from '@grasp/ai/ingestion';
-import type { createProjectDeps } from './project-deps';
+import type {
+  IngestionRunRepository,
+  IngestionStreamEvent,
+  KnowledgebaseRepository,
+} from '@grasp/domain';
 
-type ProjectDeps = ReturnType<typeof createProjectDeps>;
+export type SourceIngestionDeps = {
+  ingestionRunRepository: IngestionRunRepository;
+  knowledgebaseRepository: KnowledgebaseRepository;
+};
+
+type SourceIngestionWorkflowInput = {
+  content: string;
+  projectId: string;
+  sourceId: string;
+  sourceTitle: string;
+};
 
 export type { IngestionStreamEvent };
 
@@ -35,7 +47,7 @@ export async function runSourceIngestion(
     sourceTitle: string;
     sourceType: 'markdown' | 'text';
   },
-  deps: ProjectDeps
+  deps: SourceIngestionDeps
 ) {
   const aiAdapter = new IngestionAiAdapter(deps.knowledgebaseRepository);
 
@@ -43,20 +55,21 @@ export async function runSourceIngestion(
     ['aiPort', aiAdapter],
     ['ingestionRunRepository', deps.ingestionRunRepository],
     ['knowledgebaseRepository', deps.knowledgebaseRepository],
-  ]) as unknown;
+  ]);
 
   const run = await sourceIngestionWorkflow.createRun();
+  const inputData: SourceIngestionWorkflowInput = {
+    projectId: input.projectId,
+    sourceId: input.sourceId,
+    sourceTitle: input.sourceTitle,
+    content: input.content,
+  };
 
   if (input.onEvent) {
     const stream = await run.stream({
-      inputData: {
-        projectId: input.projectId,
-        sourceId: input.sourceId,
-        sourceTitle: input.sourceTitle,
-        content: input.content,
-      },
+      inputData,
       requestContext,
-    } as unknown);
+    } as unknown as Parameters<typeof run.stream>[0]);
 
     for await (const chunk of stream) {
       if (
@@ -81,13 +94,8 @@ export async function runSourceIngestion(
     return null; // The stream doesn't directly return the workflow output
   } else {
     return await run.start({
-      inputData: {
-        projectId: input.projectId,
-        sourceId: input.sourceId,
-        sourceTitle: input.sourceTitle,
-        content: input.content,
-      },
+      inputData,
       requestContext,
-    } as unknown);
+    } as unknown as Parameters<typeof run.start>[0]);
   }
 }

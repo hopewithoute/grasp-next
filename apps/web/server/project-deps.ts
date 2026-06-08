@@ -1,13 +1,12 @@
 import 'server-only';
-
 import {
   createArtifactRepository,
   createAuditLogRepository,
   createDbClient,
   createIngestionRunRepository,
   createKnowledgebaseRepository,
-  createProjectSourceRepository,
   createProjectRepository,
+  createProjectSourceRepository,
 } from '@grasp/db';
 import { serverEnv } from './env';
 

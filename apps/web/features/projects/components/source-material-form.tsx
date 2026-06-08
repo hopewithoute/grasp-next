@@ -1,31 +1,18 @@
 'use client';
 
-import {
-  useActionState,
-
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-  useTransition,
-} from 'react';
+import { useActionState, useLayoutEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { FileText, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import {
   addProjectSourceFormAction,
+  addProjectSourceFromUrlFormAction,
   deleteProjectSourceFormAction,
   updateProjectSourceFormAction,
-  addProjectSourceFromUrlFormAction,
 } from '../actions';
 import { sourceModeButtonVariants, sourceTextareaVariants } from '../project-style-variants';
 import { SourceList } from './source-list';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 
 export type ProjectSourceItem = {
   content: string | null;
@@ -40,7 +27,11 @@ type ProjectSourcesPanelProps = {
   onIngestionTrigger: (sourceId: string, title: string, type: string, content: string) => void;
 };
 
-export function ProjectSourcesPanel({ projectId, sources, onIngestionTrigger }: ProjectSourcesPanelProps) {
+export function ProjectSourcesPanel({
+  projectId,
+  sources,
+  onIngestionTrigger,
+}: ProjectSourcesPanelProps) {
   const [selectedSourceId, setSelectedSourceId] = useState<string | null>(null);
   const [isAddingNew, setIsAddingNew] = useState(false);
   const selectedSource = !isAddingNew
@@ -50,8 +41,8 @@ export function ProjectSourcesPanel({ projectId, sources, onIngestionTrigger }: 
   const isDialogOpen = isAddingNew || selectedSource !== null;
 
   return (
-    <div className="flex flex-col gap-6 h-full">
-      <div className="flex-1 overflow-hidden flex flex-col rounded-[1.35rem] border border-border p-4">
+    <div className="flex h-full flex-col gap-6">
+      <div className="border-border flex flex-1 flex-col overflow-hidden rounded-[1.35rem] border p-4">
         <SourceList
           sources={sources}
           selectedSourceId={selectedSource?.id ?? null}
@@ -72,14 +63,14 @@ export function ProjectSourcesPanel({ projectId, sources, onIngestionTrigger }: 
           }
         }}
       >
-        <DialogContent className="sm:max-w-[700px] h-[80vh] flex flex-col p-0 gap-0 overflow-hidden bg-background">
-          <DialogHeader className="p-4 pb-0 border-b border-border shrink-0 text-left">
+        <DialogContent className="bg-background flex h-[80vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-[700px]">
+          <DialogHeader className="border-border shrink-0 border-b p-4 pb-0 text-left">
             <div className="flex shrink-0 flex-col gap-2 pb-3">
               <div className="space-y-1">
-                <span className="font-mono text-[0.65rem] tabular-nums tracking-[0.18em] uppercase text-brand-accent-foreground">
+                <span className="text-brand-accent-foreground font-mono text-[0.65rem] tracking-[0.18em] uppercase tabular-nums">
                   {isAddingNew ? 'new source' : 'source editor'}
                 </span>
-                <DialogTitle className="text-lg font-medium tracking-tight text-foreground truncate">
+                <DialogTitle className="text-foreground truncate text-lg font-medium tracking-tight">
                   {isAddingNew
                     ? 'Add new source'
                     : selectedSource
@@ -88,7 +79,7 @@ export function ProjectSourcesPanel({ projectId, sources, onIngestionTrigger }: 
                 </DialogTitle>
               </div>
               {selectedSource && !isAddingNew && (
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card/50 px-2.5 py-1 text-[0.7rem] text-muted-foreground w-fit">
+                <span className="border-border bg-card/50 text-muted-foreground inline-flex w-fit items-center gap-1.5 rounded-full border px-2.5 py-1 text-[0.7rem]">
                   <FileText className="size-3" />
                   {getTextCounts(selectedSource.content ?? '').words} words
                 </span>
@@ -132,10 +123,13 @@ function ProjectSourceAddForm({
     error: null,
     success: false,
   });
-  const [urlState, urlFormAction, isUrlPending] = useActionState(addProjectSourceFromUrlFormAction, {
-    error: null,
-    success: false,
-  });
+  const [urlState, urlFormAction, isUrlPending] = useActionState(
+    addProjectSourceFromUrlFormAction,
+    {
+      error: null,
+      success: false,
+    }
+  );
 
   const formRef = useRef<HTMLFormElement>(null);
   const lastSourceIdRef = useRef<string | null>(null);
@@ -161,24 +155,44 @@ function ProjectSourceAddForm({
 
   useLayoutEffect(() => {
     const currentState = activeTab === 'text' ? state : urlState;
-    if (currentState.success && currentState.sourceId && currentState.sourceId !== lastSourceIdRef.current) {
+    if (
+      currentState.success &&
+      currentState.sourceId &&
+      currentState.sourceId !== lastSourceIdRef.current
+    ) {
       lastSourceIdRef.current = currentState.sourceId;
       const values = submittedValuesRef.current;
 
       if (values && onIngestionTrigger) {
-        onIngestionTrigger(currentState.sourceId, values.title, values.type, currentState.content ?? values.content);
+        onIngestionTrigger(
+          currentState.sourceId,
+          values.title,
+          values.type,
+          currentState.content ?? values.content
+        );
       }
     }
-  }, [state.success, state.sourceId, urlState.success, urlState.sourceId, activeTab, onIngestionTrigger, state, urlState]);
+  }, [
+    state.success,
+    state.sourceId,
+    urlState.success,
+    urlState.sourceId,
+    activeTab,
+    onIngestionTrigger,
+    state,
+    urlState,
+  ]);
 
   return (
-    <div className="flex flex-col flex-1 h-full gap-4">
-      <div className="flex gap-2 shrink-0 border-b border-border/50 pb-2">
+    <div className="flex h-full flex-1 flex-col gap-4">
+      <div className="border-border/50 flex shrink-0 gap-2 border-b pb-2">
         <button
           type="button"
           onClick={() => setActiveTab('text')}
-          className={`text-sm px-3 py-1.5 rounded-md font-medium transition-colors ${
-            activeTab === 'text' ? 'bg-brand-accent/10 text-brand-accent' : 'text-muted-foreground hover:text-foreground'
+          className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+            activeTab === 'text'
+              ? 'bg-brand-accent/10 text-brand-accent'
+              : 'text-muted-foreground hover:text-foreground'
           }`}
         >
           Raw Text / Markdown
@@ -186,8 +200,10 @@ function ProjectSourceAddForm({
         <button
           type="button"
           onClick={() => setActiveTab('web')}
-          className={`text-sm px-3 py-1.5 rounded-md font-medium transition-colors ${
-            activeTab === 'web' ? 'bg-brand-accent/10 text-brand-accent' : 'text-muted-foreground hover:text-foreground'
+          className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+            activeTab === 'web'
+              ? 'bg-brand-accent/10 text-brand-accent'
+              : 'text-muted-foreground hover:text-foreground'
           }`}
         >
           Web URL
@@ -240,15 +256,12 @@ function ProjectSourceUrlFields({
     <form action={action} className="flex flex-1 flex-col gap-4" ref={formRef}>
       <input name="projectId" type="hidden" value={projectId} />
 
-      <div className="space-y-2 shrink-0">
-        <label
-          className="text-sm font-medium text-muted-foreground"
-          htmlFor="new-url-title"
-        >
+      <div className="shrink-0 space-y-2">
+        <label className="text-muted-foreground text-sm font-medium" htmlFor="new-url-title">
           Title
         </label>
         <Input
-          className="h-11 rounded-2xl border-border bg-card px-4 text-sm text-foreground placeholder:text-foreground/30 shadow-none focus-visible:border-brand-accent-border/60 focus-visible:ring-[#53d1cb]/20"
+          className="border-border bg-card text-foreground placeholder:text-foreground/30 focus-visible:border-brand-accent-border/60 h-11 rounded-2xl px-4 text-sm shadow-none focus-visible:ring-[#53d1cb]/20"
           id="new-url-title"
           name="title"
           placeholder="e.g. Wikipedia: Quantum Mechanics"
@@ -256,15 +269,12 @@ function ProjectSourceUrlFields({
         />
       </div>
 
-      <div className="space-y-2 shrink-0">
-        <label
-          className="text-sm font-medium text-muted-foreground"
-          htmlFor="new-url"
-        >
+      <div className="shrink-0 space-y-2">
+        <label className="text-muted-foreground text-sm font-medium" htmlFor="new-url">
           Web URL
         </label>
         <Input
-          className="h-11 rounded-2xl border-border bg-card px-4 text-sm text-foreground placeholder:text-foreground/30 shadow-none focus-visible:border-brand-accent-border/60 focus-visible:ring-[#53d1cb]/20"
+          className="border-border bg-card text-foreground placeholder:text-foreground/30 focus-visible:border-brand-accent-border/60 h-11 rounded-2xl px-4 text-sm shadow-none focus-visible:ring-[#53d1cb]/20"
           id="new-url"
           name="url"
           type="url"
@@ -274,20 +284,20 @@ function ProjectSourceUrlFields({
       </div>
 
       {error ? (
-        <p className="rounded-[1rem] border border-[#e5685b]/30 bg-[#e5685b]/10 px-3 py-2 text-sm text-foreground">
+        <p className="text-foreground rounded-[1rem] border border-[#e5685b]/30 bg-[#e5685b]/10 px-3 py-2 text-sm">
           {error}
         </p>
       ) : null}
 
       {success ? (
-        <p className="rounded-[1rem] border border-[#00bb7f]/30 bg-[#00bb7f]/10 px-3 py-2 text-sm text-foreground">
+        <p className="text-foreground rounded-[1rem] border border-[#00bb7f]/30 bg-[#00bb7f]/10 px-3 py-2 text-sm">
           {success}
         </p>
       ) : null}
 
       <div className="mt-auto flex shrink-0 items-center gap-3 pt-2">
         <Button
-          className="h-9 rounded-full bg-brand-accent px-4 text-[#041018] hover:bg-[#7ceae3]"
+          className="bg-brand-accent h-9 rounded-full px-4 text-[#041018] hover:bg-[#7ceae3]"
           disabled={isPending}
           type="submit"
         >
@@ -356,7 +366,7 @@ function ProjectSourceEditForm({
         extraActions={
           <button
             aria-label="Button"
-            className="inline-flex h-9 items-center gap-1.5 rounded-full border border-border bg-transparent px-4 text-xs text-muted-foreground transition hover:border-status-danger-border hover:bg-status-danger-surface hover:text-status-danger-foreground disabled:opacity-50"
+            className="border-border text-muted-foreground hover:border-status-danger-border hover:bg-status-danger-surface hover:text-status-danger-foreground inline-flex h-9 items-center gap-1.5 rounded-full border bg-transparent px-4 text-xs transition disabled:opacity-50"
             disabled={isDeleting}
             onClick={() => {
               const formData = new FormData();
@@ -371,7 +381,7 @@ function ProjectSourceEditForm({
         }
       />
       {deleteState.error ? (
-        <p className="rounded-[1rem] border border-[#e5685b]/30 bg-[#e5685b]/10 px-3 py-2 text-sm text-foreground">
+        <p className="text-foreground rounded-[1rem] border border-[#e5685b]/30 bg-[#e5685b]/10 px-3 py-2 text-sm">
           {deleteState.error}
         </p>
       ) : null}
@@ -417,15 +427,15 @@ function ProjectSourceFields({
       {sourceId ? <input name="sourceId" type="hidden" value={sourceId} /> : null}
       <input name="type" type="hidden" value={type === 'text' ? 'text' : 'markdown'} />
 
-      <div className="space-y-2 shrink-0">
+      <div className="shrink-0 space-y-2">
         <label
-          className="text-sm font-medium text-muted-foreground"
+          className="text-muted-foreground text-sm font-medium"
           htmlFor={`${sourceId ?? 'new'}-title`}
         >
           Title
         </label>
         <Input
-          className="h-11 rounded-2xl border-border bg-card px-4 text-sm text-foreground placeholder:text-foreground/30 shadow-none focus-visible:border-brand-accent-border/60 focus-visible:ring-[#53d1cb]/20"
+          className="border-border bg-card text-foreground placeholder:text-foreground/30 focus-visible:border-brand-accent-border/60 h-11 rounded-2xl px-4 text-sm shadow-none focus-visible:ring-[#53d1cb]/20"
           defaultValue={title}
           id={`${sourceId ?? 'new'}-title`}
           name="title"
@@ -437,15 +447,15 @@ function ProjectSourceFields({
       <div className="flex min-h-0 flex-1 flex-col gap-2">
         <div className="flex shrink-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <label
-            className="text-sm font-medium text-muted-foreground"
+            className="text-muted-foreground text-sm font-medium"
             htmlFor={`${sourceId ?? 'new'}-content`}
           >
             Content
           </label>
-          <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground sm:justify-end">
+          <div className="text-muted-foreground flex flex-wrap items-center gap-3 text-xs sm:justify-end">
             <span className="font-mono tabular-nums">{counts.words} words</span>
             <span className="font-mono tabular-nums">{counts.characters} chars</span>
-            <div className="flex rounded-full border border-border bg-white/[0.035] p-0.5">
+            <div className="border-border flex rounded-full border bg-white/[0.035] p-0.5">
               <button
                 aria-label="Button"
                 className={sourceModeButtonVariants({ active: mode === 'edit' })}
@@ -486,20 +496,20 @@ function ProjectSourceFields({
       </div>
 
       {error ? (
-        <p className="rounded-[1rem] border border-[#e5685b]/30 bg-[#e5685b]/10 px-3 py-2 text-sm text-foreground">
+        <p className="text-foreground rounded-[1rem] border border-[#e5685b]/30 bg-[#e5685b]/10 px-3 py-2 text-sm">
           {error}
         </p>
       ) : null}
 
       {success ? (
-        <p className="rounded-[1rem] border border-[#00bb7f]/30 bg-[#00bb7f]/10 px-3 py-2 text-sm text-foreground">
+        <p className="text-foreground rounded-[1rem] border border-[#00bb7f]/30 bg-[#00bb7f]/10 px-3 py-2 text-sm">
           {success}
         </p>
       ) : null}
 
       <div className="mt-auto flex shrink-0 items-center gap-3 pt-2">
         <Button
-          className="h-9 rounded-full bg-brand-accent px-4 text-[#041018] hover:bg-[#7ceae3]"
+          className="bg-brand-accent h-9 rounded-full px-4 text-[#041018] hover:bg-[#7ceae3]"
           disabled={isPending}
           type="submit"
         >
@@ -522,14 +532,14 @@ function SourcePreview({ value }: { value: string }) {
 
   if (!blocks.length) {
     return (
-      <div className="min-h-[420px] flex-1 rounded-[1.25rem] border border-dashed border-border bg-card/50 p-4 text-sm text-muted-foreground">
+      <div className="border-border bg-card/50 text-muted-foreground min-h-[420px] flex-1 rounded-[1.25rem] border border-dashed p-4 text-sm">
         Nothing to preview yet.
       </div>
     );
   }
 
   return (
-    <div className="min-h-[420px] flex-1 overflow-y-auto space-y-4 rounded-[1.25rem] border border-border bg-card p-4 text-sm leading-6 text-muted-foreground shadow-[inset_3px_0_0_rgba(83,209,203,0.58),inset_0_1px_0_rgba(255,255,255,0.04)]">
+    <div className="border-border bg-card text-muted-foreground min-h-[420px] flex-1 space-y-4 overflow-y-auto rounded-[1.25rem] border p-4 text-sm leading-6 shadow-[inset_3px_0_0_rgba(83,209,203,0.58),inset_0_1px_0_rgba(255,255,255,0.04)]">
       {blocks.map((block) => (
         <p className="whitespace-pre-wrap" key={block.id}>
           {block.text}

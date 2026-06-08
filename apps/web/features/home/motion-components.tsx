@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { m, AnimatePresence } from 'framer-motion';
+import { AnimatePresence, m } from 'framer-motion';
 
 export function InfiniteScrollTrack({
   children,
@@ -11,29 +11,29 @@ export function InfiniteScrollTrack({
   speed?: number;
 }) {
   return (
-    <div className="relative flex overflow-hidden w-full">
-        <m.div
-          className="flex shrink-0 gap-4 pr-4"
-          animate={{ x: ['0%', '-100%'] }}
-          transition={{
-            ease: 'linear',
-            duration: speed,
-            repeat: Infinity,
-          }}
-        >
-          {children}
-        </m.div>
-        <m.div
-          className="flex shrink-0 gap-4 pr-4"
-          animate={{ x: ['0%', '-100%'] }}
-          transition={{
-            ease: 'linear',
-            duration: speed,
-            repeat: Infinity,
-          }}
-        >
-          {children}
-        </m.div>
+    <div className="relative flex w-full overflow-hidden">
+      <m.div
+        className="flex shrink-0 gap-4 pr-4"
+        animate={{ x: ['0%', '-100%'] }}
+        transition={{
+          ease: 'linear',
+          duration: speed,
+          repeat: Infinity,
+        }}
+      >
+        {children}
+      </m.div>
+      <m.div
+        className="flex shrink-0 gap-4 pr-4"
+        animate={{ x: ['0%', '-100%'] }}
+        transition={{
+          ease: 'linear',
+          duration: speed,
+          repeat: Infinity,
+        }}
+      >
+        {children}
+      </m.div>
     </div>
   );
 }
@@ -81,10 +81,10 @@ export function IntelligentList({
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.9 }}
             transition={{ type: 'spring', stiffness: 200, damping: 20 }}
-            className="flex items-center justify-between border-b border-border py-2 text-sm"
+            className="border-border flex items-center justify-between border-b py-2 text-sm"
           >
-            <span className="font-medium text-foreground">{item.label}</span>
-            <span className="font-mono text-xs text-brand-accent">{item.value}</span>
+            <span className="text-foreground font-medium">{item.label}</span>
+            <span className="text-brand-accent font-mono text-xs">{item.value}</span>
           </m.div>
         ))}
       </AnimatePresence>
@@ -101,7 +101,7 @@ export function LiquidGlassPanel({
 }) {
   return (
     <div
-      className={`relative overflow-hidden rounded-[2.5rem] bg-card border border-border shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] ${className || ''}`}
+      className={`bg-card border-border relative overflow-hidden rounded-[2.5rem] border shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] ${className || ''}`}
     >
       <div className="relative z-10">{children}</div>
     </div>

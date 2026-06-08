@@ -14,9 +14,9 @@ export function StatusCell({
   unit: string;
 }) {
   return (
-    <div className="flex h-full flex-col justify-between gap-3 bg-card/50 p-3.5">
+    <div className="bg-card/50 flex h-full flex-col justify-between gap-3 p-3.5">
       <div className="flex items-center justify-between gap-3">
-        <span className="font-mono text-[0.58rem] tabular-nums tracking-[0.2em] uppercase text-muted-foreground">
+        <span className="text-muted-foreground font-mono text-[0.58rem] tracking-[0.2em] uppercase tabular-nums">
           {label}
         </span>
         <StatusChip ready={ready} />
@@ -24,12 +24,12 @@ export function StatusCell({
 
       <div className="space-y-0.5">
         <p className="flex items-baseline gap-2">
-          <span className="font-mono text-lg font-medium tabular-nums tracking-tight text-foreground">
+          <span className="text-foreground font-mono text-lg font-medium tracking-tight tabular-nums">
             {statValue}
           </span>
-          <span className="text-xs text-muted-foreground">{unit}</span>
+          <span className="text-muted-foreground text-xs">{unit}</span>
         </p>
-        <p className="text-xs leading-relaxed text-muted-foreground">{statHint}</p>
+        <p className="text-muted-foreground text-xs leading-relaxed">{statHint}</p>
       </div>
     </div>
   );

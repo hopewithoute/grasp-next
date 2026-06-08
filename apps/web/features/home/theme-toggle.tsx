@@ -17,7 +17,7 @@ export function ThemeToggle() {
     return (
       <button
         type="button"
-        className="relative grid size-9 place-items-center rounded-full border border-border bg-background text-foreground transition-colors hover:bg-muted"
+        className="border-border bg-background text-foreground hover:bg-muted relative grid size-9 place-items-center rounded-full border transition-colors"
         aria-label="Toggle theme"
       >
         <span className="size-4" />
@@ -31,7 +31,7 @@ export function ThemeToggle() {
     <button
       type="button"
       onClick={() => setTheme(isDark ? 'light' : 'dark')}
-      className="relative grid size-9 place-items-center rounded-full border border-border bg-background text-foreground transition-colors hover:bg-muted"
+      className="border-border bg-background text-foreground hover:bg-muted relative grid size-9 place-items-center rounded-full border transition-colors"
       aria-label="Toggle theme"
     >
       {isDark ? (

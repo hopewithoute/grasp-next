@@ -11,7 +11,6 @@ const labelByStatus: Record<ProjectStatus, string> = {
 };
 
 export function ProjectStatusBadge({ status }: { status: ProjectStatus }) {
-
   return (
     <Badge
       className={statusBadgeVariants({ intent: projectStatusIntent(status) })}

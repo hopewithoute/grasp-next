@@ -1,9 +1,9 @@
 import type { Metadata } from 'next';
-import Script from 'next/script';
 import { Geist } from 'next/font/google';
-import { TooltipProvider } from '@/components/ui/tooltip';
-import { ThemeProvider } from '@/components/theme-provider';
+import Script from 'next/script';
 import { MotionProvider } from '@/components/motion-provider';
+import { ThemeProvider } from '@/components/theme-provider';
+import { TooltipProvider } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import './globals.css';
 
@@ -67,7 +67,7 @@ export default function RootLayout({
       </head>
       <body>
         <a
-          className="sr-only z-50 rounded-full bg-brand-accent px-4 py-2 font-medium text-brand-accent-ink focus:not-sr-only focus:fixed focus:top-4 focus:left-4"
+          className="bg-brand-accent text-brand-accent-ink sr-only z-50 rounded-full px-4 py-2 font-medium focus:not-sr-only focus:fixed focus:top-4 focus:left-4"
           href="#main-content"
         >
           Skip to content
@@ -78,7 +78,9 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <MotionProvider><TooltipProvider>{children}</TooltipProvider></MotionProvider>
+          <MotionProvider>
+            <TooltipProvider>{children}</TooltipProvider>
+          </MotionProvider>
         </ThemeProvider>
       </body>
     </html>

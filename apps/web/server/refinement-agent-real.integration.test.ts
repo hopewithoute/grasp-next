@@ -1,11 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
-vi.mock('server-only', () => ({}));
+import { createRefinementTools, refinementAgent } from '@grasp/ai/refinement';
 import { createDbClient, createKnowledgebaseRepository, eq, schema } from '@grasp/db';
-import { refinementAgent, createRefinementTools } from '@grasp/ai/refinement';
-
 import { serverEnv } from './env';
+
+vi.mock('server-only', () => ({}));
 
 const hasDatabase = Boolean(serverEnv.DATABASE_URL);
 const hasLlm = Boolean(
@@ -24,22 +24,20 @@ describeIfReady('Refinement Agent - Real Provider (Graph Proposals)', () => {
   let ownerId: string;
 
   beforeAll(async () => {
-    db = createDbClient(serverEnv.DATABASE_URL!);
+    db = createDbClient(serverEnv.DATABASE_URL);
     repo = createKnowledgebaseRepository(db);
 
     ownerId = randomUUID();
     projectId = randomUUID();
 
     const now = new Date();
-    await db
-      .insert(schema.user)
-      .values({
-        id: ownerId,
-        email: `test-refinement-${Date.now()}@example.com`,
-        name: 'Test',
-        createdAt: now,
-        updatedAt: now,
-      });
+    await db.insert(schema.user).values({
+      id: ownerId,
+      email: `test-refinement-${Date.now()}@example.com`,
+      name: 'Test',
+      createdAt: now,
+      updatedAt: now,
+    });
     await db
       .insert(schema.projects)
       .values({ id: projectId, title: 'Test Project', ownerId, createdAt: now, updatedAt: now });
@@ -139,7 +137,7 @@ function createRecordingRefinementTools({
   proposalCalls: any[];
 }) {
   const tools = createRefinementTools({ knowledgebaseRepository: repo, projectId }) as any;
-  
+
   const proposalTool = tools['propose-graph-changes'];
   const originalExecute = proposalTool.execute.bind(proposalTool);
 

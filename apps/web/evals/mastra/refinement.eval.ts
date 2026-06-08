@@ -1,12 +1,12 @@
-import { serverEnv } from '../../server/env';
 import { readFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { canUseAgent, mastra } from '@grasp/ai';
-import { createRefinementTools, refinementAgentInstructions } from '@grasp/ai/refinement';
-import { robustStream } from '@grasp/ai/mastra';
-import type { KnowledgebaseRepository } from '@grasp/domain';
 import { createScorer } from '@grasp/ai/evals';
+import { robustStream } from '@grasp/ai/mastra';
+import { createRefinementTools, refinementAgentInstructions } from '@grasp/ai/refinement';
+import type { KnowledgebaseRepository } from '@grasp/domain';
+import { serverEnv } from '../../server/env';
 import { parseEvalCliOptions } from '../lib/cli';
 import { compareReports } from '../lib/compare';
 import { createEvalReport } from '../lib/eval-runner';
@@ -18,7 +18,11 @@ import {
 import { hashText, hashToolDescriptions } from '../lib/prompt-hash';
 import { readEvalReport, writeEvalReport } from '../lib/report-writer';
 import { containsSubsequence } from '../lib/scoring';
-import { createToolRecording, wrapToolsWithRecorder, type ToolRecording } from '../lib/tool-recorder';
+import {
+  createToolRecording,
+  wrapToolsWithRecorder,
+  type ToolRecording,
+} from '../lib/tool-recorder';
 import type { EvalCaseResult, EvalCliOptions } from '../lib/types';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -106,9 +110,7 @@ const toolOrderScorer = createScorer({
   .preprocess(({ run }) => {
     const output = run.output as unknown as RefinementScoredOutput;
     const required = output.expected.requiredToolOrder;
-    const allowedOrders = required
-      ? [required, ...(output.expected.allowedToolOrders ?? [])]
-      : [];
+    const allowedOrders = required ? [required, ...(output.expected.allowedToolOrders ?? [])] : [];
     const ordered =
       allowedOrders.length === 0 ||
       allowedOrders.some((order) => containsSubsequence(output.toolCalls, order));
@@ -147,9 +149,7 @@ const orphanRelationshipsScorer = createScorer({
     const output = run.output as unknown as RefinementScoredOutput;
     if (!output.expected.noOrphanRelationships) return { applicable: false, valid: true };
 
-    const existingKeys = new Set(
-      (output.fixtureConcepts ?? []).map((c) => c.conceptKey)
-    );
+    const existingKeys = new Set((output.fixtureConcepts ?? []).map((c) => c.conceptKey));
     const addedKeys = new Set<string>();
     for (const a of output.actions) {
       if (a.type === 'add_concept' && typeof a.payload?.conceptKey === 'string') {
@@ -178,7 +178,8 @@ const orphanRelationshipsScorer = createScorer({
 
 const policyComplianceScorer = createScorer({
   id: 'policy-compliance',
-  description: 'Validates agent did not claim a mutation was already applied, and exactly one proposal if expected',
+  description:
+    'Validates agent did not claim a mutation was already applied, and exactly one proposal if expected',
   type: 'agent',
 })
   .preprocess(({ run }) => {
@@ -201,8 +202,6 @@ const policyComplianceScorer = createScorer({
   })
   .generateScore(({ results }) => results.analyzeStepResult.score);
 
-
-
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function matchesAction(
@@ -224,7 +223,9 @@ function matchesAction(
   return true;
 }
 
-function readProposalActions(proposal: unknown): Array<{ payload?: Record<string, unknown>; type?: string }> {
+function readProposalActions(
+  proposal: unknown
+): Array<{ payload?: Record<string, unknown>; type?: string }> {
   if (!proposal || typeof proposal !== 'object') return [];
   const actions = (proposal as { actions?: unknown }).actions;
   return Array.isArray(actions) ? actions : [];
@@ -339,7 +340,9 @@ async function runCase(
 
   const evalResult = await scoreCase(scoredOutput);
   evalResult.id = testCase.id;
-  console.error(`[Eval] Case '${testCase.id}' completed: ${evalResult.passed ? 'PASSED' : 'FAILED'} (Score: ${evalResult.score})`);
+  console.error(
+    `[Eval] Case '${testCase.id}' completed: ${evalResult.passed ? 'PASSED' : 'FAILED'} (Score: ${evalResult.score})`
+  );
   return evalResult;
 }
 
@@ -353,10 +356,17 @@ async function main() {
   }
 
   if (!canUseAgent()) {
-    console.log(JSON.stringify({
-      skipped: true,
-      reason: 'No configured LLM credentials. Set OPENAI_API_KEY, ANTHROPIC_API_KEY, XIAOMI_API_KEY, or AI_MODEL.',
-    }, null, 2));
+    console.log(
+      JSON.stringify(
+        {
+          skipped: true,
+          reason:
+            'No configured LLM credentials. Set OPENAI_API_KEY, ANTHROPIC_API_KEY, XIAOMI_API_KEY, or AI_MODEL.',
+        },
+        null,
+        2
+      )
+    );
     return;
   }
 
@@ -367,7 +377,9 @@ async function main() {
   const cases: EvalCaseResult[] = [];
   const batchSize = 4;
   for (let i = 0; i < fixture.cases.length; i += batchSize) {
-    console.error(`[Eval] Running batch ${Math.floor(i / batchSize) + 1} of ${Math.ceil(fixture.cases.length / batchSize)}...`);
+    console.error(
+      `[Eval] Running batch ${Math.floor(i / batchSize) + 1} of ${Math.ceil(fixture.cases.length / batchSize)}...`
+    );
     const batch = fixture.cases.slice(i, i + batchSize);
     const results = await Promise.all(batch.map((tc) => runCase(tc, options)));
     cases.push(...results);
@@ -384,7 +396,9 @@ async function main() {
   });
 
   console.error(`\n[Eval] === SUMMARY ===`);
-  console.error(`[Eval] Passed: ${report.summary.passed}/${report.summary.total} | Average Score: ${(report.summary.averageScore * 100).toFixed(1)}%`);
+  console.error(
+    `[Eval] Passed: ${report.summary.passed}/${report.summary.total} | Average Score: ${(report.summary.averageScore * 100).toFixed(1)}%`
+  );
 
   console.log(JSON.stringify(report, null, 2));
   if (options.writeReport) {

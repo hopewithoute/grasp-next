@@ -14,7 +14,7 @@ export function FlowToolbar() {
 
   return (
     <Panel position="top-right">
-      <div className="mr-3 mt-3 flex items-center gap-1 rounded-full border border-border bg-card/50 p-1 shadow-md backdrop-blur">
+      <div className="border-border bg-card/50 mt-3 mr-3 flex items-center gap-1 rounded-full border p-1 shadow-md backdrop-blur">
         <ToolbarButton label="Zoom out" onClick={handleZoomOut}>
           <Minus className="size-3.5" strokeWidth={1.5} />
         </ToolbarButton>
@@ -41,7 +41,7 @@ function ToolbarButton({
   return (
     <button
       aria-label={label}
-      className="inline-flex size-7 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
+      className="text-muted-foreground hover:bg-muted/50 hover:text-foreground inline-flex size-7 items-center justify-center rounded-full transition-colors"
       onClick={onClick}
       type="button"
     >

@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { MarkerType, type Edge, type Node } from '@xyflow/react';
-import { type ConceptRow, type RelationshipRow, type ConceptNodeData } from '../types';
 import { buildConceptGraph } from '../concept-graph-utils';
+import { type ConceptNodeData, type ConceptRow, type RelationshipRow } from '../types';
 import { type PendingProposal } from './use-concept-graph-state';
 
 // --- Types ---
@@ -80,7 +80,14 @@ export function mergeProposals(
 
   for (const [proposalIndex, proposal] of pendingProposals.entries()) {
     for (const action of proposal.actions) {
-      const { conceptKey, name: payloadName, id: payloadId, definition, confidence, difficulty } = action.payload as Record<string, string | undefined>;
+      const {
+        conceptKey,
+        name: payloadName,
+        id: payloadId,
+        definition,
+        confidence,
+        difficulty,
+      } = action.payload as Record<string, string | undefined>;
       const actionType = action.type.replace('-', '_');
 
       if (actionType === 'add_concept') {
@@ -101,9 +108,7 @@ export function mergeProposals(
         nodeProposalMap.set(ghostId, proposal.id);
       } else if (actionType === 'update_concept') {
         const key =
-          payloadString(conceptKey) ??
-          payloadString(payloadName) ??
-          payloadString(payloadId);
+          payloadString(conceptKey) ?? payloadString(payloadName) ?? payloadString(payloadId);
         const target = findConcept(key);
         if (target) {
           ghostUpdateIds.add(target.id);
@@ -114,9 +119,7 @@ export function mergeProposals(
         }
       } else if (actionType === 'delete_concept') {
         const key =
-          payloadString(conceptKey) ??
-          payloadString(payloadName) ??
-          payloadString(payloadId);
+          payloadString(conceptKey) ?? payloadString(payloadName) ?? payloadString(payloadId);
         const target = findConcept(key);
         if (target) {
           ghostDeleteIds.add(target.id);
@@ -221,7 +224,7 @@ export function useDecoratedGraph({
       const isGhostUpdate = ghostUpdateIds.has(node.id);
       const isGhostDelete = ghostDeleteIds.has(node.id);
       const proposalId = nodeProposalMap.get(node.id);
-      
+
       const isDimmed = selectedConceptId ? !neighbors.has(node.id) : false;
 
       return {
@@ -264,7 +267,7 @@ export function useDecoratedGraph({
 
       const isAnimated = isLinked || isGhostAdd;
       const strokeWidth = isLinked || isGhostAdd ? 2 : 1.4;
-      
+
       let opacity = 1;
       if (isGhostDelete) opacity = 0.3;
       if (isDimmed) opacity = 0.15;
@@ -301,7 +304,7 @@ export function useDecoratedGraph({
     ghostRelDeleteIds,
     nodeProposalMap,
     onAcceptProposal,
-    onRejectProposal
+    onRejectProposal,
   ]);
 
   return {

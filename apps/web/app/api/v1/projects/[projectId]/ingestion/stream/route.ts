@@ -1,8 +1,10 @@
 import { revalidatePath } from 'next/cache';
 import { createUIMessageStream, createUIMessageStreamResponse } from 'ai';
+import { requiredString, safeParse, v } from '@grasp/domain';
 import { getActor } from '@/server/actor';
-import { runSourceIngestion, type IngestionStreamEvent } from '@/server/source-ingestion-runner';
 import { createProjectDeps } from '@/server/project-deps';
+import { runSourceIngestion, type IngestionStreamEvent } from '@/server/source-ingestion-runner';
+import { parseJsonRequest, validationErrorResponse } from '../../../../http';
 
 type RouteContext = {
   params: Promise<{ projectId: string }>;
@@ -23,16 +25,26 @@ export async function POST(request: Request, context: RouteContext) {
     return new Response('Project not found.', { status: 404 });
   }
 
-  const body = (await request.json()) as {
-    sourceId: string;
-    sourceTitle: string;
-    sourceType: 'markdown' | 'text';
-    content: string;
-  };
-
-  if (!body.sourceId || !body.content) {
-    return new Response('sourceId and content are required.', { status: 400 });
+  const bodyResult = await parseJsonRequest(request);
+  if (!bodyResult.ok) {
+    return bodyResult.response;
   }
+
+  const ingestionStreamRequestBodySchema = v.object({
+    sourceId: requiredString,
+    sourceTitle: v.optional(v.string()),
+    sourceType: v.optional(v.picklist(['markdown', 'text'])),
+    content: v.pipe(v.string(), v.minLength(1)),
+  });
+
+  const parsed = safeParse(ingestionStreamRequestBodySchema, bodyResult.value);
+  if (!parsed.success) {
+    const errorResponse = validationErrorResponse(parsed);
+    if (errorResponse) return errorResponse;
+    return new Response('Invalid request body.', { status: 400 });
+  }
+
+  const body = parsed.output;
 
   const stream = createUIMessageStream({
     async execute({ writer }) {

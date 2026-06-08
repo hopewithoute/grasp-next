@@ -1,4 +1,4 @@
-import { FileText, History, MessageSquareText, Network, Quote, ArrowRight } from 'lucide-react';
+import { ArrowRight, FileText, History, MessageSquareText, Network, Quote } from 'lucide-react';
 import { Eyebrow } from './home-shared';
 import { InfiniteScrollTrack, PulseBadge } from './motion-components';
 
@@ -31,7 +31,7 @@ const reviewLog = [
 
 export function WorkflowSection() {
   return (
-    <section className="border-t border-border pt-16 pb-20 md:pt-24 md:pb-32" id="workflow">
+    <section className="border-border border-t pt-16 pb-20 md:pt-24 md:pb-32" id="workflow">
       <header className="mb-12 grid gap-8 md:grid-cols-[0.42fr_0.58fr] md:items-end">
         <div className="space-y-3">
           <Eyebrow>The pipeline</Eyebrow>
@@ -41,25 +41,25 @@ export function WorkflowSection() {
             One dense console.
           </h2>
         </div>
-        <p className="max-w-[60ch] text-base leading-relaxed text-muted-foreground md:text-lg">
+        <p className="text-muted-foreground max-w-[60ch] text-base leading-relaxed md:text-lg">
           Each stage is a strict checkpoint. The studio suspends the pipeline at every review so you
           stay in total control of the generated artifacts.
         </p>
       </header>
 
       {/* Dense Workbench Bento */}
-      <div className="grid gap-[1px] bg-border border border-border rounded-3xl overflow-hidden md:grid-cols-12 md:auto-rows-[minmax(220px,auto)]">
+      <div className="bg-border border-border grid gap-[1px] overflow-hidden rounded-3xl border md:auto-rows-[minmax(220px,auto)] md:grid-cols-12">
         {/* Stage 03 — Reviewable artifacts (Featured) */}
-        <article className="relative bg-background p-7 md:col-span-7 md:row-span-2 md:p-8 flex flex-col justify-between">
+        <article className="bg-background relative flex flex-col justify-between p-7 md:col-span-7 md:row-span-2 md:p-8">
           <div>
-            <header className="flex items-start justify-between border-b border-border pb-4 mb-6">
+            <header className="border-border mb-6 flex items-start justify-between border-b pb-4">
               <div className="flex items-center gap-3">
-                <Quote className="size-4 text-brand-accent" strokeWidth={1.5} />
-                <span className="block font-mono text-[0.7rem] tracking-[0.16em] uppercase text-brand-accent">
+                <Quote className="text-brand-accent size-4" strokeWidth={1.5} />
+                <span className="text-brand-accent block font-mono text-[0.7rem] tracking-[0.16em] uppercase">
                   STAGE 03 · Reviewable Artifacts
                 </span>
               </div>
-              <span className="font-mono text-[0.7rem] tabular-nums text-muted-foreground">
+              <span className="text-muted-foreground font-mono text-[0.7rem] tabular-nums">
                 PRD §7.7
               </span>
             </header>
@@ -69,17 +69,17 @@ export function WorkflowSection() {
             </h3>
 
             {/* Mock review log — Dense list */}
-            <ul className="mt-8 flex flex-col gap-[1px] bg-border border border-border rounded-lg overflow-hidden">
+            <ul className="bg-border border-border mt-8 flex flex-col gap-[1px] overflow-hidden rounded-lg border">
               {reviewLog.map((entry) => {
                 const isSuccess = entry.tone === 'success';
                 const isWarn = entry.tone === 'warn';
                 return (
                   <li
-                    className={`flex items-center justify-between bg-card px-4 py-2.5 text-sm`}
+                    className={`bg-card flex items-center justify-between px-4 py-2.5 text-sm`}
                     key={entry.id}
                   >
                     <div className="flex items-center gap-3">
-                      <span className="font-mono text-[0.65rem] tracking-[0.16em] uppercase text-muted-foreground">
+                      <span className="text-muted-foreground font-mono text-[0.65rem] tracking-[0.16em] uppercase">
                         [{entry.actor}]
                       </span>
                       <span
@@ -95,7 +95,7 @@ export function WorkflowSection() {
                       </span>
                       <span className="text-muted-foreground">{entry.label}</span>
                     </div>
-                    <span className="font-mono text-[0.7rem] tabular-nums text-muted-foreground">
+                    <span className="text-muted-foreground font-mono text-[0.7rem] tabular-nums">
                       {entry.meta}
                     </span>
                   </li>
@@ -106,24 +106,24 @@ export function WorkflowSection() {
         </article>
 
         {/* Stage 01 — Source */}
-        <article className="bg-background p-7 md:col-span-5 md:p-8 flex flex-col">
-          <header className="flex items-center justify-between border-b border-border pb-4 mb-6">
+        <article className="bg-background flex flex-col p-7 md:col-span-5 md:p-8">
+          <header className="border-border mb-6 flex items-center justify-between border-b pb-4">
             <div className="flex items-center gap-3">
-              <FileText className="size-4 text-muted-foreground" strokeWidth={1.5} />
-              <span className="font-mono text-[0.7rem] tracking-[0.16em] uppercase text-muted-foreground">
+              <FileText className="text-muted-foreground size-4" strokeWidth={1.5} />
+              <span className="text-muted-foreground font-mono text-[0.7rem] tracking-[0.16em] uppercase">
                 STAGE 01 · Source
               </span>
             </div>
-            <span className="font-mono text-[0.7rem] tabular-nums text-muted-foreground">
+            <span className="text-muted-foreground font-mono text-[0.7rem] tabular-nums">
               PRD §7.1
             </span>
           </header>
-          <div className="flex-1 flex flex-col justify-end">
-            <p className="text-sm leading-relaxed text-muted-foreground mb-4">
+          <div className="flex flex-1 flex-col justify-end">
+            <p className="text-muted-foreground mb-4 text-sm leading-relaxed">
               Paste markdown or text. The studio validates length, language, and readiness before
               execution.
             </p>
-            <div className="font-mono text-xs text-muted-foreground flex items-center gap-2 border border-border rounded-md px-3 py-2 bg-card">
+            <div className="text-muted-foreground border-border bg-card flex items-center gap-2 rounded-md border px-3 py-2 font-mono text-xs">
               <span>
                 status: <span className="text-brand-accent">validated</span>
               </span>
@@ -134,31 +134,31 @@ export function WorkflowSection() {
         </article>
 
         {/* Stage 02 — Concept extraction */}
-        <article className="bg-background p-7 md:col-span-5 md:p-8 flex flex-col overflow-hidden">
-          <header className="flex items-center justify-between border-b border-border pb-4 mb-6">
+        <article className="bg-background flex flex-col overflow-hidden p-7 md:col-span-5 md:p-8">
+          <header className="border-border mb-6 flex items-center justify-between border-b pb-4">
             <div className="flex items-center gap-3">
-              <Network className="size-4 text-muted-foreground" strokeWidth={1.5} />
-              <span className="font-mono text-[0.7rem] tracking-[0.16em] uppercase text-muted-foreground">
+              <Network className="text-muted-foreground size-4" strokeWidth={1.5} />
+              <span className="text-muted-foreground font-mono text-[0.7rem] tracking-[0.16em] uppercase">
                 STAGE 02 · Graph
               </span>
             </div>
-            <span className="font-mono text-[0.7rem] tabular-nums text-muted-foreground">
+            <span className="text-muted-foreground font-mono text-[0.7rem] tabular-nums">
               PRD §7.2
             </span>
           </header>
-          <p className="text-sm leading-relaxed text-muted-foreground mb-6">
+          <p className="text-muted-foreground mb-6 text-sm leading-relaxed">
             A Mastra agent extracts concepts with definitions and citations. Streams as it works.
           </p>
-          <div className="mt-auto -mx-8">
+          <div className="-mx-8 mt-auto">
             {/* Infinite Scroll Micro-Interaction */}
             <InfiniteScrollTrack speed={30}>
               {[1, 2, 3, 4, 5].map((i) => (
                 <div
                   key={i}
-                  className="font-mono text-[0.7rem] whitespace-nowrap bg-card border border-border px-3 py-1.5 rounded uppercase text-muted-foreground flex items-center gap-2"
+                  className="bg-card border-border text-muted-foreground flex items-center gap-2 rounded border px-3 py-1.5 font-mono text-[0.7rem] whitespace-nowrap uppercase"
                 >
                   <PulseBadge>
-                    <span className="size-1.5 bg-brand-accent block rounded-full" />
+                    <span className="bg-brand-accent block size-1.5 rounded-full" />
                   </PulseBadge>
                   node_ext_{i}
                 </div>
@@ -168,60 +168,60 @@ export function WorkflowSection() {
         </article>
 
         {/* Stage 04 — Block-level revision */}
-        <article className="bg-background p-7 md:col-span-6 md:p-8 flex flex-col">
-          <header className="flex items-center justify-between border-b border-border pb-4 mb-6">
+        <article className="bg-background flex flex-col p-7 md:col-span-6 md:p-8">
+          <header className="border-border mb-6 flex items-center justify-between border-b pb-4">
             <div className="flex items-center gap-3">
-              <History className="size-4 text-muted-foreground" strokeWidth={1.5} />
-              <span className="font-mono text-[0.7rem] tracking-[0.16em] uppercase text-muted-foreground">
+              <History className="text-muted-foreground size-4" strokeWidth={1.5} />
+              <span className="text-muted-foreground font-mono text-[0.7rem] tracking-[0.16em] uppercase">
                 STAGE 04 · Revision
               </span>
             </div>
-            <span className="font-mono text-[0.7rem] tabular-nums text-muted-foreground">
+            <span className="text-muted-foreground font-mono text-[0.7rem] tabular-nums">
               PRD §7.5
             </span>
           </header>
-          <p className="text-sm leading-relaxed text-muted-foreground mb-6">
+          <p className="text-muted-foreground mb-6 text-sm leading-relaxed">
             Lesson blocks regenerate on instruction. Versions are kept. Nothing publishes until
             approved.
           </p>
-          <div className="mt-auto flex items-center gap-3 rounded-lg border border-border bg-card px-4 py-3">
-            <span className="font-mono text-[0.65rem] tracking-[0.16em] uppercase text-brand-accent">
+          <div className="border-border bg-card mt-auto flex items-center gap-3 rounded-lg border px-4 py-3">
+            <span className="text-brand-accent font-mono text-[0.65rem] tracking-[0.16em] uppercase">
               prompt
             </span>
-            <span className="flex-1 truncate text-sm text-foreground">
+            <span className="text-foreground flex-1 truncate text-sm">
               rewrite explanation as a bookshelf analogy
             </span>
             <span
               aria-hidden
-              className="inline-block h-3.5 w-[2px] bg-brand-accent stream-cursor"
+              className="bg-brand-accent stream-cursor inline-block h-3.5 w-[2px]"
             />
           </div>
         </article>
 
         {/* Stage 05 — Chat with material */}
-        <article className="bg-background p-7 md:col-span-6 md:p-8 flex flex-col">
-          <header className="flex items-center justify-between border-b border-border pb-4 mb-6">
+        <article className="bg-background flex flex-col p-7 md:col-span-6 md:p-8">
+          <header className="border-border mb-6 flex items-center justify-between border-b pb-4">
             <div className="flex items-center gap-3">
-              <MessageSquareText className="size-4 text-muted-foreground" strokeWidth={1.5} />
-              <span className="font-mono text-[0.7rem] tracking-[0.16em] uppercase text-muted-foreground">
+              <MessageSquareText className="text-muted-foreground size-4" strokeWidth={1.5} />
+              <span className="text-muted-foreground font-mono text-[0.7rem] tracking-[0.16em] uppercase">
                 STAGE 05 · Tutor
               </span>
             </div>
-            <span className="font-mono text-[0.7rem] tabular-nums text-muted-foreground">
+            <span className="text-muted-foreground font-mono text-[0.7rem] tabular-nums">
               PRD §7.9
             </span>
           </header>
-          <p className="text-sm leading-relaxed text-muted-foreground mb-6">
+          <p className="text-muted-foreground mb-6 text-sm leading-relaxed">
             Learners chat through an Agentic RAG tutor. Every answer cites the section it came from.
           </p>
           <div className="mt-auto flex flex-col gap-1">
-            <div className="font-mono text-xs text-muted-foreground flex items-center gap-2 mb-2">
+            <div className="text-muted-foreground mb-2 flex items-center gap-2 font-mono text-xs">
               <span>Query: B-tree vs Table Scan</span>
             </div>
-            <div className="relative border-l-2 border-brand-accent pl-4 py-1 text-sm text-foreground">
-              The engine reads <span className="font-mono text-brand-accent">log₁₀₀(N)</span> pages
+            <div className="border-brand-accent text-foreground relative border-l-2 py-1 pl-4 text-sm">
+              The engine reads <span className="text-brand-accent font-mono">log₁₀₀(N)</span> pages
               instead of N rows.
-              <div className="mt-2 flex items-center gap-2 font-mono text-[0.65rem] text-muted-foreground uppercase tracking-widest">
+              <div className="text-muted-foreground mt-2 flex items-center gap-2 font-mono text-[0.65rem] tracking-widest uppercase">
                 <ArrowRight className="size-3" strokeWidth={1.5} />
                 cited from §3.2, §3.4
               </div>

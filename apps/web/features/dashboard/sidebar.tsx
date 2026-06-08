@@ -1,7 +1,7 @@
 'use client';
 
-import Link from 'next/link';
 import Image from 'next/image';
+import Link from 'next/link';
 import { ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { NAV_ITEMS, navItemVariants, type NavItem } from './sidebar-config';
@@ -62,15 +62,15 @@ export function SidebarBody({
           href="/dashboard/projects"
           onClick={onNavigate}
         >
-          <span className="grid size-9 shrink-0 place-items-center rounded-xl border border-brand-accent-border bg-brand-accent-surface text-brand-accent-foreground">
+          <span className="border-brand-accent-border bg-brand-accent-surface text-brand-accent-foreground grid size-9 shrink-0 place-items-center rounded-xl border">
             <BrandMark className="size-5" />
           </span>
           {!collapsed ? (
             <span className="min-w-0">
-              <span className="block truncate text-sm font-medium tracking-tight text-sidebar-foreground">
+              <span className="text-sidebar-foreground block truncate text-sm font-medium tracking-tight">
                 Adaptive Learning Studio
               </span>
-              <span className="block truncate text-[0.65rem] tracking-[0.18em] uppercase text-muted-foreground">
+              <span className="text-muted-foreground block truncate text-[0.65rem] tracking-[0.18em] uppercase">
                 Project studio
               </span>
             </span>
@@ -81,9 +81,9 @@ export function SidebarBody({
           <button
             aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
             className={cn(
-              'inline-flex size-9 shrink-0 items-center justify-center rounded-xl border border-border bg-card/50 text-muted-foreground transition-colors hover:border-brand-accent-border hover:bg-brand-accent-surface hover:text-brand-accent-foreground',
+              'border-border bg-card/50 text-muted-foreground hover:border-brand-accent-border hover:bg-brand-accent-surface hover:text-brand-accent-foreground inline-flex size-9 shrink-0 items-center justify-center rounded-xl border transition-colors',
               collapsed &&
-                'absolute -right-3 top-5 size-7 rounded-full border border-sidebar-border bg-sidebar'
+                'border-sidebar-border bg-sidebar absolute top-5 -right-3 size-7 rounded-full border'
             )}
             onClick={onCollapseToggle}
             type="button"
@@ -100,8 +100,8 @@ export function SidebarBody({
       {/* Section eyebrow */}
       {!collapsed ? (
         <div className="flex items-center gap-2 px-4 pt-5 pb-2">
-          <span className="size-1.5 rounded-full bg-brand-accent pulse-soft" />
-          <span className="font-mono text-[0.65rem] tracking-[0.18em] uppercase text-muted-foreground">
+          <span className="bg-brand-accent pulse-soft size-1.5 rounded-full" />
+          <span className="text-muted-foreground font-mono text-[0.65rem] tracking-[0.18em] uppercase">
             Navigation
           </span>
         </div>
@@ -127,7 +127,7 @@ export function SidebarBody({
                 </span>
               ) : null}
               {!collapsed && item.meta ? (
-                <span className="font-mono text-[0.6rem] text-muted-foreground">{item.meta}</span>
+                <span className="text-muted-foreground font-mono text-[0.6rem]">{item.meta}</span>
               ) : null}
             </Link>
           );
@@ -139,22 +139,16 @@ export function SidebarBody({
         {viewer ? (
           <div className="flex items-center gap-3">
             {viewer.imageUrl ? (
-              <Image
-                alt=""
-                className="rounded-full"
-                height={32}
-                src={viewer.imageUrl}
-                width={32}
-              />
+              <Image alt="" className="rounded-full" height={32} src={viewer.imageUrl} width={32} />
             ) : (
-              <div className="grid size-8 place-items-center rounded-full bg-muted text-xs font-medium text-muted-foreground">
+              <div className="bg-muted text-muted-foreground grid size-8 place-items-center rounded-full text-xs font-medium">
                 {viewer.name?.charAt(0)?.toUpperCase() ?? '?'}
               </div>
             )}
             {!collapsed ? (
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium text-foreground">{viewer.name}</p>
-                <p className="truncate text-xs text-muted-foreground">{viewer.email}</p>
+                <p className="text-foreground truncate text-sm font-medium">{viewer.name}</p>
+                <p className="text-muted-foreground truncate text-xs">{viewer.email}</p>
               </div>
             ) : null}
           </div>

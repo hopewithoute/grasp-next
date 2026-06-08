@@ -1,10 +1,8 @@
 import { memo, useState } from 'react';
-import { Check, X, ArrowRight, Loader2, Play } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { ArrowRight, Check, Loader2, Play, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 import { type ProposalAction, type ProposalPayload } from '../types';
-
-
 
 interface ProposalCardProps {
   proposal: ProposalPayload;
@@ -34,29 +32,29 @@ export const ProposalCard = memo(function ProposalCard({
             : 'border-destructive/20 bg-destructive/5 opacity-80'
       )}
     >
-      <div className="flex items-start justify-between border-b border-border/20 bg-muted/20 px-4 py-3">
+      <div className="border-border/20 bg-muted/20 flex items-start justify-between border-b px-4 py-3">
         <div className="flex flex-col">
           <div className="flex items-center gap-2">
             <SparklesIcon />
-            <h4 className="text-sm font-semibold text-foreground/90">Proposed Graph Changes</h4>
+            <h4 className="text-foreground/90 text-sm font-semibold">Proposed Graph Changes</h4>
             {status === 'approved' && (
               <span className="ml-2 inline-flex items-center rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-500">
                 <Check className="mr-1 size-3" /> Approved
               </span>
             )}
             {status === 'rejected' && (
-              <span className="ml-2 inline-flex items-center rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] font-medium text-destructive">
+              <span className="bg-destructive/10 text-destructive ml-2 inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium">
                 <X className="mr-1 size-3" /> Rejected
               </span>
             )}
           </div>
-          <p className="mt-1 text-xs text-muted-foreground/80 leading-relaxed">
+          <p className="text-muted-foreground/80 mt-1 text-xs leading-relaxed">
             {proposal.rationale}
           </p>
         </div>
       </div>
 
-      <div className="flex flex-col gap-px bg-border/20">
+      <div className="bg-border/20 flex flex-col gap-px">
         {proposal.actions.slice(0, expanded ? undefined : 3).map((action, idx) => (
           <ActionRow key={`${action.type}-${idx}`} action={action} />
         ))}
@@ -64,7 +62,7 @@ export const ProposalCard = memo(function ProposalCard({
           <button
             type="button"
             onClick={() => setExpanded(true)}
-            className="bg-background/30 px-4 py-2 text-xs font-medium text-muted-foreground hover:bg-muted/40 transition-colors"
+            className="bg-background/30 text-muted-foreground hover:bg-muted/40 px-4 py-2 text-xs font-medium transition-colors"
           >
             Show {proposal.actions.length - 3} more changes…
           </button>
@@ -72,11 +70,11 @@ export const ProposalCard = memo(function ProposalCard({
       </div>
 
       {status === 'pending' && (
-        <div className="flex items-center justify-end gap-2 bg-muted/10 p-3">
+        <div className="bg-muted/10 flex items-center justify-end gap-2 p-3">
           <Button
             variant="outline"
             size="sm"
-            className="h-8 text-xs hover:bg-destructive/10 hover:text-destructive hover:border-destructive/20"
+            className="hover:bg-destructive/10 hover:text-destructive hover:border-destructive/20 h-8 text-xs"
             onClick={onReject}
             disabled={isProcessing}
           >
@@ -86,7 +84,7 @@ export const ProposalCard = memo(function ProposalCard({
           <Button
             variant="default"
             size="sm"
-            className="h-8 text-xs bg-primary/90 hover:bg-primary"
+            className="bg-primary/90 hover:bg-primary h-8 text-xs"
             onClick={onApprove}
             disabled={isProcessing}
           >
@@ -106,15 +104,15 @@ export const ProposalCard = memo(function ProposalCard({
 function ActionRow({ action }: { action: ProposalAction }) {
   if (action.type === 'add_concept') {
     return (
-      <div className="flex items-center gap-3 bg-background/50 px-4 py-2.5">
+      <div className="bg-background/50 flex items-center gap-3 px-4 py-2.5">
         <div className="flex size-6 shrink-0 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-500">
           <span className="text-[10px] font-bold">+</span>
         </div>
         <div className="flex min-w-0 flex-col">
-          <span className="truncate text-xs font-medium text-foreground/90">
+          <span className="text-foreground/90 truncate text-xs font-medium">
             Add Concept: {action.payload.name}
           </span>
-          <span className="truncate text-[10px] text-muted-foreground/70">
+          <span className="text-muted-foreground/70 truncate text-[10px]">
             {action.payload.definition}
           </span>
         </div>
@@ -123,12 +121,12 @@ function ActionRow({ action }: { action: ProposalAction }) {
   }
   if (action.type === 'delete_concept') {
     return (
-      <div className="flex items-center gap-3 bg-background/50 px-4 py-2.5">
-        <div className="flex size-6 shrink-0 items-center justify-center rounded-full bg-destructive/10 text-destructive">
+      <div className="bg-background/50 flex items-center gap-3 px-4 py-2.5">
+        <div className="bg-destructive/10 text-destructive flex size-6 shrink-0 items-center justify-center rounded-full">
           <span className="text-[10px] font-bold">-</span>
         </div>
         <div className="flex min-w-0 flex-col">
-          <span className="truncate text-xs font-medium text-foreground/90 line-through decoration-destructive/50">
+          <span className="text-foreground/90 decoration-destructive/50 truncate text-xs font-medium line-through">
             Delete Concept: {action.payload.conceptKey}
           </span>
         </div>
@@ -137,12 +135,12 @@ function ActionRow({ action }: { action: ProposalAction }) {
   }
   if (action.type === 'update_concept') {
     return (
-      <div className="flex items-center gap-3 bg-background/50 px-4 py-2.5">
+      <div className="bg-background/50 flex items-center gap-3 px-4 py-2.5">
         <div className="flex size-6 shrink-0 items-center justify-center rounded-full bg-amber-500/10 text-amber-500">
           <span className="text-[10px] font-bold">~</span>
         </div>
         <div className="flex min-w-0 flex-col">
-          <span className="truncate text-xs font-medium text-foreground/90">
+          <span className="text-foreground/90 truncate text-xs font-medium">
             Update Concept: {action.payload.name || action.payload.conceptKey}
           </span>
         </div>
@@ -151,17 +149,17 @@ function ActionRow({ action }: { action: ProposalAction }) {
   }
   if (action.type === 'add_relationship') {
     return (
-      <div className="flex items-center gap-3 bg-background/50 px-4 py-2.5">
+      <div className="bg-background/50 flex items-center gap-3 px-4 py-2.5">
         <div className="flex size-6 shrink-0 items-center justify-center rounded-full bg-indigo-500/10 text-indigo-500">
           <span className="text-[10px] font-bold">🔗</span>
         </div>
         <div className="flex min-w-0 flex-col">
-          <div className="flex items-center gap-1.5 text-xs font-medium text-foreground/90">
-            <span className="truncate max-w-[100px]">{action.payload.sourceConceptKey}</span>
-            <ArrowRight className="size-3 text-muted-foreground/50" />
-            <span className="truncate max-w-[100px]">{action.payload.targetConceptKey}</span>
+          <div className="text-foreground/90 flex items-center gap-1.5 text-xs font-medium">
+            <span className="max-w-[100px] truncate">{action.payload.sourceConceptKey}</span>
+            <ArrowRight className="text-muted-foreground/50 size-3" />
+            <span className="max-w-[100px] truncate">{action.payload.targetConceptKey}</span>
           </div>
-          <span className="text-[10px] uppercase tracking-wider text-muted-foreground/70">
+          <span className="text-muted-foreground/70 text-[10px] tracking-wider uppercase">
             {String(action.payload.relationshipType ?? '').replace('_', ' ')}
           </span>
         </div>
@@ -170,15 +168,15 @@ function ActionRow({ action }: { action: ProposalAction }) {
   }
   if (action.type === 'delete_relationship') {
     return (
-      <div className="flex items-center gap-3 bg-background/50 px-4 py-2.5">
-        <div className="flex size-6 shrink-0 items-center justify-center rounded-full bg-destructive/10 text-destructive">
-          <span className="text-[10px] font-bold line-through decoration-destructive/50">🔗</span>
+      <div className="bg-background/50 flex items-center gap-3 px-4 py-2.5">
+        <div className="bg-destructive/10 text-destructive flex size-6 shrink-0 items-center justify-center rounded-full">
+          <span className="decoration-destructive/50 text-[10px] font-bold line-through">🔗</span>
         </div>
         <div className="flex min-w-0 flex-col">
-          <div className="flex items-center gap-1.5 text-xs font-medium text-foreground/90 line-through decoration-destructive/50">
-            <span className="truncate max-w-[100px]">{action.payload.sourceConceptKey}</span>
-            <ArrowRight className="size-3 text-muted-foreground/50" />
-            <span className="truncate max-w-[100px]">{action.payload.targetConceptKey}</span>
+          <div className="text-foreground/90 decoration-destructive/50 flex items-center gap-1.5 text-xs font-medium line-through">
+            <span className="max-w-[100px] truncate">{action.payload.sourceConceptKey}</span>
+            <ArrowRight className="text-muted-foreground/50 size-3" />
+            <span className="max-w-[100px] truncate">{action.payload.targetConceptKey}</span>
           </div>
         </div>
       </div>
@@ -186,15 +184,15 @@ function ActionRow({ action }: { action: ProposalAction }) {
   }
   if (action.type === 'update_evidence') {
     return (
-      <div className="flex items-center gap-3 bg-background/50 px-4 py-2.5">
+      <div className="bg-background/50 flex items-center gap-3 px-4 py-2.5">
         <div className="flex size-6 shrink-0 items-center justify-center rounded-full bg-amber-500/10 text-amber-500">
           <span className="text-[10px] font-bold">~</span>
         </div>
         <div className="flex min-w-0 flex-col">
-          <span className="truncate text-xs font-medium text-foreground/90">
+          <span className="text-foreground/90 truncate text-xs font-medium">
             Update Evidence: {action.payload.evidenceId}
           </span>
-          <span className="truncate text-[10px] text-muted-foreground/70">
+          <span className="text-muted-foreground/70 truncate text-[10px]">
             {action.payload.evidenceText || action.payload.rationale}
           </span>
         </div>
@@ -203,12 +201,12 @@ function ActionRow({ action }: { action: ProposalAction }) {
   }
   if (action.type === 'delete_evidence') {
     return (
-      <div className="flex items-center gap-3 bg-background/50 px-4 py-2.5">
-        <div className="flex size-6 shrink-0 items-center justify-center rounded-full bg-destructive/10 text-destructive">
+      <div className="bg-background/50 flex items-center gap-3 px-4 py-2.5">
+        <div className="bg-destructive/10 text-destructive flex size-6 shrink-0 items-center justify-center rounded-full">
           <span className="text-[10px] font-bold">-</span>
         </div>
         <div className="flex min-w-0 flex-col">
-          <span className="truncate text-xs font-medium text-foreground/90 line-through decoration-destructive/50">
+          <span className="text-foreground/90 decoration-destructive/50 truncate text-xs font-medium line-through">
             Delete Evidence: {action.payload.evidenceId}
           </span>
         </div>
@@ -217,15 +215,15 @@ function ActionRow({ action }: { action: ProposalAction }) {
   }
   if (action.type === 'add_evidence') {
     return (
-      <div className="flex items-center gap-3 bg-background/50 px-4 py-2.5">
+      <div className="bg-background/50 flex items-center gap-3 px-4 py-2.5">
         <div className="flex size-6 shrink-0 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-500">
           <span className="text-[10px] font-bold">+</span>
         </div>
         <div className="flex min-w-0 flex-col">
-          <span className="truncate text-xs font-medium text-foreground/90">
+          <span className="text-foreground/90 truncate text-xs font-medium">
             Add Evidence: {action.payload.conceptKey}
           </span>
-          <span className="truncate text-[10px] text-muted-foreground/70">
+          <span className="text-muted-foreground/70 truncate text-[10px]">
             {action.payload.evidenceText || action.payload.rationale}
           </span>
         </div>
@@ -233,11 +231,11 @@ function ActionRow({ action }: { action: ProposalAction }) {
     );
   }
   return (
-    <div className="flex items-center gap-3 bg-background/50 px-4 py-2.5">
-      <div className="flex size-6 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
+    <div className="bg-background/50 flex items-center gap-3 px-4 py-2.5">
+      <div className="bg-muted text-muted-foreground flex size-6 shrink-0 items-center justify-center rounded-full">
         <Play className="size-3" />
       </div>
-      <span className="text-xs font-medium text-foreground/90">
+      <span className="text-foreground/90 text-xs font-medium">
         {(action.type as string).replaceAll('_', ' ')}
       </span>
     </div>

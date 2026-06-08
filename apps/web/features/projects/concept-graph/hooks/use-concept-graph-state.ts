@@ -1,7 +1,5 @@
-import { useState, useEffect, useSyncExternalStore } from 'react';
-import { type ConceptRow } from '../types';
-import { type DifficultyFilter } from '../types';
-import { type ProposalPayload } from '../types';
+import { useEffect, useState, useSyncExternalStore } from 'react';
+import { type ConceptRow, type DifficultyFilter, type ProposalPayload } from '../types';
 
 export function useDebounce<T>(value: T, delay: number): T {
   const [debouncedValue, setDebouncedValue] = useState(value);

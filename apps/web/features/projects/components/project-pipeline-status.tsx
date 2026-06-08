@@ -45,12 +45,12 @@ export function ProjectPipelineStatus({
               </h2>
             </div>
             <Sparkles
-              className="hidden size-5 shrink-0 text-brand-accent md:block"
+              className="text-brand-accent hidden size-5 shrink-0 md:block"
               strokeWidth={1.5}
             />
           </header>
 
-          <ol className="divide-y divide-border border-y border-border">
+          <ol className="divide-border border-border divide-y border-y">
             <PipelineRow
               cite="01"
               copy="Source text is editable before any graph run."
@@ -92,18 +92,18 @@ export function ProjectPipelineStatus({
               </h2>
             </div>
             <Link
-              className="group inline-flex items-center gap-2 rounded-full border border-border bg-card/50 px-4 py-2 text-sm font-medium text-muted-foreground transition-all duration-200 hover:border-brand-accent-border hover:bg-brand-accent-surface hover:text-brand-accent-foreground"
+              className="group border-border bg-card/50 text-muted-foreground hover:border-brand-accent-border hover:bg-brand-accent-surface hover:text-brand-accent-foreground inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-all duration-200"
               href={buildStageHref(projectId, 'workspace')}
             >
               Open workspace
               <ArrowUpRight
-                className="size-4 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
+                className="size-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
                 strokeWidth={1.5}
               />
             </Link>
           </header>
 
-          <dl className="grid gap-px overflow-hidden rounded-[1.75rem] border border-border bg-card/50 md:grid-cols-2">
+          <dl className="border-border bg-card/50 grid gap-px overflow-hidden rounded-[1.75rem] border md:grid-cols-2">
             <GraphStatCell
               label="Concepts"
               unit="extracted"
@@ -122,7 +122,7 @@ export function ProjectPipelineStatus({
       <aside className="space-y-12 xl:sticky xl:top-24 xl:self-start">
         <section className="space-y-5">
           <Eyebrow>Studio guidance</Eyebrow>
-          <ol className="divide-y divide-border border-y border-border">
+          <ol className="divide-border border-border divide-y border-y">
             <GuidanceRow
               cite="01"
               copy="Maintain raw material and preview markdown before any run."
@@ -172,16 +172,16 @@ function PipelineRow({
 }) {
   return (
     <li className="grid gap-3 py-6 md:grid-cols-[60px_1fr_auto] md:items-baseline md:gap-8">
-      <span className="font-mono text-sm tabular-nums tracking-[0.16em] uppercase text-brand-accent-foreground">
+      <span className="text-brand-accent-foreground font-mono text-sm tracking-[0.16em] uppercase tabular-nums">
         {cite}
       </span>
       <div className="space-y-2">
-        <h3 className="flex items-center gap-2.5 text-lg font-medium tracking-tight text-foreground">
-          <Icon className="size-4 text-muted-foreground" strokeWidth={1.5} />
+        <h3 className="text-foreground flex items-center gap-2.5 text-lg font-medium tracking-tight">
+          <Icon className="text-muted-foreground size-4" strokeWidth={1.5} />
           {title}
         </h3>
-        <p className="max-w-[64ch] text-sm leading-relaxed text-muted-foreground">{copy}</p>
-        <p className="font-mono text-[0.7rem] tabular-nums tracking-[0.14em] uppercase text-muted-foreground">
+        <p className="text-muted-foreground max-w-[64ch] text-sm leading-relaxed">{copy}</p>
+        <p className="text-muted-foreground font-mono text-[0.7rem] tracking-[0.14em] uppercase tabular-nums">
           {stat}
         </p>
       </div>
@@ -204,8 +204,8 @@ function GraphStatCell({
   value: string;
 }) {
   return (
-    <div className="flex h-full flex-col justify-between gap-4 bg-card p-6">
-      <p className="font-mono text-[0.65rem] tabular-nums tracking-[0.18em] uppercase text-muted-foreground">
+    <div className="bg-card flex h-full flex-col justify-between gap-4 p-6">
+      <p className="text-muted-foreground font-mono text-[0.65rem] tracking-[0.18em] uppercase tabular-nums">
         {label}
       </p>
       <div className="space-y-1">
@@ -216,7 +216,7 @@ function GraphStatCell({
         >
           {value}
         </p>
-        <p className="font-mono text-[0.65rem] tabular-nums tracking-[0.14em] uppercase text-muted-foreground">
+        <p className="text-muted-foreground font-mono text-[0.65rem] tracking-[0.14em] uppercase tabular-nums">
           {unit}
         </p>
       </div>
@@ -227,12 +227,12 @@ function GraphStatCell({
 function GuidanceRow({ cite, copy, label }: { cite: string; copy: string; label: string }) {
   return (
     <li className="grid gap-2 py-4 md:grid-cols-[40px_1fr] md:items-baseline md:gap-5">
-      <span className="font-mono text-[0.7rem] tabular-nums tracking-[0.18em] uppercase text-brand-accent-foreground">
+      <span className="text-brand-accent-foreground font-mono text-[0.7rem] tracking-[0.18em] uppercase tabular-nums">
         {cite}
       </span>
       <div className="space-y-1.5">
-        <h3 className="text-sm font-medium tracking-tight text-foreground">{label}</h3>
-        <p className="max-w-[44ch] text-sm leading-relaxed text-muted-foreground">{copy}</p>
+        <h3 className="text-foreground text-sm font-medium tracking-tight">{label}</h3>
+        <p className="text-muted-foreground max-w-[44ch] text-sm leading-relaxed">{copy}</p>
       </div>
     </li>
   );
@@ -240,8 +240,8 @@ function GuidanceRow({ cite, copy, label }: { cite: string; copy: string; label:
 
 function ReadinessRow({ label, ready }: { label: string; ready: boolean }) {
   return (
-    <li className="flex items-center justify-between gap-4 rounded-[1.15rem] border border-border bg-card/50 px-4 py-3">
-      <span className="text-sm text-foreground">{label}</span>
+    <li className="border-border bg-card/50 flex items-center justify-between gap-4 rounded-[1.15rem] border px-4 py-3">
+      <span className="text-foreground text-sm">{label}</span>
       <StatusChip ready={ready} />
     </li>
   );

@@ -7,19 +7,20 @@ import {
   addProjectSourceDto,
   addProjectSourceFromUrl,
   addProjectSourceFromUrlDto,
+  applyGraphProposals,
   canCreateProject,
   createProject,
   createProjectDto,
-  deleteProjectSource,
-  deleteProjectSourceDto,
   deleteProject,
   deleteProjectDto,
-  updateProjectSource,
-  updateProjectSourceDto,
+  deleteProjectSource,
+  deleteProjectSourceDto,
+  loadConceptEvidence,
+  safeParse,
   updateProjectDetails,
   updateProjectDetailsDto,
-  loadConceptEvidence,
-  applyGraphProposals,
+  updateProjectSource,
+  updateProjectSourceDto,
   type GraphProposalAction,
 } from '@grasp/domain';
 import { getActor as auth } from '@/server/actor';
@@ -47,7 +48,6 @@ export type DeleteProjectFormState = {
   error: string | null;
 };
 
-
 // --- Project form actions ---
 
 export async function createProjectFormAction(
@@ -60,7 +60,7 @@ export async function createProjectFormAction(
     return { error: 'Unauthorized.' };
   }
 
-  const parsed = createProjectDto.safeParse({
+  const parsed = safeParse(createProjectDto, {
     description: formData.get('description')?.toString().trim() || undefined,
     title: formData.get('title')?.toString() ?? '',
   });
@@ -69,7 +69,7 @@ export async function createProjectFormAction(
     return { error: 'Please check the project fields.' };
   }
 
-  await createProject(parsed.data, createProjectDeps(), actor.id);
+  await createProject(parsed.output, createProjectDeps(), actor.id);
 
   revalidatePath('/dashboard/projects');
 
@@ -86,7 +86,7 @@ export async function deleteProjectFormAction(
     return { error: 'Unauthorized.' };
   }
 
-  const parsed = deleteProjectDto.safeParse({
+  const parsed = safeParse(deleteProjectDto, {
     projectId: formData.get('projectId')?.toString() ?? '',
   });
 
@@ -95,7 +95,7 @@ export async function deleteProjectFormAction(
   }
 
   try {
-    await deleteProject(parsed.data, createProjectDeps(), actor);
+    await deleteProject(parsed.output, createProjectDeps(), actor);
 
     revalidatePath('/dashboard/projects');
 
@@ -117,7 +117,7 @@ export async function updateProjectDetailsFormAction(
     return { error: 'Unauthorized.', success: false };
   }
 
-  const parsed = updateProjectDetailsDto.safeParse({
+  const parsed = safeParse(updateProjectDetailsDto, {
     description: formData.get('description')?.toString().trim() || undefined,
     projectId: formData.get('projectId')?.toString() ?? '',
     title: formData.get('title')?.toString() ?? '',
@@ -128,9 +128,9 @@ export async function updateProjectDetailsFormAction(
   }
 
   try {
-    await updateProjectDetails(parsed.data, createProjectDeps(), actor);
+    await updateProjectDetails(parsed.output, createProjectDeps(), actor);
 
-    revalidatePath(`/dashboard/projects/${parsed.data.projectId}`);
+    revalidatePath(`/dashboard/projects/${parsed.output.projectId}`);
 
     return { error: null, success: true };
   } catch (error) {
@@ -153,7 +153,7 @@ export async function addProjectSourceFormAction(
     return { error: 'Unauthorized.', success: false };
   }
 
-  const parsed = addProjectSourceDto.safeParse({
+  const parsed = safeParse(addProjectSourceDto, {
     content: formData.get('content')?.toString() ?? '',
     projectId: formData.get('projectId')?.toString() ?? '',
     title: formData.get('title')?.toString() ?? '',
@@ -166,7 +166,7 @@ export async function addProjectSourceFormAction(
 
   try {
     const deps = createProjectDeps();
-    const source = await addProjectSource(parsed.data, deps, actor);
+    const source = await addProjectSource(parsed.output, deps, actor);
 
     revalidatePath('/dashboard/projects');
     revalidatePath(`/dashboard/projects/${source.projectId}`);
@@ -190,7 +190,7 @@ export async function addProjectSourceFromUrlFormAction(
     return { error: 'Unauthorized.', success: false };
   }
 
-  const parsed = addProjectSourceFromUrlDto.safeParse({
+  const parsed = safeParse(addProjectSourceFromUrlDto, {
     url: formData.get('url')?.toString() ?? '',
     projectId: formData.get('projectId')?.toString() ?? '',
     title: formData.get('title')?.toString() ?? '',
@@ -202,15 +202,15 @@ export async function addProjectSourceFromUrlFormAction(
 
   try {
     const deps = createProjectDeps();
-    
+
     const { extractWebpageContent } = await import('@grasp/ai');
-    const text = await extractWebpageContent(parsed.data.url);
+    const text = await extractWebpageContent(parsed.output.url);
 
     const source = await addProjectSourceFromUrl(
       {
-        projectId: parsed.data.projectId,
-        title: parsed.data.title,
-        url: parsed.data.url,
+        projectId: parsed.output.projectId,
+        title: parsed.output.title,
+        url: parsed.output.url,
         content: text,
       },
       deps,
@@ -239,7 +239,7 @@ export async function updateProjectSourceFormAction(
     return { error: 'Unauthorized.', success: false };
   }
 
-  const parsed = updateProjectSourceDto.safeParse({
+  const parsed = safeParse(updateProjectSourceDto, {
     content: formData.get('content')?.toString() ?? '',
     sourceId: formData.get('sourceId')?.toString() ?? '',
     title: formData.get('title')?.toString() ?? '',
@@ -252,7 +252,7 @@ export async function updateProjectSourceFormAction(
 
   try {
     const deps = createProjectDeps();
-    const source = await updateProjectSource(parsed.data, deps, actor);
+    const source = await updateProjectSource(parsed.output, deps, actor);
 
     revalidatePath(`/dashboard/projects/${source.projectId}`);
 
@@ -275,7 +275,7 @@ export async function deleteProjectSourceFormAction(
     return { error: 'Unauthorized.', success: false };
   }
 
-  const parsed = deleteProjectSourceDto.safeParse({
+  const parsed = safeParse(deleteProjectSourceDto, {
     sourceId: formData.get('sourceId')?.toString() ?? '',
   });
 
@@ -285,7 +285,7 @@ export async function deleteProjectSourceFormAction(
 
   try {
     const deps = createProjectDeps();
-    const source = await deleteProjectSource(parsed.data, deps, actor);
+    const source = await deleteProjectSource(parsed.output, deps, actor);
 
     revalidatePath(`/dashboard/projects/${source.projectId}`);
 
@@ -297,7 +297,6 @@ export async function deleteProjectSourceFormAction(
     };
   }
 }
-
 
 // --- Evidence query actions ---
 
@@ -327,7 +326,6 @@ export async function getConceptEvidence(projectId: string, conceptId: string) {
     return [];
   }
 }
-
 
 // --- Graph proposal action ---
 

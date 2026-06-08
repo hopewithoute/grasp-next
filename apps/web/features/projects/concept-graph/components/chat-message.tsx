@@ -2,12 +2,11 @@
 
 import { memo } from 'react';
 import { Bot } from 'lucide-react';
-import { type ChatItem } from '../types';
-import { type ProposalPayload, type SourceProposalPayload } from '../types';
+import { type ChatItem, type ProposalPayload, type SourceProposalPayload } from '../types';
+import { ChatEvent } from './chat-event';
+import { MarkdownText } from './chat-markdown';
 import { ProposalCard } from './proposal-card';
 import { SourceProposalCard } from './source-proposal-card';
-import { MarkdownText } from './chat-markdown';
-import { ChatEvent } from './chat-event';
 
 // --- ChatItemRow ---
 
@@ -83,7 +82,7 @@ const ChatMessage = memo(function ChatMessage({
   if (role === 'user') {
     return (
       <div className="flex justify-end">
-        <p className="max-w-[28ch] rounded-2xl rounded-br-md border border-brand-accent-border bg-brand-accent/[0.08] px-3.5 py-2 text-sm leading-6 text-foreground sm:max-w-[36ch]">
+        <p className="border-brand-accent-border bg-brand-accent/[0.08] text-foreground max-w-[28ch] rounded-2xl rounded-br-md border px-3.5 py-2 text-sm leading-6 sm:max-w-[36ch]">
           {text}
         </p>
       </div>
@@ -94,16 +93,16 @@ const ChatMessage = memo(function ChatMessage({
     <div className="flex items-start gap-2.5">
       <span
         aria-hidden
-        className="mt-0.5 grid size-7 shrink-0 place-items-center rounded-full border border-border bg-card text-brand-accent-foreground"
+        className="border-border bg-card text-brand-accent-foreground mt-0.5 grid size-7 shrink-0 place-items-center rounded-full border"
       >
         <Bot className="size-3.5" strokeWidth={1.5} />
       </span>
-      <div className="max-w-[34ch] rounded-2xl rounded-tl-md border border-border bg-card/50 px-3.5 py-2 text-sm leading-6 text-muted-foreground">
+      <div className="border-border bg-card/50 text-muted-foreground max-w-[34ch] rounded-2xl rounded-tl-md border px-3.5 py-2 text-sm leading-6">
         <MarkdownText text={text} />
         {streaming ? (
           <span
             aria-hidden
-            className="ml-1 inline-block h-3.5 w-[2px] translate-y-0.5 bg-brand-accent stream-cursor"
+            className="bg-brand-accent stream-cursor ml-1 inline-block h-3.5 w-[2px] translate-y-0.5"
           />
         ) : null}
       </div>

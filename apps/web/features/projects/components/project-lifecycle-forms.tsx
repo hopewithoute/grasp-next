@@ -1,7 +1,7 @@
 'use client';
 
-import { Pencil, Trash2 } from 'lucide-react';
 import { useActionState } from 'react';
+import { Pencil, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { deleteProjectFormAction, updateProjectDetailsFormAction } from '../actions';
 
@@ -28,11 +28,11 @@ export function ProjectDetailsForm({ description, projectId, title }: ProjectDet
 
       <div className="grid gap-4 md:grid-cols-[1fr_1.4fr]">
         <div className="space-y-2">
-          <label className="text-sm font-medium text-foreground" htmlFor="projectTitle">
+          <label className="text-foreground text-sm font-medium" htmlFor="projectTitle">
             Title
           </label>
           <input
-            className="h-11 w-full rounded-2xl border border-border bg-background px-4 text-sm text-foreground outline-none placeholder:text-muted-foreground focus-visible:border-brand-accent-border focus-visible:ring-3 focus-visible:ring-brand-accent/20"
+            className="border-border bg-background text-foreground placeholder:text-muted-foreground focus-visible:border-brand-accent-border focus-visible:ring-brand-accent/20 h-11 w-full rounded-2xl border px-4 text-sm outline-none focus-visible:ring-3"
             defaultValue={title}
             id="projectTitle"
             maxLength={160}
@@ -43,11 +43,11 @@ export function ProjectDetailsForm({ description, projectId, title }: ProjectDet
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-medium text-foreground" htmlFor="projectDescription">
+          <label className="text-foreground text-sm font-medium" htmlFor="projectDescription">
             Description
           </label>
           <input
-            className="h-11 w-full rounded-2xl border border-border bg-background px-4 text-sm text-foreground outline-none placeholder:text-muted-foreground focus-visible:border-brand-accent-border focus-visible:ring-3 focus-visible:ring-brand-accent/20"
+            className="border-border bg-background text-foreground placeholder:text-muted-foreground focus-visible:border-brand-accent-border focus-visible:ring-brand-accent/20 h-11 w-full rounded-2xl border px-4 text-sm outline-none focus-visible:ring-3"
             defaultValue={description ?? ''}
             id="projectDescription"
             maxLength={1000}
@@ -70,7 +70,7 @@ export function ProjectDetailsForm({ description, projectId, title }: ProjectDet
       ) : null}
 
       <Button
-        className="h-10 rounded-full bg-brand-accent px-5 text-brand-accent-foreground hover:bg-brand-accent/90 active:translate-y-[1px]"
+        className="bg-brand-accent text-brand-accent-foreground hover:bg-brand-accent/90 h-10 rounded-full px-5 active:translate-y-[1px]"
         disabled={isPending}
         type="submit"
       >
@@ -91,7 +91,7 @@ export function DeleteProjectForm({ disabled, projectId }: DeleteProjectFormProp
       <input name="projectId" type="hidden" value={projectId} />
 
       {disabled ? (
-        <p className="text-sm leading-7 text-muted-foreground">
+        <p className="text-muted-foreground text-sm leading-7">
           Deletion is blocked while a graph build is running.
         </p>
       ) : null}

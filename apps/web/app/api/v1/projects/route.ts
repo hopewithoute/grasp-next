@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { canCreateProject, createProject, createProjectDto } from '@grasp/domain';
+import { canCreateProject, createProject, createProjectDto, parse } from '@grasp/domain';
 import { getActor } from '@/server/actor';
 import { createProjectDeps } from '@/server/project-deps';
 import { parseJsonRequest, validationErrorResponse } from '../http';
@@ -18,7 +18,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const input = createProjectDto.parse(body.value);
+    const input = parse(createProjectDto, body.value);
     const project = await createProject(input, createProjectDeps(), actor.id);
 
     return NextResponse.json(project, { status: 201 });

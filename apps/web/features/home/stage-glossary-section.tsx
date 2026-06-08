@@ -41,7 +41,7 @@ const stageBlocks = [
 
 export function StageGlossarySection() {
   return (
-    <section className="border-t border-border pt-16 pb-20 md:pt-24 md:pb-32">
+    <section className="border-border border-t pt-16 pb-20 md:pt-24 md:pb-32">
       <header className="mb-10 grid gap-6 md:grid-cols-[0.4fr_0.6fr] md:items-end">
         <div className="space-y-3">
           <Eyebrow>Stage glossary</Eyebrow>
@@ -49,13 +49,13 @@ export function StageGlossarySection() {
             What happens at each step.
           </h2>
         </div>
-        <p className="max-w-[58ch] text-sm leading-relaxed text-muted-foreground">
+        <p className="text-muted-foreground max-w-[58ch] text-sm leading-relaxed">
           The studio is project-scoped. Source, graph, lesson, publish: all live inside one
           workspace, with its own review surface and version history.
         </p>
       </header>
 
-      <ol className="divide-y divide-border border-y border-border">
+      <ol className="divide-border border-border divide-y border-y">
         {stageBlocks.map((block) => {
           const Icon = block.icon;
           return (
@@ -63,19 +63,19 @@ export function StageGlossarySection() {
               className="grid gap-3 py-6 md:grid-cols-[80px_1fr_auto] md:items-baseline md:gap-8 md:py-7"
               key={block.label}
             >
-              <span className="font-mono text-sm tabular-nums text-brand-accent">
+              <span className="text-brand-accent font-mono text-sm tabular-nums">
                 {block.stage}
               </span>
               <div>
-                <h3 className="flex items-center gap-2.5 text-lg font-medium tracking-tight text-foreground">
-                  <Icon className="size-4 text-muted-foreground" strokeWidth={1.5} />
+                <h3 className="text-foreground flex items-center gap-2.5 text-lg font-medium tracking-tight">
+                  <Icon className="text-muted-foreground size-4" strokeWidth={1.5} />
                   {block.label}
                 </h3>
-                <p className="mt-2 max-w-[70ch] text-sm leading-relaxed text-muted-foreground">
+                <p className="text-muted-foreground mt-2 max-w-[70ch] text-sm leading-relaxed">
                   {block.body}
                 </p>
               </div>
-              <span className="font-mono text-[0.7rem] tabular-nums text-muted-foreground md:text-right">
+              <span className="text-muted-foreground font-mono text-[0.7rem] tabular-nums md:text-right">
                 {block.cite}
               </span>
             </li>

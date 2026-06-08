@@ -12,13 +12,13 @@ export function CreateProjectForm() {
     <form action={formAction} className="space-y-5">
       <div className="space-y-2">
         <label
-          className="font-mono text-[0.65rem] font-medium tracking-[0.18em] text-muted-foreground uppercase"
+          className="text-muted-foreground font-mono text-[0.65rem] font-medium tracking-[0.18em] uppercase"
           htmlFor="title"
         >
           Title
         </label>
         <Input
-          className="h-12 rounded-2xl border-border bg-input px-4 text-sm text-foreground placeholder:text-muted-foreground/50 shadow-none focus-visible:border-ring focus-visible:ring-ring/20"
+          className="border-border bg-input text-foreground placeholder:text-muted-foreground/50 focus-visible:border-ring focus-visible:ring-ring/20 h-12 rounded-2xl px-4 text-sm shadow-none"
           id="title"
           name="title"
           placeholder="Photosynthesis foundations"
@@ -28,13 +28,13 @@ export function CreateProjectForm() {
 
       <div className="space-y-2">
         <label
-          className="font-mono text-[0.65rem] font-medium tracking-[0.18em] text-muted-foreground uppercase"
+          className="text-muted-foreground font-mono text-[0.65rem] font-medium tracking-[0.18em] uppercase"
           htmlFor="description"
         >
           Description
         </label>
         <Input
-          className="h-12 rounded-2xl border-border bg-input px-4 text-sm text-foreground placeholder:text-muted-foreground/50 shadow-none focus-visible:border-ring focus-visible:ring-ring/20"
+          className="border-border bg-input text-foreground placeholder:text-muted-foreground/50 focus-visible:border-ring focus-visible:ring-ring/20 h-12 rounded-2xl px-4 text-sm shadow-none"
           id="description"
           name="description"
           placeholder="Grade 10 biology lesson prep"
@@ -43,19 +43,19 @@ export function CreateProjectForm() {
 
       {state.error ? (
         <div
-          className="flex items-start gap-2 rounded-2xl border border-status-danger-border bg-status-danger-surface px-4 py-3 text-sm text-status-danger-foreground"
+          className="border-status-danger-border bg-status-danger-surface text-status-danger-foreground flex items-start gap-2 rounded-2xl border px-4 py-3 text-sm"
           role="alert"
         >
           <span
             aria-hidden
-            className="mt-0.5 size-1.5 shrink-0 rounded-full bg-status-danger-foreground"
+            className="bg-status-danger-foreground mt-0.5 size-1.5 shrink-0 rounded-full"
           />
           <span>{state.error}</span>
         </div>
       ) : null}
 
       <Button
-        className="h-12 w-full rounded-full border border-brand-accent-border bg-brand-accent text-sm font-medium text-[#041018] transition-all hover:opacity-90 active:translate-y-[1px]"
+        className="border-brand-accent-border bg-brand-accent h-12 w-full rounded-full border text-sm font-medium text-[#041018] transition-all hover:opacity-90 active:translate-y-[1px]"
         disabled={isPending}
         type="submit"
       >

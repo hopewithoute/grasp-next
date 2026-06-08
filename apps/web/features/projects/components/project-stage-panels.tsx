@@ -13,21 +13,21 @@ export function IngestionStatusPanel({
   };
 }) {
   return (
-    <section className="grid gap-px overflow-hidden rounded-[1.35rem] border border-border bg-card/50 md:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
-      <div className="flex items-center justify-between gap-4 bg-card/50 p-5">
+    <section className="border-border bg-card/50 grid gap-px overflow-hidden rounded-[1.35rem] border md:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
+      <div className="bg-card/50 flex items-center justify-between gap-4 p-5">
         <div className="space-y-1">
-          <p className="font-mono text-[0.62rem] tabular-nums tracking-[0.18em] uppercase text-muted-foreground">
+          <p className="text-muted-foreground font-mono text-[0.62rem] tracking-[0.18em] uppercase tabular-nums">
             Ingestion
           </p>
-          <p className="text-lg font-medium tracking-tight text-foreground capitalize">
+          <p className="text-foreground text-lg font-medium tracking-tight capitalize">
             {status.value}
           </p>
         </div>
         <StatusChip ready={status.ready} />
       </div>
       <div className="bg-card/50 p-5">
-        <p className="text-sm leading-7 text-muted-foreground">{status.hint}</p>
-        <p className="mt-2 font-mono text-[0.65rem] tracking-[0.16em] uppercase text-muted-foreground">
+        <p className="text-muted-foreground text-sm leading-7">{status.hint}</p>
+        <p className="text-muted-foreground mt-2 font-mono text-[0.65rem] tracking-[0.16em] uppercase">
           Direct source ingestion / vector search later
         </p>
       </div>
@@ -50,19 +50,19 @@ export function PlannedStagePanel({
 }) {
   return (
     <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
-      <article className="rounded-[1.75rem] border border-border bg-card/50 p-6">
-        <p className="text-sm font-medium text-muted-foreground">{eyebrow}</p>
-        <h2 className="mt-2 max-w-3xl text-3xl leading-tight font-medium tracking-[-0.04em] text-foreground">
+      <article className="border-border bg-card/50 rounded-[1.75rem] border p-6">
+        <p className="text-muted-foreground text-sm font-medium">{eyebrow}</p>
+        <h2 className="text-foreground mt-2 max-w-3xl text-3xl leading-tight font-medium tracking-[-0.04em]">
           {title}
         </h2>
-        <p className="mt-4 max-w-3xl text-sm leading-7 text-muted-foreground">
+        <p className="text-muted-foreground mt-4 max-w-3xl text-sm leading-7">
           This placeholder keeps the project studio aligned with the end-to-end MVP architecture
           while the current implementation stays focused on source and graph review.
         </p>
         <div className="mt-6 space-y-3">
           {blockers.map((blocker) => (
             <div
-              className="rounded-[1.25rem] border border-border bg-card/50 px-4 py-3 text-sm leading-7 text-muted-foreground"
+              className="border-border bg-card/50 text-muted-foreground rounded-[1.25rem] border px-4 py-3 text-sm leading-7"
               key={blocker}
             >
               {blocker}
@@ -71,13 +71,13 @@ export function PlannedStagePanel({
         </div>
       </article>
 
-      <aside className="rounded-[1.75rem] border border-border bg-card/50 p-5">
-        <p className="text-sm font-medium text-muted-foreground">Suggested route</p>
-        <p className="mt-3 text-sm leading-7 text-muted-foreground">
+      <aside className="border-border bg-card/50 rounded-[1.75rem] border p-5">
+        <p className="text-muted-foreground text-sm font-medium">Suggested route</p>
+        <p className="text-muted-foreground mt-3 text-sm leading-7">
           Return to the currently implemented stage and keep the workflow moving there.
         </p>
         <Link
-          className="mt-5 inline-flex items-center gap-2 rounded-full border border-border bg-card/50 px-4 py-2 text-sm font-medium text-muted-foreground transition-all duration-200 hover:bg-muted/50 hover:text-foreground"
+          className="border-border bg-card/50 text-muted-foreground hover:bg-muted/50 hover:text-foreground mt-5 inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-all duration-200"
           href={ctaHref}
         >
           {ctaLabel}

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { ZodError } from 'zod';
+import { validationIssues } from '@grasp/domain';
 
 export type ParsedJson =
   | {
@@ -26,14 +26,16 @@ export async function parseJsonRequest(request: Request): Promise<ParsedJson> {
 }
 
 export function validationErrorResponse(error: unknown): NextResponse | null {
-  if (!(error instanceof ZodError)) {
+  const issues = validationIssues(error);
+
+  if (!issues) {
     return null;
   }
 
   return NextResponse.json(
     {
       error: 'Invalid request body.',
-      issues: error.issues,
+      issues,
     },
     { status: 400 }
   );

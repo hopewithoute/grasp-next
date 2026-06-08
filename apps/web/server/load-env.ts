@@ -1,5 +1,4 @@
 import 'server-only';
-
 import { join } from 'node:path';
 import { cwd, loadEnvFile } from 'node:process';
 

@@ -1,7 +1,7 @@
-import { cn } from '@/lib/utils';
+import { type ReactNode } from 'react';
 import { cva } from 'class-variance-authority';
 import { ChevronsLeft, ChevronsRight, CircleDashed } from 'lucide-react';
-import { type ReactNode } from 'react';
+import { cn } from '@/lib/utils';
 import { type ConceptRow } from '../types';
 
 export function PaneHeader({
@@ -18,13 +18,13 @@ export function PaneHeader({
   title: string;
 }) {
   return (
-    <header className="flex items-center justify-between gap-3 border-b border-border px-4 py-3.5">
+    <header className="border-border flex items-center justify-between gap-3 border-b px-4 py-3.5">
       <div className="min-w-0 space-y-1">
-        <span className="inline-flex items-center gap-2 font-mono text-[0.62rem] tabular-nums tracking-[0.18em] uppercase text-muted-foreground">
-          <span aria-hidden className="size-1.5 rounded-full bg-brand-accent pulse-soft" />
+        <span className="text-muted-foreground inline-flex items-center gap-2 font-mono text-[0.62rem] tracking-[0.18em] uppercase tabular-nums">
+          <span aria-hidden className="bg-brand-accent pulse-soft size-1.5 rounded-full" />
           {eyebrow}
         </span>
-        <h2 className="truncate text-sm font-medium tracking-tight text-foreground">{title}</h2>
+        <h2 className="text-foreground truncate text-sm font-medium tracking-tight">{title}</h2>
       </div>
       <div className="flex shrink-0 items-center gap-2 text-xs">
         {meta ? <div>{meta}</div> : null}
@@ -32,7 +32,7 @@ export function PaneHeader({
           <button
             aria-label={side === 'left' ? 'Collapse concept inventory' : 'Collapse refinement'}
             aria-expanded="true"
-            className="inline-flex size-8 items-center justify-center rounded-xl border border-border bg-card/50 text-muted-foreground transition-colors hover:border-brand-accent-border hover:bg-brand-accent/8 hover:text-brand-accent-foreground"
+            className="border-border bg-card/50 text-muted-foreground hover:border-brand-accent-border hover:bg-brand-accent/8 hover:text-brand-accent-foreground inline-flex size-8 items-center justify-center rounded-xl border transition-colors"
             onClick={onCollapseToggle}
             type="button"
           >
@@ -67,14 +67,14 @@ export function CollapsedPaneRail({
     <aside
       aria-label={title}
       className={cn(
-        'flex min-h-16 items-center justify-between gap-3 border-b border-border bg-card px-4 py-3 lg:min-h-0 lg:flex-col lg:justify-start lg:border-b-0 lg:px-2 lg:py-3',
+        'border-border bg-card flex min-h-16 items-center justify-between gap-3 border-b px-4 py-3 lg:min-h-0 lg:flex-col lg:justify-start lg:border-b-0 lg:px-2 lg:py-3',
         side === 'left' ? 'lg:border-r' : 'lg:border-r-0'
       )}
     >
       <button
         aria-label={ariaLabel}
         aria-expanded="false"
-        className="inline-flex size-9 shrink-0 items-center justify-center rounded-xl border border-border bg-card/50 text-muted-foreground transition-colors hover:border-brand-accent-border hover:bg-brand-accent/8 hover:text-brand-accent-foreground lg:size-10"
+        className="border-border bg-card/50 text-muted-foreground hover:border-brand-accent-border hover:bg-brand-accent/8 hover:text-brand-accent-foreground inline-flex size-9 shrink-0 items-center justify-center rounded-xl border transition-colors lg:size-10"
         onClick={onToggle}
         type="button"
       >
@@ -86,16 +86,16 @@ export function CollapsedPaneRail({
       </button>
 
       <div className="flex min-w-0 flex-1 items-center gap-2 lg:min-h-0 lg:flex-none lg:flex-col">
-        <span aria-hidden className="size-1.5 shrink-0 rounded-full bg-brand-accent pulse-soft" />
-        <span className="truncate font-mono text-[0.62rem] tabular-nums tracking-[0.18em] uppercase text-muted-foreground lg:[writing-mode:vertical-rl]">
+        <span aria-hidden className="bg-brand-accent pulse-soft size-1.5 shrink-0 rounded-full" />
+        <span className="text-muted-foreground truncate font-mono text-[0.62rem] tracking-[0.18em] uppercase tabular-nums lg:[writing-mode:vertical-rl]">
           {eyebrow}
         </span>
-        <span className="truncate text-sm font-medium tracking-tight text-foreground lg:[writing-mode:vertical-rl]">
+        <span className="text-foreground truncate text-sm font-medium tracking-tight lg:[writing-mode:vertical-rl]">
           {title}
         </span>
       </div>
 
-      <span className="shrink-0 font-mono text-[0.62rem] tabular-nums tracking-[0.16em] uppercase text-muted-foreground lg:[writing-mode:vertical-rl]">
+      <span className="text-muted-foreground shrink-0 font-mono text-[0.62rem] tracking-[0.16em] uppercase tabular-nums lg:[writing-mode:vertical-rl]">
         {meta}
       </span>
     </aside>

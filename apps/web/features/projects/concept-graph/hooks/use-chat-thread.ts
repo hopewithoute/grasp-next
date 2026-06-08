@@ -3,10 +3,15 @@
 import { useCallback, useEffect, useRef, useState, type RefObject } from 'react';
 import { useRouter } from 'next/navigation';
 import { consumeUIMessageChunks } from '@/lib/ui-message-stream';
-import { type ConceptRow, type ChatItem, type StreamEvent } from '../types';
-import { type ProposalPayload, type SourceProposalPayload } from '../types';
-import { executeGraphProposalAction, addProjectSourceFromUrlFormAction } from '../../actions';
+import { addProjectSourceFromUrlFormAction, executeGraphProposalAction } from '../../actions';
 import { readStoredChatMessages, writeStoredChatMessages } from '../chat-storage';
+import {
+  type ChatItem,
+  type ConceptRow,
+  type ProposalPayload,
+  type SourceProposalPayload,
+  type StreamEvent,
+} from '../types';
 import { useClientHydrated } from './use-concept-graph-state';
 
 export type UseChatThreadResult = {
@@ -125,7 +130,10 @@ export function useChatThread(
                 newMessages[newMessages.length - 1] = { ...lastMsg, event };
                 return newMessages;
               }
-              return [...prev, { id: `activity-${Date.now()}-${prev.length}`, kind: 'event', event }];
+              return [
+                ...prev,
+                { id: `activity-${Date.now()}-${prev.length}`, kind: 'event', event },
+              ];
             });
             return;
           }
@@ -143,7 +151,12 @@ export function useChatThread(
             const proposal = chunk.data as SourceProposalPayload;
             setMessages((prev) => [
               ...prev,
-              { id: `source-proposal-${Date.now()}`, kind: 'source_proposal', proposal, status: 'pending' },
+              {
+                id: `source-proposal-${Date.now()}`,
+                kind: 'source_proposal',
+                proposal,
+                status: 'pending',
+              },
             ]);
             return;
           }
@@ -314,7 +327,10 @@ export function useChatThread(
         formData.append('url', proposal.url);
         formData.append('title', proposal.title);
 
-        const result = await addProjectSourceFromUrlFormAction({ error: null, success: false }, formData);
+        const result = await addProjectSourceFromUrlFormAction(
+          { error: null, success: false },
+          formData
+        );
 
         if (!result.success) {
           setMessages((prev) => [

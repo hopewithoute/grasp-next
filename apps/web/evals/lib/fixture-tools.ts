@@ -37,7 +37,7 @@ export function createFixtureRefinementTools(fixture: RefinementToolFixture = {}
 
 export function createRefinementToolOverrides(fixture: RefinementToolFixture = {}) {
   return {
-    'search-wiki-concepts': async (_input: unknown) => {
+    'search-wiki-concepts': async () => {
       return { concepts: [] };
     },
     'search-web-ddg': async () => ({

@@ -29,4 +29,3 @@ export async function signInWithGoogle() {
 
   redirect(response.url);
 }
-
