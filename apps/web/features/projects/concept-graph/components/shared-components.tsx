@@ -5,41 +5,41 @@ import { cn } from '@/lib/utils';
 import { type ConceptRow } from '../types';
 
 export function PaneHeader({
-  eyebrow,
   meta,
+  actions,
   onCollapseToggle,
   side,
   title,
 }: {
-  eyebrow: string;
   meta?: ReactNode;
+  actions?: ReactNode;
   onCollapseToggle?: () => void;
   side?: 'left' | 'right';
   title: string;
 }) {
   return (
-    <header className="border-border flex items-center justify-between gap-3 border-b px-4 py-3.5">
-      <div className="min-w-0 space-y-1">
-        <span className="text-muted-foreground inline-flex items-center gap-2 font-mono text-[0.62rem] tracking-[0.18em] uppercase tabular-nums">
-          <span aria-hidden className="bg-brand-accent pulse-soft size-1.5 rounded-full" />
-          {eyebrow}
+    <header className="border-border/40 flex items-center justify-between gap-3 border-b border-dashed px-4 py-3.5">
+      <div className="min-w-0">
+        <span className="text-foreground/80 whitespace-nowrap inline-flex items-center gap-2 font-mono text-[0.65rem] tracking-[0.2em] uppercase tabular-nums">
+          <span aria-hidden className="bg-brand-accent animate-pulse-soft shrink-0 size-1.5" />
+          <span className="truncate">{title}</span>
         </span>
-        <h2 className="text-foreground truncate text-sm font-medium tracking-tight">{title}</h2>
       </div>
-      <div className="flex shrink-0 items-center gap-2 text-xs">
-        {meta ? <div>{meta}</div> : null}
+      <div className="flex shrink-0 items-center gap-3 text-xs">
+        {meta ? <div className="text-muted-foreground font-mono text-[0.62rem] tracking-[0.2em] uppercase">{meta}</div> : null}
+        {actions ? <div className="flex items-center">{actions}</div> : null}
         {onCollapseToggle && side ? (
           <button
             aria-label={side === 'left' ? 'Collapse concept inventory' : 'Collapse refinement'}
             aria-expanded="true"
-            className="border-border bg-card/50 text-muted-foreground hover:border-brand-accent-border hover:bg-brand-accent/8 hover:text-brand-accent-foreground inline-flex size-8 items-center justify-center rounded-xl border transition-colors"
+            className="border-border/40 bg-background/50 text-muted-foreground hover:border-brand-accent/50 hover:bg-brand-accent/10 hover:text-brand-accent inline-flex size-8 items-center justify-center rounded-none border transition-colors"
             onClick={onCollapseToggle}
             type="button"
           >
             {side === 'left' ? (
-              <ChevronsLeft className="size-3.5" strokeWidth={1.5} />
+              <ChevronsLeft className="size-3" strokeWidth={1} />
             ) : (
-              <ChevronsRight className="size-3.5" strokeWidth={1.5} />
+              <ChevronsRight className="size-3" strokeWidth={1} />
             )}
           </button>
         ) : null}
@@ -50,14 +50,12 @@ export function PaneHeader({
 
 export function CollapsedPaneRail({
   ariaLabel,
-  eyebrow,
   meta,
   onToggle,
   side,
   title,
 }: {
   ariaLabel: string;
-  eyebrow: string;
   meta: string;
   onToggle: () => void;
   side: 'left' | 'right';
@@ -67,35 +65,32 @@ export function CollapsedPaneRail({
     <aside
       aria-label={title}
       className={cn(
-        'border-border bg-card flex min-h-16 items-center justify-between gap-3 border-b px-4 py-3 lg:min-h-0 lg:flex-col lg:justify-start lg:border-b-0 lg:px-2 lg:py-3',
-        side === 'left' ? 'lg:border-r' : 'lg:border-r-0'
+        'border-border/40 bg-background/50 flex min-h-16 items-center justify-between gap-3 border-b border-dashed px-4 py-3 lg:min-h-0 lg:flex-col lg:justify-start lg:border-b-0 lg:px-2 lg:py-3',
+        side === 'left' ? 'lg:border-r' : 'lg:border-r-0 lg:border-l'
       )}
     >
       <button
         aria-label={ariaLabel}
         aria-expanded="false"
-        className="border-border bg-card/50 text-muted-foreground hover:border-brand-accent-border hover:bg-brand-accent/8 hover:text-brand-accent-foreground inline-flex size-9 shrink-0 items-center justify-center rounded-xl border transition-colors lg:size-10"
+        className="border-border/40 bg-background/50 text-muted-foreground hover:border-brand-accent/50 hover:bg-brand-accent/10 hover:text-brand-accent inline-flex size-9 shrink-0 items-center justify-center rounded-none border transition-colors lg:size-10"
         onClick={onToggle}
         type="button"
       >
         {side === 'left' ? (
-          <ChevronsRight className="size-4" strokeWidth={1.5} />
+          <ChevronsRight className="size-3" strokeWidth={1} />
         ) : (
-          <ChevronsLeft className="size-4" strokeWidth={1.5} />
+          <ChevronsLeft className="size-3" strokeWidth={1} />
         )}
       </button>
 
       <div className="flex min-w-0 flex-1 items-center gap-2 lg:min-h-0 lg:flex-none lg:flex-col">
-        <span aria-hidden className="bg-brand-accent pulse-soft size-1.5 shrink-0 rounded-full" />
-        <span className="text-muted-foreground truncate font-mono text-[0.62rem] tracking-[0.18em] uppercase tabular-nums lg:[writing-mode:vertical-rl]">
-          {eyebrow}
-        </span>
-        <span className="text-foreground truncate text-sm font-medium tracking-tight lg:[writing-mode:vertical-rl]">
+        <span aria-hidden className="bg-brand-accent animate-pulse-soft size-1.5 shrink-0" />
+        <span className="text-foreground/80 truncate font-mono text-[0.65rem] tracking-[0.2em] uppercase tabular-nums lg:[writing-mode:vertical-rl]">
           {title}
         </span>
       </div>
 
-      <span className="text-muted-foreground shrink-0 font-mono text-[0.62rem] tracking-[0.16em] uppercase tabular-nums lg:[writing-mode:vertical-rl]">
+      <span className="text-brand-accent/50 shrink-0 font-mono text-[0.62rem] tracking-[0.2em] uppercase tabular-nums lg:[writing-mode:vertical-rl]">
         {meta}
       </span>
     </aside>
@@ -103,7 +98,7 @@ export function CollapsedPaneRail({
 }
 
 const difficultyChipVariants = cva(
-  'inline-flex h-5 items-center gap-1 rounded-full border px-2 text-[0.62rem] font-medium tracking-wide capitalize',
+  'inline-flex h-5 items-center gap-1 border px-2 font-mono text-[0.62rem] tracking-[0.2em] uppercase rounded-none whitespace-nowrap',
   {
     variants: {
       difficulty: {
@@ -119,7 +114,9 @@ const difficultyChipVariants = cva(
 );
 
 export function DifficultyChip({ difficulty }: { difficulty: ConceptRow['difficulty'] }) {
-  return <span className={difficultyChipVariants({ difficulty })}>{difficulty}</span>;
+  return (
+    <span className={difficultyChipVariants({ difficulty })}>[ {difficulty.toUpperCase()} ]</span>
+  );
 }
 
 export function ConfidencePill({
@@ -133,15 +130,14 @@ export function ConfidencePill({
   return (
     <span
       className={cn(
-        'inline-flex h-5 items-center gap-1.5 rounded-full border px-2 font-mono text-[0.62rem] tabular-nums',
+        'inline-flex h-5 items-center gap-1.5 rounded-none border px-2 font-mono text-[0.62rem] tracking-[0.2em] uppercase tabular-nums whitespace-nowrap',
         muted
-          ? 'border-border bg-card/50 text-muted-foreground'
-          : 'border-brand-accent-border/30 bg-brand-accent/[0.08] text-brand-accent'
+          ? 'border-border/40 bg-background/50 text-muted-foreground/70'
+          : 'border-brand-accent/50 bg-brand-accent/10 text-brand-accent'
       )}
       title="Confidence"
     >
-      <CircleDashed className="size-3" strokeWidth={1.5} />
-      {formatted}
+      <CircleDashed className="size-3" strokeWidth={1} />[ {formatted} ]
     </span>
   );
 }

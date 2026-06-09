@@ -74,12 +74,11 @@ export function LibraryPane({ projectId, collapsed, onCollapseToggle, sources }:
   if (collapsed) {
     return (
       <CollapsedPaneRail
-        ariaLabel="Expand library"
-        eyebrow="Library"
-        meta={`${sources.length} sources`}
+        ariaLabel="Expand concept inventory"
+        meta={`${sources.length} ITEMS`}
         onToggle={onCollapseToggle}
         side="left"
-        title="Inventory"
+        title="[ SOURCES ]"
       />
     );
   }
@@ -90,27 +89,28 @@ export function LibraryPane({ projectId, collapsed, onCollapseToggle, sources }:
       className="border-border bg-card flex min-h-[520px] flex-col border-b lg:min-h-0 lg:border-r lg:border-b-0"
     >
       <PaneHeader
-        eyebrow="Sources"
         meta={
           <div className="flex items-center gap-3">
-            <span className="text-muted-foreground">{sources.length} Items</span>
+            <span className="text-muted-foreground font-mono text-[0.62rem] tracking-[0.2em] uppercase">
+              {sources.length} ITEMS
+            </span>
             <button
               type="button"
               onClick={() => setIsActivityOpen(true)}
-              className="border-border bg-card/50 text-foreground hover:bg-accent hover:text-accent-foreground inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-mono text-[0.6rem] tracking-[0.16em] uppercase transition-colors"
+              className="border-border/50 bg-background text-foreground hover:border-brand-accent/50 hover:bg-brand-accent/10 hover:text-brand-accent inline-flex items-center gap-2 rounded-none border px-3 py-1 font-mono text-[0.65rem] tracking-[0.2em] uppercase transition-all"
             >
               {isRunning ? (
                 <Loader2 className="text-brand-accent size-3 animate-spin" />
               ) : (
                 <Activity className="size-3" />
               )}
-              Status
+              [ STATUS ]
             </button>
           </div>
         }
         onCollapseToggle={onCollapseToggle}
         side="left"
-        title="Library"
+        title="[ LIBRARY ]"
       />
 
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden p-4">

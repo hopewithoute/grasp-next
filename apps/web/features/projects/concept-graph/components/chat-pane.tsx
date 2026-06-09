@@ -1,6 +1,7 @@
 'use client';
 
 import { type FormEvent } from 'react';
+import { X } from 'lucide-react';
 import { useChatThread } from '../hooks/use-chat-thread';
 import { usePendingProposals } from '../hooks/use-pending-proposals-context';
 import { type ConceptRow } from '../types';
@@ -8,9 +9,8 @@ import { ChatItemRow } from './chat-message';
 import { CollapsedPaneRail, PaneHeader } from './shared-components';
 
 const ACTIVE_BADGE = (
-  <span className="border-brand-accent-border/30 bg-brand-accent-surface text-brand-accent-foreground inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 font-mono text-[0.62rem] tracking-[0.18em] uppercase tabular-nums">
-    <span aria-hidden className="bg-brand-accent size-1.5 rounded-full" />
-    active
+  <span className="border-brand-accent/50 bg-brand-accent/10 text-brand-accent inline-flex items-center gap-1.5 rounded-none border px-2 py-0.5 font-mono text-[0.62rem] tracking-[0.2em] uppercase tabular-nums">
+    <span aria-hidden className="bg-brand-accent animate-pulse-soft size-1.5" />[ ACTIVE ]
   </span>
 );
 
@@ -49,11 +49,10 @@ export function ChatPane({
     return (
       <CollapsedPaneRail
         ariaLabel="Expand refinement"
-        eyebrow="Refinement"
-        meta="active"
+        meta={`${items.length} EVENTS`}
         onToggle={onCollapseToggle}
         side="right"
-        title="Graph agent"
+        title="[ REFINEMENT ]"
       />
     );
   }
@@ -65,40 +64,22 @@ export function ChatPane({
   return (
     <aside
       aria-label="Refinement chat"
-      className="border-border bg-card flex min-h-[520px] w-full flex-col border-l lg:min-h-0"
+      className="border-border/40 bg-background/50 flex min-h-[520px] w-full flex-col border-l border-dashed lg:min-h-0"
     >
       <PaneHeader
-        eyebrow="Refinement"
-        meta={ACTIVE_BADGE}
+        meta={
+          <span className="text-muted-foreground font-mono text-[0.62rem] tracking-[0.2em] uppercase">
+            {items.length} EVENTS
+          </span>
+        }
         onCollapseToggle={onCollapseToggle}
         side="right"
-        title="Graph agent"
+        title="[ REFINEMENT ]"
       />
-
-      <div className="border-border border-b px-4 py-3">
-        <p className="text-muted-foreground text-[0.78rem] leading-5">
-          Chat with the agent to modify concepts and relationships directly. Hold{' '}
-          <kbd className="border-border rounded border bg-white/5 px-1 font-mono text-[0.65rem]">
-            Ctrl/Cmd
-          </kbd>{' '}
-          and click concepts to attach them as context.
-        </p>
-      </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto p-4" ref={scrollRef}>
         <ol className="space-y-3">
-          {items.map((item) => (
-            <ChatItemRow
-              isLoading={isLoading}
-              item={item}
-              key={item.id}
-              onApproveProposal={handleApproveProposal}
-              onRejectProposal={handleRejectProposal}
-              onApproveSourceProposal={handleApproveSourceProposal}
-              onRejectSourceProposal={handleRejectSourceProposal}
-            />
-          ))}
-          {messages.map((item) => (
+          {[...items, ...messages].map((item) => (
             <ChatItemRow
               isLoading={isLoading}
               item={item}
@@ -156,29 +137,16 @@ function ChatInput({
               key={concept.id}
               onMouseEnter={() => onHoverChatContext?.(concept.id)}
               onMouseLeave={() => onHoverChatContext?.(null)}
-              className="border-brand-accent-border/30 bg-brand-accent-surface text-brand-accent-foreground hover:ring-brand-accent/50 inline-flex cursor-default items-center gap-1 rounded-full border py-0.5 pr-1 pl-2 text-xs transition-all hover:ring-2"
+              className="border-brand-accent/50 bg-brand-accent/10 text-brand-accent hover:border-brand-accent inline-flex cursor-default items-center gap-2 rounded-none border py-1 pr-1.5 pl-2 font-mono text-[0.65rem] tracking-widest uppercase transition-all"
             >
               {concept.name}
               <button
                 aria-label="Button"
                 type="button"
                 onClick={() => onRemoveChatContext(concept.id)}
-                className="hover:bg-brand-accent/20 text-brand-accent-foreground/70 hover:text-brand-accent-foreground rounded-full p-0.5 transition-colors"
+                className="hover:bg-brand-accent hover:text-background text-brand-accent p-0.5 transition-colors"
               >
-                <svg
-                  width="12"
-                  height="12"
-                  viewBox="0 0 12 12"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M9 3L3 9M3 3L9 9"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                  />
-                </svg>
+                <X className="size-3" strokeWidth={2} />
               </button>
             </span>
           ))}
@@ -188,11 +156,9 @@ function ChatInput({
         <input
           name="chatInput"
           aria-label="Input field"
-          className="border-border text-foreground placeholder:text-foreground/30 focus:border-brand-accent-border flex-1 rounded-md border bg-white/5 px-3 py-2 text-sm focus:ring-1 focus:ring-[#53d1cb]/50 focus:outline-none disabled:opacity-50"
+          className="border-border/40 text-foreground placeholder:text-muted-foreground/30 focus:border-brand-accent focus:bg-brand-accent/5 bg-background flex-1 rounded-none border px-3 py-2 font-mono text-xs transition-colors outline-none disabled:opacity-50"
           placeholder={
-            hasPendingProposal
-              ? 'Please approve or reject the pending proposal first.'
-              : 'Instruct the agent...'
+            hasPendingProposal ? '[ RESOLVE PENDING PROPOSAL ]' : '[ INSTRUCT AGENT... ]'
           }
           disabled={isLoading || hasPendingProposal}
         />
@@ -200,9 +166,9 @@ function ChatInput({
           aria-label="Button"
           type="submit"
           disabled={isLoading || hasPendingProposal}
-          className="bg-brand-accent/20 text-brand-accent-foreground hover:bg-brand-accent/30 rounded-md px-3 py-2 text-sm font-medium transition-colors disabled:opacity-50"
+          className="border-brand-accent/50 bg-brand-accent/10 text-brand-accent hover:bg-brand-accent hover:text-background disabled:hover:bg-brand-accent/10 disabled:hover:text-brand-accent rounded-none border px-4 py-2 font-mono text-[0.65rem] tracking-widest uppercase transition-all disabled:opacity-50"
         >
-          Send
+          [ SEND ]
         </button>
       </form>
     </div>

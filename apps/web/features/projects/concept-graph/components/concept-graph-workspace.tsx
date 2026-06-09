@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo } from 'react';
 import { ReactFlowProvider } from '@xyflow/react';
-import { LayoutGrid, Network } from 'lucide-react';
+import { LayoutGrid, Maximize, Minimize, Network } from 'lucide-react';
 import type { ProjectSourceRecord } from '@grasp/domain';
 import { cn } from '@/lib/utils';
 import { executeGraphProposalAction } from '../../actions';
@@ -13,6 +13,24 @@ import { ChatPane } from './chat-pane';
 import { ConceptDataGridPane } from './concept-data-grid-pane';
 import { GraphCanvasPane } from './graph-canvas-pane';
 import { LibraryPane } from './library-pane';
+
+function getWorkspaceGridColumns(inventoryCollapsed: boolean, refinementCollapsed: boolean) {
+  if (inventoryCollapsed && refinementCollapsed) return 'lg:grid-cols-[4rem_minmax(0,1fr)_4rem]';
+  if (inventoryCollapsed && !refinementCollapsed)
+    return 'lg:grid-cols-[4rem_minmax(0,1fr)_24rem] xl:grid-cols-[4rem_minmax(0,1fr)_28rem]';
+  if (!inventoryCollapsed && refinementCollapsed)
+    return 'lg:grid-cols-[22rem_minmax(0,1fr)_4rem] xl:grid-cols-[26rem_minmax(0,1fr)_4rem]';
+  return 'lg:grid-cols-[22rem_minmax(0,1fr)_24rem] xl:grid-cols-[26rem_minmax(0,1fr)_28rem]';
+}
+
+function getViewToggleButtonStyles(isActive: boolean) {
+  return cn(
+    'flex h-8 items-center justify-center gap-2 px-3 font-mono text-[0.65rem] tracking-widest uppercase transition-all border',
+    isActive
+      ? 'bg-brand-accent/20 text-brand-accent border-brand-accent/50 shadow-sm'
+      : 'text-muted-foreground/70 hover:text-foreground hover:border-border/50 border-transparent'
+  );
+}
 
 type ConceptGraphWorkspaceProps = {
   concepts: ConceptRow[];
@@ -50,6 +68,8 @@ const ConceptGraphEditor = ({
     setPendingProposals,
     viewMode,
     setViewMode,
+    isFullscreen,
+    setIsFullscreen,
   } = useConceptGraphState(concepts);
 
   const items = useMemo<ChatItem[]>(
@@ -155,17 +175,11 @@ const ConceptGraphEditor = ({
       <section
         aria-label="Concept graph editor"
         className={cn(
-          'border-border bg-card/50 shadow-foreground/5 grid min-h-[720px] w-full grid-cols-1 overflow-hidden rounded-[1.75rem] border shadow-2xl lg:h-[min(calc(100dvh-320px),920px)] lg:min-h-0',
-          !isInventoryCollapsed &&
-            !isRefinementCollapsed &&
-            'lg:grid-cols-[20rem_minmax(0,1fr)_28rem] xl:grid-cols-[22rem_minmax(0,1fr)_30rem]',
-          isInventoryCollapsed &&
-            !isRefinementCollapsed &&
-            'lg:grid-cols-[4rem_minmax(0,1fr)_28rem] xl:grid-cols-[4rem_minmax(0,1fr)_30rem]',
-          !isInventoryCollapsed &&
-            isRefinementCollapsed &&
-            'lg:grid-cols-[20rem_minmax(0,1fr)_4rem] xl:grid-cols-[22rem_minmax(0,1fr)_4rem]',
-          isInventoryCollapsed && isRefinementCollapsed && 'lg:grid-cols-[4rem_minmax(0,1fr)_4rem]'
+          'bg-background/50 grid overflow-hidden shadow-[0_0_30px_rgba(230,92,0,0.05)] transition-all duration-300',
+          isFullscreen
+            ? 'bg-background fixed inset-0 z-[100] !m-0 h-[100dvh] min-h-[100dvh] w-[100dvw] !rounded-none border-none'
+            : 'border-brand-accent/30 h-[75vh] min-h-[600px] w-full border lg:min-h-0',
+          getWorkspaceGridColumns(isInventoryCollapsed, isRefinementCollapsed)
         )}
       >
         <LibraryPane
@@ -175,58 +189,72 @@ const ConceptGraphEditor = ({
           sources={sources}
         />
 
-        <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
-          {/* View Toggle */}
-          <div className="border-border bg-card-surface/50 absolute top-4 right-4 z-10 flex rounded-full border p-1 shadow-sm backdrop-blur-md">
-            <button
-              onClick={() => setViewMode('graph')}
-              title="Graph View"
-              className={cn(
-                'flex size-8 items-center justify-center rounded-full transition-all',
-                viewMode === 'graph'
-                  ? 'bg-brand-accent text-brand-accent-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-background/50'
-              )}
-            >
-              <Network className="size-4" />
-            </button>
-            <button
-              onClick={() => setViewMode('list')}
-              title="List View"
-              className={cn(
-                'flex size-8 items-center justify-center rounded-full transition-all',
-                viewMode === 'list'
-                  ? 'bg-brand-accent text-brand-accent-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-background/50'
-              )}
-            >
-              <LayoutGrid className="size-4" />
-            </button>
-          </div>
+        {/* View Toggle defined once to pass into pane headers */}
+        {(() => {
+          const viewToggleNode = (
+            <div className="flex border p-0.5 ml-2 shadow-sm">
+              <button
+                onClick={() => setViewMode('graph')}
+                title="Graph View"
+                className={getViewToggleButtonStyles(viewMode === 'graph')}
+              >
+                <Network className="size-3" />[ GRAPH ]
+              </button>
+              <button
+                onClick={() => setViewMode('list')}
+                title="List View"
+                className={getViewToggleButtonStyles(viewMode === 'list')}
+              >
+                <LayoutGrid className="size-3" />[ TABLE ]
+              </button>
+              <div className="bg-border/40 mx-1 my-1 w-px" />
+              <button
+                onClick={() => setIsFullscreen(!isFullscreen)}
+                title={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
+                className={getViewToggleButtonStyles(false)}
+              >
+                {isFullscreen ? (
+                  <>
+                    <Minimize className="size-3" />[ EXIT ]
+                  </>
+                ) : (
+                  <>
+                    <Maximize className="size-3" />[ EXPAND ]
+                  </>
+                )}
+              </button>
+            </div>
+          );
 
-          {viewMode === 'graph' ? (
-            <GraphCanvasPane
-              projectId={projectId}
-              concepts={concepts}
-              isRunning={isRunning}
-              onSelectConcept={handleSelectConcept}
-              relationships={relationships}
-              selectedConcept={selectedConcept}
-              conceptNameById={conceptNameById}
-              hoveredChatConceptId={hoveredChatConceptId}
-              onAcceptProposal={handleAcceptProposal}
-              onRejectProposal={handleRejectProposal}
-            />
-          ) : (
-            <ConceptDataGridPane
-              projectId={projectId}
-              concepts={concepts}
-              relationships={relationships}
-              onSelectConcept={handleSelectConcept}
-              selectedConceptId={selectedConceptId}
-            />
-          )}
-        </div>
+          return (
+            <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
+              {viewMode === 'graph' ? (
+                <GraphCanvasPane
+                  projectId={projectId}
+                  concepts={concepts}
+                  conceptNameById={conceptNameById}
+                  isRunning={isRunning}
+                  onSelectConcept={handleSelectConcept}
+                  relationships={relationships}
+                  selectedConcept={selectedConcept}
+                  hoveredChatConceptId={hoveredChatConceptId}
+                  onAcceptProposal={handleAcceptProposal}
+                  onRejectProposal={handleRejectProposal}
+                  viewToggle={viewToggleNode}
+                />
+              ) : (
+                <ConceptDataGridPane
+                  projectId={projectId}
+                  concepts={concepts}
+                  relationships={relationships}
+                  onSelectConcept={handleSelectConcept}
+                  selectedConceptId={selectedConcept?.id ?? null}
+                  viewToggle={viewToggleNode}
+                />
+              )}
+            </div>
+          );
+        })()}
 
         <ChatPane
           key={projectId}
