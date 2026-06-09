@@ -1,7 +1,6 @@
 'use client';
 
 import { memo } from 'react';
-import { Bot } from 'lucide-react';
 import { type ChatItem, type ProposalPayload, type SourceProposalPayload } from '../types';
 import { ChatEvent } from './chat-event';
 import { MarkdownText } from './chat-markdown';
@@ -81,8 +80,8 @@ const ChatMessage = memo(function ChatMessage({
 }) {
   if (role === 'user') {
     return (
-      <div className="flex justify-end">
-        <p className="border-brand-accent-border bg-brand-accent/[0.08] text-foreground max-w-[28ch] rounded-2xl rounded-br-md border px-3.5 py-2 text-sm leading-6 sm:max-w-[36ch]">
+      <div className="flex w-full justify-end">
+        <p className="border-brand-accent/50 bg-brand-accent/20 text-brand-accent max-w-[90%] rounded-none border px-3.5 py-2 font-mono text-[0.65rem] leading-relaxed uppercase shadow-sm">
           {text}
         </p>
       </div>
@@ -90,14 +89,8 @@ const ChatMessage = memo(function ChatMessage({
   }
 
   return (
-    <div className="flex items-start gap-2.5">
-      <span
-        aria-hidden
-        className="border-border bg-card text-brand-accent-foreground mt-0.5 grid size-7 shrink-0 place-items-center rounded-full border"
-      >
-        <Bot className="size-3.5" strokeWidth={1.5} />
-      </span>
-      <div className="border-border bg-card/50 text-muted-foreground max-w-[34ch] rounded-2xl rounded-tl-md border px-3.5 py-2 text-sm leading-6">
+    <div className="flex items-start">
+      <div className="border-border/40 bg-background text-foreground/90 min-w-0 flex-1 overflow-x-auto rounded-none border px-3.5 py-2 font-mono text-[0.65rem] leading-relaxed uppercase shadow-sm">
         <MarkdownText text={text} />
         {streaming ? (
           <span

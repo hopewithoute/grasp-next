@@ -303,11 +303,8 @@ export function useChatThread(
   );
 
   const handleRejectProposal = useCallback((id: string) => {
-    setMessages((prev) =>
-      prev.map((m) => (m.id === id ? { ...m, status: 'rejected' as const } : m))
-    );
     setMessages((prev) => [
-      ...prev,
+      ...prev.map((m) => (m.id === id ? { ...m, status: 'rejected' as const } : m)),
       {
         id: `sys-${Date.now()}`,
         kind: 'message',
@@ -385,11 +382,8 @@ export function useChatThread(
   );
 
   const handleRejectSourceProposal = useCallback((id: string) => {
-    setMessages((prev) =>
-      prev.map((m) => (m.id === id ? { ...m, status: 'rejected' as const } : m))
-    );
     setMessages((prev) => [
-      ...prev,
+      ...prev.map((m) => (m.id === id ? { ...m, status: 'rejected' as const } : m)),
       {
         id: `sys-${Date.now()}`,
         kind: 'message',

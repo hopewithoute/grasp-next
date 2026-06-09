@@ -57,6 +57,7 @@ export function useConceptGraphState(concepts: ConceptRow[]) {
   const [isRefinementCollapsed, setIsRefinementCollapsed] = useState(true);
   const [hoveredChatConceptId, setHoveredChatConceptId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'graph' | 'list'>('graph');
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   // Load proposals from server (mock for MVP if needed, assuming handled elsewhere)
   const [pendingProposals, setPendingProposals] = useState<PendingProposal[]>([]);
@@ -76,5 +77,7 @@ export function useConceptGraphState(concepts: ConceptRow[]) {
     setPendingProposals,
     viewMode,
     setViewMode,
+    isFullscreen,
+    setIsFullscreen,
   };
 }

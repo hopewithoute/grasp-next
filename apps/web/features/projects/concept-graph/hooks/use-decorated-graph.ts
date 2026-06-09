@@ -89,75 +89,70 @@ export function mergeProposals(
         difficulty,
       } = action.payload as Record<string, string | undefined>;
       const actionType = action.type.replace('-', '_');
+      const getConceptKey = () => payloadString(conceptKey) ?? payloadString(payloadName) ?? payloadString(payloadId);
+      const getRelKeys = () => ({
+        src: findConcept(payloadString(action.payload.sourceConceptKey) ?? payloadString(action.payload.sourceName)),
+        tgt: findConcept(payloadString(action.payload.targetConceptKey) ?? payloadString(action.payload.targetName)),
+      });
 
-      if (actionType === 'add_concept') {
-        const ghostId =
-          payloadString(conceptKey) ??
-          payloadString(payloadName) ??
-          `ghost-${proposalIndex}-${ghostAddIds.size}`;
-        const ghostConcept = {
-          id: ghostId,
-          name: payloadString(payloadName) ?? 'New Concept',
-          definition: payloadString(definition) ?? '',
-          confidence: payloadString(confidence) ?? 'LOW',
-          difficulty: payloadString(difficulty) ?? 'BEGINNER',
-        } as ConceptRow;
-        newConcepts.push(ghostConcept);
-        indexConcept(ghostConcept);
-        ghostAddIds.add(ghostId);
-        nodeProposalMap.set(ghostId, proposal.id);
-      } else if (actionType === 'update_concept') {
-        const key =
-          payloadString(conceptKey) ?? payloadString(payloadName) ?? payloadString(payloadId);
-        const target = findConcept(key);
-        if (target) {
-          ghostUpdateIds.add(target.id);
-          nodeProposalMap.set(target.id, proposal.id);
-          const updatedConcept = { ...target, ...action.payload };
-          newConcepts = newConcepts.map((c) => (c.id === target.id ? updatedConcept : c));
-          indexConcept(updatedConcept);
+      switch (actionType) {
+        case 'add_concept': {
+          const ghostId = getConceptKey() ?? `ghost-${proposalIndex}-${ghostAddIds.size}`;
+          const ghostConcept = {
+            id: ghostId,
+            name: payloadString(payloadName) ?? 'New Concept',
+            definition: payloadString(definition) ?? '',
+            confidence: payloadString(confidence) ?? 'LOW',
+            difficulty: payloadString(difficulty) ?? 'BEGINNER',
+          } as ConceptRow;
+          newConcepts.push(ghostConcept);
+          indexConcept(ghostConcept);
+          ghostAddIds.add(ghostId);
+          nodeProposalMap.set(ghostId, proposal.id);
+          break;
         }
-      } else if (actionType === 'delete_concept') {
-        const key =
-          payloadString(conceptKey) ?? payloadString(payloadName) ?? payloadString(payloadId);
-        const target = findConcept(key);
-        if (target) {
-          ghostDeleteIds.add(target.id);
-          nodeProposalMap.set(target.id, proposal.id);
+        case 'update_concept': {
+          const target = findConcept(getConceptKey());
+          if (target) {
+            ghostUpdateIds.add(target.id);
+            nodeProposalMap.set(target.id, proposal.id);
+            const updatedConcept = { ...target, ...action.payload };
+            newConcepts = newConcepts.map((c) => (c.id === target.id ? updatedConcept : c));
+            indexConcept(updatedConcept);
+          }
+          break;
         }
-      } else if (actionType === 'add_relationship') {
-        const srcKey =
-          payloadString(action.payload.sourceConceptKey) ??
-          payloadString(action.payload.sourceName);
-        const tgtKey =
-          payloadString(action.payload.targetConceptKey) ??
-          payloadString(action.payload.targetName);
-        const src = findConcept(srcKey);
-        const tgt = findConcept(tgtKey);
-        if (src && tgt) {
-          const relId = `ghost-rel-${src.id}-${tgt.id}`;
-          const relationship = {
-            id: relId,
-            sourceConceptId: src.id,
-            targetConceptId: tgt.id,
-            relationshipType: payloadString(action.payload.relationshipType) ?? 'related_to',
-          } as RelationshipRow;
-          newRelationships.push(relationship);
-          relationshipByEndpoints.set(`${src.id}:${tgt.id}`, relationship);
-          ghostRelAddIds.add(relId);
+        case 'delete_concept': {
+          const target = findConcept(getConceptKey());
+          if (target) {
+            ghostDeleteIds.add(target.id);
+            nodeProposalMap.set(target.id, proposal.id);
+          }
+          break;
         }
-      } else if (actionType === 'delete_relationship') {
-        const srcKey =
-          payloadString(action.payload.sourceConceptKey) ??
-          payloadString(action.payload.sourceName);
-        const tgtKey =
-          payloadString(action.payload.targetConceptKey) ??
-          payloadString(action.payload.targetName);
-        const src = findConcept(srcKey);
-        const tgt = findConcept(tgtKey);
-        if (src && tgt) {
-          const existingRel = relationshipByEndpoints.get(`${src.id}:${tgt.id}`);
-          if (existingRel) ghostRelDeleteIds.add(existingRel.id);
+        case 'add_relationship': {
+          const { src, tgt } = getRelKeys();
+          if (src && tgt) {
+            const relId = `ghost-rel-${src.id}-${tgt.id}`;
+            const relationship = {
+              id: relId,
+              sourceConceptId: src.id,
+              targetConceptId: tgt.id,
+              relationshipType: payloadString(action.payload.relationshipType) ?? 'related_to',
+            } as RelationshipRow;
+            newRelationships.push(relationship);
+            relationshipByEndpoints.set(`${src.id}:${tgt.id}`, relationship);
+            ghostRelAddIds.add(relId);
+          }
+          break;
+        }
+        case 'delete_relationship': {
+          const { src, tgt } = getRelKeys();
+          if (src && tgt) {
+            const existingRel = relationshipByEndpoints.get(`${src.id}:${tgt.id}`);
+            if (existingRel) ghostRelDeleteIds.add(existingRel.id);
+          }
+          break;
         }
       }
     }

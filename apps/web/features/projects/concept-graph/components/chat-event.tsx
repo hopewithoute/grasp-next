@@ -90,11 +90,11 @@ function getEventTone(event: StreamEvent): {
       };
     case 'ingestion_complete':
       return {
-        border: 'border-emerald-400/24',
+        border: 'border-brand-accent/20',
         copy: `${event.conceptCount} concepts and ${event.relationshipCount} relationships ingested.`,
         icon: <CheckCircle2 className="size-3" strokeWidth={1.6} />,
-        iconBg: 'bg-emerald-400/[0.14] text-emerald-300',
-        label: 'text-emerald-300',
+        iconBg: 'bg-brand-accent/10 text-brand-accent',
+        label: 'text-brand-accent',
         title: 'Ingestion complete',
       };
     case 'agent_activity':
