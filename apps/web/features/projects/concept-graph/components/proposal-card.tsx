@@ -24,11 +24,11 @@ export const ProposalCard = memo(function ProposalCard({
   return (
     <div
       className={cn(
-        'my-4 flex flex-col overflow-hidden rounded-xl border shadow-sm backdrop-blur-md transition-colors',
+        'my-4 flex flex-col overflow-hidden rounded-none border shadow-sm backdrop-blur-md transition-colors',
         status === 'pending'
           ? 'border-border/50 bg-muted/20'
           : status === 'approved'
-            ? 'border-emerald-500/20 bg-emerald-500/5 opacity-80'
+            ? 'border-brand-accent/20 bg-brand-accent/5 opacity-80'
             : 'border-destructive/20 bg-destructive/5 opacity-80'
       )}
     >
@@ -36,15 +36,17 @@ export const ProposalCard = memo(function ProposalCard({
         <div className="flex flex-col">
           <div className="flex items-center gap-2">
             <SparklesIcon />
-            <h4 className="text-foreground/90 text-sm font-semibold">Proposed Graph Changes</h4>
+            <h4 className="text-foreground/90 font-mono text-xs tracking-widest uppercase">
+              PROPOSED GRAPH CHANGES
+            </h4>
             {status === 'approved' && (
-              <span className="ml-2 inline-flex items-center rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-500">
-                <Check className="mr-1 size-3" /> Approved
+              <span className="bg-brand-accent/10 text-brand-accent ml-2 inline-flex items-center rounded-none px-2 py-0.5 font-mono text-[0.65rem] tracking-widest uppercase">
+                <Check className="mr-1 size-3" /> APPROVED
               </span>
             )}
             {status === 'rejected' && (
-              <span className="bg-destructive/10 text-destructive ml-2 inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium">
-                <X className="mr-1 size-3" /> Rejected
+              <span className="bg-destructive/10 text-destructive ml-2 inline-flex items-center rounded-none px-2 py-0.5 font-mono text-[0.65rem] tracking-widest uppercase">
+                <X className="mr-1 size-3" /> REJECTED
               </span>
             )}
           </div>
@@ -62,9 +64,9 @@ export const ProposalCard = memo(function ProposalCard({
           <button
             type="button"
             onClick={() => setExpanded(true)}
-            className="bg-background/30 text-muted-foreground hover:bg-muted/40 px-4 py-2 text-xs font-medium transition-colors"
+            className="bg-background/30 text-muted-foreground hover:bg-muted/40 px-4 py-2 font-mono text-[0.65rem] tracking-widest uppercase transition-colors"
           >
-            Show {proposal.actions.length - 3} more changes…
+            [ SHOW {proposal.actions.length - 3} MORE CHANGES... ]
           </button>
         )}
       </div>
@@ -74,17 +76,17 @@ export const ProposalCard = memo(function ProposalCard({
           <Button
             variant="outline"
             size="sm"
-            className="hover:bg-destructive/10 hover:text-destructive hover:border-destructive/20 h-8 text-xs"
+            className="hover:bg-destructive/10 hover:text-destructive hover:border-destructive/20 h-8 rounded-none font-mono text-[0.65rem] tracking-widest uppercase"
             onClick={onReject}
             disabled={isProcessing}
           >
             <X className="mr-1.5 size-3.5" />
-            Reject
+            REJECT
           </Button>
           <Button
             variant="default"
             size="sm"
-            className="bg-primary/90 hover:bg-primary h-8 text-xs"
+            className="bg-brand-accent/20 text-brand-accent hover:bg-brand-accent hover:text-background h-8 rounded-none font-mono text-[0.65rem] tracking-widest uppercase"
             onClick={onApprove}
             disabled={isProcessing}
           >
@@ -93,7 +95,7 @@ export const ProposalCard = memo(function ProposalCard({
             ) : (
               <Check className="mr-1.5 size-3.5" />
             )}
-            Approve & Apply
+            APPROVE & APPLY
           </Button>
         </div>
       )}
@@ -102,142 +104,95 @@ export const ProposalCard = memo(function ProposalCard({
 });
 
 function ActionRow({ action }: { action: ProposalAction }) {
-  if (action.type === 'add_concept') {
-    return (
-      <div className="bg-background/50 flex items-center gap-3 px-4 py-2.5">
-        <div className="flex size-6 shrink-0 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-500">
-          <span className="text-[10px] font-bold">+</span>
-        </div>
-        <div className="flex min-w-0 flex-col">
-          <span className="text-foreground/90 truncate text-xs font-medium">
-            Add Concept: {action.payload.name}
-          </span>
-          <span className="text-muted-foreground/70 truncate text-[10px]">
-            {action.payload.definition}
-          </span>
-        </div>
-      </div>
-    );
+  let iconNode: React.ReactNode = null;
+  let iconClass = '';
+  let titleNode: React.ReactNode = null;
+  let titleClass = 'text-foreground/90 truncate font-mono text-[0.65rem] tracking-widest uppercase';
+  let subtitleNode: React.ReactNode = null;
+  let subtitleClass = 'text-muted-foreground/70 truncate font-mono text-[0.65rem]';
+
+  switch (action.type) {
+    case 'add_concept':
+      iconNode = <span className="font-mono text-[10px] font-bold">[+]</span>;
+      iconClass = 'bg-brand-accent/10 text-brand-accent';
+      titleNode = `ADD: ${action.payload.name}`;
+      subtitleNode = action.payload.definition;
+      break;
+    case 'delete_concept':
+      iconNode = <span className="font-mono text-[10px] font-bold">[-]</span>;
+      iconClass = 'bg-destructive/10 text-destructive';
+      titleClass = cn(titleClass, 'decoration-destructive/50 line-through');
+      titleNode = `DEL: ${action.payload.conceptKey}`;
+      break;
+    case 'update_concept':
+      iconNode = <span className="font-mono text-[10px] font-bold">[~]</span>;
+      iconClass = 'bg-amber-500/10 text-amber-500';
+      titleNode = `MOD: ${action.payload.name || action.payload.conceptKey}`;
+      break;
+    case 'add_relationship':
+      iconNode = <span className="font-mono text-[10px] font-bold">&gt;&gt;</span>;
+      iconClass = 'bg-indigo-500/10 text-indigo-500';
+      titleClass =
+        'text-foreground/90 flex items-center gap-1.5 font-mono text-[0.65rem] tracking-widest uppercase';
+      titleNode = (
+        <>
+          <span className="max-w-[100px] truncate">{action.payload.sourceConceptKey}</span>
+          <ArrowRight className="text-muted-foreground/50 size-3" />
+          <span className="max-w-[100px] truncate">{action.payload.targetConceptKey}</span>
+        </>
+      );
+      subtitleNode = String(action.payload.relationshipType ?? '').replace('_', ' ');
+      subtitleClass = 'text-muted-foreground/70 font-mono text-[0.65rem] tracking-widest uppercase';
+      break;
+    case 'delete_relationship':
+      iconNode = <span className="font-mono text-[10px] font-bold line-through">&gt;&gt;</span>;
+      iconClass = 'bg-destructive/10 text-destructive';
+      titleClass =
+        'text-foreground/90 decoration-destructive/50 flex items-center gap-1.5 font-mono text-[0.65rem] tracking-widest uppercase line-through';
+      titleNode = (
+        <>
+          <span className="max-w-[100px] truncate">{action.payload.sourceConceptKey}</span>
+          <ArrowRight className="text-muted-foreground/50 size-3" />
+          <span className="max-w-[100px] truncate">{action.payload.targetConceptKey}</span>
+        </>
+      );
+      break;
+    case 'update_evidence':
+      iconNode = <span className="font-mono text-[10px] font-bold">[~]</span>;
+      iconClass = 'bg-amber-500/10 text-amber-500';
+      titleNode = `MOD EVD: ${action.payload.evidenceId}`;
+      subtitleNode = action.payload.evidenceText || action.payload.rationale;
+      break;
+    case 'delete_evidence':
+      iconNode = <span className="font-mono text-[10px] font-bold">[-]</span>;
+      iconClass = 'bg-destructive/10 text-destructive';
+      titleClass = cn(titleClass, 'decoration-destructive/50 line-through');
+      titleNode = `DEL EVD: ${action.payload.evidenceId}`;
+      break;
+    case 'add_evidence':
+      iconNode = <span className="font-mono text-[10px] font-bold">[+]</span>;
+      iconClass = 'bg-brand-accent/10 text-brand-accent';
+      titleNode = `ADD EVD: ${action.payload.conceptKey}`;
+      subtitleNode = action.payload.evidenceText || action.payload.rationale;
+      break;
+    default:
+      iconNode = <Play className="size-3" />;
+      iconClass = 'bg-muted text-muted-foreground';
+      titleNode = (action.type as string).replaceAll('_', ' ');
+      break;
   }
-  if (action.type === 'delete_concept') {
-    return (
-      <div className="bg-background/50 flex items-center gap-3 px-4 py-2.5">
-        <div className="bg-destructive/10 text-destructive flex size-6 shrink-0 items-center justify-center rounded-full">
-          <span className="text-[10px] font-bold">-</span>
-        </div>
-        <div className="flex min-w-0 flex-col">
-          <span className="text-foreground/90 decoration-destructive/50 truncate text-xs font-medium line-through">
-            Delete Concept: {action.payload.conceptKey}
-          </span>
-        </div>
-      </div>
-    );
-  }
-  if (action.type === 'update_concept') {
-    return (
-      <div className="bg-background/50 flex items-center gap-3 px-4 py-2.5">
-        <div className="flex size-6 shrink-0 items-center justify-center rounded-full bg-amber-500/10 text-amber-500">
-          <span className="text-[10px] font-bold">~</span>
-        </div>
-        <div className="flex min-w-0 flex-col">
-          <span className="text-foreground/90 truncate text-xs font-medium">
-            Update Concept: {action.payload.name || action.payload.conceptKey}
-          </span>
-        </div>
-      </div>
-    );
-  }
-  if (action.type === 'add_relationship') {
-    return (
-      <div className="bg-background/50 flex items-center gap-3 px-4 py-2.5">
-        <div className="flex size-6 shrink-0 items-center justify-center rounded-full bg-indigo-500/10 text-indigo-500">
-          <span className="text-[10px] font-bold">🔗</span>
-        </div>
-        <div className="flex min-w-0 flex-col">
-          <div className="text-foreground/90 flex items-center gap-1.5 text-xs font-medium">
-            <span className="max-w-[100px] truncate">{action.payload.sourceConceptKey}</span>
-            <ArrowRight className="text-muted-foreground/50 size-3" />
-            <span className="max-w-[100px] truncate">{action.payload.targetConceptKey}</span>
-          </div>
-          <span className="text-muted-foreground/70 text-[10px] tracking-wider uppercase">
-            {String(action.payload.relationshipType ?? '').replace('_', ' ')}
-          </span>
-        </div>
-      </div>
-    );
-  }
-  if (action.type === 'delete_relationship') {
-    return (
-      <div className="bg-background/50 flex items-center gap-3 px-4 py-2.5">
-        <div className="bg-destructive/10 text-destructive flex size-6 shrink-0 items-center justify-center rounded-full">
-          <span className="decoration-destructive/50 text-[10px] font-bold line-through">🔗</span>
-        </div>
-        <div className="flex min-w-0 flex-col">
-          <div className="text-foreground/90 decoration-destructive/50 flex items-center gap-1.5 text-xs font-medium line-through">
-            <span className="max-w-[100px] truncate">{action.payload.sourceConceptKey}</span>
-            <ArrowRight className="text-muted-foreground/50 size-3" />
-            <span className="max-w-[100px] truncate">{action.payload.targetConceptKey}</span>
-          </div>
-        </div>
-      </div>
-    );
-  }
-  if (action.type === 'update_evidence') {
-    return (
-      <div className="bg-background/50 flex items-center gap-3 px-4 py-2.5">
-        <div className="flex size-6 shrink-0 items-center justify-center rounded-full bg-amber-500/10 text-amber-500">
-          <span className="text-[10px] font-bold">~</span>
-        </div>
-        <div className="flex min-w-0 flex-col">
-          <span className="text-foreground/90 truncate text-xs font-medium">
-            Update Evidence: {action.payload.evidenceId}
-          </span>
-          <span className="text-muted-foreground/70 truncate text-[10px]">
-            {action.payload.evidenceText || action.payload.rationale}
-          </span>
-        </div>
-      </div>
-    );
-  }
-  if (action.type === 'delete_evidence') {
-    return (
-      <div className="bg-background/50 flex items-center gap-3 px-4 py-2.5">
-        <div className="bg-destructive/10 text-destructive flex size-6 shrink-0 items-center justify-center rounded-full">
-          <span className="text-[10px] font-bold">-</span>
-        </div>
-        <div className="flex min-w-0 flex-col">
-          <span className="text-foreground/90 decoration-destructive/50 truncate text-xs font-medium line-through">
-            Delete Evidence: {action.payload.evidenceId}
-          </span>
-        </div>
-      </div>
-    );
-  }
-  if (action.type === 'add_evidence') {
-    return (
-      <div className="bg-background/50 flex items-center gap-3 px-4 py-2.5">
-        <div className="flex size-6 shrink-0 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-500">
-          <span className="text-[10px] font-bold">+</span>
-        </div>
-        <div className="flex min-w-0 flex-col">
-          <span className="text-foreground/90 truncate text-xs font-medium">
-            Add Evidence: {action.payload.conceptKey}
-          </span>
-          <span className="text-muted-foreground/70 truncate text-[10px]">
-            {action.payload.evidenceText || action.payload.rationale}
-          </span>
-        </div>
-      </div>
-    );
-  }
+
   return (
     <div className="bg-background/50 flex items-center gap-3 px-4 py-2.5">
-      <div className="bg-muted text-muted-foreground flex size-6 shrink-0 items-center justify-center rounded-full">
-        <Play className="size-3" />
+      <div
+        className={cn('flex size-6 shrink-0 items-center justify-center rounded-none', iconClass)}
+      >
+        {iconNode}
       </div>
-      <span className="text-foreground/90 text-xs font-medium">
-        {(action.type as string).replaceAll('_', ' ')}
-      </span>
+      <div className="flex min-w-0 flex-col">
+        <div className={titleClass}>{titleNode}</div>
+        {subtitleNode && <span className={subtitleClass}>{subtitleNode}</span>}
+      </div>
     </div>
   );
 }

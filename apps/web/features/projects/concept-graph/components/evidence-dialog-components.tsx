@@ -4,6 +4,13 @@ import { useMemo } from 'react';
 import { AnimatePresence, m } from 'framer-motion';
 import { FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { shortenBlockId, type SourceEvidence } from '../concept-graph-utils';
 import { type ConceptRow, type RelationshipRow } from '../types';
 import { ConfidencePill, DifficultyChip } from './shared-components';
@@ -44,11 +51,11 @@ function RelationChip({
     <button
       type="button"
       onClick={onClick}
-      className="border-border/50 bg-muted/30 text-foreground/80 hover:bg-muted/50 hover:border-brand-accent-border/50 inline-flex cursor-pointer items-center gap-2 rounded-full border py-1 pr-3 pl-2.5 text-[0.7rem] font-medium tracking-wide transition-colors"
+      className="border-border/50 bg-background/50 text-foreground hover:border-brand-accent/50 hover:bg-brand-accent/10 hover:text-brand-accent inline-flex cursor-pointer items-center gap-2 rounded-none border px-3 py-1 font-mono text-[0.65rem] tracking-[0.2em] uppercase transition-all"
     >
       {formattedType ? (
-        <span className="text-muted-foreground/60 font-mono text-[0.55rem] tracking-[0.1em] uppercase">
-          {formattedType}
+        <span className="text-muted-foreground/70 font-mono text-[0.55rem] tracking-[0.1em] uppercase">
+          [{formattedType}]
         </span>
       ) : null}
       <span>{label}</span>
@@ -70,72 +77,56 @@ export function RelationshipsStrip({
   conceptNameById: Map<string, string>;
 }) {
   const { incoming, outgoing } = useMemo(() => {
-    const incoming: RelationshipRow[] = [];
-    const outgoing: RelationshipRow[] = [];
+    const sortByName =
+      (getId: (rel: RelationshipRow) => string) => (a: RelationshipRow, b: RelationshipRow) =>
+        (conceptNameById.get(getId(a)) ?? 'Unknown').localeCompare(
+          conceptNameById.get(getId(b)) ?? 'Unknown'
+        );
 
-    for (const relationship of relationships) {
-      if (relationship.targetConceptId === concept.id) {
-        incoming.push(relationship);
-      }
-
-      if (relationship.sourceConceptId === concept.id) {
-        outgoing.push(relationship);
-      }
-    }
-
-    incoming.sort((a, b) => {
-      const nameA = conceptNameById.get(a.sourceConceptId) ?? 'Unknown';
-      const nameB = conceptNameById.get(b.sourceConceptId) ?? 'Unknown';
-      return nameA.localeCompare(nameB);
-    });
-
-    outgoing.sort((a, b) => {
-      const nameA = conceptNameById.get(a.targetConceptId) ?? 'Unknown';
-      const nameB = conceptNameById.get(b.targetConceptId) ?? 'Unknown';
-      return nameA.localeCompare(nameB);
-    });
-
-    return { incoming, outgoing };
+    return {
+      incoming: relationships
+        .filter((r) => r.targetConceptId === concept.id)
+        .sort(sortByName((r) => r.sourceConceptId)),
+      outgoing: relationships
+        .filter((r) => r.sourceConceptId === concept.id)
+        .sort(sortByName((r) => r.targetConceptId)),
+    };
   }, [concept.id, conceptNameById, relationships]);
 
   if (!incoming.length && !outgoing.length) return null;
 
+  const renderRelations = (
+    title: string,
+    list: RelationshipRow[],
+    getId: (r: RelationshipRow) => string
+  ) => {
+    if (list.length === 0) return null;
+    return (
+      <div className="flex items-start gap-3">
+        <span className="text-muted-foreground/50 w-8 shrink-0 pt-1.5 text-right font-mono text-[0.6rem] tracking-[0.2em] uppercase">
+          {title}
+        </span>
+        <div className="flex flex-wrap items-center gap-2">
+          {list.map((rel) => {
+            const relatedId = getId(rel);
+            return (
+              <RelationChip
+                key={rel.id}
+                label={conceptNameById.get(relatedId) ?? 'Unknown'}
+                type={rel.relationshipType}
+                onClick={() => onSelectConcept(relatedId)}
+              />
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="flex flex-col gap-2.5 pt-2">
-      {incoming.length > 0 && (
-        <div className="flex items-start gap-3">
-          <span className="text-muted-foreground/50 w-8 shrink-0 pt-1.5 text-right font-mono text-[0.6rem] tracking-[0.2em] uppercase">
-            In
-          </span>
-          <div className="flex flex-wrap items-center gap-2">
-            {incoming.map((rel) => (
-              <RelationChip
-                key={rel.id}
-                label={conceptNameById.get(rel.sourceConceptId) ?? 'Unknown'}
-                type={rel.relationshipType}
-                onClick={() => onSelectConcept(rel.sourceConceptId)}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-      {outgoing.length > 0 && (
-        <div className="flex items-start gap-3">
-          <span className="text-muted-foreground/50 w-8 shrink-0 pt-1.5 text-right font-mono text-[0.6rem] tracking-[0.2em] uppercase">
-            Out
-          </span>
-          <div className="flex flex-wrap items-center gap-2">
-            {outgoing.map((rel) => (
-              <RelationChip
-                key={rel.id}
-                label={conceptNameById.get(rel.targetConceptId) ?? 'Unknown'}
-                type={rel.relationshipType}
-                onClick={() => onSelectConcept(rel.targetConceptId)}
-              />
-            ))}
-          </div>
-        </div>
-      )}
+      {renderRelations('In', incoming, (r) => r.sourceConceptId)}
+      {renderRelations('Out', outgoing, (r) => r.targetConceptId)}
     </div>
   );
 }
@@ -184,7 +175,7 @@ export function ConceptDetailStrip({
                 <DifficultyChip difficulty={concept.difficulty} />
                 <ConfidencePill confidence={concept.confidence} />
               </div>
-              <h3 className="text-foreground text-lg font-medium tracking-tight md:text-xl">
+              <h3 className="text-foreground font-mono text-lg tracking-widest uppercase md:text-xl">
                 {concept.name}
               </h3>
               <p className="text-muted-foreground line-clamp-2 max-w-3xl text-sm leading-relaxed">
@@ -207,18 +198,17 @@ export function ConceptDetailStrip({
                   {concept.evidenceCount ??
                     (Array.isArray(concept.sourceEvidence) ? concept.sourceEvidence.length : 0)}
                 </span>
-                <span className="text-muted-foreground font-mono text-[0.6rem] tracking-[0.2em] uppercase">
-                  Citations
+                <span className="text-muted-foreground/70 font-mono text-[0.6rem] tracking-[0.2em] uppercase">
+                  [ CITATIONS ]
                 </span>
               </div>
 
               <Button
                 variant="default"
-                className="rounded-full border border-white/5 px-6 shadow-sm transition-all hover:scale-105 active:scale-95"
+                className="border-brand-accent/50 bg-brand-accent/20 text-brand-accent hover:bg-brand-accent hover:text-background rounded-none border px-6 font-mono text-[0.65rem] tracking-widest uppercase transition-all"
                 onClick={onViewEvidence}
               >
-                <FileText className="mr-2 size-4 opacity-70" />
-                Read Evidence
+                <FileText className="mr-2 size-3" />[ READ EVIDENCE ]
               </Button>
             </div>
           </m.div>
@@ -268,7 +258,7 @@ export function EvidenceStack({
     <div className="w-full">
       <div className="mb-6 flex items-center justify-between gap-3">
         <span className="text-foreground/40 font-mono text-[0.65rem] tracking-[0.2em] uppercase">
-          Source Material
+          [ SOURCE_MATERIAL ]
         </span>
         <span className="text-brand-accent-foreground font-mono text-[0.65rem] tracking-[0.2em] uppercase">
           {evidence.length} / {totalCount}
@@ -312,14 +302,98 @@ export function GraphCanvasSkeleton() {
           {Array.from({ length: 6 }, (_, i) => (
             <div
               key={i}
-              className="border-border bg-muted/30 h-16 w-44 animate-pulse rounded-2xl border"
+              className="border-border/40 bg-muted/30 h-16 w-44 animate-pulse rounded-none border border-dashed"
             />
           ))}
         </div>
         <span className="text-muted-foreground mt-2 font-mono text-[0.62rem] tracking-[0.18em] uppercase">
-          Loading graph…
+          [ LOADING_GRAPH... ]
         </span>
       </div>
     </div>
+  );
+}
+
+// --- ConceptEvidenceDialog ---
+
+export function ConceptEvidenceDialog({
+  concept,
+  relationships,
+  conceptNameById,
+  isOpen,
+  onClose,
+  evidenceData,
+  isLoadingEvidence,
+  onSelectConcept,
+}: {
+  concept: ConceptRow | null;
+  relationships: RelationshipRow[];
+  conceptNameById: Map<string, string>;
+  isOpen: boolean;
+  onClose: () => void;
+  evidenceData: SourceEvidence[];
+  isLoadingEvidence: boolean;
+  onSelectConcept: (id: string, multi?: boolean) => void;
+}) {
+  if (!concept) return null;
+
+  return (
+    <Dialog
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+    >
+      <DialogContent className="bg-background/95 border-border/50 max-h-[85vh] w-[95vw] max-w-2xl gap-0 overflow-hidden rounded-none border !p-0 shadow-2xl backdrop-blur-xl sm:max-w-4xl md:max-w-5xl lg:max-w-[1200px]">
+        <div className="flex h-full max-h-[85vh] flex-col md:flex-row">
+          {/* Left Side: Context / Asymmetric layout */}
+          <div className="border-border/40 bg-muted/20 flex h-auto w-full flex-col border-b p-8 md:h-full md:w-1/3 md:overflow-y-auto md:border-r md:border-b-0 md:p-10">
+            <DialogHeader className="space-y-4 text-left">
+              <div className="space-y-2">
+                <span className="text-muted-foreground/70 font-mono text-[0.65rem] tracking-[0.2em] uppercase">
+                  [ CONCEPT ANALYSIS ]
+                </span>
+                <DialogTitle className="text-foreground font-mono text-2xl tracking-widest uppercase md:text-3xl">
+                  {concept.name}
+                </DialogTitle>
+              </div>
+              <DialogDescription className="text-foreground/60 mt-4 text-sm leading-relaxed">
+                {concept.definition}
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="border-border/40 mt-8 border-t pt-8">
+              <span className="text-muted-foreground mb-4 block font-mono text-[0.65rem] tracking-[0.2em] uppercase">
+                [ CONNECTIONS ]
+              </span>
+              <RelationshipsStrip
+                concept={concept}
+                onSelectConcept={onSelectConcept}
+                relationships={relationships}
+                conceptNameById={conceptNameById}
+              />
+            </div>
+
+            <div className="mt-10 mt-auto flex flex-wrap gap-3 pt-8">
+              <DifficultyChip difficulty={concept.difficulty} />
+              <ConfidencePill confidence={concept.confidence} />
+            </div>
+          </div>
+
+          {/* Right Side: Evidence List */}
+          <div className="h-auto w-full p-8 md:h-full md:w-2/3 md:overflow-y-auto md:p-10">
+            {isLoadingEvidence ? (
+              <EvidenceSkeleton />
+            ) : evidenceData.length > 0 ? (
+              <EvidenceStack evidence={evidenceData} totalCount={evidenceData.length} />
+            ) : (
+              <div className="text-muted-foreground/60 border-border/50 border-t py-8 text-sm leading-relaxed">
+                No source evidence attached.
+              </div>
+            )}
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }

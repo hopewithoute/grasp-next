@@ -22,11 +22,11 @@ export const SourceProposalCard = memo(function SourceProposalCard({
   return (
     <div
       className={cn(
-        'my-4 flex flex-col overflow-hidden rounded-xl border shadow-sm backdrop-blur-md transition-colors',
+        'my-4 flex flex-col overflow-hidden rounded-none border shadow-sm backdrop-blur-md transition-colors',
         status === 'pending'
           ? 'border-border/50 bg-muted/20'
           : status === 'approved'
-            ? 'border-emerald-500/20 bg-emerald-500/5 opacity-80'
+            ? 'border-brand-accent/20 bg-brand-accent/5 opacity-80'
             : 'border-destructive/20 bg-destructive/5 opacity-80'
       )}
     >
@@ -34,15 +34,17 @@ export const SourceProposalCard = memo(function SourceProposalCard({
         <div className="flex flex-col">
           <div className="flex items-center gap-2">
             <Globe className="text-brand-accent size-4" />
-            <h4 className="text-foreground/90 text-sm font-semibold">Web Source Proposal</h4>
+            <h4 className="text-foreground/90 font-mono text-xs tracking-widest uppercase">
+              WEB SOURCE PROPOSAL
+            </h4>
             {status === 'approved' && (
-              <span className="ml-2 inline-flex items-center rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-500">
-                <Check className="mr-1 size-3" /> Approved
+              <span className="bg-brand-accent/10 text-brand-accent ml-2 inline-flex items-center rounded-none px-2 py-0.5 font-mono text-[0.65rem] tracking-widest uppercase">
+                <Check className="mr-1 size-3" /> APPROVED
               </span>
             )}
             {status === 'rejected' && (
-              <span className="bg-destructive/10 text-destructive ml-2 inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium">
-                <X className="mr-1 size-3" /> Rejected
+              <span className="bg-destructive/10 text-destructive ml-2 inline-flex items-center rounded-none px-2 py-0.5 font-mono text-[0.65rem] tracking-widest uppercase">
+                <X className="mr-1 size-3" /> REJECTED
               </span>
             )}
           </div>
@@ -73,17 +75,17 @@ export const SourceProposalCard = memo(function SourceProposalCard({
           <Button
             variant="outline"
             size="sm"
-            className="hover:bg-destructive/10 hover:text-destructive hover:border-destructive/20 h-8 text-xs"
+            className="hover:bg-destructive/10 hover:text-destructive hover:border-destructive/20 h-8 rounded-none font-mono text-[0.65rem] tracking-widest uppercase"
             onClick={onReject}
             disabled={isProcessing}
           >
             <X className="mr-1.5 size-3.5" />
-            Reject
+            REJECT
           </Button>
           <Button
             variant="default"
             size="sm"
-            className="bg-primary/90 hover:bg-primary h-8 text-xs"
+            className="bg-brand-accent/20 text-brand-accent hover:bg-brand-accent hover:text-background h-8 rounded-none font-mono text-[0.65rem] tracking-widest uppercase"
             onClick={onApprove}
             disabled={isProcessing}
           >
@@ -92,7 +94,7 @@ export const SourceProposalCard = memo(function SourceProposalCard({
             ) : (
               <Check className="mr-1.5 size-3.5" />
             )}
-            Approve & Ingest
+            APPROVE & INGEST
           </Button>
         </div>
       )}
