@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Geist } from 'next/font/google';
+import { Geist, Geist_Mono } from 'next/font/google';
 import Script from 'next/script';
 import { MotionProvider } from '@/components/motion-provider';
 import { ThemeProvider } from '@/components/theme-provider';
@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils';
 import './globals.css';
 
 const geist = Geist({ subsets: ['latin'], variable: '--font-sans' });
+const geistMono = Geist_Mono({ subsets: ['latin'], variable: '--font-mono' });
 
 export const metadata: Metadata = {
   title: 'Adaptive Learning Studio',
@@ -22,7 +23,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={cn('font-sans', geist.variable)}
+      className={cn('font-sans antialiased', geist.variable, geistMono.variable)}
       suppressHydrationWarning
       data-scroll-behavior="smooth"
     >
@@ -74,8 +75,8 @@ export default function RootLayout({
         </a>
         <ThemeProvider
           attribute="class"
-          defaultTheme="system"
-          enableSystem
+          defaultTheme="light"
+          enableSystem={false}
           disableTransitionOnChange
         >
           <MotionProvider>

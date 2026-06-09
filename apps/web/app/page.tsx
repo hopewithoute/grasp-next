@@ -13,10 +13,7 @@ export const metadata: Metadata = {
 
 export default function HomePage() {
   return (
-    <main
-      className="bg-background text-foreground min-h-[100dvh] w-full overflow-x-hidden"
-      id="main-content"
-    >
+    <main className="bg-background text-foreground min-h-[100dvh] w-full" id="main-content">
       <div className="relative mx-auto w-full max-w-[1400px] px-4 py-6 md:px-10">
         <HomeNav />
         <HeroSection />
