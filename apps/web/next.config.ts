@@ -12,6 +12,7 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  serverExternalPackages: ['node-wreq', 'duck-duck-scrape'],
 };
 
 export default nextConfig;

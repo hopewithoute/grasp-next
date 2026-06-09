@@ -1,11 +1,17 @@
 'use client';
 
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { ReactFlowProvider } from '@xyflow/react';
 import { LayoutGrid, Maximize, Minimize, Network } from 'lucide-react';
 import type { ProjectSourceRecord } from '@grasp/domain';
+import { consumeUIMessageChunks } from '@/lib/ui-message-stream';
 import { cn } from '@/lib/utils';
 import { executeGraphProposalAction } from '../../actions';
+import {
+  type FeedItem,
+  type IngestionStreamEvent,
+} from '../../components/ingestion-activity-panel';
 import { useConceptGraphState } from '../hooks/use-concept-graph-state';
 import { PendingProposalsContext } from '../hooks/use-pending-proposals-context';
 import { type ChatItem, type ConceptRow, type RelationshipRow } from '../types';
@@ -53,6 +59,7 @@ const ConceptGraphEditor = ({
   relationships,
   sources = [],
 }: ConceptGraphWorkspaceProps) => {
+  const router = useRouter();
   const {
     pendingSelectedId,
     setPendingSelectedId,
@@ -169,6 +176,56 @@ const ConceptGraphEditor = ({
   );
 
   const pendingProposalsValue = useMemo(() => ({ pendingProposals }), [pendingProposals]);
+  const [isActivityOpen, setIsActivityOpen] = useState(false);
+  const [isIngestionRunning, setIsIngestionRunning] = useState(false);
+  const [ingestionFeed, setIngestionFeed] = useState<FeedItem[]>([]);
+
+  const handleIngestionTrigger = useCallback(
+    async (sourceId: string, sourceTitle: string, sourceType: string, content: string) => {
+      setIsIngestionRunning(true);
+      setIngestionFeed([]);
+      setIsActivityOpen(true);
+
+      const response = await fetch(`/api/v1/projects/${projectId}/ingestion/stream`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sourceId, sourceTitle, sourceType, content }),
+      });
+
+      if (!response.ok || !response.body) {
+        setIsIngestionRunning(false);
+        setIngestionFeed((feed) => [
+          ...feed,
+          {
+            id: `err-${Date.now()}`,
+            event: { type: 'ingestion_failed', reason: 'Request failed' },
+          },
+        ]);
+        return;
+      }
+
+      let hasError = false;
+
+      await consumeUIMessageChunks(response.body, (chunk) => {
+        if (chunk.type === 'data-ingestion') {
+          const event = chunk.data as IngestionStreamEvent;
+          if (event.type === 'ingestion_failed') hasError = true;
+          setIngestionFeed((feed) => [
+            ...feed,
+            { id: `${event.type}-${Date.now()}-${feed.length}`, event },
+          ]);
+        }
+      });
+
+      setIsIngestionRunning(false);
+      router.refresh();
+
+      if (!hasError) {
+        setTimeout(() => setIsActivityOpen(false), 1200);
+      }
+    },
+    [projectId, router]
+  );
 
   return (
     <PendingProposalsContext.Provider value={pendingProposalsValue}>
@@ -185,7 +242,12 @@ const ConceptGraphEditor = ({
         <LibraryPane
           projectId={projectId}
           collapsed={isInventoryCollapsed}
+          feed={ingestionFeed}
+          isActivityOpen={isActivityOpen}
+          isRunning={isIngestionRunning}
           onCollapseToggle={handleInventoryCollapseToggle}
+          onIngestionTrigger={handleIngestionTrigger}
+          onActivityOpenChange={setIsActivityOpen}
           sources={sources}
         />
 
@@ -261,6 +323,7 @@ const ConceptGraphEditor = ({
           collapsed={isRefinementCollapsed}
           items={items}
           onCollapseToggle={handleRefinementCollapseToggle}
+          onIngestionTrigger={handleIngestionTrigger}
           projectId={projectId}
           chatContextConcepts={chatContextConcepts}
           onRemoveChatContext={handleRemoveChatContext}

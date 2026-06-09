@@ -96,15 +96,14 @@ export async function deleteProjectFormAction(
 
   try {
     await deleteProject(parsed.output, createProjectDeps(), actor);
-
-    revalidatePath('/dashboard/projects');
-
-    return { error: null };
   } catch (error) {
     return {
       error: error instanceof Error ? error.message : 'Project deletion failed.',
     };
   }
+
+  revalidatePath('/dashboard/projects');
+  redirect('/dashboard/projects');
 }
 
 export async function updateProjectDetailsFormAction(

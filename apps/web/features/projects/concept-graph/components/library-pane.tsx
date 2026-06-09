@@ -1,76 +1,35 @@
 'use client';
 
-import { useCallback, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { Activity, Loader2 } from 'lucide-react';
 import type { ProjectSourceRecord } from '@grasp/domain';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { consumeUIMessageChunks } from '@/lib/ui-message-stream';
-import {
-  IngestionActivityPanel,
-  type FeedItem,
-  type IngestionStreamEvent,
-} from '../../components/ingestion-activity-panel';
+import { IngestionActivityPanel, type FeedItem } from '../../components/ingestion-activity-panel';
 import { ProjectSourcesPanel } from '../../components/source-material-form';
 import { CollapsedPaneRail, PaneHeader } from './shared-components';
 
 type LibraryPaneProps = {
   projectId: string;
   collapsed: boolean;
+  feed: FeedItem[];
+  isActivityOpen: boolean;
+  isRunning: boolean;
   onCollapseToggle: () => void;
+  onIngestionTrigger: (sourceId: string, title: string, type: string, content: string) => void;
+  onActivityOpenChange: (open: boolean) => void;
   sources: ProjectSourceRecord[];
 };
 
-export function LibraryPane({ projectId, collapsed, onCollapseToggle, sources }: LibraryPaneProps) {
-  const router = useRouter();
-  const [isActivityOpen, setIsActivityOpen] = useState(false);
-  const [isRunning, setIsRunning] = useState(false);
-  const [feed, setFeed] = useState<FeedItem[]>([]);
-
-  const startIngestion = useCallback(
-    async (sourceId: string, sourceTitle: string, sourceType: string, content: string) => {
-      setIsRunning(true);
-      setFeed([]);
-      setIsActivityOpen(true);
-
-      const response = await fetch(`/api/v1/projects/${projectId}/ingestion/stream`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sourceId, sourceTitle, sourceType, content }),
-      });
-
-      if (!response.ok || !response.body) {
-        setIsRunning(false);
-        setFeed((f) => [
-          ...f,
-          {
-            id: `err-${Date.now()}`,
-            event: { type: 'ingestion_failed', reason: 'Request failed' },
-          },
-        ]);
-        return;
-      }
-
-      let hasError = false;
-
-      await consumeUIMessageChunks(response.body, (chunk) => {
-        if (chunk.type === 'data-ingestion') {
-          const event = chunk.data as IngestionStreamEvent;
-          if (event.type === 'ingestion_failed') hasError = true;
-          setFeed((f) => [...f, { id: `${event.type}-${Date.now()}-${f.length}`, event }]);
-        }
-      });
-
-      setIsRunning(false);
-      router.refresh();
-
-      if (!hasError) {
-        setTimeout(() => setIsActivityOpen(false), 1200);
-      }
-    },
-    [projectId, router]
-  );
-
+export function LibraryPane({
+  projectId,
+  collapsed,
+  feed,
+  isActivityOpen,
+  isRunning,
+  onCollapseToggle,
+  onIngestionTrigger,
+  onActivityOpenChange,
+  sources,
+}: LibraryPaneProps) {
   if (collapsed) {
     return (
       <CollapsedPaneRail
@@ -96,7 +55,7 @@ export function LibraryPane({ projectId, collapsed, onCollapseToggle, sources }:
             </span>
             <button
               type="button"
-              onClick={() => setIsActivityOpen(true)}
+              onClick={() => onActivityOpenChange(true)}
               className="border-border/50 bg-background text-foreground hover:border-brand-accent/50 hover:bg-brand-accent/10 hover:text-brand-accent inline-flex items-center gap-2 rounded-none border px-3 py-1 font-mono text-[0.65rem] tracking-[0.2em] uppercase transition-all"
             >
               {isRunning ? (
@@ -118,12 +77,12 @@ export function LibraryPane({ projectId, collapsed, onCollapseToggle, sources }:
           projectId={projectId}
           sources={sources}
           onIngestionTrigger={(sourceId, title, type, content) => {
-            startIngestion(sourceId, title, type, content);
+            onIngestionTrigger(sourceId, title, type, content);
           }}
         />
       </div>
 
-      <Dialog open={isActivityOpen} onOpenChange={setIsActivityOpen}>
+      <Dialog open={isActivityOpen} onOpenChange={onActivityOpenChange}>
         <DialogContent className="bg-background flex h-[500px] flex-col overflow-hidden p-0 sm:max-w-[500px]">
           <IngestionActivityPanel projectId={projectId} feed={feed} isRunning={isRunning} />
         </DialogContent>

@@ -60,16 +60,14 @@ export async function POST(request: Request, context: RouteContext) {
         await runSourceIngestion(
           {
             content: body.content,
-            onEvent: send,
+            onEvent: (event) => send(event),
             projectId: project.id,
             sourceId: body.sourceId,
-            sourceTitle: body.sourceTitle ?? 'Untitled',
-            sourceType: body.sourceType ?? 'markdown',
+            sourceTitle: body.sourceTitle || body.sourceId,
+            sourceType: body.sourceType || 'web',
           },
           deps
         );
-
-        revalidatePath(`/dashboard/projects/${project.id}`);
       } catch (error) {
         send({
           type: 'ingestion_failed',

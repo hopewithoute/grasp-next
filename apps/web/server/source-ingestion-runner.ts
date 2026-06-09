@@ -56,11 +56,24 @@ export async function runSourceIngestion(
     sourceId: input.sourceId,
   });
 
-  const requestContext = new Map<string, unknown>([
-    ['aiPort', aiAdapter],
-    ['ingestionRunRepository', deps.ingestionRunRepository],
-    ['knowledgebaseRepository', deps.knowledgebaseRepository],
-  ]);
+  const depsMap: Record<string, unknown> = {
+    aiPort: aiAdapter,
+    ingestionRunRepository: deps.ingestionRunRepository,
+    knowledgebaseRepository: deps.knowledgebaseRepository,
+  };
+  
+  const requestContext = {
+    get: (key: string) => depsMap[key],
+    size: () => 3,
+    forEach: (cb: any) => Object.entries(depsMap).forEach(([k, v]) => cb(v, k)),
+    entries: () => Object.entries(depsMap),
+    keys: () => Object.keys(depsMap),
+    values: () => Object.values(depsMap),
+    has: (key: string) => key in depsMap,
+    [Symbol.iterator]: function* () {
+      yield* Object.entries(depsMap);
+    }
+  } as unknown as Map<string, unknown>;
 
   const run = await sourceIngestionWorkflow.createRun();
   const inputData: SourceIngestionWorkflowInput = {
@@ -83,7 +96,30 @@ export async function runSourceIngestion(
           chunk &&
           typeof chunk === 'object' &&
           'type' in chunk &&
-          chunk.type === 'workflow-step-output' &&
+          chunk.type === 'workflow-finish' &&
+          'payload' in chunk &&
+          chunk.payload &&
+          typeof chunk.payload === 'object' &&
+          'workflowStatus' in chunk.payload &&
+          chunk.payload.workflowStatus === 'failed'
+        ) {
+          input.onEvent({
+            type: 'ingestion_failed',
+            reason:
+              ((chunk.payload as any).metadata?.errorMessage as string) ??
+              'Workflow failed unexpectedly',
+          });
+          continue;
+        }
+
+        const isStepOutput = chunk.type === 'workflow-step-output';
+        const isStepResult = chunk.type === 'workflow-step-result';
+
+        if (
+          chunk &&
+          typeof chunk === 'object' &&
+          'type' in chunk &&
+          (isStepOutput || isStepResult) &&
           'payload' in chunk &&
           chunk.payload &&
           typeof chunk.payload === 'object' &&

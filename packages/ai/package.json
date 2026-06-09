@@ -19,6 +19,7 @@
     "typecheck": "tsgo --noEmit"
   },
   "devDependencies": {
+    "@node-wreq/linux-x64-gnu": "^2.4.1",
     "@types/html-to-text": "^9.0.4",
     "@types/json-schema": "^7.0.15",
     "@types/node": "^25.7.0",

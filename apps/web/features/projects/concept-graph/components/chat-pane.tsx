@@ -8,16 +8,11 @@ import { type ConceptRow } from '../types';
 import { ChatItemRow } from './chat-message';
 import { CollapsedPaneRail, PaneHeader } from './shared-components';
 
-const ACTIVE_BADGE = (
-  <span className="border-brand-accent/50 bg-brand-accent/10 text-brand-accent inline-flex items-center gap-1.5 rounded-none border px-2 py-0.5 font-mono text-[0.62rem] tracking-[0.2em] uppercase tabular-nums">
-    <span aria-hidden className="bg-brand-accent animate-pulse-soft size-1.5" />[ ACTIVE ]
-  </span>
-);
-
 export function ChatPane({
   collapsed,
   items,
   onCollapseToggle,
+  onIngestionTrigger,
   projectId,
   chatContextConcepts,
   onRemoveChatContext,
@@ -26,6 +21,7 @@ export function ChatPane({
   collapsed: boolean;
   items: import('../types').ChatItem[];
   onCollapseToggle: () => void;
+  onIngestionTrigger: (sourceId: string, title: string, type: string, content: string) => void;
   projectId: string;
   chatContextConcepts: ConceptRow[];
   onRemoveChatContext: (id: string) => void;
@@ -40,7 +36,7 @@ export function ChatPane({
     handleRejectSourceProposal,
     isLoading,
     scrollRef,
-  } = useChatThread(projectId, chatContextConcepts);
+  } = useChatThread(projectId, chatContextConcepts, onIngestionTrigger);
 
   // Derive pending proposals (syncs to parent state via useDerivedPendingProposals)
   usePendingProposals();

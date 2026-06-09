@@ -28,7 +28,8 @@ export type UseChatThreadResult = {
 
 export function useChatThread(
   projectId: string,
-  chatContextConcepts: ConceptRow[]
+  chatContextConcepts: ConceptRow[],
+  onIngestionTrigger?: (sourceId: string, title: string, type: string, content: string) => void
 ): UseChatThreadResult {
   const { refresh } = useRouter();
   const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -142,7 +143,7 @@ export function useChatThread(
             const proposal = chunk.data as ProposalPayload;
             setMessages((prev) => [
               ...prev,
-              { id: `proposal-${Date.now()}`, kind: 'proposal', proposal, status: 'pending' },
+              { id: `proposal-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, kind: 'proposal', proposal, status: 'pending' },
             ]);
             return;
           }
@@ -152,7 +153,7 @@ export function useChatThread(
             setMessages((prev) => [
               ...prev,
               {
-                id: `source-proposal-${Date.now()}`,
+                id: `source-proposal-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
                 kind: 'source_proposal',
                 proposal,
                 status: 'pending',
@@ -343,6 +344,10 @@ export function useChatThread(
           return;
         }
 
+        if (result.sourceId && result.content !== undefined) {
+          onIngestionTrigger?.(result.sourceId, proposal.title, 'web', result.content);
+        }
+
         const sysUserMsg = {
           id: `sys-${Date.now()}`,
           kind: 'message' as const,
@@ -357,7 +362,7 @@ export function useChatThread(
             id: `sys-reply-${Date.now()}`,
             kind: 'message',
             role: 'agent',
-            text: `Web source has been successfully saved to the library and is queued for background ingestion. I can now propose graph changes if needed.`,
+            text: `Web source has been successfully saved to the library and ingestion has started. I can now propose graph changes if needed.`,
             streaming: false,
           },
         ]);
@@ -378,7 +383,7 @@ export function useChatThread(
         setIsLoading(false);
       }
     },
-    [projectId, refresh]
+    [projectId, refresh, onIngestionTrigger]
   );
 
   const handleRejectSourceProposal = useCallback((id: string) => {
