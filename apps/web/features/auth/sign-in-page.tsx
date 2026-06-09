@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { ArrowLeft, ArrowUpRight, CircleAlert, Quote, ShieldCheck } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { getActor } from '@/server/actor';
 import { signInWithGoogle } from './actions';
@@ -10,29 +10,6 @@ export type SignInPageProps = {
     error?: string;
   }>;
 };
-
-function BrandMark({ className = '' }: { className?: string }) {
-  return (
-    <svg
-      aria-hidden
-      className={className}
-      fill="none"
-      stroke="currentColor"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth="1.5"
-      viewBox="0 0 24 24"
-    >
-      <circle cx="12" cy="12" r="2.4" />
-      <circle cx="4.5" cy="6" r="1.4" />
-      <circle cx="20" cy="9" r="1.4" />
-      <circle cx="17" cy="20" r="1.4" />
-      <line x1="12" x2="4.5" y1="12" y2="6" />
-      <line x1="12" x2="20" y1="12" y2="9" />
-      <line x1="12" x2="17" y1="12" y2="20" />
-    </svg>
-  );
-}
 
 function GoogleGlyph({ className = '' }: { className?: string }) {
   return (
@@ -72,168 +49,80 @@ export async function SignInPage({ searchParams }: SignInPageProps) {
       className="bg-background text-foreground min-h-[100dvh] w-full overflow-x-hidden"
       id="main-content"
     >
-      <div className="relative mx-auto w-full max-w-[1400px] px-4 py-6 md:px-10">
-        {/* Nav — slim */}
-        <nav
-          aria-label="Primary"
-          className="border-border bg-background/80 mb-12 flex items-center justify-between rounded-full border px-4 py-3 backdrop-blur md:mb-20"
-        >
-          <Link className="flex items-center gap-3" href="/">
-            <span className="border-brand-accent-border bg-brand-accent-surface text-brand-accent-foreground grid size-9 place-items-center rounded-full border">
-              <BrandMark className="size-5" />
-            </span>
-            <span>
-              <span className="block text-sm font-medium tracking-tight">
-                Adaptive Learning Studio
-              </span>
-              <span className="text-muted-foreground block text-[0.7rem] tracking-[0.16em] uppercase">
-                Creator sign-in
-              </span>
-            </span>
-          </Link>
-
+      <div className="relative mx-auto flex min-h-[100dvh] w-full max-w-[1400px] flex-col items-center justify-center px-4">
+        {/* Subtle Back Button */}
+        <div className="absolute top-8 left-4 md:left-10">
           <Link
-            className="text-muted-foreground hover:text-foreground inline-flex h-10 items-center gap-2 rounded-full px-4 text-sm transition-colors"
+            className="text-muted-foreground hover:text-foreground inline-flex items-center gap-2 font-mono text-[0.65rem] tracking-[0.2em] uppercase transition-colors"
             href="/"
           >
-            <ArrowLeft className="size-4" strokeWidth={1.5} />
-            <span className="hidden sm:inline">Back to landing</span>
+            <ArrowLeft className="size-4" strokeWidth={1.5} />[ BACK_TO_LANDING ]
           </Link>
-        </nav>
+        </div>
 
-        {/* Asymmetric layout — left context, right auth panel */}
-        <section className="grid gap-12 pb-20 md:grid-cols-[1fr_440px] md:gap-16 md:pb-32 lg:grid-cols-[1fr_480px]">
-          <div className="flex flex-col justify-between gap-12 md:py-6">
-            <div className="space-y-8">
-              <span className="text-muted-foreground inline-flex items-center gap-2 text-[0.7rem] tracking-[0.18em] uppercase">
-                <span className="bg-brand-accent pulse-soft size-1.5 rounded-full" />
-                <span className="font-mono">Step 00 · Authenticate</span>
-              </span>
+        {/* Centered Auth Panel */}
+        <section className="w-full max-w-[440px]">
+          <article className="border-border/40 bg-background/50 relative border p-8">
+            <div className="border-brand-accent/50 absolute top-0 left-0 size-2 border-t border-l" />
+            <div className="border-brand-accent/50 absolute right-0 bottom-0 size-2 border-r border-b" />
 
-              <h1 className="max-w-[18ch] text-[clamp(2.4rem,4.8vw,4.4rem)] leading-[1] font-medium tracking-[-0.04em]">
-                Sign in to continue your{' '}
-                <span className="relative inline-block">
-                  pipeline
-                  <span
-                    aria-hidden
-                    className="bg-brand-accent absolute -bottom-2 left-0 h-[3px] w-full rounded-full"
-                  />
+            <header className="border-border/40 flex items-center justify-between border-b pb-4">
+              <div className="flex items-center gap-3">
+                <span
+                  aria-hidden
+                  className="bg-brand-accent animate-pulse-soft size-1.5 rounded-none"
+                />
+                <span className="text-brand-accent font-mono text-[0.65rem] tracking-widest uppercase">
+                  [ SYS.AUTH ]
                 </span>
-                .
-              </h1>
-
-              <p className="text-muted-foreground max-w-[52ch] text-base leading-relaxed md:text-lg">
-                Adaptive Learning Studio uses a single creator entry. Google handles both first-time
-                registration and returning sessions. There is no password to manage and nothing to
-                verify by email.
-              </p>
-            </div>
-
-            {/* Trust strip — divide-y, no card overuse */}
-            <ul className="divide-border border-border divide-y border-y">
-              <li className="grid grid-cols-[28px_1fr_auto] items-baseline gap-4 py-4">
-                <ShieldCheck className="text-brand-accent size-4" strokeWidth={1.5} />
-                <div>
-                  <p className="text-foreground text-sm font-medium">Single creator entry</p>
-                  <p className="text-muted-foreground mt-1 text-sm leading-relaxed">
-                    Project ownership, source material, and approvals stay tied to your Google
-                    identity.
-                  </p>
-                </div>
-                <span className="text-muted-foreground font-mono text-[0.65rem] tracking-[0.16em] uppercase tabular-nums">
-                  PRD §6
-                </span>
-              </li>
-              <li className="grid grid-cols-[28px_1fr_auto] items-baseline gap-4 py-4">
-                <Quote className="text-brand-accent size-4" strokeWidth={1.5} />
-                <div>
-                  <p className="text-foreground text-sm font-medium">Reviewable by default</p>
-                  <p className="text-muted-foreground mt-1 text-sm leading-relaxed">
-                    Nothing publishes without your approval. Every artifact is versioned, grounded,
-                    and cited.
-                  </p>
-                </div>
-                <span className="text-muted-foreground font-mono text-[0.65rem] tracking-[0.16em] uppercase tabular-nums">
-                  PRD §7.7
-                </span>
-              </li>
-            </ul>
-          </div>
-
-          {/* Auth card — single accent panel */}
-          <aside className="md:sticky md:top-8 md:self-start">
-            <article className="border-border bg-card overflow-hidden rounded-[2rem] border p-7 shadow-sm md:p-8">
-              {/* Panel header */}
-              <header className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="bg-brand-accent pulse-soft size-2 rounded-full" />
-                  <span className="text-sm font-medium tracking-tight">Creator access</span>
-                </div>
-                <span className="text-muted-foreground font-mono text-[0.65rem] tracking-[0.16em] uppercase tabular-nums">
-                  oauth/google
-                </span>
-              </header>
-
-              <div className="mt-7 space-y-5">
-                <div>
-                  <span className="text-muted-foreground font-mono text-[0.65rem] tracking-[0.18em] uppercase">
-                    Method
-                  </span>
-                  <h2 className="mt-2 text-xl leading-tight font-medium tracking-tight">
-                    Continue with Google
-                  </h2>
-                  <p className="text-muted-foreground mt-2 max-w-[42ch] text-sm leading-relaxed">
-                    Authorize once. We create your account on first sign-in and reuse it on every
-                    return.
-                  </p>
-                </div>
-
-                {hasError ? (
-                  <div
-                    className="border-status-danger-border bg-status-danger-surface text-status-danger-foreground flex items-start gap-3 rounded-2xl border px-4 py-3 text-sm"
-                    role="alert"
-                  >
-                    <CircleAlert className="size-4 shrink-0 translate-y-0.5" strokeWidth={1.5} />
-                    <div>
-                      <p className="font-medium">Sign-in could not complete</p>
-                      <p className="mt-1 opacity-80">
-                        Google returned an error. Try again, or check that third-party cookies are
-                        allowed.
-                      </p>
-                    </div>
-                  </div>
-                ) : null}
-
-                <form action={signInWithGoogle}>
-                  <Button
-                    aria-label="Continue with Google"
-                    className="group border-brand-accent-border bg-brand-accent h-12 w-full rounded-full border px-5 text-sm font-medium text-[#041018] transition-all hover:opacity-90 active:translate-y-[1px]"
-                    type="submit"
-                  >
-                    <GoogleGlyph className="mr-2 inline-flex size-5 rounded-full bg-white p-0.5" />
-                    Continue with Google
-                    <ArrowUpRight
-                      className="ml-2 size-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
-                      strokeWidth={1.5}
-                    />
-                  </Button>
-                </form>
-
-                {/* Hairline status strip */}
-                <div className="border-border flex items-center justify-between border-t pt-4 font-mono text-[0.7rem] tabular-nums">
-                  <span className="text-muted-foreground">session</span>
-                  <span className="text-muted-foreground flex items-center gap-2">
-                    <span className="bg-muted-foreground size-1.5 rounded-full" />
-                    awaiting
-                  </span>
-                </div>
               </div>
-            </article>
+              <span className="text-muted-foreground font-mono text-[0.65rem] tracking-[0.2em] uppercase">
+                [ OAUTH_GOOGLE ]
+              </span>
+            </header>
 
-            <p className="text-muted-foreground mt-4 px-2 text-center font-mono text-[0.7rem] tracking-[0.14em] uppercase">
-              Better Auth · Google OAuth · MVP
-            </p>
-          </aside>
+            <div className="mt-8 space-y-8">
+              <div>
+                <h2 className="text-foreground text-3xl font-light tracking-widest uppercase">
+                  [ TERMINAL_INIT ]
+                </h2>
+                <p className="text-muted-foreground/80 mt-4 font-mono text-xs leading-relaxed uppercase">
+                  &gt; Establish connection to creative workspace.
+                  <br />
+                  &gt; Graph ingestion standby.
+                </p>
+              </div>
+
+              {hasError ? (
+                <div
+                  className="border-status-danger-border/50 bg-status-danger-surface/20 text-status-danger-foreground border px-4 py-3 font-mono text-[0.65rem] tracking-widest uppercase"
+                  role="alert"
+                >
+                  [ ERR ] Connection failed. Please allow third-party cookies and retry.
+                </div>
+              ) : null}
+
+              <form action={signInWithGoogle}>
+                <Button
+                  aria-label="Continue with Google"
+                  className="border-brand-accent/50 bg-brand-accent/10 text-brand-accent hover:bg-brand-accent hover:text-background group h-12 w-full rounded-none border font-mono text-xs tracking-widest uppercase transition-all"
+                  type="submit"
+                >
+                  <GoogleGlyph className="mr-3 size-4 opacity-80 grayscale transition-all group-hover:opacity-100 group-hover:grayscale-0" />
+                  [ CONTINUE WITH GOOGLE ]
+                </Button>
+              </form>
+
+              <div className="border-border/40 text-muted-foreground/60 flex items-center justify-between border-t pt-6 font-mono text-[0.65rem] tracking-widest uppercase">
+                <span>[ PORT: CLOSED ]</span>
+                <span>[ AWAITING_HANDSHAKE ]</span>
+              </div>
+            </div>
+          </article>
+
+          <p className="text-muted-foreground/40 mt-8 text-center font-mono text-[0.65rem] tracking-[0.2em] uppercase">
+            [ SECURE_SINGLE_CREATOR_ENTRY ]
+          </p>
         </section>
       </div>
     </main>

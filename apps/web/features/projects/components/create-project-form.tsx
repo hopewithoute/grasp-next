@@ -10,57 +10,55 @@ export function CreateProjectForm() {
 
   return (
     <form action={formAction} className="space-y-5">
-      <div className="space-y-2">
+      <div className="space-y-3">
         <label
-          className="text-muted-foreground font-mono text-[0.65rem] font-medium tracking-[0.18em] uppercase"
+          className="text-foreground/80 font-mono text-[0.65rem] tracking-widest uppercase"
           htmlFor="title"
         >
-          Title
+          [ TARGET_DESIGNATION ]
         </label>
         <Input
-          className="border-border bg-input text-foreground placeholder:text-muted-foreground/50 focus-visible:border-ring focus-visible:ring-ring/20 h-12 rounded-2xl px-4 text-sm shadow-none"
+          className="border-border/50 bg-background text-foreground placeholder:text-muted-foreground/30 focus-visible:border-brand-accent h-12 w-full rounded-none border px-4 font-mono text-sm shadow-none transition-colors outline-none"
           id="title"
           name="title"
-          placeholder="Photosynthesis foundations"
+          placeholder="e.g. Photosynthesis Foundations"
           required
         />
       </div>
 
-      <div className="space-y-2">
+      <div className="space-y-3">
         <label
-          className="text-muted-foreground font-mono text-[0.65rem] font-medium tracking-[0.18em] uppercase"
+          className="text-foreground/80 font-mono text-[0.65rem] tracking-widest uppercase"
           htmlFor="description"
         >
-          Description
+          [ PARAMETERS ]
         </label>
         <Input
-          className="border-border bg-input text-foreground placeholder:text-muted-foreground/50 focus-visible:border-ring focus-visible:ring-ring/20 h-12 rounded-2xl px-4 text-sm shadow-none"
+          className="border-border/50 bg-background text-foreground placeholder:text-muted-foreground/30 focus-visible:border-brand-accent h-12 w-full rounded-none border px-4 font-mono text-sm shadow-none transition-colors outline-none"
           id="description"
           name="description"
-          placeholder="Grade 10 biology lesson prep"
+          placeholder="e.g. Grade 10 biology lesson prep"
         />
       </div>
 
       {state.error ? (
         <div
-          className="border-status-danger-border bg-status-danger-surface text-status-danger-foreground flex items-start gap-2 rounded-2xl border px-4 py-3 text-sm"
+          className="border-status-danger-border bg-status-danger-surface text-status-danger-foreground border px-4 py-3 font-mono text-xs tracking-widest uppercase"
           role="alert"
         >
-          <span
-            aria-hidden
-            className="bg-status-danger-foreground mt-0.5 size-1.5 shrink-0 rounded-full"
-          />
-          <span>{state.error}</span>
+          [ ERR ] {state.error}
         </div>
       ) : null}
 
-      <Button
-        className="border-brand-accent-border bg-brand-accent h-12 w-full rounded-full border text-sm font-medium text-[#041018] transition-all hover:opacity-90 active:translate-y-[1px]"
-        disabled={isPending}
-        type="submit"
-      >
-        {isPending ? 'Creating…' : 'Create project'}
-      </Button>
+      <div className="pt-2">
+        <Button
+          className="border-brand-accent/50 bg-brand-accent/10 text-brand-accent hover:bg-brand-accent hover:text-background h-12 w-full rounded-none border font-mono text-xs tracking-widest uppercase transition-all"
+          disabled={isPending}
+          type="submit"
+        >
+          {isPending ? '[ INITIALIZING... ]' : '[ INITIALIZE PROJECT ]'}
+        </Button>
+      </div>
     </form>
   );
 }

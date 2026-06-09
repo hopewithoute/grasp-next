@@ -13,7 +13,6 @@ import { buildStageHref, resolveStage } from '../stages';
 import { ProjectHeader } from './project-header';
 import { ProjectPipelineStatus } from './project-pipeline-status';
 import { ProjectSettings } from './project-settings';
-import { Eyebrow } from './project-shared';
 import { PlannedStagePanel } from './project-stage-panels';
 
 type ProjectDetailPageProps = {
@@ -82,17 +81,19 @@ export async function ProjectDetailPage({ currentStage, projectId }: ProjectDeta
       ) : null}
 
       {detail.project.status === PROJECT_STATUS.FAILED && sourceReady ? (
-        <section className="border-status-danger-border bg-status-danger-surface rounded-[1.5rem] border p-5">
-          <div className="space-y-1">
-            <p className="text-status-danger-foreground font-mono text-[0.65rem] tracking-[0.18em] uppercase tabular-nums">
-              Pipeline failure
+        <section className="border-status-danger-border bg-status-danger-surface relative rounded-none border p-5">
+          <div className="border-status-danger-border absolute top-0 left-0 size-2 border-t border-l" />
+          <div className="border-status-danger-border absolute right-0 bottom-0 size-2 border-r border-b" />
+          <div className="space-y-2">
+            <p className="text-status-danger-foreground font-mono text-[0.65rem] tracking-widest uppercase tabular-nums">
+              [ PIPELINE_FAILURE ]
             </p>
-            <h2 className="text-status-danger-foreground text-lg font-medium">
+            <h2 className="text-status-danger-foreground font-mono text-lg tracking-widest uppercase">
               Last graph build failed
             </h2>
-            <p className="text-status-danger-foreground/82 text-sm leading-7">
-              The source material is still saved. Start a new graph run from the workspace below
-              after fixing provider or database errors.
+            <p className="text-status-danger-foreground/80 font-mono text-xs leading-relaxed tracking-wider uppercase">
+              &gt; The source material is still saved. Start a new graph run from the workspace
+              below after fixing provider or database errors.
             </p>
           </div>
         </section>
@@ -100,19 +101,21 @@ export async function ProjectDetailPage({ currentStage, projectId }: ProjectDeta
 
       {stage === 'overview' ? (
         <div className="flex flex-col gap-8">
-          <header className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+          <header className="border-border/40 mb-2 flex flex-col gap-5 border-b pb-6 lg:flex-row lg:items-end lg:justify-between">
             <div className="space-y-3">
-              <Eyebrow>Overview</Eyebrow>
-              <h2 className="text-foreground max-w-[28ch] text-3xl leading-[1.05] font-medium tracking-[-0.03em] text-balance md:text-4xl">
-                Project status and pipeline progress.
+              <span className="text-brand-accent/80 font-mono text-[0.65rem] tracking-[0.3em] uppercase">
+                [ OVERVIEW ]
+              </span>
+              <h2 className="text-foreground max-w-[28ch] text-3xl leading-[1.05] font-light tracking-[-0.03em] uppercase md:text-4xl">
+                Pipeline Progress.
               </h2>
-              <p className="text-muted-foreground max-w-[60ch] text-sm leading-relaxed text-pretty">
-                Monitor the end-to-end knowledge base generation pipeline.
+              <p className="text-muted-foreground/70 max-w-[60ch] font-mono text-xs leading-relaxed">
+                &gt; Monitor the end-to-end knowledge base generation pipeline.
               </p>
             </div>
-            <span className="border-border bg-card/50 text-muted-foreground inline-flex items-center gap-2 self-start rounded-full border px-3 py-1.5 font-mono text-[0.65rem] tracking-[0.18em] uppercase">
-              <span className="bg-brand-accent pulse-soft size-1.5 rounded-full" />
-              Stage 01 / Overview
+            <span className="border-border/50 bg-background text-muted-foreground inline-flex items-center gap-3 self-start border px-4 py-2 font-mono text-[0.65rem] tracking-[0.2em] uppercase">
+              <span className="bg-brand-accent animate-pulse-soft size-1.5" />
+              SEQ:01 / STATUS
             </span>
           </header>
           <ProjectPipelineStatus
@@ -128,20 +131,23 @@ export async function ProjectDetailPage({ currentStage, projectId }: ProjectDeta
 
       {stage === 'workspace' ? (
         <div className="flex flex-col gap-6">
-          <header className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+          <header className="border-border/40 mb-2 flex flex-col gap-5 border-b pb-6 lg:flex-row lg:items-end lg:justify-between">
             <div className="space-y-3">
-              <Eyebrow>Unified workspace</Eyebrow>
-              <h2 className="text-foreground max-w-[28ch] text-2xl leading-[1.05] font-medium tracking-[-0.03em] text-balance md:text-3xl">
-                Ingest sources and refine the concept graph.
+              <span className="text-brand-accent/80 font-mono text-[0.65rem] tracking-[0.3em] uppercase">
+                [ WORKSPACE ]
+              </span>
+              <h2 className="text-foreground max-w-[28ch] text-2xl leading-[1.05] font-light tracking-[-0.03em] uppercase md:text-3xl">
+                Ingest & Refine.
               </h2>
-              <p className="text-muted-foreground max-w-[60ch] text-sm leading-relaxed text-pretty">
-                Manage your documents on the left. The AI will extract concepts and propose them on
-                the canvas for your approval.
+              <p className="text-muted-foreground/70 max-w-[60ch] font-mono text-xs leading-relaxed">
+                &gt; Manage sources on the left.
+                <br />
+                &gt; AI extracts concepts to the canvas for verification.
               </p>
             </div>
-            <span className="border-border bg-card/50 text-muted-foreground inline-flex items-center gap-2 self-start rounded-full border px-3 py-1.5 font-mono text-[0.65rem] tracking-[0.18em] uppercase">
-              <span className="bg-brand-accent pulse-soft size-1.5 rounded-full" />
-              Stage 02 / Workspace
+            <span className="border-border/50 bg-background text-muted-foreground inline-flex items-center gap-3 self-start border px-4 py-2 font-mono text-[0.65rem] tracking-[0.2em] uppercase">
+              <span className="bg-brand-accent animate-pulse-soft size-1.5" />
+              SEQ:02 / GRAPH
             </span>
           </header>
           <ConceptGraphWorkspace
@@ -163,8 +169,8 @@ export async function ProjectDetailPage({ currentStage, projectId }: ProjectDeta
             'Per-block revision and version history UI still belong to the next slice.',
           ]}
           ctaHref={buildStageHref(projectId, graphReady ? 'workspace' : 'overview')}
-          ctaLabel={graphReady ? 'Review workspace' : 'Return to overview'}
-          eyebrow="Lesson workspace"
+          ctaLabel={graphReady ? 'REVIEW_WORKSPACE' : 'RETURN_TO_OVERVIEW'}
+          eyebrow="LESSON_WORKSPACE"
           title="This stage is reserved for objective and block review."
         />
       ) : null}
@@ -179,8 +185,8 @@ export async function ProjectDetailPage({ currentStage, projectId }: ProjectDeta
             'Learner preview and publish gate UI are still planned.',
           ]}
           ctaHref={buildStageHref(projectId, graphReady ? 'lesson' : 'workspace')}
-          ctaLabel={graphReady ? 'Open lesson stage' : 'Open workspace'}
-          eyebrow="Publish gate"
+          ctaLabel={graphReady ? 'OPEN_LESSON_STAGE' : 'OPEN_WORKSPACE'}
+          eyebrow="PUBLISH_GATE"
           title="Publish stays visible so the studio keeps the full end-to-end shape."
         />
       ) : null}

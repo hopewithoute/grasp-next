@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState, useLayoutEffect, useMemo, useRef, useState, useTransition } from 'react';
+import { useActionState, useMemo, useRef, useState, useTransition } from 'react';
 import { FileText, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -10,6 +10,7 @@ import {
   addProjectSourceFromUrlFormAction,
   deleteProjectSourceFormAction,
   updateProjectSourceFormAction,
+  type ProjectSourceFormState,
 } from '../actions';
 import { sourceModeButtonVariants, sourceTextareaVariants } from '../project-style-variants';
 import { SourceList } from './source-list';
@@ -42,7 +43,7 @@ export function ProjectSourcesPanel({
 
   return (
     <div className="flex h-full flex-col gap-6">
-      <div className="border-border flex flex-1 flex-col overflow-hidden rounded-[1.35rem] border p-4">
+      <div className="border-border/40 bg-background/50 flex flex-1 flex-col overflow-hidden rounded-none border p-4">
         <SourceList
           sources={sources}
           selectedSourceId={selectedSource?.id ?? null}
@@ -68,9 +69,9 @@ export function ProjectSourcesPanel({
             <div className="flex shrink-0 flex-col gap-2 pb-3">
               <div className="space-y-1">
                 <span className="text-brand-accent-foreground font-mono text-[0.65rem] tracking-[0.18em] uppercase tabular-nums">
-                  {isAddingNew ? 'new source' : 'source editor'}
+                  [ {isAddingNew ? 'NEW_SOURCE' : 'SOURCE_EDITOR'} ]
                 </span>
-                <DialogTitle className="text-foreground truncate text-lg font-medium tracking-tight">
+                <DialogTitle className="text-foreground truncate font-mono text-lg tracking-widest uppercase">
                   {isAddingNew
                     ? 'Add new source'
                     : selectedSource
@@ -79,9 +80,9 @@ export function ProjectSourcesPanel({
                 </DialogTitle>
               </div>
               {selectedSource && !isAddingNew && (
-                <span className="border-border bg-card/50 text-muted-foreground inline-flex w-fit items-center gap-1.5 rounded-full border px-2.5 py-1 text-[0.7rem]">
+                <span className="border-border/40 bg-background/50 text-muted-foreground/70 inline-flex w-fit items-center gap-1.5 rounded-none border px-2.5 py-1 font-mono text-[0.65rem] tracking-widest uppercase">
                   <FileText className="size-3" />
-                  {getTextCounts(selectedSource.content ?? '').words} words
+                  {getTextCounts(selectedSource.content ?? '').words} WORDS
                 </span>
               )}
             </div>
@@ -119,69 +120,39 @@ function ProjectSourceAddForm({
 }) {
   const [activeTab, setActiveTab] = useState<'text' | 'web'>('text');
 
-  const [state, formAction, isPending] = useActionState(addProjectSourceFormAction, {
-    error: null,
-    success: false,
-  });
+  const [state, formAction, isPending] = useActionState(
+    async (prevState: ProjectSourceFormState, formData: FormData) => {
+      const result = await addProjectSourceFormAction(prevState, formData);
+      if (result.success && result.sourceId && onIngestionTrigger) {
+        onIngestionTrigger(
+          result.sourceId,
+          formData.get('title')?.toString() ?? 'Untitled',
+          formData.get('type')?.toString() ?? 'markdown',
+          formData.get('content')?.toString() ?? ''
+        );
+      }
+      return result;
+    },
+    { error: null, success: false }
+  );
+
   const [urlState, urlFormAction, isUrlPending] = useActionState(
-    addProjectSourceFromUrlFormAction,
-    {
-      error: null,
-      success: false,
-    }
+    async (prevState: ProjectSourceFormState, formData: FormData) => {
+      const result = await addProjectSourceFromUrlFormAction(prevState, formData);
+      if (result.success && result.sourceId && onIngestionTrigger) {
+        onIngestionTrigger(
+          result.sourceId,
+          formData.get('title')?.toString() ?? 'Untitled',
+          'web',
+          result.content ?? formData.get('url')?.toString() ?? ''
+        );
+      }
+      return result;
+    },
+    { error: null, success: false }
   );
 
   const formRef = useRef<HTMLFormElement>(null);
-  const lastSourceIdRef = useRef<string | null>(null);
-  const submittedValuesRef = useRef<{ title: string; type: string; content: string } | null>(null);
-
-  const wrappedAction = (formData: FormData) => {
-    submittedValuesRef.current = {
-      title: formData.get('title')?.toString() ?? 'Untitled',
-      type: formData.get('type')?.toString() ?? 'markdown',
-      content: formData.get('content')?.toString() ?? '',
-    };
-    formAction(formData);
-  };
-
-  const wrappedUrlAction = (formData: FormData) => {
-    submittedValuesRef.current = {
-      title: formData.get('title')?.toString() ?? 'Untitled',
-      type: 'web',
-      content: formData.get('url')?.toString() ?? '', // Just passing URL as content for ingestion trigger
-    };
-    urlFormAction(formData);
-  };
-
-  useLayoutEffect(() => {
-    const currentState = activeTab === 'text' ? state : urlState;
-    if (
-      currentState.success &&
-      currentState.sourceId &&
-      currentState.sourceId !== lastSourceIdRef.current
-    ) {
-      lastSourceIdRef.current = currentState.sourceId;
-      const values = submittedValuesRef.current;
-
-      if (values && onIngestionTrigger) {
-        onIngestionTrigger(
-          currentState.sourceId,
-          values.title,
-          values.type,
-          currentState.content ?? values.content
-        );
-      }
-    }
-  }, [
-    state.success,
-    state.sourceId,
-    urlState.success,
-    urlState.sourceId,
-    activeTab,
-    onIngestionTrigger,
-    state,
-    urlState,
-  ]);
 
   return (
     <div className="flex h-full flex-1 flex-col gap-4">
@@ -189,30 +160,30 @@ function ProjectSourceAddForm({
         <button
           type="button"
           onClick={() => setActiveTab('text')}
-          className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+          className={`rounded-none px-3 py-1.5 font-mono text-[0.65rem] tracking-widest uppercase transition-colors ${
             activeTab === 'text'
-              ? 'bg-brand-accent/10 text-brand-accent'
-              : 'text-muted-foreground hover:text-foreground'
+              ? 'bg-brand-accent/20 text-brand-accent border-brand-accent border-b-2'
+              : 'text-muted-foreground/70 hover:text-foreground hover:bg-muted/30'
           }`}
         >
-          Raw Text / Markdown
+          [ RAW TEXT / MARKDOWN ]
         </button>
         <button
           type="button"
           onClick={() => setActiveTab('web')}
-          className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+          className={`rounded-none px-3 py-1.5 font-mono text-[0.65rem] tracking-widest uppercase transition-colors ${
             activeTab === 'web'
-              ? 'bg-brand-accent/10 text-brand-accent'
-              : 'text-muted-foreground hover:text-foreground'
+              ? 'bg-brand-accent/20 text-brand-accent border-brand-accent border-b-2'
+              : 'text-muted-foreground/70 hover:text-foreground hover:bg-muted/30'
           }`}
         >
-          Web URL
+          [ WEB URL ]
         </button>
       </div>
 
       {activeTab === 'text' ? (
         <ProjectSourceFields
-          action={wrappedAction}
+          action={formAction}
           error={state.error}
           formRef={formRef}
           isPending={isPending}
@@ -222,7 +193,7 @@ function ProjectSourceAddForm({
         />
       ) : (
         <ProjectSourceUrlFields
-          action={wrappedUrlAction}
+          action={urlFormAction}
           error={urlState.error}
           formRef={formRef}
           isPending={isUrlPending}
@@ -257,51 +228,57 @@ function ProjectSourceUrlFields({
       <input name="projectId" type="hidden" value={projectId} />
 
       <div className="shrink-0 space-y-2">
-        <label className="text-muted-foreground text-sm font-medium" htmlFor="new-url-title">
-          Title
+        <label
+          className="text-muted-foreground/70 font-mono text-[0.65rem] tracking-widest uppercase"
+          htmlFor="new-url-title"
+        >
+          TITLE
         </label>
         <Input
-          className="border-border bg-card text-foreground placeholder:text-foreground/30 focus-visible:border-brand-accent-border/60 h-11 rounded-2xl px-4 text-sm shadow-none focus-visible:ring-[#53d1cb]/20"
+          className="border-border/40 bg-background/50 text-foreground placeholder:text-muted-foreground/30 focus-visible:border-brand-accent/50 focus-visible:ring-brand-accent/20 h-11 rounded-none px-4 font-mono text-[0.65rem] tracking-widest uppercase shadow-none focus-visible:ring-1"
           id="new-url-title"
           name="title"
-          placeholder="e.g. Wikipedia: Quantum Mechanics"
+          placeholder="E.G. WIKIPEDIA: QUANTUM MECHANICS"
           required
         />
       </div>
 
       <div className="shrink-0 space-y-2">
-        <label className="text-muted-foreground text-sm font-medium" htmlFor="new-url">
-          Web URL
+        <label
+          className="text-muted-foreground/70 font-mono text-[0.65rem] tracking-widest uppercase"
+          htmlFor="new-url"
+        >
+          WEB URL
         </label>
         <Input
-          className="border-border bg-card text-foreground placeholder:text-foreground/30 focus-visible:border-brand-accent-border/60 h-11 rounded-2xl px-4 text-sm shadow-none focus-visible:ring-[#53d1cb]/20"
+          className="border-border/40 bg-background/50 text-foreground placeholder:text-muted-foreground/30 focus-visible:border-brand-accent/50 focus-visible:ring-brand-accent/20 h-11 rounded-none px-4 font-mono text-[0.65rem] tracking-widest uppercase shadow-none focus-visible:ring-1"
           id="new-url"
           name="url"
           type="url"
-          placeholder="https://..."
+          placeholder="HTTPS://..."
           required
         />
       </div>
 
       {error ? (
-        <p className="text-foreground rounded-[1rem] border border-[#e5685b]/30 bg-[#e5685b]/10 px-3 py-2 text-sm">
+        <p className="text-foreground border border-[#e5685b]/30 bg-[#e5685b]/10 px-3 py-2 font-mono text-[0.65rem] tracking-widest uppercase">
           {error}
         </p>
       ) : null}
 
       {success ? (
-        <p className="text-foreground rounded-[1rem] border border-[#00bb7f]/30 bg-[#00bb7f]/10 px-3 py-2 text-sm">
+        <p className="text-foreground border border-[#00bb7f]/30 bg-[#00bb7f]/10 px-3 py-2 font-mono text-[0.65rem] tracking-widest uppercase">
           {success}
         </p>
       ) : null}
 
       <div className="mt-auto flex shrink-0 items-center gap-3 pt-2">
         <Button
-          className="bg-brand-accent h-9 rounded-full px-4 text-[#041018] hover:bg-[#7ceae3]"
+          className="bg-brand-accent/20 text-brand-accent hover:bg-brand-accent hover:text-background h-10 rounded-none px-6 font-mono text-[0.65rem] tracking-widest uppercase transition-all"
           disabled={isPending}
           type="submit"
         >
-          {isPending ? 'Fetching...' : submitLabel}
+          {isPending ? '[ FETCHING... ]' : `[ ${submitLabel} ]`}
         </Button>
       </div>
     </form>
@@ -315,45 +292,34 @@ function ProjectSourceEditForm({
   source: ProjectSourceItem;
   onIngestionTrigger?: (sourceId: string, title: string, type: string, content: string) => void;
 }) {
-  const [state, formAction, isPending] = useActionState(updateProjectSourceFormAction, {
-    error: null,
-    success: false,
-  });
+  const [state, formAction, isPending] = useActionState(
+    async (prevState: ProjectSourceFormState, formData: FormData) => {
+      const result = await updateProjectSourceFormAction(prevState, formData);
+      if (result.success && result.sourceId && onIngestionTrigger) {
+        onIngestionTrigger(
+          result.sourceId,
+          formData.get('title')?.toString() ?? source.title,
+          formData.get('type')?.toString() ?? source.type,
+          formData.get('content')?.toString() ?? source.content ?? ''
+        );
+      }
+      return result;
+    },
+    { error: null, success: false }
+  );
+
   const [deleteState, deleteAction, isDeleting] = useActionState(deleteProjectSourceFormAction, {
     error: null,
     success: false,
   });
+
   const [, startDeleteTransition] = useTransition();
   const formRef = useRef<HTMLFormElement>(null);
-  const triggeredRef = useRef(false);
-  const submittedValuesRef = useRef<{ title: string; type: string; content: string } | null>(null);
-
-  const wrappedAction = (formData: FormData) => {
-    submittedValuesRef.current = {
-      title: formData.get('title')?.toString() ?? source.title,
-      type: formData.get('type')?.toString() ?? source.type,
-      content: formData.get('content')?.toString() ?? source.content ?? '',
-    };
-    formAction(formData);
-  };
-
-  useLayoutEffect(() => {
-    if (state.success && state.sourceId && !triggeredRef.current) {
-      triggeredRef.current = true;
-      const values = submittedValuesRef.current;
-
-      if (values && onIngestionTrigger) {
-        onIngestionTrigger(state.sourceId, values.title, values.type, values.content);
-      }
-    } else if (!state.success) {
-      triggeredRef.current = false;
-    }
-  }, [state.success, state.sourceId, onIngestionTrigger]);
 
   return (
     <div className="flex min-h-full flex-col gap-4">
       <ProjectSourceFields
-        action={wrappedAction}
+        action={formAction}
         content={source.content ?? ''}
         error={state.error}
         formRef={formRef}
@@ -366,7 +332,7 @@ function ProjectSourceEditForm({
         extraActions={
           <button
             aria-label="Button"
-            className="border-border text-muted-foreground hover:border-status-danger-border hover:bg-status-danger-surface hover:text-status-danger-foreground inline-flex h-9 items-center gap-1.5 rounded-full border bg-transparent px-4 text-xs transition disabled:opacity-50"
+            className="border-border/40 text-muted-foreground/70 hover:border-destructive/50 hover:bg-destructive/10 hover:text-destructive inline-flex h-10 items-center gap-1.5 rounded-none border bg-transparent px-4 font-mono text-[0.65rem] tracking-widest uppercase transition-all disabled:opacity-50"
             disabled={isDeleting}
             onClick={() => {
               const formData = new FormData();
@@ -376,12 +342,12 @@ function ProjectSourceEditForm({
             type="button"
           >
             <Trash2 className="size-3.5" />
-            {isDeleting ? 'Deleting…' : 'Delete'}
+            {isDeleting ? '[ DELETING... ]' : '[ DELETE ]'}
           </button>
         }
       />
       {deleteState.error ? (
-        <p className="text-foreground rounded-[1rem] border border-[#e5685b]/30 bg-[#e5685b]/10 px-3 py-2 text-sm">
+        <p className="text-foreground border border-[#e5685b]/30 bg-[#e5685b]/10 px-3 py-2 font-mono text-[0.65rem] tracking-widest uppercase">
           {deleteState.error}
         </p>
       ) : null}
@@ -429,17 +395,17 @@ function ProjectSourceFields({
 
       <div className="shrink-0 space-y-2">
         <label
-          className="text-muted-foreground text-sm font-medium"
+          className="text-muted-foreground/70 font-mono text-[0.65rem] tracking-widest uppercase"
           htmlFor={`${sourceId ?? 'new'}-title`}
         >
-          Title
+          TITLE
         </label>
         <Input
-          className="border-border bg-card text-foreground placeholder:text-foreground/30 focus-visible:border-brand-accent-border/60 h-11 rounded-2xl px-4 text-sm shadow-none focus-visible:ring-[#53d1cb]/20"
+          className="border-border/40 bg-background/50 text-foreground placeholder:text-muted-foreground/30 focus-visible:border-brand-accent/50 focus-visible:ring-brand-accent/20 h-11 rounded-none px-4 font-mono text-[0.65rem] tracking-widest uppercase shadow-none focus-visible:ring-1"
           defaultValue={title}
           id={`${sourceId ?? 'new'}-title`}
           name="title"
-          placeholder="Chapter excerpt"
+          placeholder="CHAPTER EXCERPT"
           required
         />
       </div>
@@ -447,30 +413,36 @@ function ProjectSourceFields({
       <div className="flex min-h-0 flex-1 flex-col gap-2">
         <div className="flex shrink-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <label
-            className="text-muted-foreground text-sm font-medium"
+            className="text-muted-foreground/70 font-mono text-[0.65rem] tracking-widest uppercase"
             htmlFor={`${sourceId ?? 'new'}-content`}
           >
-            Content
+            CONTENT
           </label>
-          <div className="text-muted-foreground flex flex-wrap items-center gap-3 text-xs sm:justify-end">
-            <span className="font-mono tabular-nums">{counts.words} words</span>
-            <span className="font-mono tabular-nums">{counts.characters} chars</span>
-            <div className="border-border flex rounded-full border bg-white/[0.035] p-0.5">
+          <div className="text-muted-foreground/70 flex flex-wrap items-center gap-3 font-mono text-[0.65rem] tracking-widest uppercase sm:justify-end">
+            <span className="tabular-nums">{counts.words} WORDS</span>
+            <span className="tabular-nums">{counts.characters} CHARS</span>
+            <div className="border-border/40 bg-muted/20 flex rounded-none border p-0.5">
               <button
                 aria-label="Button"
-                className={sourceModeButtonVariants({ active: mode === 'edit' })}
+                className={
+                  sourceModeButtonVariants({ active: mode === 'edit' }) +
+                  ' rounded-none font-mono text-[0.65rem] tracking-widest uppercase'
+                }
                 onClick={() => setMode('edit')}
                 type="button"
               >
-                Edit
+                EDIT
               </button>
               <button
                 aria-label="Button"
-                className={sourceModeButtonVariants({ active: mode === 'preview' })}
+                className={
+                  sourceModeButtonVariants({ active: mode === 'preview' }) +
+                  ' rounded-none font-mono text-[0.65rem] tracking-widest uppercase'
+                }
                 onClick={() => setMode('preview')}
                 type="button"
               >
-                Preview
+                PREVIEW
               </button>
             </div>
           </div>
@@ -496,25 +468,25 @@ function ProjectSourceFields({
       </div>
 
       {error ? (
-        <p className="text-foreground rounded-[1rem] border border-[#e5685b]/30 bg-[#e5685b]/10 px-3 py-2 text-sm">
+        <p className="text-foreground border border-[#e5685b]/30 bg-[#e5685b]/10 px-3 py-2 font-mono text-[0.65rem] tracking-widest uppercase">
           {error}
         </p>
       ) : null}
 
       {success ? (
-        <p className="text-foreground rounded-[1rem] border border-[#00bb7f]/30 bg-[#00bb7f]/10 px-3 py-2 text-sm">
+        <p className="text-foreground border border-[#00bb7f]/30 bg-[#00bb7f]/10 px-3 py-2 font-mono text-[0.65rem] tracking-widest uppercase">
           {success}
         </p>
       ) : null}
 
       <div className="mt-auto flex shrink-0 items-center gap-3 pt-2">
         <Button
-          className="bg-brand-accent h-9 rounded-full px-4 text-[#041018] hover:bg-[#7ceae3]"
+          className="bg-brand-accent/20 text-brand-accent hover:bg-brand-accent hover:text-background h-10 rounded-none px-6 font-mono text-[0.65rem] tracking-widest uppercase transition-all"
           disabled={isPending}
           type="submit"
         >
           <FileText className="mr-1.5 size-3.5" />
-          {isPending ? 'Saving...' : submitLabel}
+          {isPending ? '[ SAVING... ]' : `[ ${submitLabel} ]`}
         </Button>
         {extraActions}
       </div>
@@ -532,14 +504,14 @@ function SourcePreview({ value }: { value: string }) {
 
   if (!blocks.length) {
     return (
-      <div className="border-border bg-card/50 text-muted-foreground min-h-[420px] flex-1 rounded-[1.25rem] border border-dashed p-4 text-sm">
-        Nothing to preview yet.
+      <div className="border-border/40 bg-background/50 text-muted-foreground/70 min-h-[420px] flex-1 rounded-none border border-dashed p-4 font-mono text-xs uppercase">
+        [ NOTHING TO PREVIEW YET ]
       </div>
     );
   }
 
   return (
-    <div className="border-border bg-card text-muted-foreground min-h-[420px] flex-1 space-y-4 overflow-y-auto rounded-[1.25rem] border p-4 text-sm leading-6 shadow-[inset_3px_0_0_rgba(83,209,203,0.58),inset_0_1px_0_rgba(255,255,255,0.04)]">
+    <div className="border-border/40 bg-background/50 text-foreground min-h-[420px] flex-1 space-y-4 overflow-y-auto rounded-none border p-4 font-mono text-xs leading-6 shadow-[inset_3px_0_0_rgba(83,209,203,0.58),inset_0_1px_0_rgba(255,255,255,0.04)]">
       {blocks.map((block) => (
         <p className="whitespace-pre-wrap" key={block.id}>
           {block.text}

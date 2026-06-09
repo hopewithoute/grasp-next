@@ -14,25 +14,28 @@ type ProjectSettingsProps = {
 
 export function ProjectSettings({ detail }: ProjectSettingsProps) {
   return (
-    <details className="group border-border bg-card/50 open:bg-card rounded-[1.75rem] border">
-      <summary className="text-muted-foreground hover:text-foreground flex cursor-pointer items-center justify-between gap-4 px-6 py-5 text-sm font-medium transition-colors">
+    <details className="group border-border/40 bg-background/50 open:bg-background relative border">
+      <summary className="text-muted-foreground hover:text-brand-accent flex cursor-pointer items-center justify-between gap-4 px-6 py-5 transition-colors">
         <span className="flex items-center gap-3">
-          <span className="text-muted-foreground font-mono text-[0.65rem] tracking-[0.18em] uppercase tabular-nums">
-            §
+          <span className="text-brand-accent/70 font-mono text-[0.65rem] tracking-[0.2em] uppercase">
+            [ § ]
           </span>
-          <span>Project settings</span>
+          <span className="font-mono text-xs tracking-widest uppercase">Project Settings</span>
         </span>
-        <span className="text-muted-foreground group-open:text-brand-accent-foreground font-mono text-[0.65rem] tracking-[0.16em] uppercase transition-colors">
-          lifecycle
+        <span className="text-brand-accent/50 group-open:text-brand-accent font-mono text-[0.65rem] tracking-[0.2em] uppercase transition-colors">
+          [ LIFECYCLE ]
         </span>
       </summary>
-      <div className="border-border border-t p-6">
-        <div className="border-border mb-5 flex flex-col gap-4 border-b pb-5 lg:flex-row lg:items-start lg:justify-between">
+      <div className="border-border/40 relative border-t p-6">
+        <div className="border-brand-accent/50 absolute top-0 left-0 size-2 border-t border-l" />
+        <div className="border-border/40 mb-6 flex flex-col gap-6 border-b border-dashed pb-6 lg:flex-row lg:items-start lg:justify-between">
           <div className="space-y-2">
-            <p className="text-muted-foreground font-mono text-[0.65rem] tracking-[0.18em] uppercase tabular-nums">
-              Project lifecycle
+            <p className="text-brand-accent/70 font-mono text-[0.65rem] tracking-[0.3em] uppercase">
+              [ SYS.LIFECYCLE ]
             </p>
-            <h2 className="text-foreground text-xl font-medium tracking-tight">Project details</h2>
+            <h2 className="text-foreground font-mono text-xl font-light tracking-widest uppercase">
+              [ PROJECT_DETAILS ]
+            </h2>
           </div>
           <DeleteProjectForm
             disabled={detail.project.status === PROJECT_STATUS.PROCESSING}

@@ -29,3 +29,11 @@ export async function signInWithGoogle() {
 
   redirect(response.url);
 }
+
+export async function logOut() {
+  await auth.api.signOut({
+    headers: await headers(),
+  });
+  
+  redirect('/');
+}

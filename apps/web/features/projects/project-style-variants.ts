@@ -27,7 +27,7 @@ const artifactStatusIntentByStatus: Record<ArtifactStatus, StatusIntent> = {
 };
 
 export const statusBadgeVariants = cva(
-  'rounded-full px-2.5 py-1 text-xs font-semibold capitalize',
+  'inline-flex items-center gap-1 border px-2 py-1 font-mono text-[0.65rem] tracking-[0.2em] uppercase',
   {
     variants: {
       intent: {
@@ -128,7 +128,7 @@ export const stageMarkerVariants = cva(
 );
 
 export const statusChipVariants = cva(
-  'inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold',
+  'inline-flex items-center gap-2 border px-3 py-1.5 font-mono text-[0.65rem] tracking-[0.2em] uppercase',
   {
     variants: {
       ready: {

@@ -1,7 +1,6 @@
 'use client';
 
 import { useActionState } from 'react';
-import { Pencil, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { deleteProjectFormAction, updateProjectDetailsFormAction } from '../actions';
 
@@ -26,13 +25,16 @@ export function ProjectDetailsForm({ description, projectId, title }: ProjectDet
     <form action={formAction} className="space-y-4">
       <input name="projectId" type="hidden" value={projectId} />
 
-      <div className="grid gap-4 md:grid-cols-[1fr_1.4fr]">
-        <div className="space-y-2">
-          <label className="text-foreground text-sm font-medium" htmlFor="projectTitle">
-            Title
+      <div className="grid gap-6 md:grid-cols-[1fr_1.4fr]">
+        <div className="space-y-3">
+          <label
+            className="text-foreground/80 font-mono text-[0.65rem] tracking-widest uppercase"
+            htmlFor="projectTitle"
+          >
+            [ TITLE_NODE ]
           </label>
           <input
-            className="border-border bg-background text-foreground placeholder:text-muted-foreground focus-visible:border-brand-accent-border focus-visible:ring-brand-accent/20 h-11 w-full rounded-2xl border px-4 text-sm outline-none focus-visible:ring-3"
+            className="border-border/50 bg-background text-foreground placeholder:text-muted-foreground/30 focus-visible:border-brand-accent h-12 w-full border px-4 font-mono text-sm transition-colors outline-none"
             defaultValue={title}
             id="projectTitle"
             maxLength={160}
@@ -42,12 +44,15 @@ export function ProjectDetailsForm({ description, projectId, title }: ProjectDet
           />
         </div>
 
-        <div className="space-y-2">
-          <label className="text-foreground text-sm font-medium" htmlFor="projectDescription">
-            Description
+        <div className="space-y-3">
+          <label
+            className="text-foreground/80 font-mono text-[0.65rem] tracking-widest uppercase"
+            htmlFor="projectDescription"
+          >
+            [ DESC_PARAMETERS ]
           </label>
           <input
-            className="border-border bg-background text-foreground placeholder:text-muted-foreground focus-visible:border-brand-accent-border focus-visible:ring-brand-accent/20 h-11 w-full rounded-2xl border px-4 text-sm outline-none focus-visible:ring-3"
+            className="border-border/50 bg-background text-foreground placeholder:text-muted-foreground/30 focus-visible:border-brand-accent h-12 w-full border px-4 font-mono text-sm transition-colors outline-none"
             defaultValue={description ?? ''}
             id="projectDescription"
             maxLength={1000}
@@ -58,25 +63,27 @@ export function ProjectDetailsForm({ description, projectId, title }: ProjectDet
       </div>
 
       {state.error ? (
-        <p className="rounded-2xl border border-red-400/20 bg-red-500/8 px-4 py-3 text-sm text-red-200">
-          {state.error}
+        <p className="border-status-danger-border bg-status-danger-surface text-status-danger-foreground border px-4 py-3 font-mono text-xs tracking-widest uppercase">
+          [ ERR ] {state.error}
         </p>
       ) : null}
 
       {state.success ? (
-        <p className="rounded-2xl border border-emerald-400/20 bg-emerald-500/8 px-4 py-3 text-sm text-emerald-200">
-          Project details updated.
+        <p className="border-status-success-border bg-status-success-surface text-status-success-foreground border px-4 py-3 font-mono text-xs tracking-widest uppercase">
+          [ OK ] Details synchronized.
         </p>
       ) : null}
 
-      <Button
-        className="bg-brand-accent text-brand-accent-foreground hover:bg-brand-accent/90 h-10 rounded-full px-5 active:translate-y-[1px]"
-        disabled={isPending}
-        type="submit"
-      >
-        <Pencil />
-        {isPending ? 'Saving…' : 'Save details'}
-      </Button>
+      <div className="pt-2">
+        <Button
+          className="border-brand-accent/50 bg-background text-brand-accent hover:bg-brand-accent hover:text-background h-10 rounded-none border px-6 font-mono text-xs tracking-widest uppercase transition-all"
+          disabled={isPending}
+          type="submit"
+          variant="outline"
+        >
+          {isPending ? '[ COMMITTING... ]' : '[ COMMIT CHANGES ]'}
+        </Button>
+      </div>
     </form>
   );
 }
@@ -91,20 +98,24 @@ export function DeleteProjectForm({ disabled, projectId }: DeleteProjectFormProp
       <input name="projectId" type="hidden" value={projectId} />
 
       {disabled ? (
-        <p className="text-muted-foreground text-sm leading-7">
-          Deletion is blocked while a graph build is running.
+        <p className="text-muted-foreground/70 font-mono text-xs leading-7 tracking-wider uppercase">
+          &gt; Deletion locked: Active graph build.
         </p>
       ) : null}
 
       {state.error ? (
-        <p className="rounded-2xl border border-red-400/20 bg-red-500/8 px-4 py-3 text-sm text-red-200">
-          {state.error}
+        <p className="border-status-danger-border bg-status-danger-surface text-status-danger-foreground border px-4 py-3 font-mono text-xs tracking-widest uppercase">
+          [ ERR ] {state.error}
         </p>
       ) : null}
 
-      <Button disabled={disabled || isPending} type="submit" variant="destructive">
-        <Trash2 />
-        {isPending ? 'Deleting...' : 'Delete project'}
+      <Button
+        className="border-status-danger-foreground/50 bg-background text-status-danger-foreground hover:bg-status-danger-foreground hover:text-background h-9 rounded-none border px-4 font-mono text-[0.65rem] tracking-widest uppercase transition-all"
+        disabled={disabled || isPending}
+        type="submit"
+        variant="outline"
+      >
+        {isPending ? '[ PURGING... ]' : '[ PURGE NODE ]'}
       </Button>
     </form>
   );

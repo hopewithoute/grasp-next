@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { ArrowUpRight, FolderOpen, History, Plus, Search } from 'lucide-react';
+import { ArrowUpRight, Search } from 'lucide-react';
 import { PROJECT_STATUS, type ProjectStatus } from '@grasp/domain';
 import { getActor, getViewer } from '@/server/actor';
 import { createProjectDeps } from '@/server/project-deps';
@@ -14,15 +14,6 @@ const STATUS_TONE: Record<ProjectStatus, string> = {
   [PROJECT_STATUS.PROCESSING]: 'bg-status-warning-foreground',
   [PROJECT_STATUS.REVIEWING]: 'bg-status-info-foreground',
 };
-
-function Eyebrow({ children }: { children: React.ReactNode }) {
-  return (
-    <span className="text-muted-foreground inline-flex items-center gap-2 text-[0.7rem] tracking-[0.18em] uppercase">
-      <span className="bg-brand-accent pulse-soft size-1.5 rounded-full" />
-      <span className="font-mono">{children}</span>
-    </span>
-  );
-}
 
 export async function ProjectsPage() {
   const actor = await getActor();
@@ -54,25 +45,34 @@ export async function ProjectsPage() {
 
   return (
     <section className="text-foreground flex w-full flex-col gap-10">
-      {/* Header — asymmetric, no card overuse */}
-      <header className="grid gap-6 md:grid-cols-[1.4fr_0.6fr] md:items-end">
-        <div className="space-y-4">
-          <Eyebrow>Workspace · Projects</Eyebrow>
-          <h1 className="max-w-[20ch] text-[clamp(2.2rem,4vw,3.6rem)] leading-[1] font-medium tracking-[-0.04em]">
-            {greeting}
-          </h1>
-          <p className="text-muted-foreground max-w-[58ch] text-base leading-relaxed">
-            Continue an open project, or seed a new one with raw source material. The pipeline picks
-            up from wherever you left off.
-          </p>
-        </div>
+      {/* Header — High-Tech Geometry Style */}
+      <header className="border-border/40 relative mb-4 flex flex-col gap-8 border-b pb-10">
+        {/* Glowing Bottom Border Accent */}
+        <div className="from-brand-accent/80 absolute -bottom-[0.5px] left-0 h-[1px] w-1/3 bg-gradient-to-r to-transparent" />
 
-        {/* Right side — counts strip, divide-y not card */}
-        <dl className="divide-border border-border bg-card/50 grid grid-cols-3 divide-x rounded-[1.75rem] border px-1 py-3">
-          <CountCell label="Total" value={projects.length} />
-          <CountCell accent label="In review" value={counts[PROJECT_STATUS.REVIEWING]} />
-          <CountCell label="Processing" value={counts[PROJECT_STATUS.PROCESSING]} />
-        </dl>
+        <div className="flex flex-col justify-between gap-8 lg:flex-row lg:items-end">
+          <div className="space-y-6">
+            <div className="inline-flex items-center gap-3">
+              <span className="bg-brand-accent animate-pulse-soft size-1.5" />
+              <span className="text-brand-accent font-mono text-[0.65rem] tracking-[0.3em] uppercase">
+                Terminal.Active
+              </span>
+            </div>
+            <h1 className="max-w-[15ch] text-[clamp(2.5rem,5vw,4.5rem)] leading-[0.9] font-light tracking-[-0.05em] uppercase">
+              {greeting}
+            </h1>
+            <p className="text-muted-foreground/80 max-w-[50ch] font-mono text-sm leading-relaxed">
+              Initialize a new node or continue existing extraction processes.
+            </p>
+          </div>
+
+          {/* Right side — Terminal Stat Counters */}
+          <dl className="flex flex-wrap gap-8 lg:gap-12">
+            <CountCell label="Total" value={projects.length} />
+            <CountCell accent label="In review" value={counts[PROJECT_STATUS.REVIEWING]} />
+            <CountCell label="Processing" value={counts[PROJECT_STATUS.PROCESSING]} />
+          </dl>
+        </div>
       </header>
 
       {/* Body — asymmetric 1.4fr / 0.6fr */}
@@ -81,25 +81,25 @@ export async function ProjectsPage() {
         <div className="min-w-0 space-y-5">
           <div className="flex items-end justify-between gap-4">
             <div>
-              <h2 className="text-2xl leading-tight font-medium tracking-tight md:text-3xl">
-                Open projects
+              <h2 className="font-mono text-lg font-light tracking-widest uppercase md:text-xl">
+                [ OPEN_PROJECTS ]
               </h2>
-              <p className="text-muted-foreground mt-1 text-sm leading-relaxed">
-                {projects.length} total · {inFlight} in flight
+              <p className="text-muted-foreground/80 mt-2 font-mono text-[0.65rem] tracking-widest uppercase">
+                &gt; {projects.length} TOTAL // {inFlight} IN_FLIGHT
               </p>
             </div>
 
             <button
               aria-label="Search projects"
-              className="border-border bg-card/50 text-muted-foreground hover:border-brand-accent-border hover:bg-brand-accent-surface hover:text-brand-accent-foreground hidden size-10 shrink-0 items-center justify-center rounded-xl border transition-colors active:scale-[0.96] sm:inline-flex"
+              className="border-border/40 bg-background/50 text-muted-foreground hover:border-brand-accent/50 hover:bg-brand-accent/10 hover:text-brand-accent hidden size-10 shrink-0 items-center justify-center rounded-none border transition-colors sm:inline-flex"
               type="button"
             >
-              <Search className="size-4" strokeWidth={1.5} />
+              <Search className="size-4" strokeWidth={1} />
             </button>
           </div>
 
           {projects.length ? (
-            <ol className="divide-border border-border divide-y border-y">
+            <ul className="bg-border/40 border-border/40 grid grid-cols-1 gap-px border md:grid-cols-2">
               {projects.map((project) => {
                 const tone = STATUS_TONE[project.status];
                 const isActive =
@@ -107,109 +107,129 @@ export async function ProjectsPage() {
                   project.status === PROJECT_STATUS.PROCESSING;
 
                 return (
-                  <li key={project.id}>
+                  <li key={project.id} className="bg-background group relative">
                     <Link
-                      className="group hover:bg-card/50 relative grid gap-4 py-5 transition-colors sm:grid-cols-[16px_1fr_auto] sm:items-start sm:gap-5 sm:px-2"
+                      className="hover:bg-muted/10 flex h-full flex-col gap-6 p-6 transition-colors"
                       href={`/dashboard/projects/${project.id}`}
                     >
-                      {/* Status ribbon — mirrors evidence-ribbon idiom */}
-                      <span className="relative flex h-full justify-center pt-2 sm:pt-1.5">
-                        <span
-                          aria-hidden
-                          className={`size-2 rounded-full ${tone} ${isActive ? 'pulse-soft' : ''}`}
-                        />
-                      </span>
+                      {/* Corner Accents on Hover */}
+                      <div className="group-hover:border-brand-accent absolute top-0 left-0 size-2 border-t border-l border-transparent transition-colors duration-300" />
+                      <div className="group-hover:border-brand-accent absolute right-0 bottom-0 size-2 border-r border-b border-transparent transition-colors duration-300" />
 
-                      <div className="min-w-0 space-y-1.5">
+                      <div className="flex items-start justify-between">
+                        {/* Status ribbon */}
                         <div className="flex items-center gap-3">
-                          <h3 className="text-foreground group-hover:text-foreground truncate text-base font-medium tracking-tight transition-colors md:text-lg">
-                            {project.title}
-                          </h3>
+                          <span
+                            aria-hidden
+                            className={`size-1.5 ${tone} ${isActive ? 'animate-pulse' : ''}`}
+                          />
                           <ProjectStatusBadge status={project.status} />
                         </div>
-                        <p className="text-muted-foreground line-clamp-2 max-w-[68ch] text-sm leading-relaxed">
-                          {project.description ??
-                            'No description yet. Open the project to add context and continue the workflow.'}
-                        </p>
-                        <div className="text-muted-foreground flex flex-wrap items-center gap-x-4 gap-y-1 pt-1 font-mono text-[0.7rem] tabular-nums">
-                          <span className="inline-flex items-center gap-1.5">
-                            <History className="size-3" strokeWidth={1.5} />
-                            {formatDate(project.createdAt)}
-                          </span>
-                          <span className="text-muted-foreground/40">·</span>
-                          <span className="font-mono tracking-[0.14em] uppercase">
-                            id {project.id.slice(0, 8)}
-                          </span>
-                        </div>
+                        <span className="text-muted-foreground/30 group-hover:text-brand-accent flex shrink-0 items-center justify-end transition-colors duration-300">
+                          <ArrowUpRight
+                            className="size-5 transition-transform duration-300 group-hover:translate-x-1 group-hover:-translate-y-1"
+                            strokeWidth={1}
+                          />
+                        </span>
                       </div>
 
-                      <span className="text-muted-foreground group-hover:text-brand-accent-foreground flex shrink-0 items-center justify-end pt-1 transition-colors">
-                        <ArrowUpRight
-                          className="size-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
-                          strokeWidth={1.5}
-                        />
-                      </span>
+                      <div className="mt-2 min-w-0 space-y-3">
+                        <h3 className="text-foreground group-hover:text-brand-accent/90 truncate text-xl font-light tracking-tight uppercase transition-colors">
+                          {project.title}
+                        </h3>
+                        <p className="text-muted-foreground/70 line-clamp-2 font-mono text-[0.7rem] leading-relaxed">
+                          {project.description ?? 'SYS.WARN: Description missing. Awaiting input.'}
+                        </p>
+                      </div>
+
+                      <div className="text-muted-foreground/50 border-border/20 mt-auto flex flex-wrap items-center justify-between border-t pt-6 font-mono text-[0.65rem]">
+                        <span className="tracking-widest uppercase">
+                          ID: {project.id.slice(0, 8)}
+                        </span>
+                        <span className="tracking-widest">{formatDate(project.createdAt)}</span>
+                      </div>
                     </Link>
                   </li>
                 );
               })}
-            </ol>
+            </ul>
           ) : (
-            <div className="border-border bg-card/50 rounded-[2rem] border border-dashed p-10">
-              <div className="max-w-[44ch] space-y-4">
-                <span className="border-brand-accent-border bg-brand-accent-surface text-brand-accent-foreground grid size-12 place-items-center rounded-2xl border">
-                  <FolderOpen className="size-5" strokeWidth={1.5} />
-                </span>
-                <div className="space-y-2">
-                  <h3 className="text-2xl leading-tight font-medium tracking-tight">
-                    No projects yet.
+            <div className="border-border/40 bg-background/50 relative border p-10">
+              <div className="border-muted-foreground/30 absolute top-0 left-0 size-2 border-t border-l" />
+              <div className="border-muted-foreground/30 absolute right-0 bottom-0 size-2 border-r border-b" />
+
+              <div className="max-w-[44ch] space-y-6">
+                <span className="text-brand-accent font-mono text-2xl font-light">[ NULL ]</span>
+                <div className="space-y-3">
+                  <h3 className="text-xl font-light tracking-widest uppercase">
+                    No active processes
                   </h3>
-                  <p className="text-muted-foreground text-sm leading-relaxed">
-                    Use the composer on the right to create your first project. Paste a chapter, a
-                    markdown export, or notes: the pipeline starts as soon as you save.
+                  <p className="text-muted-foreground/70 font-mono text-xs leading-relaxed">
+                    &gt; System standby.
+                    <br />
+                    &gt; Use the composer module to initialize a new graph extraction pipeline.
                   </p>
                 </div>
-                <p className="text-muted-foreground font-mono text-[0.7rem] tracking-[0.14em] uppercase">
-                  Source · Graph · Lesson · Publish
-                </p>
               </div>
             </div>
           )}
         </div>
 
         {/* Composer — sticky on desktop */}
-        <aside className="xl:sticky xl:top-24 xl:self-start">
-          <article className="border-border bg-card overflow-hidden rounded-[2rem] border p-6 shadow-sm md:p-7">
-            <header className="flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <span className="border-brand-accent-border bg-brand-accent-surface text-brand-accent-foreground grid size-8 place-items-center rounded-xl border">
-                  <Plus className="size-4" strokeWidth={1.5} />
-                </span>
-                <span>
-                  <span className="text-muted-foreground block font-mono text-[0.65rem] tracking-[0.18em] uppercase">
-                    Composer
-                  </span>
-                  <span className="text-foreground block text-sm font-medium tracking-tight">
-                    New project
-                  </span>
+        <aside className="xl:sticky xl:top-28 xl:self-start">
+          <article className="border-border/40 bg-background/50 relative border p-6 backdrop-blur-sm md:p-8">
+            {/* High-tech corners */}
+            <div className="border-muted-foreground/30 absolute top-0 left-0 size-3 border-t border-l" />
+            <div className="border-muted-foreground/30 absolute top-0 right-0 size-3 border-t border-r" />
+            <div className="border-muted-foreground/30 absolute bottom-0 left-0 size-3 border-b border-l" />
+            <div className="border-muted-foreground/30 absolute right-0 bottom-0 size-3 border-r border-b" />
+
+            <header className="border-border/30 mb-8 flex items-center justify-between border-b pb-4">
+              <div className="flex items-center gap-3">
+                <span className="text-brand-accent font-mono text-sm font-light">[+]</span>
+                <span className="text-foreground font-mono text-xs tracking-[0.2em] uppercase">
+                  Init_Project
                 </span>
               </div>
-              <span className="text-muted-foreground font-mono text-[0.65rem] tracking-[0.14em] uppercase tabular-nums">
-                step 01
+              <span className="text-muted-foreground/40 font-mono text-[0.6rem] tracking-[0.2em] uppercase">
+                SEQ:01
               </span>
             </header>
 
-            <p className="text-muted-foreground mt-5 max-w-[42ch] text-sm leading-relaxed">
-              Title, optional description, and seed source material. The graph extraction begins
-              once you save.
-            </p>
+            <div className="text-muted-foreground/60 mb-8 font-mono text-[0.65rem] leading-relaxed tracking-widest uppercase">
+              &gt; Enter target designation.
+              <br />
+              &gt; System will initialize graph extraction upon commit.
+            </div>
 
-            <div className="mt-6">
+            <div>
               <CreateProjectForm />
             </div>
           </article>
         </aside>
       </section>
+
+      {/* Abstract Node Pattern Decoration */}
+      <div className="pointer-events-none fixed right-0 bottom-0 z-[-1] opacity-20">
+        <svg
+          width="400"
+          height="400"
+          viewBox="0 0 400 400"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <circle cx="200" cy="200" r="2" fill="currentColor" />
+          <circle cx="100" cy="300" r="2" fill="currentColor" />
+          <circle cx="300" cy="100" r="2" fill="currentColor" />
+          <circle cx="250" cy="350" r="2" fill="currentColor" />
+          <path
+            d="M200 200 L100 300 M200 200 L300 100 M200 200 L250 350 M100 300 L250 350"
+            stroke="currentColor"
+            strokeWidth="0.5"
+            strokeDasharray="4 4"
+          />
+        </svg>
+      </div>
     </section>
   );
 }
@@ -224,13 +244,15 @@ function CountCell({
   value: number;
 }) {
   return (
-    <div className="px-4 py-2">
-      <p className="text-muted-foreground font-mono text-[0.65rem] tracking-[0.16em] uppercase tabular-nums">
+    <div className="flex flex-col gap-2">
+      <p className="text-muted-foreground/60 font-mono text-[0.65rem] tracking-[0.2em] uppercase">
         {label}
       </p>
       <p
-        className={`mt-1 font-mono text-2xl font-medium tracking-tight tabular-nums ${
-          accent ? 'text-brand-accent-foreground' : 'text-foreground'
+        className={`font-mono text-3xl font-light tracking-tighter ${
+          accent
+            ? 'text-brand-accent drop-shadow-[0_0_8px_rgba(255,255,255,0.1)]'
+            : 'text-foreground'
         }`}
       >
         {String(value).padStart(2, '0')}

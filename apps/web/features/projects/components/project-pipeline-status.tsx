@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { ArrowUpRight, FileText, GitBranch, Layers3, Sparkles } from 'lucide-react';
 import { buildStageHref } from '../stages';
-import { Eyebrow, StatusChip } from './project-shared';
+import { StatusChip } from './project-shared';
 
 type ProjectPipelineStatusProps = {
   graphReady: boolean;
@@ -34,34 +34,36 @@ export function ProjectPipelineStatus({
   return (
     <div className="grid gap-10 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,0.6fr)]">
       {/* Left column — pipeline + graph snapshot */}
-      <div className="min-w-0 space-y-12">
-        {/* Pipeline snapshot — divide-y stage list */}
+      <div className="min-w-0 space-y-16">
+        {/* Pipeline snapshot — sharp grid list */}
         <section className="space-y-6">
-          <header className="flex items-end justify-between gap-4">
+          <header className="border-border/40 flex items-end justify-between gap-4 border-b pb-4">
             <div className="space-y-2">
-              <Eyebrow>Pipeline snapshot</Eyebrow>
-              <h2 className="text-2xl leading-[1.05] font-medium tracking-[-0.03em] md:text-3xl">
-                Source to publish, one workspace.
+              <span className="text-brand-accent/80 font-mono text-[0.65rem] tracking-[0.3em] uppercase">
+                [ SYS.PIPELINE ]
+              </span>
+              <h2 className="text-2xl leading-[1.05] font-light tracking-[-0.03em] uppercase md:text-3xl">
+                [ END_TO_END_EXTRACTION ]
               </h2>
             </div>
             <Sparkles
-              className="text-brand-accent hidden size-5 shrink-0 md:block"
-              strokeWidth={1.5}
+              className="text-brand-accent animate-pulse-soft hidden size-5 shrink-0 md:block"
+              strokeWidth={1}
             />
           </header>
 
-          <ol className="divide-border border-border divide-y border-y">
+          <ol className="divide-border border-border/40 divide-y border-y">
             <PipelineRow
               cite="01"
-              copy="Source text is editable before any graph run."
+              copy="> Source text is editable before graph initialization."
               icon={FileText}
               ready={sourceReady}
               stat={`${sourceCounts.words} words`}
-              title="Source"
+              title="[ SOURCE ]"
             />
             <PipelineRow
               cite="02"
-              copy="Source changes trigger ingestion to build the concept graph workspace."
+              copy="> Changes trigger ingestion to map the concept structure."
               icon={GitBranch}
               ready={ingestionStatus.ready}
               stat={
@@ -69,85 +71,97 @@ export function ProjectPipelineStatus({
                   ? `${knowledgebaseGraph.concepts.length} concepts`
                   : ingestionStatus.value
               }
-              title="Workspace"
+              title="[ WORKSPACE ]"
             />
             <PipelineRow
               cite="03"
-              copy="Lesson and publish layer on top of the reviewed graph."
+              copy="> Final outputs layer onto the verified graph."
               icon={Layers3}
               ready={false}
-              stat="planned"
-              title="Next slices"
+              stat="[ STANDBY ]"
+              title="[ NEXT_SLICES ]"
             />
           </ol>
         </section>
 
-        {/* Current graph — divide-x stat strip with open CTA */}
+        {/* Current graph — sharp stats with CTA */}
         <section className="space-y-6">
-          <header className="flex items-end justify-between gap-4">
+          <header className="border-border/40 flex items-end justify-between gap-4 border-b pb-4">
             <div className="space-y-2">
-              <Eyebrow>Current graph</Eyebrow>
-              <h2 className="text-2xl leading-[1.05] font-medium tracking-[-0.03em] md:text-3xl">
-                Continue the active review thread.
+              <span className="text-brand-accent/80 font-mono text-[0.65rem] tracking-[0.3em] uppercase">
+                [ SYS.GRAPH ]
+              </span>
+              <h2 className="text-2xl leading-[1.05] font-light tracking-[-0.03em] uppercase md:text-3xl">
+                [ ACTIVE_NODE_REVIEW ]
               </h2>
             </div>
             <Link
-              className="group border-border bg-card/50 text-muted-foreground hover:border-brand-accent-border hover:bg-brand-accent-surface hover:text-brand-accent-foreground inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-all duration-200"
+              className="group border-border/50 bg-background hover:bg-muted/10 text-muted-foreground hover:text-foreground hover:border-brand-accent inline-flex items-center gap-3 border px-5 py-2.5 font-mono text-xs tracking-widest uppercase transition-all duration-300"
               href={buildStageHref(projectId, 'workspace')}
             >
-              Open workspace
+              <span className="text-brand-accent font-bold group-hover:animate-pulse">[ </span>
+              OPEN_WORKSPACE
+              <span className="text-brand-accent font-bold group-hover:animate-pulse"> ]</span>
               <ArrowUpRight
                 className="size-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
-                strokeWidth={1.5}
+                strokeWidth={1}
               />
             </Link>
           </header>
 
-          <dl className="border-border bg-card/50 grid gap-px overflow-hidden rounded-[1.75rem] border md:grid-cols-2">
-            <GraphStatCell
-              label="Concepts"
-              unit="extracted"
-              value={String(knowledgebaseGraph.concepts.length)}
-            />
-            <GraphStatCell
-              label="Relationships"
-              unit="relationships"
-              value={String(knowledgebaseGraph.relationships.length)}
-            />
+          <dl className="bg-border/40 border-border/40 grid gap-px border md:grid-cols-2">
+            <div className="bg-background">
+              <GraphStatCell
+                label="Concepts"
+                unit="extracted"
+                value={String(knowledgebaseGraph.concepts.length)}
+              />
+            </div>
+            <div className="bg-background">
+              <GraphStatCell
+                label="Relationships"
+                unit="relationships"
+                value={String(knowledgebaseGraph.relationships.length)}
+              />
+            </div>
           </dl>
         </section>
       </div>
 
       {/* Right column — guidance + readiness */}
-      <aside className="space-y-12 xl:sticky xl:top-24 xl:self-start">
+      <aside className="border-border/40 space-y-12 border-l pl-0 xl:sticky xl:top-24 xl:self-start xl:pl-10">
         <section className="space-y-5">
-          <Eyebrow>Studio guidance</Eyebrow>
-          <ol className="divide-border border-border divide-y border-y">
+          <span className="text-brand-accent/80 font-mono text-[0.65rem] tracking-[0.3em] uppercase">
+            [ SYS.GUIDE ]
+          </span>
+          <ol className="divide-border border-border/40 divide-y border-y">
             <GuidanceRow
-              cite="01"
-              copy="Maintain raw material and preview markdown before any run."
-              label="Source"
+              cite="SEQ:01"
+              copy="> Maintain raw material and check output logs."
+              label="[ SOURCE ]"
             />
             <GuidanceRow
-              cite="02"
-              copy="Ingest sources and refine the concept structure."
-              label="Workspace"
+              cite="SEQ:02"
+              copy="> Ingest and review graph nodes."
+              label="[ WORKSPACE ]"
             />
             <GuidanceRow
-              cite="03"
-              copy="Lesson and publish remain visible to keep the full pipeline shape."
-              label="Downstream"
+              cite="SEQ:03"
+              copy="> Downstream components stand by."
+              label="[ PUBLISH ]"
             />
           </ol>
         </section>
 
         <section className="space-y-5">
-          <Eyebrow>Current readiness</Eyebrow>
-          <ul className="space-y-2">
-            <ReadinessRow label="Source saved" ready={sourceReady} />
-            <ReadinessRow label="Workspace synced" ready={ingestionStatus.ready && graphReady} />
-            <ReadinessRow label="Lesson review" ready={false} />
-            <ReadinessRow label="Publish gate" ready={false} />
+          <span className="text-brand-accent/80 font-mono text-[0.65rem] tracking-[0.3em] uppercase">
+            [ STATUS.CHECK ]
+          </span>
+          <ul className="bg-border/40 border-border/40 space-y-px border">
+            <ReadinessRow label="[ SOURCE_PAYLOAD ]" ready={sourceReady} />
+            <ReadinessRow label="[ GRAPH_SYNC ]" ready={ingestionStatus.ready && graphReady} />
+            <ReadinessRow label="[ LESSON_REVIEW ]" ready={false} />
+            <ReadinessRow label="[ PUBLISH_GATE ]" ready={false} />
           </ul>
         </section>
       </aside>
@@ -171,21 +185,26 @@ function PipelineRow({
   title: string;
 }) {
   return (
-    <li className="grid gap-3 py-6 md:grid-cols-[60px_1fr_auto] md:items-baseline md:gap-8">
-      <span className="text-brand-accent-foreground font-mono text-sm tracking-[0.16em] uppercase tabular-nums">
-        {cite}
+    <li className="group grid gap-3 py-6 md:grid-cols-[60px_1fr_auto] md:items-baseline md:gap-8">
+      <span className="text-brand-accent/70 font-mono text-sm tracking-[0.2em] uppercase">
+        [{cite}]
       </span>
-      <div className="space-y-2">
-        <h3 className="text-foreground flex items-center gap-2.5 text-lg font-medium tracking-tight">
-          <Icon className="text-muted-foreground size-4" strokeWidth={1.5} />
+      <div className="space-y-3">
+        <h3 className="text-foreground flex items-center gap-3 text-lg font-light tracking-tight uppercase">
+          <Icon
+            className="text-brand-accent/50 group-hover:text-brand-accent size-4 transition-colors"
+            strokeWidth={1}
+          />
           {title}
         </h3>
-        <p className="text-muted-foreground max-w-[64ch] text-sm leading-relaxed">{copy}</p>
-        <p className="text-muted-foreground font-mono text-[0.7rem] tracking-[0.14em] uppercase tabular-nums">
+        <p className="text-muted-foreground/70 max-w-[64ch] font-mono text-xs leading-relaxed">
+          {copy}
+        </p>
+        <p className="text-brand-accent/50 font-mono text-[0.65rem] tracking-[0.2em] uppercase">
           {stat}
         </p>
       </div>
-      <div className="md:text-right">
+      <div className="mt-2 md:mt-0 md:text-right">
         <StatusChip ready={ready} />
       </div>
     </li>
@@ -204,19 +223,25 @@ function GraphStatCell({
   value: string;
 }) {
   return (
-    <div className="bg-card flex h-full flex-col justify-between gap-4 p-6">
-      <p className="text-muted-foreground font-mono text-[0.65rem] tracking-[0.18em] uppercase tabular-nums">
+    <div className="bg-background group relative flex h-full flex-col justify-between gap-6 p-6">
+      {/* Corner Accents */}
+      <div className="border-muted-foreground/30 group-hover:border-brand-accent absolute top-0 left-0 size-1.5 border-t border-l transition-colors" />
+      <div className="border-muted-foreground/30 group-hover:border-brand-accent absolute right-0 bottom-0 size-1.5 border-r border-b transition-colors" />
+
+      <p className="text-muted-foreground/60 font-mono text-[0.65rem] tracking-[0.2em] uppercase">
         {label}
       </p>
-      <div className="space-y-1">
+      <div className="space-y-2">
         <p
-          className={`text-2xl leading-tight font-medium tracking-tight capitalize ${
-            accent ? 'text-brand-accent-foreground' : 'text-foreground'
+          className={`font-mono text-3xl font-light tracking-tighter uppercase ${
+            accent
+              ? 'text-brand-accent drop-shadow-[0_0_8px_rgba(255,255,255,0.1)]'
+              : 'text-foreground'
           }`}
         >
           {value}
         </p>
-        <p className="text-muted-foreground font-mono text-[0.65rem] tracking-[0.14em] uppercase tabular-nums">
+        <p className="text-brand-accent/70 font-mono text-[0.65rem] tracking-[0.2em] uppercase">
           {unit}
         </p>
       </div>
@@ -226,13 +251,15 @@ function GraphStatCell({
 
 function GuidanceRow({ cite, copy, label }: { cite: string; copy: string; label: string }) {
   return (
-    <li className="grid gap-2 py-4 md:grid-cols-[40px_1fr] md:items-baseline md:gap-5">
-      <span className="text-brand-accent-foreground font-mono text-[0.7rem] tracking-[0.18em] uppercase tabular-nums">
+    <li className="grid gap-2 py-5 md:grid-cols-[60px_1fr] md:items-baseline md:gap-5">
+      <span className="text-brand-accent/70 font-mono text-[0.65rem] tracking-[0.2em] uppercase">
         {cite}
       </span>
-      <div className="space-y-1.5">
-        <h3 className="text-foreground text-sm font-medium tracking-tight">{label}</h3>
-        <p className="text-muted-foreground max-w-[44ch] text-sm leading-relaxed">{copy}</p>
+      <div className="space-y-2">
+        <h3 className="text-foreground font-mono text-xs tracking-widest uppercase">{label}</h3>
+        <p className="text-muted-foreground/70 max-w-[44ch] font-mono text-xs leading-relaxed">
+          {copy}
+        </p>
       </div>
     </li>
   );
@@ -240,8 +267,10 @@ function GuidanceRow({ cite, copy, label }: { cite: string; copy: string; label:
 
 function ReadinessRow({ label, ready }: { label: string; ready: boolean }) {
   return (
-    <li className="border-border bg-card/50 flex items-center justify-between gap-4 rounded-[1.15rem] border px-4 py-3">
-      <span className="text-foreground text-sm">{label}</span>
+    <li className="bg-background group flex items-center justify-between gap-4 p-4">
+      <span className="text-foreground/80 font-mono text-xs tracking-widest uppercase">
+        {label}
+      </span>
       <StatusChip ready={ready} />
     </li>
   );

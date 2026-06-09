@@ -3,11 +3,11 @@ import { Badge } from '@/components/ui/badge';
 import { statusBadgeVariants } from '../project-style-variants';
 
 const labelByStatus: Record<ProjectStatus, string> = {
-  [PROJECT_STATUS.DRAFT]: 'Draft',
-  [PROJECT_STATUS.FAILED]: 'Failed',
-  [PROJECT_STATUS.PROCESSED]: 'Processed',
-  [PROJECT_STATUS.PROCESSING]: 'Processing',
-  [PROJECT_STATUS.REVIEWING]: 'Reviewing',
+  [PROJECT_STATUS.DRAFT]: '[ DRAFT ]',
+  [PROJECT_STATUS.FAILED]: '[ FAILED ]',
+  [PROJECT_STATUS.PROCESSED]: '[ PROCESSED ]',
+  [PROJECT_STATUS.PROCESSING]: '[ PROCESSING ]',
+  [PROJECT_STATUS.REVIEWING]: '[ REVIEWING ]',
 };
 
 export function ProjectStatusBadge({ status }: { status: ProjectStatus }) {

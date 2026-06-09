@@ -20,21 +20,20 @@ export function SourceList({
     <aside className="flex h-full min-w-0 flex-col gap-3 overflow-hidden">
       <div className="flex shrink-0 items-center justify-between gap-3">
         <span className="text-muted-foreground font-mono text-[0.65rem] tracking-[0.18em] uppercase tabular-nums">
-          Sources
+          [ SOURCES ]
         </span>
         <span className="text-muted-foreground font-mono text-[0.65rem] tracking-[0.16em] uppercase tabular-nums">
-          {sources.length} total
+          {sources.length} TOTAL
         </span>
       </div>
 
       <button
         aria-label="Button"
-        className="border-brand-accent-border/30 bg-brand-accent/[0.04] text-brand-accent-foreground hover:border-brand-accent-border hover:bg-brand-accent/[0.08] flex w-full shrink-0 items-center justify-center gap-2 rounded-[1.1rem] border border-dashed px-3 py-2.5 text-xs font-medium transition"
+        className="border-brand-accent/30 bg-brand-accent/5 text-brand-accent hover:border-brand-accent/50 hover:bg-brand-accent/10 flex w-full shrink-0 items-center justify-center gap-2 rounded-none border border-dashed px-3 py-2.5 font-mono text-[0.65rem] tracking-widest uppercase transition"
         onClick={onAddNew}
         type="button"
       >
-        <Plus className="size-3.5" />
-        Add source
+        <Plus className="size-3.5" />[ ADD SOURCE ]
       </button>
 
       <div className="min-h-0 flex-1 overflow-y-auto">
@@ -47,28 +46,28 @@ export function SourceList({
                 <li key={source.id}>
                   <button
                     aria-label="Button"
-                    className={`w-full rounded-[1.1rem] border px-4 py-3 text-left transition ${
+                    className={`w-full rounded-none border px-4 py-3 text-left transition ${
                       selectedSourceId === source.id
-                        ? 'border-brand-accent-border bg-brand-accent-surface'
-                        : 'border-border hover:bg-muted/50 bg-white/[0.035]'
+                        ? 'border-brand-accent/50 bg-brand-accent/10'
+                        : 'border-border/40 hover:bg-background/50 bg-muted/20'
                     }`}
                     onClick={() => onSelectSource(source.id)}
                     type="button"
                   >
                     <span className="mb-2 flex items-center justify-between gap-2">
-                      <span className="text-foreground truncate text-sm font-medium">
+                      <span className="text-foreground truncate font-mono text-[0.65rem] tracking-widest uppercase">
                         {source.title}
                       </span>
-                      <span className="text-muted-foreground font-mono text-[0.6rem]">
+                      <span className="text-muted-foreground/70 font-mono text-[0.6rem]">
                         {String(index + 1).padStart(2, '0')}
                       </span>
                     </span>
-                    <span className="text-muted-foreground line-clamp-2 text-xs leading-5">
+                    <span className="text-muted-foreground/70 line-clamp-2 font-mono text-[0.6rem] leading-relaxed uppercase">
                       {getSourcePreview(source.content)}
                     </span>
-                    <span className="text-foreground/38 mt-3 flex items-center justify-between font-mono text-[0.6rem] tracking-[0.14em] uppercase">
-                      <span>{source.type}</span>
-                      <span>{counts.words} words</span>
+                    <span className="text-foreground/50 mt-3 flex items-center justify-between font-mono text-[0.6rem] tracking-[0.14em] uppercase">
+                      <span>[{source.type}]</span>
+                      <span>{counts.words} WORDS</span>
                     </span>
                   </button>
                 </li>
@@ -76,8 +75,8 @@ export function SourceList({
             })}
           </ul>
         ) : (
-          <div className="border-border bg-card/50 text-muted-foreground rounded-[1.1rem] border border-dashed px-4 py-5 text-sm leading-6">
-            No sources yet. Add markdown or pasted text above.
+          <div className="border-border/40 bg-background/50 text-muted-foreground/70 rounded-none border border-dashed px-4 py-5 font-mono text-[0.65rem] leading-6 tracking-widest uppercase">
+            [ NO SOURCES YET. ADD MARKDOWN OR PASTED TEXT ABOVE. ]
           </div>
         )}
       </div>
