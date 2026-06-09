@@ -17,18 +17,56 @@ const DIFFICULTY_FILTER_LABEL: Record<DifficultyFilter, string> = {
   intermediate: 'Intermediate',
 };
 
+function getFilterButtonStyles(value: DifficultyFilter, isSelected: boolean) {
+  if (isSelected) {
+    switch (value) {
+      case 'beginner':
+        return 'border-status-success-border bg-status-success-surface text-status-success-foreground';
+      case 'intermediate':
+        return 'border-status-info-border bg-status-info-surface text-status-info-foreground';
+      case 'advanced':
+        return 'border-status-warning-border bg-status-warning-surface text-status-warning-foreground';
+      default:
+        return 'border-brand-accent/50 bg-brand-accent/10 text-brand-accent';
+    }
+  }
+
+  const base = 'border-border/40 bg-background/50 text-muted-foreground/70';
+  switch (value) {
+    case 'beginner':
+      return cn(base, 'hover:border-status-success-border hover:text-status-success-foreground');
+    case 'intermediate':
+      return cn(base, 'hover:border-status-info-border hover:text-status-info-foreground');
+    case 'advanced':
+      return cn(base, 'hover:border-status-warning-border hover:text-status-warning-foreground');
+    default:
+      return cn(base, 'hover:border-brand-accent hover:text-brand-accent');
+  }
+}
+
+function getFilterIconStyles(value: DifficultyFilter) {
+  switch (value) {
+    case 'beginner': return 'bg-status-success-foreground';
+    case 'intermediate': return 'bg-status-info-foreground';
+    case 'advanced': return 'bg-status-warning-foreground';
+    default: return 'bg-brand-accent';
+  }
+}
+
 export function ConceptDataGridPane({
   projectId,
   concepts,
-
+  relationships,
   onSelectConcept,
   selectedConceptId,
+  viewToggle,
 }: {
   projectId: string;
   concepts: ConceptRow[];
   relationships: RelationshipRow[];
   onSelectConcept: (id: string) => void;
   selectedConceptId: string | null;
+  viewToggle?: React.ReactNode;
 }) {
   const searchInputId = useId();
   const loadMoreRef = useRef<HTMLDivElement>(null);
@@ -49,7 +87,7 @@ export function ConceptDataGridPane({
         const result = await searchKnowledgebaseConceptsAction({
           projectId,
           query,
-          difficulty: difficulty === 'all' ? undefined : (difficulty),
+          difficulty: difficulty === 'all' ? undefined : difficulty,
           offset,
           limit: 20, // using 20 for grid view instead of 5
         });
@@ -125,9 +163,9 @@ export function ConceptDataGridPane({
       className="border-border bg-background flex min-h-[520px] flex-1 flex-col border-b lg:min-h-0 lg:border-r lg:border-b-0"
     >
       <PaneHeader
-        eyebrow="Concept data grid"
-        meta={`${filteredConcepts.length} Concepts`}
-        title="Inventory Grid"
+        meta={`${filteredConcepts.length} CONCEPTS`}
+        actions={viewToggle}
+        title="[ CONCEPT_DATA_GRID ]"
       />
 
       {/* Filter and Search Bar */}
@@ -135,14 +173,14 @@ export function ConceptDataGridPane({
         <label className="sr-only" htmlFor={searchInputId}>
           Search concepts
         </label>
-        <div className="border-border bg-card/50 focus-within:border-brand-accent-border focus-within:bg-card/50 flex h-9 items-center gap-2 rounded-full border px-3 transition-colors">
-          <Search className="text-muted-foreground size-3.5 shrink-0" strokeWidth={1.5} />
+        <div className="border-border/40 bg-background/50 focus-within:border-brand-accent flex h-9 items-center gap-2 rounded-none border px-3 transition-all">
+          <Search className="text-muted-foreground/70 size-3.5 shrink-0" strokeWidth={1} />
           <input
             aria-label="Input field"
-            className="text-foreground placeholder:text-muted-foreground flex-1 border-0 bg-transparent text-sm leading-5 outline-none"
+            className="text-foreground placeholder:text-muted-foreground/50 flex-1 border-0 bg-transparent font-mono text-[0.65rem] tracking-widest uppercase outline-none"
             id={searchInputId}
             onChange={(event) => setSearchQuery(event.target.value)}
-            placeholder="Search concept or definition"
+            placeholder="[ SEARCH INVENTORY... ]"
             type="search"
             value={searchQuery}
           />
@@ -154,35 +192,36 @@ export function ConceptDataGridPane({
               aria-label="Button"
               aria-pressed={difficultyFilter === value}
               className={cn(
-                'inline-flex h-7 items-center gap-1.5 rounded-full border px-2.5 text-[0.7rem] font-medium tracking-wide transition-colors',
-                difficultyFilter === value
-                  ? 'border-brand-accent-border bg-brand-accent-surface text-foreground'
-                  : 'border-border bg-card/50 text-muted-foreground hover:border-border hover:text-foreground'
+                'inline-flex h-7 items-center gap-2 rounded-none border px-2.5 font-mono text-[0.65rem] tracking-[0.2em] uppercase transition-all',
+                getFilterButtonStyles(value, difficultyFilter === value)
               )}
               key={value}
               onClick={() => setDifficultyFilter(value)}
               type="button"
             >
               {value === 'all' ? (
-                <ListFilter className="size-3" strokeWidth={1.5} />
+                <ListFilter className="size-3" strokeWidth={1} />
               ) : (
-                <span aria-hidden className="bg-brand-accent size-1.5 rounded-full" />
+                <span 
+                  aria-hidden 
+                  className={cn('size-1.5', getFilterIconStyles(value))} 
+                />
               )}
-              {DIFFICULTY_FILTER_LABEL[value]}
+              [ {DIFFICULTY_FILTER_LABEL[value].toUpperCase()} ]
             </button>
           ))}
         </address>
       </div>
 
       <div className="flex-1 overflow-auto p-6 pt-4">
-        <div className="border-border bg-card overflow-hidden rounded-xl border">
-          <table className="relative w-full text-left text-sm">
-            <thead className="bg-muted/50 text-muted-foreground border-border sticky top-0 z-10 border-b shadow-sm">
+        <div className="border-border/40 bg-background/50 overflow-hidden rounded-none border">
+          <table className="relative w-full text-left font-mono text-xs">
+            <thead className="bg-muted/10 text-muted-foreground/70 border-border/40 sticky top-0 z-10 border-b border-dashed tracking-widest uppercase">
               <tr>
-                <th className="px-4 py-3 font-medium">Concept</th>
-                <th className="px-4 py-3 font-medium">Definition</th>
-                <th className="w-24 px-4 py-3 font-medium">Difficulty</th>
-                <th className="w-24 px-4 py-3 font-medium">Confidence</th>
+                <th className="px-4 py-3 font-normal">CONCEPT</th>
+                <th className="px-4 py-3 font-normal">DEFINITION</th>
+                <th className="w-32 px-4 py-3 font-normal">DIFFICULTY</th>
+                <th className="w-32 px-4 py-3 font-normal">CONFIDENCE</th>
               </tr>
             </thead>
             <tbody className="divide-border divide-y">
@@ -202,20 +241,21 @@ export function ConceptDataGridPane({
                         <BrainCircuit
                           className={cn(
                             'mt-0.5 size-4 shrink-0',
-                            isSelected ? 'text-brand-accent' : 'text-muted-foreground'
+                            isSelected ? 'text-brand-accent' : 'text-muted-foreground/50'
                           )}
+                          strokeWidth={1}
                         />
                         <span
                           className={cn(
-                            'font-medium',
-                            isSelected ? 'text-foreground' : 'text-foreground/80'
+                            'font-mono tracking-widest uppercase',
+                            isSelected ? 'text-brand-accent' : 'text-foreground/90'
                           )}
                         >
                           {concept.name}
                         </span>
                       </div>
                     </td>
-                    <td className="text-muted-foreground px-4 py-4 align-top">
+                    <td className="text-muted-foreground/70 px-4 py-4 align-top">
                       <p className="line-clamp-2 leading-relaxed">{concept.definition}</p>
                     </td>
                     <td className="px-4 py-4 align-top">
