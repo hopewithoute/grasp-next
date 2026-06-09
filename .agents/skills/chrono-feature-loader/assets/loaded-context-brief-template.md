@@ -7,7 +7,6 @@
 ## Why This Feature Was Selected
 
 Evidence:
-
 - <request term, file path, issue reference, or index entry>
 
 ## Current Responsibility
@@ -20,9 +19,9 @@ Evidence:
 
 ## Relevant Decisions
 
-| ID   | Status   | Decision   | Constraint for This Work |
-| ---- | -------- | ---------- | ------------------------ |
-| D001 | Accepted | <decision> | <constraint>             |
+| ID | Status | Decision | Constraint for This Work |
+|---|---|---|---|
+| D001 | Accepted | <decision> | <constraint> |
 
 ## Active Constraints
 
@@ -30,14 +29,14 @@ Evidence:
 
 ## Implementation Map
 
-| Area   | Path     | Notes     |
-| ------ | -------- | --------- |
+| Area | Path | Notes |
+|---|---|---|
 | Domain | `<path>` | <purpose> |
 
 ## Test Map
 
-| Test     | Behavior   | Confidence      |
-| -------- | ---------- | --------------- |
+| Test | Behavior | Confidence |
+|---|---|---|
 | `<path>` | <behavior> | High/Medium/Low |
 
 ## Risks / Open Questions
@@ -47,15 +46,12 @@ Evidence:
 ## Current or Suggested Slice
 
 Goal:
-
 - <narrow goal>
 
 Allowed scope:
-
 - <scope>
 
 Out of scope:
-
 - <explicit exclusions>
 
 ## Human Checkpoints

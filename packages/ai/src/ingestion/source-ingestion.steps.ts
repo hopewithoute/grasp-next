@@ -46,16 +46,13 @@ export const initializeRunStep = createStep({
   }),
   stateSchema: ingestionStateSchema,
   execute: async ({ inputData, requestContext, setState, state, writer }) => {
-    const { projectId, sourceId, sourceTitle, content } = inputData;
-    const repo = getDep<IngestionRunRepository>(requestContext, 'ingestionRunRepository');
-
-    const ingestionRun = await repo.create({ projectId, sourceId });
+    const { ingestionRunId, projectId, sourceId, sourceTitle, content } = inputData;
 
     await setState({
       ...state,
       projectId,
       sourceId,
-      runId: ingestionRun.id,
+      runId: ingestionRunId,
       totalDroppedRefs: 0,
       totalDroppedConceptKeys: [],
     });

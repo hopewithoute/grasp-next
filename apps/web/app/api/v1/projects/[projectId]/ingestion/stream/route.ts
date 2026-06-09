@@ -33,7 +33,7 @@ export async function POST(request: Request, context: RouteContext) {
   const ingestionStreamRequestBodySchema = v.object({
     sourceId: requiredString,
     sourceTitle: v.optional(v.string()),
-    sourceType: v.optional(v.picklist(['markdown', 'text'])),
+    sourceType: v.optional(v.picklist(['markdown', 'text', 'web'])),
     content: v.pipe(v.string(), v.minLength(1)),
   });
 

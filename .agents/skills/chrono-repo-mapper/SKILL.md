@@ -1,6 +1,6 @@
 ---
 name: chrono-repo-mapper
-description: 'Use to backfill an existing software repository into feature chronicles: detect features, map implementation and tests, reconstruct current behavior, infer decisions with confidence labels, identify risks, and create a feature continuity layer.'
+description: "Use to backfill an existing software repository into feature chronicles: detect features, map implementation and tests, reconstruct current behavior, infer decisions with confidence labels, identify risks, and create a feature continuity layer."
 ---
 
 # Chrono Repo Mapper

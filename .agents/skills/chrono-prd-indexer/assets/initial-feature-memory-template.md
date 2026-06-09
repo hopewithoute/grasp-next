@@ -52,9 +52,7 @@ Confidence: High | Medium | Low
 ### <YYYY-MM-DD> — Feature memory initialized from PRD
 
 Change:
-
 - Created initial feature memory from PRD/spec.
 
 Why:
-
 - Preserve feature intent and reviewable implementation plan before coding.

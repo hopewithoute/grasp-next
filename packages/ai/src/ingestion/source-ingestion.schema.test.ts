@@ -9,6 +9,7 @@ describe('Source Ingestion Schema', () => {
   describe('ingestionWorkflowInputSchema', () => {
     it('validates correct input', () => {
       const result = safeParse(ingestionWorkflowInputSchema, {
+        ingestionRunId: 'run-123',
         projectId: 'proj-123',
         sourceId: 'src-123',
         sourceTitle: 'Test Title',

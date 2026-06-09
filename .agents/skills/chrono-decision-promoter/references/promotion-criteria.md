@@ -24,17 +24,13 @@
 ## Decision lifecycle
 
 Feature-level decision:
-
 - local, contextual, easier to change
 
 ADR candidate:
-
 - potentially system-wide, needs review
 
 Accepted ADR:
-
 - binding architecture memory
 
 Superseded ADR:
-
 - no longer current but retained as history

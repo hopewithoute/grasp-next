@@ -3,8 +3,8 @@
 ## Existing Tests
 
 | Test File | Behavior Covered | Confidence |
-| --------- | ---------------- | ---------- |
-| `<path>`  | <behavior>       | High       |
+|---|---|---|
+| `<path>` | <behavior> | High |
 
 ## Covered Invariants
 

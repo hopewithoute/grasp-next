@@ -11,7 +11,6 @@ describe('Source Ingestion Steps', () => {
   describe('initializeRunStep', () => {
     it('creates an ingestion run and returns input untouched', async () => {
       const mockRepo = {
-        create: vi.fn().mockResolvedValue({ id: 'run-123' }),
         markCompleted: vi.fn(),
         markFailed: vi.fn(),
       };
@@ -26,6 +25,7 @@ describe('Source Ingestion Steps', () => {
 
       const result = await initializeRunStep.execute({
         inputData: {
+          ingestionRunId: 'run-123',
           projectId: 'proj-1',
           sourceId: 'src-1',
           sourceTitle: 'Test',
@@ -35,11 +35,6 @@ describe('Source Ingestion Steps', () => {
         state: {},
         setState: setStateMock,
       } as any);
-
-      expect(mockRepo.create).toHaveBeenCalledWith({
-        projectId: 'proj-1',
-        sourceId: 'src-1',
-      });
 
       expect(setStateMock).toHaveBeenCalledWith(
         expect.objectContaining({

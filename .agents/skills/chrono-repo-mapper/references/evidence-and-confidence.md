@@ -16,15 +16,12 @@ Strongest to weakest:
 ## Confidence labels
 
 High:
-
 - directly supported by explicit docs, tests, or code
 
 Medium:
-
 - supported by multiple indirect signals
 
 Low:
-
 - plausible but weakly supported; needs review
 
 ## Rule

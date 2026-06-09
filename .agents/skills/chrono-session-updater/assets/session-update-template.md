@@ -21,8 +21,8 @@
 
 ## Files Changed
 
-| Path     | Change Type            | Purpose   |
-| -------- | ---------------------- | --------- |
+| Path | Change Type | Purpose |
+|---|---|---|
 | `<path>` | added/modified/deleted | <purpose> |
 
 ## Behavior Changed
@@ -31,9 +31,9 @@
 
 ## Tests Added or Run
 
-| Test/Command | Result            | Behavior Proved |
-| ------------ | ----------------- | --------------- |
-| `<command>`  | pass/fail/not run | <behavior>      |
+| Test/Command | Result | Behavior Proved |
+|---|---|---|
+| `<command>` | pass/fail/not run | <behavior> |
 
 ## Decisions Respected
 

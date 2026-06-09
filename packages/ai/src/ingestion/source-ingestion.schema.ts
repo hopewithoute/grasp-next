@@ -1,6 +1,7 @@
 import { v } from '@grasp/domain';
 
 export const ingestionWorkflowInputSchema = v.object({
+  ingestionRunId: v.string(),
   projectId: v.string(),
   sourceId: v.string(),
   sourceTitle: v.string(),

@@ -1,8 +1,8 @@
 # Feature Index
 
-| Feature        | Status  | Source         | Memory Path                                         | Current Slice | Notes   |
-| -------------- | ------- | -------------- | --------------------------------------------------- | ------------- | ------- |
-| <Feature Name> | planned | PRD §<section> | `docs/features/<feature-slug>/feature-chronicle.md` | <slice>       | <notes> |
+| Feature | Status | Source | Memory Path | Current Slice | Notes |
+|---|---|---|---|---|---|
+| <Feature Name> | planned | PRD §<section> | `docs/features/<feature-slug>/feature-chronicle.md` | <slice> | <notes> |
 
 ## Feature Status Values
 
