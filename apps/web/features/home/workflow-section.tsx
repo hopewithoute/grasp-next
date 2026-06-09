@@ -1,233 +1,155 @@
-import { ArrowRight, FileText, History, MessageSquareText, Network, Quote } from 'lucide-react';
+import { FileAudio, FileText, Gamepad2, LayoutTemplate, Network, Play } from 'lucide-react';
 import { Eyebrow } from './home-shared';
-import { InfiniteScrollTrack, PulseBadge } from './motion-components';
 
-const reviewLog = [
+const outputFormats = [
   {
-    id: '1',
-    actor: 'You',
-    delta: 'approved',
-    label: 'Concept graph',
-    meta: 'v3',
-    tone: 'success' as const,
+    id: 'video',
+    icon: Play,
+    label: 'Video Guides',
+    desc: 'Cinematic, auto-generated video lectures.',
   },
   {
-    id: '2',
-    actor: 'AI',
-    delta: 'extracted',
-    label: '12 concepts, 7 prerequisites',
-    meta: '4.2s',
-    tone: 'neutral' as const,
+    id: 'audio',
+    icon: FileAudio,
+    label: 'Audio Podcasts',
+    desc: 'Studio-quality audio for hands-free learning.',
   },
   {
-    id: '3',
-    actor: 'You',
-    delta: 'requested revision',
-    label: 'Lesson §2.1',
-    meta: 'v2',
-    tone: 'warn' as const,
+    id: 'slides',
+    icon: LayoutTemplate,
+    label: 'Interactive Decks',
+    desc: 'Presentable slides with structured pacing.',
+  },
+  {
+    id: 'game',
+    icon: Gamepad2,
+    label: 'Gamified Modules',
+    desc: 'Branched scenarios and active recall tests.',
   },
 ];
 
 export function WorkflowSection() {
   return (
-    <section className="border-border border-t pt-16 pb-20 md:pt-24 md:pb-32" id="workflow">
-      <header className="mb-12 grid gap-8 md:grid-cols-[0.42fr_0.58fr] md:items-end">
-        <div className="space-y-3">
-          <Eyebrow>The pipeline</Eyebrow>
-          <h2 className="text-3xl leading-[1.05] font-medium tracking-tight md:text-5xl">
-            Five stages.
-            <br />
-            One dense console.
-          </h2>
-        </div>
-        <p className="text-muted-foreground max-w-[60ch] text-base leading-relaxed md:text-lg">
-          Each stage is a strict checkpoint. The studio suspends the pipeline at every review so you
-          stay in total control of the generated artifacts.
+    <section className="pt-20 pb-20 md:pt-32 md:pb-32" id="workflow">
+      <header className="mx-auto mb-16 max-w-[800px] space-y-6 text-center">
+        <Eyebrow>HOW_IT_WORKS</Eyebrow>
+        <h2 className="text-foreground text-4xl leading-[1.1] font-light tracking-widest uppercase md:text-5xl">
+          The alchemy of adaptive learning.
+        </h2>
+        <p className="text-muted-foreground/80 pt-2 font-mono text-sm leading-relaxed tracking-widest uppercase">
+          &gt; Watch static text evolve. We parse your manuals and PDFs into a foundational
+          knowledge graph, then instantly project it across multiple interactive formats.
         </p>
       </header>
 
-      {/* Dense Workbench Bento */}
-      <div className="bg-border border-border grid gap-[1px] overflow-hidden rounded-3xl border md:auto-rows-[minmax(220px,auto)] md:grid-cols-12">
-        {/* Stage 03 — Reviewable artifacts (Featured) */}
-        <article className="bg-background relative flex flex-col justify-between p-7 md:col-span-7 md:row-span-2 md:p-8">
-          <div>
-            <header className="border-border mb-6 flex items-start justify-between border-b pb-4">
-              <div className="flex items-center gap-3">
-                <Quote className="text-brand-accent size-4" strokeWidth={1.5} />
-                <span className="text-brand-accent block font-mono text-[0.7rem] tracking-[0.16em] uppercase">
-                  STAGE 03 · Reviewable Artifacts
-                </span>
-              </div>
-              <span className="text-muted-foreground font-mono text-[0.7rem] tabular-nums">
-                PRD §7.7
-              </span>
-            </header>
+      <div className="flex flex-col items-center justify-center gap-8 lg:flex-row lg:gap-10">
+        {/* Source Document */}
+        <div className="border-border/40 bg-background/50 relative flex w-full max-w-[280px] shrink-0 flex-col items-center justify-center rounded-none border p-8 text-center">
+          <div className="border-brand-accent/50 absolute top-0 left-0 size-2 border-t border-l" />
+          <div className="border-brand-accent/50 absolute right-0 bottom-0 size-2 border-r border-b" />
 
-            <h3 className="max-w-[20ch] text-2xl leading-tight font-medium tracking-tight md:text-3xl">
-              Every output is versioned. Approve, revise, or reject.
-            </h3>
-
-            {/* Mock review log — Dense list */}
-            <ul className="bg-border border-border mt-8 flex flex-col gap-[1px] overflow-hidden rounded-lg border">
-              {reviewLog.map((entry) => {
-                const isSuccess = entry.tone === 'success';
-                const isWarn = entry.tone === 'warn';
-                return (
-                  <li
-                    className={`bg-card flex items-center justify-between px-4 py-2.5 text-sm`}
-                    key={entry.id}
-                  >
-                    <div className="flex items-center gap-3">
-                      <span className="text-muted-foreground font-mono text-[0.65rem] tracking-[0.16em] uppercase">
-                        [{entry.actor}]
-                      </span>
-                      <span
-                        className={
-                          isSuccess
-                            ? 'text-brand-accent'
-                            : isWarn
-                              ? 'text-amber-500'
-                              : 'text-foreground'
-                        }
-                      >
-                        {entry.delta}
-                      </span>
-                      <span className="text-muted-foreground">{entry.label}</span>
-                    </div>
-                    <span className="text-muted-foreground font-mono text-[0.7rem] tabular-nums">
-                      {entry.meta}
-                    </span>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-        </article>
-
-        {/* Stage 01 — Source */}
-        <article className="bg-background flex flex-col p-7 md:col-span-5 md:p-8">
-          <header className="border-border mb-6 flex items-center justify-between border-b pb-4">
-            <div className="flex items-center gap-3">
-              <FileText className="text-muted-foreground size-4" strokeWidth={1.5} />
-              <span className="text-muted-foreground font-mono text-[0.7rem] tracking-[0.16em] uppercase">
-                STAGE 01 · Source
-              </span>
-            </div>
-            <span className="text-muted-foreground font-mono text-[0.7rem] tabular-nums">
-              PRD §7.1
-            </span>
-          </header>
-          <div className="flex flex-1 flex-col justify-end">
-            <p className="text-muted-foreground mb-4 text-sm leading-relaxed">
-              Paste markdown or text. The studio validates length, language, and readiness before
-              execution.
-            </p>
-            <div className="text-muted-foreground border-border bg-card flex items-center gap-2 rounded-md border px-3 py-2 font-mono text-xs">
-              <span>
-                status: <span className="text-brand-accent">validated</span>
-              </span>
-              <span className="text-border">|</span>
-              <span>chars: 42,091</span>
-            </div>
-          </div>
-        </article>
-
-        {/* Stage 02 — Concept extraction */}
-        <article className="bg-background flex flex-col overflow-hidden p-7 md:col-span-5 md:p-8">
-          <header className="border-border mb-6 flex items-center justify-between border-b pb-4">
-            <div className="flex items-center gap-3">
-              <Network className="text-muted-foreground size-4" strokeWidth={1.5} />
-              <span className="text-muted-foreground font-mono text-[0.7rem] tracking-[0.16em] uppercase">
-                STAGE 02 · Graph
-              </span>
-            </div>
-            <span className="text-muted-foreground font-mono text-[0.7rem] tabular-nums">
-              PRD §7.2
-            </span>
-          </header>
-          <p className="text-muted-foreground mb-6 text-sm leading-relaxed">
-            A Mastra agent extracts concepts with definitions and citations. Streams as it works.
+          <FileText className="text-foreground mb-6 size-12" strokeWidth={1} />
+          <h3 className="mb-4 font-mono text-lg font-light tracking-widest uppercase">
+            RAW_KNOWLEDGE
+          </h3>
+          <p className="text-muted-foreground/80 font-mono text-xs leading-relaxed tracking-wider uppercase">
+            &gt; Upload dense, unformatted text—PDFs, operating manuals, or scattered documentation.
           </p>
-          <div className="-mx-8 mt-auto">
-            {/* Infinite Scroll Micro-Interaction */}
-            <InfiniteScrollTrack speed={30}>
-              {[1, 2, 3, 4, 5].map((i) => (
-                <div
-                  key={i}
-                  className="bg-card border-border text-muted-foreground flex items-center gap-2 rounded border px-3 py-1.5 font-mono text-[0.7rem] whitespace-nowrap uppercase"
-                >
-                  <PulseBadge>
-                    <span className="bg-brand-accent block size-1.5 rounded-full" />
-                  </PulseBadge>
-                  node_ext_{i}
+        </div>
+
+        {/* Arrow Indicator 1 */}
+        <div className="text-border/80 hidden items-center lg:flex">
+          <svg
+            width="40"
+            height="24"
+            viewBox="0 0 40 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path d="M0 12H38M38 12L28 2M38 12L28 22" stroke="currentColor" strokeWidth="1" />
+          </svg>
+        </div>
+        <div className="text-border/80 flex items-center lg:hidden">
+          <svg
+            width="24"
+            height="40"
+            viewBox="0 0 24 40"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path d="M12 0L12 38M12 38L2 28M12 38L22 28" stroke="currentColor" strokeWidth="1" />
+          </svg>
+        </div>
+
+        {/* Knowledgebase Graph */}
+        <div className="border-border/40 bg-brand-accent/5 text-foreground relative flex w-full max-w-[280px] shrink-0 flex-col items-center justify-center overflow-hidden rounded-none border p-8 text-center">
+          <div className="border-brand-accent absolute top-0 left-0 size-2 border-t border-l" />
+          <div className="border-brand-accent absolute right-0 bottom-0 size-2 border-r border-b" />
+
+          {/* subtle background pattern */}
+          <div className="from-brand-accent/20 absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] via-transparent to-transparent bg-[length:20px_20px] opacity-20" />
+
+          <Network className="text-brand-accent relative z-10 mb-6 size-12" strokeWidth={1} />
+          <h3 className="text-brand-accent relative z-10 mb-4 font-mono text-lg font-light tracking-widest uppercase">
+            SEMANTIC_GRAPH
+          </h3>
+          <p className="relative z-10 font-mono text-xs leading-relaxed tracking-wider uppercase opacity-80">
+            &gt; The engine extracts concepts and relationships, mapping them into an intelligent
+            neural graph.
+          </p>
+        </div>
+
+        {/* Arrow Indicator 2 */}
+        <div className="text-border/80 hidden items-center lg:flex">
+          <svg
+            width="40"
+            height="24"
+            viewBox="0 0 40 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path d="M0 12H38M38 12L28 2M38 12L28 22" stroke="currentColor" strokeWidth="1" />
+          </svg>
+        </div>
+        <div className="text-border/80 flex items-center lg:hidden">
+          <svg
+            width="24"
+            height="40"
+            viewBox="0 0 24 40"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path d="M12 0L12 38M12 38L2 28M12 38L22 28" stroke="currentColor" strokeWidth="1" />
+          </svg>
+        </div>
+
+        {/* Multimedia Outputs List */}
+        <div className="border-border/40 bg-background/50 divide-border/40 relative flex w-full max-w-[360px] shrink-0 flex-col divide-y overflow-hidden rounded-none border">
+          <div className="border-brand-accent/50 pointer-events-none absolute top-0 left-0 z-10 size-2 border-t border-l" />
+          <div className="border-brand-accent/50 pointer-events-none absolute right-0 bottom-0 z-10 size-2 border-r border-b" />
+
+          {outputFormats.map((format) => {
+            const Icon = format.icon;
+            return (
+              <div
+                key={format.id}
+                className="group hover:bg-brand-accent/10 flex items-center gap-4 p-5 transition-colors"
+              >
+                <div className="bg-muted/50 border-border/40 group-hover:border-brand-accent/50 group-hover:bg-brand-accent/20 group-hover:text-brand-accent shrink-0 rounded-none border p-3 transition-all duration-300 ease-out">
+                  <Icon className="size-5" strokeWidth={1} />
                 </div>
-              ))}
-            </InfiniteScrollTrack>
-          </div>
-        </article>
-
-        {/* Stage 04 — Block-level revision */}
-        <article className="bg-background flex flex-col p-7 md:col-span-6 md:p-8">
-          <header className="border-border mb-6 flex items-center justify-between border-b pb-4">
-            <div className="flex items-center gap-3">
-              <History className="text-muted-foreground size-4" strokeWidth={1.5} />
-              <span className="text-muted-foreground font-mono text-[0.7rem] tracking-[0.16em] uppercase">
-                STAGE 04 · Revision
-              </span>
-            </div>
-            <span className="text-muted-foreground font-mono text-[0.7rem] tabular-nums">
-              PRD §7.5
-            </span>
-          </header>
-          <p className="text-muted-foreground mb-6 text-sm leading-relaxed">
-            Lesson blocks regenerate on instruction. Versions are kept. Nothing publishes until
-            approved.
-          </p>
-          <div className="border-border bg-card mt-auto flex items-center gap-3 rounded-lg border px-4 py-3">
-            <span className="text-brand-accent font-mono text-[0.65rem] tracking-[0.16em] uppercase">
-              prompt
-            </span>
-            <span className="text-foreground flex-1 truncate text-sm">
-              rewrite explanation as a bookshelf analogy
-            </span>
-            <span
-              aria-hidden
-              className="bg-brand-accent stream-cursor inline-block h-3.5 w-[2px]"
-            />
-          </div>
-        </article>
-
-        {/* Stage 05 — Chat with material */}
-        <article className="bg-background flex flex-col p-7 md:col-span-6 md:p-8">
-          <header className="border-border mb-6 flex items-center justify-between border-b pb-4">
-            <div className="flex items-center gap-3">
-              <MessageSquareText className="text-muted-foreground size-4" strokeWidth={1.5} />
-              <span className="text-muted-foreground font-mono text-[0.7rem] tracking-[0.16em] uppercase">
-                STAGE 05 · Tutor
-              </span>
-            </div>
-            <span className="text-muted-foreground font-mono text-[0.7rem] tabular-nums">
-              PRD §7.9
-            </span>
-          </header>
-          <p className="text-muted-foreground mb-6 text-sm leading-relaxed">
-            Learners chat through an Agentic RAG tutor. Every answer cites the section it came from.
-          </p>
-          <div className="mt-auto flex flex-col gap-1">
-            <div className="text-muted-foreground mb-2 flex items-center gap-2 font-mono text-xs">
-              <span>Query: B-tree vs Table Scan</span>
-            </div>
-            <div className="border-brand-accent text-foreground relative border-l-2 py-1 pl-4 text-sm">
-              The engine reads <span className="text-brand-accent font-mono">log₁₀₀(N)</span> pages
-              instead of N rows.
-              <div className="text-muted-foreground mt-2 flex items-center gap-2 font-mono text-[0.65rem] tracking-widest uppercase">
-                <ArrowRight className="size-3" strokeWidth={1.5} />
-                cited from §3.2, §3.4
+                <div>
+                  <h4 className="mb-1 font-mono text-[0.8rem] tracking-widest uppercase">
+                    {format.label}
+                  </h4>
+                  <p className="text-muted-foreground/80 font-mono text-[0.65rem] leading-relaxed tracking-wider uppercase">
+                    {format.desc}
+                  </p>
+                </div>
               </div>
-            </div>
-          </div>
-        </article>
+            );
+          })}
+        </div>
       </div>
     </section>
   );

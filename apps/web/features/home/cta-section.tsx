@@ -5,48 +5,45 @@ import { BrandMark, Eyebrow } from './home-shared';
 export function CtaSection() {
   return (
     <>
-      <section className="border-border border-t pt-16 pb-12 md:pt-24 md:pb-16">
+      <section className="border-border/40 border-t pt-16 pb-12 md:pt-24 md:pb-16">
         <div className="grid gap-8 md:grid-cols-[1.4fr_0.6fr] md:items-end">
-          <div className="space-y-4">
-            <Eyebrow>Get started</Eyebrow>
-            <h2 className="max-w-[20ch] text-3xl leading-[1.05] font-medium tracking-tight md:text-5xl">
-              Bring one chapter. Leave with a reviewed lesson.
+          <div className="space-y-6">
+            <Eyebrow>GET_STARTED</Eyebrow>
+            <h2 className="text-foreground max-w-[20ch] text-3xl leading-[1.05] font-light tracking-widest uppercase md:text-5xl">
+              Bring your documents. Leave with captivating multimedia.
             </h2>
-            <p className="text-muted-foreground max-w-[58ch] text-base leading-relaxed">
-              Sign in with Google. Create your first project. The pipeline starts as soon as you
-              paste the source.
+            <p className="text-muted-foreground/80 max-w-[58ch] font-mono text-sm leading-relaxed tracking-widest uppercase">
+              &gt; Sign in with Google. Upload your source material, review the plan, and watch the
+              platform generate video and interactive assets automatically.
             </p>
           </div>
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-4">
             <Link
-              className="group bg-brand-accent text-background hover:bg-brand-accent/90 inline-flex h-12 items-center justify-center gap-2 rounded-full px-6 text-sm font-medium transition-all active:scale-[0.98]"
+              className="group border-brand-accent/50 bg-brand-accent/10 text-brand-accent hover:bg-brand-accent hover:text-background inline-flex h-12 items-center justify-center gap-3 rounded-none border px-8 font-mono text-xs font-medium tracking-widest uppercase transition-all"
               href="/sign-in"
             >
-              Continue with Google
-              <ArrowUpRight
-                className="size-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
-                strokeWidth={1.5}
-              />
+              [ CONTINUE WITH GOOGLE ]
+              <ArrowUpRight className="size-4" strokeWidth={1} />
             </Link>
-            <p className="text-muted-foreground font-mono text-[0.7rem] tracking-[0.14em] uppercase">
-              Single creator entry · OAuth only
+            <p className="text-muted-foreground/60 font-mono text-[0.65rem] tracking-[0.2em] uppercase">
+              SECURE & STREAMLINED WORKFLOW
             </p>
           </div>
         </div>
       </section>
 
-      <footer className="border-border text-muted-foreground flex flex-col items-start justify-between gap-4 border-t py-10 text-xs md:flex-row md:items-center">
+      <footer className="border-border/40 text-muted-foreground flex flex-col items-start justify-between gap-4 border-t py-10 text-xs md:flex-row md:items-center">
         <div className="flex items-center gap-3">
-          <span className="border-brand-accent-border bg-brand-accent-surface text-brand-accent grid size-7 place-items-center rounded-full border">
+          <span className="text-foreground border-border/50 bg-background grid size-7 place-items-center rounded-none border shadow-sm">
             <BrandMark className="size-3.5" />
           </span>
-          <span className="text-foreground font-mono tracking-[0.14em] uppercase">
-            Adaptive Learning Studio
+          <span className="text-foreground font-mono text-[0.65rem] tracking-[0.2em] uppercase">
+            [ ADAPTIVE LEARNING STUDIO ]
           </span>
         </div>
-        <div className="flex items-center gap-2 font-mono">
-          <CheckCircle2 className="text-brand-accent size-3.5" strokeWidth={1.5} />
-          <span>Reviewable AI · Grounded · Progressive</span>
+        <div className="text-muted-foreground/60 flex items-center gap-2 font-mono text-[0.65rem] tracking-widest uppercase">
+          <CheckCircle2 className="size-3.5" strokeWidth={1} />
+          <span>FROM KNOWLEDGEBASE TO MULTIMEDIA</span>
         </div>
       </footer>
     </>

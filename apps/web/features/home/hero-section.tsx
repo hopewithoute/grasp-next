@@ -1,133 +1,82 @@
 import Link from 'next/link';
-import { ArrowUpRight, CheckCircle2, FileText, Gauge, Network } from 'lucide-react';
+import { ArrowUpRight, Gamepad2, LayoutTemplate, Play } from 'lucide-react';
 import { Eyebrow } from './home-shared';
-import { IntelligentList, LiquidGlassPanel, PulseBadge } from './motion-components';
-
-const conceptStream = [
-  { id: '1', label: 'B-tree index', value: 'log₁₀₀(N)' },
-  { id: '2', label: 'Hash index', value: 'O(1) lookup' },
-  { id: '3', label: 'Inverted index', value: 'Full-text match' },
-  { id: '4', label: 'Bitmap index', value: 'Low-cardinality' },
-];
+import { FadeIn, FadeUp } from './motion-components';
 
 export function HeroSection() {
   return (
-    <section className="grid items-center gap-12 pb-20 md:grid-cols-[1.2fr_0.8fr] md:gap-10 md:pb-32">
+    <section className="grid items-center gap-12 pt-10 pb-20 md:grid-cols-[1fr_1fr] md:gap-16 md:pb-32">
       <div className="space-y-8">
-        <Eyebrow>v0.4 · MVP build</Eyebrow>
+        <FadeUp delay={0.1}>
+          <Eyebrow>SYS.INIT</Eyebrow>
+        </FadeUp>
 
-        <h1 className="max-w-[16ch] text-[clamp(2.6rem,5.4vw,5rem)] leading-[0.95] font-medium tracking-tighter">
-          Turn raw material into a{' '}
-          <span className="text-brand-accent relative inline-block">
-            reviewable
-            <span
-              aria-hidden
-              className="bg-brand-accent/50 absolute -bottom-1 left-0 h-[2px] w-full"
-            />
-          </span>{' '}
-          lesson, grounded in evidence.
-        </h1>
+        <FadeUp delay={0.2}>
+          <h1 className="text-foreground text-[clamp(2.6rem,5.4vw,4.5rem)] leading-[1.05] font-light tracking-tight uppercase">
+            Reimagine your knowledgebase as captivating multimedia.
+          </h1>
+        </FadeUp>
 
-        <p className="text-muted-foreground max-w-[58ch] text-base leading-relaxed md:text-lg">
-          Adaptive Learning Studio extracts concepts, surfaces evidence, and generates lesson blocks
-          you approve one at a time. A dense, high-agency workbench for creators.
-        </p>
+        <FadeUp delay={0.3}>
+          <p className="text-muted-foreground/80 max-w-[50ch] font-mono text-sm leading-relaxed tracking-widest uppercase">
+            &gt; Streamline creation, engage users, and deliver dynamic learning experiences
+            directly from your existing static documents.
+          </p>
+        </FadeUp>
 
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <Link
-            className="group bg-brand-accent text-background hover:bg-brand-accent/90 inline-flex h-12 items-center justify-center gap-2 rounded-full px-6 text-sm font-medium transition-all active:scale-[0.98]"
-            href="/sign-in"
-          >
-            Open creator workspace
-            <ArrowUpRight
-              className="size-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
-              strokeWidth={1.5}
-            />
-          </Link>
-          <a
-            className="border-border bg-card text-foreground hover:bg-muted inline-flex h-12 items-center justify-center rounded-full border px-6 text-sm transition-colors"
-            href="#workflow"
-          >
-            See the pipeline
-          </a>
-        </div>
-
-        {/* Pipeline strip - Workbench Style */}
-        <div className="border-border flex flex-wrap items-center gap-4 border-t pt-4 text-xs">
-          <div className="flex items-center gap-2">
-            <FileText className="text-muted-foreground size-3.5" strokeWidth={1.5} />
-            <span className="text-muted-foreground font-mono tabular-nums">01</span>
-            <span className="text-foreground">Source</span>
+        <FadeUp delay={0.4}>
+          <div className="flex flex-col gap-4 pt-2 sm:flex-row sm:items-center">
+            <Link
+              className="group border-brand-accent/50 bg-brand-accent/10 text-brand-accent hover:bg-brand-accent hover:text-background inline-flex h-12 items-center justify-center gap-3 rounded-none border px-8 font-mono text-xs font-medium tracking-widest uppercase transition-all"
+              href="/sign-in"
+            >
+              [ GET STARTED ]
+              <ArrowUpRight className="size-4" strokeWidth={1} />
+            </Link>
+            <a
+              className="border-border/40 bg-background text-foreground hover:bg-muted/50 inline-flex h-12 items-center justify-center rounded-none border px-8 font-mono text-xs font-medium tracking-widest uppercase transition-colors"
+              href="#workflow"
+            >
+              [ SEE WORKFLOW ]
+            </a>
           </div>
-          <span className="text-border">/</span>
-          <div className="flex items-center gap-2">
-            <Network className="text-muted-foreground size-3.5" strokeWidth={1.5} />
-            <span className="text-muted-foreground font-mono tabular-nums">02</span>
-            <span className="text-foreground">Graph</span>
+        </FadeUp>
+
+        <FadeUp delay={0.5}>
+          <div className="border-border/40 text-muted-foreground/60 flex flex-wrap items-center gap-6 border-t pt-6 font-mono text-[0.65rem] tracking-widest uppercase">
+            <div className="flex items-center gap-2">
+              <Play className="size-4" strokeWidth={1} />
+              <span>VIDEO GUIDES</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <LayoutTemplate className="size-4" strokeWidth={1} />
+              <span>INTERACTIVE DECKS</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Gamepad2 className="size-4" strokeWidth={1} />
+              <span>GAMIFIED MODULES</span>
+            </div>
           </div>
-          <span className="text-border">/</span>
-          <div className="flex items-center gap-2">
-            <CheckCircle2 className="text-brand-accent size-3.5" strokeWidth={1.5} />
-            <span className="text-foreground font-medium">Review & Publish</span>
-          </div>
-        </div>
+        </FadeUp>
       </div>
 
-      {/* Hero asset — Dense Tech Workbench Cockpit UI */}
-      <div className="relative w-full">
-        <LiquidGlassPanel className="border-border border p-0">
-          {/* Panel header */}
-          <header className="border-border bg-card/40 flex items-center justify-between border-b px-5 py-3">
-            <div className="flex items-center gap-3">
-              <PulseBadge>
-                <span className="bg-brand-accent size-2 rounded-full" />
-              </PulseBadge>
-              <span className="text-sm font-medium tracking-tight">Concept Extractor</span>
-            </div>
-            <div className="flex gap-4">
-              <span className="text-muted-foreground font-mono text-[0.7rem] uppercase">
-                v3 stream
-              </span>
-              <span className="text-brand-accent font-mono text-[0.7rem] uppercase">Live</span>
-            </div>
-          </header>
+      {/* Hero Asset - Veo 3 Video */}
+      <FadeIn delay={0.4}>
+        <div className="bg-muted/10 border-border/40 group relative flex aspect-[4/3] w-full items-center justify-center overflow-hidden rounded-none border">
+          <div className="border-brand-accent/50 absolute top-0 left-0 z-10 size-2 border-t border-l" />
+          <div className="border-brand-accent/50 absolute right-0 bottom-0 z-10 size-2 border-r border-b" />
 
-          <div className="p-5">
-            {/* Intelligent List Micro-interaction */}
-            <div className="mb-4">
-              <p className="text-muted-foreground border-border mb-2 border-b pb-2 font-mono text-[0.65rem] tracking-[0.16em] uppercase">
-                Confidence Ranking
-              </p>
-              <IntelligentList items={conceptStream} />
-            </div>
-
-            {/* Stream-in row dense */}
-            <div className="border-border text-muted-foreground flex items-center gap-3 border-t pt-4 text-sm">
-              <Gauge className="text-brand-accent size-4" strokeWidth={1.5} />
-              <span className="flex-1 font-mono text-xs">Extracting from §3.8: LSM Trees</span>
-              <span
-                aria-hidden
-                className="bg-brand-accent stream-cursor inline-block h-3 w-[2px]"
-              />
-            </div>
-          </div>
-
-          {/* Footer log */}
-          <footer className="border-border bg-card/40 flex items-center justify-between border-t px-5 py-3">
-            <div className="text-muted-foreground flex items-center gap-3 font-mono text-[0.7rem] tabular-nums">
-              <span>
-                Tokens: <span className="text-foreground">2,418</span>
-              </span>
-              <span>
-                Latency: <span className="text-foreground">4.2s</span>
-              </span>
-            </div>
-            <span className="text-brand-accent/70 font-mono text-[0.65rem] tracking-[0.16em] uppercase">
-              [ human-in-the-loop ]
-            </span>
-          </footer>
-        </LiquidGlassPanel>
-      </div>
+          <video
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="absolute inset-0 z-0 h-full w-full object-cover opacity-80 grayscale transition-all duration-700 group-hover:opacity-100 group-hover:grayscale-0"
+          >
+            <source src="/hero-video.mp4" type="video/mp4" />
+          </video>
+        </div>
+      </FadeIn>
     </section>
   );
 }

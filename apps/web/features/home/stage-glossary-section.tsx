@@ -1,83 +1,76 @@
-import { FileText, History, MessageSquareText, Network, Quote } from 'lucide-react';
+import { FileText, History, MessageSquareText, Network, PlaySquare } from 'lucide-react';
 import { Eyebrow } from './home-shared';
 
 const stageBlocks = [
   {
-    body: 'Paste markdown or text. The studio validates length, language, and readiness before the pipeline begins.',
-    cite: 'PRD §7.1',
+    body: 'Upload dense PDFs, operating manuals, or documentation. The engine instantly cleans and prepares your content for analysis.',
     icon: FileText,
-    label: 'Source intake',
+    label: 'Source Ingestion',
     stage: '01',
   },
   {
-    body: 'A Mastra agent extracts concepts with definitions, prerequisites, and citation back to the source. Streams as it works.',
-    cite: 'PRD §7.2',
+    body: 'An intelligent semantic engine pulls concepts, definitions, and relationships into a foundational knowledge graph.',
     icon: Network,
-    label: 'Concept extraction',
+    label: 'Knowledge Graphing',
     stage: '02',
   },
   {
-    body: 'Review every node with its confidence and source span. Approve, reject, or revise with a natural-language instruction.',
-    cite: 'PRD §7.7',
-    icon: Quote,
-    label: 'Reviewable artifacts',
+    body: 'Automatically writes cinematic video scripts, audio podcast dialogues, and presentation speaker notes from the graph.',
+    icon: MessageSquareText,
+    label: 'Storyboarding',
     stage: '03',
   },
   {
-    body: 'Lesson blocks regenerate one at a time on instruction. Versions are kept. Nothing publishes until you say so.',
-    cite: 'PRD §7.5',
-    icon: History,
-    label: 'Block-level revision',
+    body: 'Render dynamic video lessons, synthesize studio-quality voiceovers, and compile interactive HTML5 gamified modules.',
+    icon: PlaySquare,
+    label: 'Multimedia Generation',
     stage: '04',
   },
   {
-    body: 'Learners chat with the source through an Agentic RAG tutor. Every answer cites the section it came from.',
-    cite: 'PRD §7.9',
-    icon: MessageSquareText,
-    label: 'Chat with material',
+    body: 'Direct the AI to refine specific blocks. Every version is saved, so you can always roll back. Nothing publishes until you say so.',
+    icon: History,
+    label: 'Creator Review',
     stage: '05',
   },
 ];
 
 export function StageGlossarySection() {
   return (
-    <section className="border-border border-t pt-16 pb-20 md:pt-24 md:pb-32">
-      <header className="mb-10 grid gap-6 md:grid-cols-[0.4fr_0.6fr] md:items-end">
-        <div className="space-y-3">
-          <Eyebrow>Stage glossary</Eyebrow>
-          <h2 className="text-3xl leading-[1.05] font-medium tracking-tight md:text-4xl">
-            What happens at each step.
-          </h2>
-        </div>
-        <p className="text-muted-foreground max-w-[58ch] text-sm leading-relaxed">
-          The studio is project-scoped. Source, graph, lesson, publish: all live inside one
-          workspace, with its own review surface and version history.
+    <section className="pt-20 pb-20 md:pt-32 md:pb-32">
+      <header className="mb-16 max-w-[800px] space-y-6">
+        <Eyebrow>THE_ENGINE</Eyebrow>
+        <h2 className="text-foreground text-4xl leading-[1.1] font-light tracking-widest uppercase md:text-5xl">
+          Precision at every step.
+        </h2>
+        <p className="text-muted-foreground/80 pt-2 font-mono text-sm leading-relaxed tracking-widest uppercase">
+          &gt; Every multimedia asset is systematically generated and reviewable. Nothing is
+          hallucinated, and everything maps back to your original source material.
         </p>
       </header>
 
-      <ol className="divide-border border-border divide-y border-y">
+      <ol className="divide-border/40 border-border/40 divide-y border-t">
         {stageBlocks.map((block) => {
           const Icon = block.icon;
           return (
             <li
-              className="grid gap-3 py-6 md:grid-cols-[80px_1fr_auto] md:items-baseline md:gap-8 md:py-7"
+              className="group hover:bg-brand-accent/5 grid gap-4 py-8 transition-colors md:grid-cols-[100px_1fr] md:items-start md:gap-8 md:py-12"
               key={block.label}
             >
-              <span className="text-brand-accent font-mono text-sm tabular-nums">
+              <span className="text-muted-foreground/50 group-hover:text-brand-accent/70 pl-4 font-mono text-4xl font-light tracking-tighter transition-colors md:pl-6">
                 {block.stage}
               </span>
               <div>
-                <h3 className="text-foreground flex items-center gap-2.5 text-lg font-medium tracking-tight">
-                  <Icon className="text-muted-foreground size-4" strokeWidth={1.5} />
-                  {block.label}
+                <h3 className="text-foreground group-hover:text-brand-accent mb-3 flex items-center gap-3 font-mono text-lg font-light tracking-widest uppercase transition-colors">
+                  <Icon
+                    className="text-muted-foreground/60 group-hover:text-brand-accent size-5 transition-colors"
+                    strokeWidth={1}
+                  />
+                  [ {block.label} ]
                 </h3>
-                <p className="text-muted-foreground mt-2 max-w-[70ch] text-sm leading-relaxed">
-                  {block.body}
+                <p className="text-muted-foreground/80 max-w-[60ch] font-mono text-xs leading-relaxed tracking-wider uppercase">
+                  &gt; {block.body}
                 </p>
               </div>
-              <span className="text-muted-foreground font-mono text-[0.7rem] tabular-nums md:text-right">
-                {block.cite}
-              </span>
             </li>
           );
         })}

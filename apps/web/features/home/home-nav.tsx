@@ -1,50 +1,65 @@
 import Link from 'next/link';
-import { ArrowUpRight } from 'lucide-react';
+import { ArrowLeft, ArrowUpRight } from 'lucide-react';
 import { BrandMark } from './home-shared';
 import { ThemeToggle } from './theme-toggle';
 
-export function HomeNav() {
+export function HomeNav({ variant = 'home' }: { variant?: 'home' | 'auth' }) {
   return (
-    <nav
-      aria-label="Primary"
-      className="border-border bg-card/60 mb-16 flex items-center justify-between rounded-full border px-4 py-3 backdrop-blur"
-    >
-      <Link className="flex items-center gap-3" href="/">
-        <span className="border-brand-accent-border bg-brand-accent-surface text-brand-accent grid size-9 place-items-center rounded-full border">
-          <BrandMark className="brand-mark-spin size-5" />
-        </span>
-        <span>
-          <span className="text-foreground block text-sm font-medium tracking-tight">
-            Adaptive Learning Studio
+    <header className="sticky top-0 z-50 mb-16 w-full">
+      <nav
+        aria-label="Primary"
+        className="border-border/40 bg-background/70 flex w-full items-center justify-between rounded-none border-b px-6 py-4 shadow-sm backdrop-blur-md transition-all"
+      >
+        <Link className="group flex items-center gap-3" href="/">
+          <span className="text-foreground border-border/50 bg-background group-hover:border-brand-accent/50 grid size-9 place-items-center rounded-none border shadow-sm transition-colors">
+            <BrandMark className="group-hover:text-brand-accent size-5 transition-colors" />
           </span>
-          <span className="text-muted-foreground block font-mono text-[0.65rem] tracking-[0.16em] uppercase">
-            Reviewable AI for creators
+          <span className="flex flex-col">
+            <span className="text-foreground font-mono text-xs font-semibold tracking-widest uppercase">
+              [ ADAPTIVE_LEARNING_STUDIO ]
+            </span>
+            <span className="text-muted-foreground/80 font-mono text-[0.6rem] tracking-[0.2em] uppercase">
+              [ KNOWLEDGEBASE / MULTIMEDIA ]
+            </span>
           </span>
-        </span>
-      </Link>
-
-      <div className="flex items-center gap-3">
-        <a
-          className="text-muted-foreground hover:text-foreground hidden h-10 items-center rounded-full px-4 text-sm transition-colors sm:inline-flex"
-          href="#workflow"
-        >
-          How it works
-        </a>
-        <a
-          className="text-muted-foreground hover:text-foreground hidden h-10 items-center rounded-full px-4 text-sm transition-colors sm:inline-flex"
-          href="#principles"
-        >
-          Principles
-        </a>
-        <ThemeToggle />
-        <Link
-          className="bg-brand-accent text-background inline-flex h-10 items-center rounded-full px-5 text-sm font-medium transition-colors hover:opacity-90 active:scale-[0.98]"
-          href="/sign-in"
-        >
-          Sign in
-          <ArrowUpRight className="ml-1.5 size-4" strokeWidth={1.5} />
         </Link>
-      </div>
-    </nav>
+
+        <div className="flex items-center gap-4">
+          {variant === 'home' && (
+            <>
+              <a
+                className="text-muted-foreground hover:text-foreground hidden items-center px-4 font-mono text-xs tracking-widest uppercase transition-colors sm:inline-flex"
+                href="#workflow"
+              >
+                [ WORKFLOW ]
+              </a>
+              <a
+                className="text-muted-foreground hover:text-foreground hidden items-center px-4 font-mono text-xs tracking-widest uppercase transition-colors sm:inline-flex"
+                href="#principles"
+              >
+                [ PRINCIPLES ]
+              </a>
+            </>
+          )}
+          <ThemeToggle />
+          {variant === 'home' ? (
+            <Link
+              className="border-brand-accent/50 bg-brand-accent/10 text-brand-accent hover:bg-brand-accent hover:text-background inline-flex h-9 items-center rounded-none border px-5 font-mono text-xs font-medium tracking-widest uppercase transition-colors"
+              href="/sign-in"
+            >
+              [ SIGN IN ]
+              <ArrowUpRight className="ml-2 size-3.5" strokeWidth={1} />
+            </Link>
+          ) : (
+            <Link
+              className="text-muted-foreground hover:text-foreground border-border/40 hover:border-foreground/50 inline-flex h-9 items-center rounded-none border px-5 font-mono text-xs font-medium tracking-widest uppercase transition-colors"
+              href="/"
+            >
+              <ArrowLeft className="mr-2 size-3.5" strokeWidth={1} />[ ABORT ]
+            </Link>
+          )}
+        </div>
+      </nav>
+    </header>
   );
 }

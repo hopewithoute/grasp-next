@@ -17,30 +17,25 @@ const principles = [
 
 export function PrinciplesSection() {
   return (
-    <section className="border-border border-t pt-16 pb-20 md:pt-24 md:pb-32" id="principles">
-      <header className="mb-12 max-w-[60ch] space-y-3">
-        <Eyebrow>Principles</Eyebrow>
-        <h2 className="text-3xl leading-[1.05] font-medium tracking-tight md:text-5xl">
-          Reviewable. Grounded. Progressive.
+    <section className="pt-20 pb-20 md:pt-32 md:pb-32" id="principles">
+      <header className="mb-20 max-w-[60ch] space-y-6">
+        <Eyebrow>PRINCIPLES</Eyebrow>
+        <h2 className="text-foreground text-4xl leading-[1.1] font-light tracking-widest uppercase md:text-6xl">
+          Built on Trust.
         </h2>
       </header>
 
-      <ul className="border-border bg-border grid gap-[1px] overflow-hidden rounded-3xl border md:grid-cols-2">
+      <ul className="grid gap-12 md:gap-16 lg:grid-cols-3">
         {principles.map((principle, index) => (
-          <li
-            className={`bg-background p-7 md:p-10 ${index === 0 ? 'md:col-span-2' : ''}`}
-            key={principle.title}
-          >
-            <div className="flex items-baseline gap-3">
-              <span className="text-brand-accent font-mono text-[0.7rem] tabular-nums">
-                {String(index + 1).padStart(2, '0')}
-              </span>
-              <h3 className="text-foreground text-2xl leading-tight font-medium tracking-tight md:text-3xl">
-                {principle.title}
-              </h3>
-            </div>
-            <p className="text-muted-foreground mt-4 max-w-[58ch] text-base leading-relaxed">
-              {principle.body}
+          <li className="border-border/40 flex flex-col gap-4 border-t pt-8" key={principle.title}>
+            <span className="text-brand-accent/50 font-mono text-5xl font-light tracking-tighter">
+              {String(index + 1).padStart(2, '0')}
+            </span>
+            <h3 className="text-foreground mt-4 font-mono text-lg font-light tracking-widest uppercase">
+              [ {principle.title} ]
+            </h3>
+            <p className="text-muted-foreground/80 mt-2 max-w-[50ch] font-mono text-xs leading-relaxed tracking-wider uppercase">
+              &gt; {principle.body}
             </p>
           </li>
         ))}
