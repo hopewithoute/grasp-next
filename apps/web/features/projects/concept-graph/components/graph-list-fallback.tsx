@@ -16,11 +16,11 @@ export function GraphListFallback({
     <div className="h-full overflow-y-auto p-5">
       <div className="text-muted-foreground mb-4 flex items-center gap-2 font-mono text-[0.65rem] tracking-[0.18em] uppercase tabular-nums">
         <Network className="text-brand-accent-foreground size-3.5" strokeWidth={1.5} />
-        <span>List view · no relationships</span>
+        <span>[ LIST_VIEW: NO_RELATIONSHIPS ]</span>
       </div>
-      <p className="text-muted-foreground mb-5 max-w-[60ch] text-sm leading-relaxed">
-        Concepts were extracted, but the agent has not proposed relationship links yet. Review them
-        as a flat list, then ask the agent to connect them.
+      <p className="text-muted-foreground/70 mb-5 max-w-[60ch] font-mono text-xs leading-relaxed uppercase">
+        [ CONCEPTS EXTRACTED. AGENT HAS NOT PROPOSED LINKS YET. REVIEW FLAT LIST AND INSTRUCT AGENT
+        TO CONNECT. ]
       </p>
       <ol className="divide-border border-border divide-y border-y">
         {concepts.map((concept, index) => (
@@ -39,8 +39,10 @@ export function GraphListFallback({
                 {String(index + 1).padStart(2, '0')}
               </span>
               <span className="min-w-0 flex-1 space-y-1">
-                <p className="text-foreground text-sm font-medium tracking-tight">{concept.name}</p>
-                <p className="text-muted-foreground line-clamp-2 text-[0.82rem] leading-5">
+                <p className="text-foreground font-mono text-xs tracking-widest uppercase">
+                  {concept.name}
+                </p>
+                <p className="text-muted-foreground/70 line-clamp-2 font-mono text-[0.65rem] leading-5 tracking-widest uppercase">
                   {concept.definition}
                 </p>
               </span>
@@ -62,17 +64,17 @@ export function GraphCanvasEmpty() {
       <div className="max-w-md text-center">
         <span
           aria-hidden
-          className="border-brand-accent-border bg-brand-accent/[0.08] text-brand-accent-foreground mx-auto inline-flex size-12 items-center justify-center rounded-2xl border"
+          className="border-brand-accent/50 bg-brand-accent/10 text-brand-accent mx-auto inline-flex size-12 items-center justify-center rounded-none border"
         >
-          <Network className="size-5" strokeWidth={1.5} />
+          <Network className="size-5" strokeWidth={1} />
         </span>
-        <p className="text-muted-foreground mt-4 font-mono text-[0.62rem] tracking-[0.18em] uppercase tabular-nums">
-          No graph yet
+        <p className="text-muted-foreground/70 mt-4 font-mono text-[0.62rem] tracking-[0.18em] uppercase tabular-nums">
+          [ NO GRAPH YET ]
         </p>
-        <h3 className="text-foreground mt-2 text-xl font-medium tracking-tight">
-          Generate from the current source.
+        <h3 className="text-foreground mt-2 font-mono text-lg tracking-widest uppercase">
+          [ GENERATE_FROM_SOURCE ]
         </h3>
-        <p className="text-muted-foreground mx-auto mt-3 max-w-[44ch] text-sm leading-relaxed">
+        <p className="text-muted-foreground/70 mx-auto mt-3 max-w-[44ch] font-mono text-xs leading-relaxed uppercase">
           Use the chat on the right to run a fresh extraction. Concepts and relationship edges will
           stream in as the agent reads the material.
         </p>
