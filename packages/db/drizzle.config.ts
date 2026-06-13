@@ -1,7 +1,6 @@
 import { join } from 'node:path';
 import { cwd, loadEnvFile } from 'node:process';
 import { defineConfig } from 'drizzle-kit';
-import { env } from './src/env';
 
 for (const envFile of [join(cwd(), '.env'), join(cwd(), '..', '..', '.env')]) {
   try {
@@ -14,7 +13,7 @@ for (const envFile of [join(cwd(), '.env'), join(cwd(), '..', '..', '.env')]) {
   }
 }
 
-const databaseUrl = env.DATABASE_URL;
+const databaseUrl = process.env.DATABASE_URL;
 
 if (!databaseUrl) {
   throw new Error('DATABASE_URL is required for Drizzle commands.');
