@@ -2,14 +2,14 @@ import { randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { canUseAgent, mastra } from '@grasp/ai';
+import { canUseAgent } from '@grasp/ai';
 import { embedText } from '@grasp/ai/embeddings';
 import { createFaithfulnessScorer, createHallucinationScorer, createScorer } from '@grasp/ai/evals';
 import {
   createIngestionRetrievalTools,
   extractChunk,
   ingestionAgentInstructions,
-} from '@grasp/ai/ingestion';
+} from '@grasp/ai/legacy-ingestion';
 import {
   createDbClient,
   createKnowledgebaseRepository,
@@ -342,6 +342,13 @@ async function runGraphWalk({
   sourceB: string;
   sourceC: string;
 }): Promise<RetrievalActivity> {
+  void sourceA;
+  void sourceB;
+  void sourceC;
+  throw new Error('legacy_graph_walk_eval_retired_after_lgs_cutover');
+}
+
+/*
   const db = createDbClient(normalizeLocalDatabaseUrl(serverEnv.DATABASE_URL));
   const knowledgebaseRepository = createKnowledgebaseRepository(db);
   const projectRepository = createProjectRepository(db);
@@ -425,6 +432,7 @@ async function runGraphWalk({
 
   return retrievalActivity;
 }
+*/
 
 async function ingestSourceWithRetrieval({
   knowledgebaseRepository,
@@ -441,38 +449,13 @@ async function ingestSourceWithRetrieval({
   source: { content: string; title: string };
   sourceId: string;
 }): Promise<void> {
-  const { runSourceIngestion } = await import('../../server/source-ingestion-runner');
-
-  const originalSearch =
-    knowledgebaseRepository.searchConceptsForIngestion.bind(knowledgebaseRepository);
-  const originalGetContext =
-    knowledgebaseRepository.getConceptContext.bind(knowledgebaseRepository);
-
-  const trackingRepo: KnowledgebaseRepository = {
-    ...knowledgebaseRepository,
-    searchConceptsForIngestion: async (input: Parameters<typeof originalSearch>[0]) => {
-      retrievalActivity.conceptSearchCalls++;
-      return originalSearch(input);
-    },
-    getConceptContext: async (input: Parameters<typeof originalGetContext>[0]) => {
-      retrievalActivity.conceptContextCalls++;
-      return originalGetContext(input);
-    },
-  };
-
-  await runSourceIngestion(
-    {
-      content: source.content,
-      projectId,
-      sourceId,
-      sourceTitle: source.title,
-      sourceType: 'markdown',
-    },
-    {
-      ingestionRunRepository,
-      knowledgebaseRepository: trackingRepo,
-    }
-  );
+  void knowledgebaseRepository;
+  void ingestionRunRepository;
+  void projectId;
+  void retrievalActivity;
+  void source;
+  void sourceId;
+  throw new Error('legacy_graph_walk_ingestion_retired_after_lgs_cutover');
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -623,9 +606,6 @@ async function main() {
     return;
   }
 
-  mastra.getAgent('ingestionAgent');
-  mastra.getAgent('linkAdjudicatorAgent');
-
   const [sourceA, sourceB, sourceC] = await Promise.all([
     readFile(resolve(docsDir, 'source-a-economics-basics.md'), 'utf8'),
     readFile(resolve(docsDir, 'source-b-elasticity.md'), 'utf8'),
@@ -692,35 +672,15 @@ async function main() {
     `[Eval] Case 'incremental-source-extraction' completed: ${results[results.length - 1].passed ? 'PASSED' : 'FAILED'} (Score: ${results[results.length - 1].score.toFixed(2)})`
   );
 
-  // Case 3: Graph walk (real mode only)
+  // Case 3: Legacy graph walk was retired when source ingestion moved to LGS.
   console.error(`[Eval] Checking graph-walk...`);
-  if (options.mode === 'real' && serverEnv.DATABASE_URL && hasEmbeddingProvider(process.env)) {
-    const embeddingPreflight = await checkEmbeddingProvider();
-    if (!embeddingPreflight.ok) {
-      results.push({
-        dimensions: { 'retrieval-usage': 0 },
-        id: 'graph-walk-retrieval-linking',
-        passed: false,
-        score: 0,
-        reasons: [`Skipped: embedding provider unreachable: ${embeddingPreflight.reason}`],
-        metrics: {},
-      });
-    } else {
-      const activity = await runGraphWalk({ sourceA, sourceB, sourceC });
-      results.push(
-        await scoreCase('graph-walk-retrieval-linking', activity, [retrievalUsageScorer])
-      );
-      console.error(
-        `[Eval] Case 'graph-walk-retrieval-linking' completed: ${results[results.length - 1].passed ? 'PASSED' : 'FAILED'} (Score: ${results[results.length - 1].score.toFixed(2)})`
-      );
-    }
-  } else if (options.mode === 'real') {
+  if (options.mode === 'real') {
     results.push({
       dimensions: { 'retrieval-usage': 0 },
       id: 'graph-walk-retrieval-linking',
       passed: false,
       score: 0,
-      reasons: ['Skipped: DATABASE_URL and embedding provider credentials are required.'],
+      reasons: ['Skipped: legacy graph-walk eval retired after LGS cutover. Use LGS smoke/parity tests.'],
       metrics: {},
     });
   }
