@@ -1,20 +1,20 @@
-import type { KnowledgebaseRepository } from '@grasp/domain';
 import type { DbClient } from './client';
-import { createKnowledgebaseIngestionMethods } from './knowledgebase-ingestion-repo';
-import { createKnowledgebaseMutationMethods } from './knowledgebase-mutation-repo';
-import { createKnowledgebaseQueryMethods } from './knowledgebase-query-repo';
+import type { KnowledgebaseRepository } from '@grasp/domain';
 
-export type DbKnowledgebaseRepository = ReturnType<typeof createKnowledgebaseRepository>;
+const removedMessage =
+  'The legacy web database knowledgebase repository has been removed. Use the LazyGraphRAG service/client boundary instead.';
 
-/**
- * Composes the three sub-repositories (query, mutation, ingestion) into a
- * single KnowledgebaseRepository. Callers that need a narrower surface can
- * import the sub-module directly.
- */
-export function createKnowledgebaseRepository(db: DbClient): KnowledgebaseRepository {
-  return {
-    ...createKnowledgebaseQueryMethods(db),
-    ...createKnowledgebaseMutationMethods(db),
-    ...createKnowledgebaseIngestionMethods(db),
-  };
+export type DbKnowledgebaseRepository = KnowledgebaseRepository;
+
+export function createKnowledgebaseRepository(_db: DbClient): DbKnowledgebaseRepository {
+  return new Proxy(
+    {},
+    {
+      get() {
+        return async () => {
+          throw new Error(removedMessage);
+        };
+      },
+    }
+  ) as DbKnowledgebaseRepository;
 }
