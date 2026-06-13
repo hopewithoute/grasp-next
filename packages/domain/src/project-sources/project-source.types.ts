@@ -25,6 +25,7 @@ export type ProjectSourceRepository = {
     }
   ): Promise<ProjectSourceRecord | null>;
   deleteForProjectOwner(sourceId: string, ownerId: string): Promise<ProjectSourceRecord | null>;
+  findByIdForOwner(sourceId: string, ownerId: string): Promise<ProjectSourceRecord | null>;
   listByProject(projectId: string): Promise<ProjectSourceRecord[]>;
   listByProjectForOwner(projectId: string, ownerId: string): Promise<ProjectSourceRecord[]>;
   updateForProjectOwner(
