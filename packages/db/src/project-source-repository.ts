@@ -1,4 +1,4 @@
-import { and, asc, eq } from 'drizzle-orm';
+import { and, asc, eq, getTableColumns } from 'drizzle-orm';
 import type { ProjectSourceType } from '@grasp/domain';
 import type { DbClient } from './client';
 import { projects, projectSources, type NewProjectSource } from './schema';
@@ -46,6 +46,10 @@ export function createProjectSourceRepository(db: DbClient) {
         .returning();
 
       return source ?? null;
+    },
+
+    async findByIdForOwner(sourceId: string, ownerId: string) {
+      return findOwnedSource(db, sourceId, ownerId);
     },
 
     async listByProject(projectId: string) {
@@ -113,7 +117,7 @@ async function findOwnedProject(db: DbClient, projectId: string, ownerId: string
 
 async function findOwnedSource(db: DbClient, sourceId: string, ownerId: string) {
   const [source] = await db
-    .select({ id: projectSources.id })
+    .select(getTableColumns(projectSources))
     .from(projectSources)
     .innerJoin(projects, eq(projectSources.projectId, projects.id))
     .where(and(eq(projectSources.id, sourceId), eq(projects.ownerId, ownerId)))
