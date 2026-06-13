@@ -9,6 +9,7 @@ import {
   createProjectSourceRepository,
 } from '@grasp/db';
 import { serverEnv } from './env';
+import { createLgsService } from './lgs-service';
 
 export function createProjectDeps() {
   if (globalForProjectDeps.graspProjectDeps) {
@@ -23,12 +24,19 @@ export function createProjectDeps() {
 function buildProjectDeps() {
   const db = createDbClient(serverEnv.DATABASE_URL);
 
+  const projectRepository = createProjectRepository(db);
+
   return {
     artifactRepository: createArtifactRepository(db),
     auditLogRepository: createAuditLogRepository(db),
     ingestionRunRepository: createIngestionRunRepository(db),
     knowledgebaseRepository: createKnowledgebaseRepository(db),
-    projectRepository: createProjectRepository(db),
+    lgsService: createLgsService({
+      apiKey: serverEnv.LGS_API_KEY,
+      baseUrl: serverEnv.LGS_BASE_URL,
+      projectRepository,
+    }),
+    projectRepository,
     projectSourceRepository: createProjectSourceRepository(db),
   };
 }
