@@ -1,0 +1,13 @@
+[project]
+name = "grasp-embedding-sidecar"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+  "fastapi",
+  "llama-cpp-python",
+  "pydantic",
+  "uvicorn",
+]
+
+[tool.uv]
+package = false
