@@ -7,11 +7,11 @@ export function getMastraStorage() {
   if (store) return store;
 
   loadAiEnv();
-  const connectionString = process.env.MASTRA_STORAGE_URL ?? process.env.DATABASE_URL;
+  const connectionString = process.env.MASTRA_STORAGE_URL;
 
   if (!connectionString) {
     throw new Error(
-      '[getMastraStorage] MASTRA_STORAGE_URL or DATABASE_URL must be set. Storage requires a database connection.'
+      '[getMastraStorage] MASTRA_STORAGE_URL must be set. Mastra storage uses a dedicated database connection.'
     );
   }
 

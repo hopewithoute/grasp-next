@@ -13,7 +13,7 @@ export function loadAiEnv() {
   for (const envFile of candidateEnvFiles) {
     try {
       loadEnvFile(envFile);
-      if (process.env.MASTRA_STORAGE_URL || process.env.DATABASE_URL) {
+      if (process.env.MASTRA_STORAGE_URL) {
         break;
       }
     } catch (error) {
