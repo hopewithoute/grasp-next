@@ -16,6 +16,7 @@
     "@grasp/ai": "workspace:*",
     "@grasp/db": "workspace:*",
     "@grasp/domain": "workspace:*",
+    "@grasp/lazy-graph-rag-client": "workspace:*",
     "@tailwindcss/postcss": "^4.3.0",
     "@xyflow/react": "^12.10.2",
     "ai": "^6.0.190",
