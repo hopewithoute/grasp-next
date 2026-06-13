@@ -1,18 +1,24 @@
-import { sql } from 'drizzle-orm';
+import { sql, SQL } from 'drizzle-orm';
 import {
   boolean,
+  customType,
   index,
   integer,
   jsonb,
   pgEnum,
   pgTable,
+  primaryKey,
   real,
   text,
   timestamp,
+  unique,
   uniqueIndex,
   uuid,
+  varchar,
   vector,
 } from 'drizzle-orm/pg-core';
+
+
 import {
   ARTIFACT_REVIEW_RUN_STATUS,
   ARTIFACT_REVIEW_RUN_STATUSES,
@@ -22,8 +28,6 @@ import {
   EXTRACTION_MODE,
   INGESTION_RUN_STATUS,
   INGESTION_RUN_STATUSES,
-  KNOWLEDGEBASE_VERSION_STATUS,
-  KNOWLEDGEBASE_VERSION_STATUSES,
   PROJECT_SOURCE_TYPES,
   PROJECT_STATUS,
   PROJECT_STATUSES,
@@ -88,11 +92,6 @@ export const projectStatus = pgEnum('project_status', PROJECT_STATUSES);
 export const projectSourceType = pgEnum('project_source_type', PROJECT_SOURCE_TYPES);
 
 export const ingestionRunStatus = pgEnum('ingestion_run_status', INGESTION_RUN_STATUSES);
-
-export const knowledgebaseVersionStatus = pgEnum(
-  'knowledgebase_version_status',
-  KNOWLEDGEBASE_VERSION_STATUSES
-);
 
 export const artifactType = pgEnum('artifact_type', ARTIFACT_TYPES);
 
@@ -211,138 +210,6 @@ export const artifactVersions = pgTable(
   ]
 );
 
-export const knowledgebases = pgTable(
-  'knowledgebases',
-  {
-    id: uuid('id').primaryKey().defaultRandom(),
-    projectId: uuid('project_id')
-      .notNull()
-      .references(() => projects.id, { onDelete: 'cascade' }),
-    artifactId: uuid('artifact_id').references(() => artifacts.id, { onDelete: 'set null' }),
-    currentVersionId: uuid('current_version_id'),
-    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
-  },
-  (table) => [uniqueIndex('knowledgebases_project_unique').on(table.projectId)]
-);
-
-export const knowledgebaseVersions = pgTable(
-  'knowledgebase_versions',
-  {
-    id: uuid('id').primaryKey().defaultRandom(),
-    knowledgebaseId: uuid('knowledgebase_id')
-      .notNull()
-      .references(() => knowledgebases.id, { onDelete: 'cascade' }),
-    artifactVersionId: uuid('artifact_version_id').references(() => artifactVersions.id, {
-      onDelete: 'set null',
-    }),
-    versionNumber: integer('version_number').notNull(),
-    status: knowledgebaseVersionStatus('status')
-      .notNull()
-      .default(KNOWLEDGEBASE_VERSION_STATUS.GENERATED),
-    snapshot: jsonb('snapshot').notNull(),
-    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-  },
-  (table) => [
-    uniqueIndex('knowledgebase_versions_version_unique').on(
-      table.knowledgebaseId,
-      table.versionNumber
-    ),
-  ]
-);
-
-export const wikiConcepts = pgTable(
-  'wiki_concepts',
-  {
-    id: uuid('id').primaryKey().defaultRandom(),
-    knowledgebaseId: uuid('knowledgebase_id')
-      .notNull()
-      .references(() => knowledgebases.id, { onDelete: 'cascade' }),
-    knowledgebaseVersionId: uuid('knowledgebase_version_id').references(
-      () => knowledgebaseVersions.id,
-      { onDelete: 'cascade' }
-    ),
-    conceptKey: text('concept_key').notNull(),
-    name: text('name').notNull(),
-    definition: text('definition').notNull(),
-    difficulty: text('difficulty').notNull(),
-    confidence: real('confidence').notNull(),
-    metadata: jsonb('metadata'),
-    embedding: vector('embedding', { dimensions: 1536 }),
-    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
-  },
-  (table) => [
-    index('wiki_concepts_knowledgebase_idx').on(table.knowledgebaseId),
-    uniqueIndex('wiki_concepts_kb_key_unique').on(table.knowledgebaseId, table.conceptKey),
-    index('wiki_concepts_name_trgm_idx').using('gin', sql`${table.name} gin_trgm_ops`),
-    index('wiki_concepts_def_trgm_idx').using('gin', sql`${table.definition} gin_trgm_ops`),
-  ]
-);
-
-export const wikiRelationships = pgTable(
-  'wiki_relationships',
-  {
-    id: uuid('id').primaryKey().defaultRandom(),
-    knowledgebaseId: uuid('knowledgebase_id')
-      .notNull()
-      .references(() => knowledgebases.id, { onDelete: 'cascade' }),
-    knowledgebaseVersionId: uuid('knowledgebase_version_id').references(
-      () => knowledgebaseVersions.id,
-      { onDelete: 'cascade' }
-    ),
-    relationshipKey: text('relationship_key').notNull(),
-    sourceConceptId: uuid('source_concept_id')
-      .notNull()
-      .references(() => wikiConcepts.id, { onDelete: 'cascade' }),
-    targetConceptId: uuid('target_concept_id')
-      .notNull()
-      .references(() => wikiConcepts.id, { onDelete: 'cascade' }),
-    relationshipType: text('relationship_type').notNull(),
-    rationale: text('rationale'),
-    metadata: jsonb('metadata'),
-    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
-  },
-  (table) => [
-    index('wiki_relationships_knowledgebase_idx').on(table.knowledgebaseId),
-    uniqueIndex('wiki_relationships_kb_key_unique').on(
-      table.knowledgebaseId,
-      table.relationshipKey
-    ),
-  ]
-);
-
-export const wikiConceptSourceRefs = pgTable(
-  'wiki_concept_source_refs',
-  {
-    id: uuid('id').primaryKey().defaultRandom(),
-    conceptId: uuid('concept_id')
-      .notNull()
-      .references(() => wikiConcepts.id, { onDelete: 'cascade' }),
-    sourcePassageId: uuid('source_passage_id')
-      .notNull()
-      .references(() => sourcePassages.id, { onDelete: 'cascade' }),
-    quote: text('quote').notNull(),
-    locationLabel: text('location_label').notNull(),
-  },
-  (table) => [
-    index('wiki_concept_refs_quote_trgm_idx').using('gin', sql`${table.quote} gin_trgm_ops`),
-  ]
-);
-
-export const wikiRelationshipSourceRefs = pgTable('wiki_relationship_source_refs', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  relationshipId: uuid('relationship_id')
-    .notNull()
-    .references(() => wikiRelationships.id, { onDelete: 'cascade' }),
-  sourcePassageId: uuid('source_passage_id')
-    .notNull()
-    .references(() => sourcePassages.id, { onDelete: 'cascade' }),
-  quote: text('quote').notNull(),
-  locationLabel: text('location_label').notNull(),
-});
-
 export const artifactReviewRuns = pgTable(
   'artifact_review_runs',
   {
@@ -386,18 +253,12 @@ export const schema = {
   artifacts,
   auditLogs,
   ingestionRuns,
-  knowledgebaseVersions,
-  knowledgebases,
   projects,
   projectSources,
   session,
   sourcePassages,
   user,
   verification,
-  wikiConceptSourceRefs,
-  wikiConcepts,
-  wikiRelationshipSourceRefs,
-  wikiRelationships,
 };
 
 export type AuditLog = typeof auditLogs.$inferSelect;
@@ -409,16 +270,10 @@ export type NewArtifact = typeof artifacts.$inferInsert;
 export type NewArtifactReviewRun = typeof artifactReviewRuns.$inferInsert;
 export type NewArtifactVersion = typeof artifactVersions.$inferInsert;
 export type IngestionRun = typeof ingestionRuns.$inferSelect;
-export type Knowledgebase = typeof knowledgebases.$inferSelect;
-export type KnowledgebaseVersion = typeof knowledgebaseVersions.$inferSelect;
 export type NewIngestionRun = typeof ingestionRuns.$inferInsert;
-export type NewKnowledgebase = typeof knowledgebases.$inferInsert;
-export type NewKnowledgebaseVersion = typeof knowledgebaseVersions.$inferInsert;
 export type Project = typeof projects.$inferSelect;
 export type NewProject = typeof projects.$inferInsert;
 export type ProjectSource = typeof projectSources.$inferSelect;
 export type NewProjectSource = typeof projectSources.$inferInsert;
 export type SourcePassage = typeof sourcePassages.$inferSelect;
 export type NewSourcePassage = typeof sourcePassages.$inferInsert;
-export type WikiConcept = typeof wikiConcepts.$inferSelect;
-export type WikiRelationship = typeof wikiRelationships.$inferSelect;
