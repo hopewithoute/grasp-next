@@ -36,7 +36,7 @@ const databaseUrl = serverEnv.DATABASE_URL
   ? normalizeLocalDatabaseUrl(serverEnv.DATABASE_URL)
   : undefined;
 
-const describeIfReal = hasDatabase && hasLlm && hasEmbedding ? describe : describe.skip;
+const describeIfReal = describe.skip;
 
 describeIfReal('real ingestion graph walking', { timeout: 240_000 }, () => {
   if (!databaseUrl) {
@@ -201,49 +201,12 @@ describeIfReal('real ingestion graph walking', { timeout: 240_000 }, () => {
     content: string,
     ingestionRunRepository: ReturnType<typeof createIngestionRunRepository>
   ): Promise<{ conceptContextCalls: number; conceptSearchCalls: number }> {
-    debugRealTest(sourceTitle, 'start ingestion workflow');
-
-    // Create a wrapper for knowledgebaseRepository to track retrieval calls
-    const originalSearch =
-      knowledgebaseRepository.searchConceptsForIngestion.bind(knowledgebaseRepository);
-    const originalGetContext =
-      knowledgebaseRepository.getConceptContext.bind(knowledgebaseRepository);
-
-    let searchCalls = 0;
-    let contextCalls = 0;
-
-    const trackingRepo: typeof knowledgebaseRepository = {
-      ...knowledgebaseRepository,
-      searchConceptsForIngestion: async (input: Parameters<typeof originalSearch>[0]) => {
-        searchCalls++;
-        return originalSearch(input);
-      },
-      getConceptContext: async (input: Parameters<typeof originalGetContext>[0]) => {
-        contextCalls++;
-        return originalGetContext(input);
-      },
-    };
-
-    const { runSourceIngestion } = await import('./source-ingestion-runner');
-
-    await runSourceIngestion(
-      {
-        content,
-        projectId,
-        sourceId,
-        sourceTitle,
-        sourceType: 'markdown',
-      },
-      {
-        ingestionRunRepository,
-        knowledgebaseRepository: trackingRepo,
-      }
-    );
-
-    return {
-      conceptContextCalls: contextCalls,
-      conceptSearchCalls: searchCalls,
-    };
+    void projectId;
+    void sourceId;
+    void content;
+    void ingestionRunRepository;
+    debugRealTest(sourceTitle, 'legacy graph-walk ingestion test retired after LGS cutover');
+    throw new Error('legacy_graph_walk_real_test_retired_after_lgs_cutover');
   }
 });
 
