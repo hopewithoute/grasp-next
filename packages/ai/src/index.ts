@@ -1,10 +1,3 @@
-export {
-  extractChunk,
-  ingestionAgent,
-  buildIngestionPrompt,
-  type ExtractChunkInput,
-  type ExtractChunkResult,
-} from './ingestion';
 export { mastra } from './mastra';
 export { canUseAgent } from './utils/agent-credentials';
 export {
