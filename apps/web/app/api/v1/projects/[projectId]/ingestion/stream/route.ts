@@ -61,6 +61,7 @@ export async function POST(request: Request, context: RouteContext) {
           {
             content: body.content,
             onEvent: (event) => send(event),
+            ownerId: actor.id,
             projectId: project.id,
             sourceId: body.sourceId,
             sourceTitle: body.sourceTitle || body.sourceId,
