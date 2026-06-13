@@ -235,6 +235,13 @@ function createProjectSourceRepository(state: TestState): ProjectSourceRepositor
 
       return source;
     },
+    async findByIdForOwner(sourceId, ownerId) {
+      if (state.project.ownerId !== ownerId) {
+        return null;
+      }
+
+      return state.sources.find((item) => item.id === sourceId) ?? null;
+    },
     async listByProject(projectId) {
       return state.sources.filter((source) => source.projectId === projectId);
     },

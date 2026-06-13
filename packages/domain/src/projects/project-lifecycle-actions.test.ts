@@ -300,6 +300,9 @@ function createProjectSourceRepository(
     async deleteForProjectOwner() {
       throw new Error('Not needed for this test.');
     },
+    async findByIdForOwner() {
+      throw new Error('Not needed for this test.');
+    },
     async listByProject(projectId) {
       return [
         {
