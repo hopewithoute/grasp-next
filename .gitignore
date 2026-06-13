@@ -5,6 +5,10 @@ node_modules
 dist
 coverage
 .mastra
+.venv
+.pytest_cache
+__pycache__
+*.pyc
 
 *.tsbuildinfo
 
