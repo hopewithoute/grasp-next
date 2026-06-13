@@ -24,6 +24,13 @@ export const serverEnvSchema = v.object({
   CONCEPT_EXTRACTOR_PROVIDER: optionalString,
   CONCEPT_EXTRACTOR_MODEL: optionalString,
   MASTRA_STORAGE_URL: urlString,
+  LGS_ENABLED: v.optional(v.pipe(v.unknown(), v.transform(String), v.picklist(['true', 'false'])), 'true'),
+  LGS_BASE_URL: optionalString,
+  LGS_API_KEY: optionalString,
+  LEGACY_KNOWLEDGEBASE_READS_ENABLED: v.optional(
+    v.pipe(v.unknown(), v.transform(String), v.picklist(['true', 'false'])),
+    'false'
+  ),
   GOOGLE_CLIENT_ID: optionalNonEmptyString,
   GOOGLE_CLIENT_SECRET: optionalNonEmptyString,
   CLOUDFLARE_ACCOUNT_ID: optionalString,
