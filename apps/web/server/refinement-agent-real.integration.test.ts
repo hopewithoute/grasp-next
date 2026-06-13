@@ -42,8 +42,6 @@ describeIfReady('Refinement Agent - Real Provider (Graph Proposals)', () => {
       .insert(schema.projects)
       .values({ id: projectId, title: 'Test Project', ownerId, createdAt: now, updatedAt: now });
 
-    await db.insert(schema.knowledgebases).values({ projectId });
-
     // Seed a concept
     await repo.addConcept({
       projectId,
