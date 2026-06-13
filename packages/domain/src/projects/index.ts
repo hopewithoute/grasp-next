@@ -25,6 +25,8 @@ export {
 } from './delete-project.action';
 export {
   loadProjectDetail,
+  type KnowledgebaseGraphConceptReadModel,
+  type KnowledgebaseGraphReadModel,
   type LoadProjectDetailDeps,
   type LoadProjectDetailInput,
   type LoadProjectDetailResult,

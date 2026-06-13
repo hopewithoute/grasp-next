@@ -39,7 +39,7 @@ export type KnowledgebaseGraphRelationshipReadModel = {
 };
 
 export type KnowledgebaseGraphReadModel = {
-  source: 'none' | 'relational_projection';
+  source: 'none' | 'relational_projection' | 'lgs';
   concepts: KnowledgebaseGraphConceptReadModel[];
   relationships: KnowledgebaseGraphRelationshipReadModel[];
 };
