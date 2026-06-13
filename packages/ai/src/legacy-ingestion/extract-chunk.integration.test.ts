@@ -16,13 +16,19 @@ const DOCS_DIR = resolve(import.meta.dirname, '../../../../docs/example');
 const sourceA = readFileSync(resolve(DOCS_DIR, 'source-a-economics-basics.md'), 'utf-8');
 const sourceB = readFileSync(resolve(DOCS_DIR, 'source-b-elasticity.md'), 'utf-8');
 
-const hasLlm = Boolean(
-  process.env.OPENAI_API_KEY || process.env.ANTHROPIC_API_KEY || process.env.XIAOMI_API_KEY
+const runLegacyRealIngestion = Boolean(
+  process.env.RUN_LEGACY_INGESTION_REAL_TESTS === 'true' &&
+    (process.env.OPENAI_API_KEY ||
+      process.env.ANTHROPIC_API_KEY ||
+      process.env.GEMINI_API_KEY ||
+      process.env.GOOGLE_GENERATIVE_AI_API_KEY ||
+      process.env.XIAOMI_API_KEY ||
+      (process.env.OPENAI_COMPATIBLE_BASE_URL && process.env.OPENAI_COMPATIBLE_API_KEY))
 );
 
-const describeIfLlm = hasLlm ? describe : describe.skip;
+const describeIfLegacyRealIngestion = runLegacyRealIngestion ? describe : describe.skip;
 
-describeIfLlm('ingestion extraction (real agent)', () => {
+describeIfLegacyRealIngestion('legacy ingestion extraction (real agent)', () => {
   it('case 1: fresh source — no existing concepts', async () => {
     const sourceId = 'src-a';
     const normalized = normalizeMarkdownSource({
