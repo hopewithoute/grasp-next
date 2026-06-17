@@ -40,7 +40,6 @@ export async function ProjectDetailPage({ currentStage, projectId }: ProjectDeta
       { projectId, ownerId: actor.id },
       {
         ingestionRunRepository: deps.ingestionRunRepository,
-        knowledgebaseRepository: deps.knowledgebaseRepository,
         projectRepository: deps.projectRepository,
         projectSourceRepository: deps.projectSourceRepository,
       }
@@ -74,10 +73,6 @@ export async function ProjectDetailPage({ currentStage, projectId }: ProjectDeta
       knowledgebaseGraph: lgsGraph,
       relationships: lgsGraph.relationships,
     };
-  } else if (serverEnv.LEGACY_KNOWLEDGEBASE_READS_ENABLED !== 'true') {
-    throw new Error(
-      'LGS graph reads are disabled. Set LEGACY_KNOWLEDGEBASE_READS_ENABLED=true to use legacy graph reads.'
-    );
   }
 
   const stage = resolveStage(currentStage);

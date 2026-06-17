@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import type { IngestionRunRepository, KnowledgebaseRepository } from '../knowledgebase';
+import type { IngestionRunRepository } from '../knowledgebase';
 import type { ProjectSourceRepository } from '../project-sources';
 import { deleteProject, ProjectDeleteBlockedError } from './delete-project.action';
 import { loadProjectDetail } from './load-project-detail.action';
@@ -149,47 +149,7 @@ describe('loadProjectDetail', () => {
     expect(detail.knowledgebaseGraph.concepts.length).toBe(0);
   });
 
-  it('derives graph read data from the current knowledgebase artifact version', async () => {
-    const existingProject = requireProject(state);
-    const detail = await loadProjectDetail(
-      {
-        ownerId: actor.id,
-        projectId: existingProject.id,
-      },
-      {
-        ingestionRunRepository: createIngestionRunRepository(),
-        knowledgebaseRepository: createKnowledgebaseRepository(),
-        projectRepository: createProjectRepository(state),
-        projectSourceRepository: createProjectSourceRepository(),
-      }
-    );
 
-    expect(detail.knowledgebaseGraph.source).toBe('relational_projection');
-    expect(detail.knowledgebaseGraph.concepts.length).toBe(1);
-    expect(detail.knowledgebaseGraph.concepts[0]?.id).toBe('relational-market');
-    expect(detail.knowledgebaseGraph.relationships.length).toBe(0);
-  });
-
-  it('prefers the current relational knowledgebase projection over artifact JSONB', async () => {
-    const existingProject = requireProject(state);
-    const detail = await loadProjectDetail(
-      {
-        ownerId: actor.id,
-        projectId: existingProject.id,
-      },
-      {
-        ingestionRunRepository: createIngestionRunRepository(),
-        knowledgebaseRepository: createKnowledgebaseRepository(),
-        projectRepository: createProjectRepository(state),
-        projectSourceRepository: createProjectSourceRepository(),
-      }
-    );
-
-    expect(detail.knowledgebaseGraph.source).toBe('relational_projection');
-    expect(detail.knowledgebaseGraph.concepts.length).toBe(1);
-    expect(detail.knowledgebaseGraph.concepts[0]?.id).toBe('relational-market');
-    expect(detail.knowledgebaseGraph.relationships.length).toBe(0);
-  });
 
   it('does not expose stale graph data when the project has no usable source', async () => {
     const existingProject = requireProject(state);
@@ -200,7 +160,6 @@ describe('loadProjectDetail', () => {
       },
       {
         ingestionRunRepository: createIngestionRunRepository(),
-        knowledgebaseRepository: createKnowledgebaseRepository(),
         projectRepository: createProjectRepository(state),
         projectSourceRepository: createProjectSourceRepository({ content: '' }),
       }
@@ -223,7 +182,6 @@ describe('loadProjectDetail', () => {
         ingestionRunRepository: createIngestionRunRepository({
           completedAt: new Date('2026-05-15T00:00:00.000Z'),
         }),
-        knowledgebaseRepository: createKnowledgebaseRepository(),
         projectRepository: createProjectRepository(state),
         projectSourceRepository: createProjectSourceRepository({
           updatedAt: new Date('2026-05-15T00:01:00.000Z'),
@@ -363,68 +321,7 @@ function createIngestionRunRepository(
   };
 }
 
-function createKnowledgebaseRepository(): KnowledgebaseRepository {
-  return {
-    async addConceptEvidence() {},
-    async updateConceptEvidence() {},
-    async deleteConceptEvidence() {},
-    async createSnapshot() {
-      return null;
-    },
-    async addConcept() {},
-    async updateConcept() {},
-    async deleteConcept() {},
-    async tombstoneConcept() {},
-    async addRelationship() {},
-    async deleteRelationship() {},
-    async findCurrentGraphByProject() {
-      return {
-        concepts: [
-          {
-            confidence: '0.99',
-            definition: 'A relationally loaded market concept.',
-            difficulty: 'beginner',
-            id: 'relational-market',
-            name: 'Relational Market',
-            sourceEvidence: [
-              {
-                blockId: 'source-1:block-0001',
-                excerpt: 'Markets coordinate supply and demand.',
-                location: 'Market source / Block 1',
-                sourceId: 'source-1',
-              },
-            ],
-          },
-        ],
-        relationships: [],
-      };
-    },
-    async findConceptEvidence() {
-      return [];
-    },
-    async findRelationshipEvidence() {
-      return [];
-    },
-    async replaceVersionFromContent() {
-      throw new Error('Not needed for this test.');
-    },
-    async searchConceptsForIngestion() {
-      return [];
-    },
-    async searchConceptsWithPagination() {
-      return { concepts: [], totalCount: 0 };
-    },
-    async getConceptContext() {
-      return null;
-    },
-    async mergeIngestionOutput() {
-      throw new Error('Not needed for this test.');
-    },
-    async upsertSourcePassages() {},
-    async cleanupDeletedSource() {},
-    async cleanupOrphans() {},
-  };
-}
+
 
 function createProjectRepository(state: TestState): ProjectRepository {
   return {

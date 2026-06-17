@@ -1,9 +1,5 @@
 import type { ConceptDifficultyDto } from '../concepts/concept.dto';
-import type {
-  IngestionRunRecord,
-  IngestionRunRepository,
-  KnowledgebaseRepository,
-} from '../knowledgebase';
+import type { IngestionRunRecord, IngestionRunRepository } from '../knowledgebase';
 import type { ProjectSourceRecord, ProjectSourceRepository } from '../project-sources';
 import { ProjectNotFoundError } from './project.errors';
 import type { ProjectRecord, ProjectRepository } from './project.types';
@@ -15,7 +11,6 @@ export type LoadProjectDetailInput = {
 
 export type LoadProjectDetailDeps = {
   ingestionRunRepository?: IngestionRunRepository;
-  knowledgebaseRepository?: KnowledgebaseRepository;
   projectRepository: ProjectRepository;
   projectSourceRepository: ProjectSourceRepository;
 };
@@ -71,18 +66,7 @@ export async function loadProjectDetail(
   const graphIsCurrentForSources =
     hasUsableSource && isIngestionCurrentForSources(latestIngestionRun, sources);
 
-  const relationalReadModel = deps.knowledgebaseRepository
-    ? graphIsCurrentForSources
-      ? await deps.knowledgebaseRepository.findCurrentGraphByProject(project.id)
-      : null
-    : null;
-
-  const conceptReadModel = relationalReadModel
-    ? {
-        ...relationalReadModel,
-        source: 'relational_projection' as const,
-      }
-    : emptyKnowledgebaseReadModel();
+  const conceptReadModel = emptyKnowledgebaseReadModel();
 
   return {
     project,

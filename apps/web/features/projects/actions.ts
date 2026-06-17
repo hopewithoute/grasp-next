@@ -362,8 +362,7 @@ export async function getConceptEvidence(projectId: string, conceptId: string) {
     }
 
     const evidence = await loadConceptEvidence(
-      { conceptId, projectId, ownerId: actor.id },
-      { knowledgebaseRepository: deps.knowledgebaseRepository }
+      { conceptId, projectId, ownerId: actor.id }
     );
     return evidence;
   } catch (error) {
@@ -389,8 +388,7 @@ export async function executeGraphProposalAction(
   }
 
   const result = await applyGraphProposals(
-    { projectId, actions: proposalActions },
-    { knowledgebaseRepository: deps.knowledgebaseRepository }
+    { projectId, actions: proposalActions }
   );
 
   revalidatePath(`/dashboard/projects/${projectId}`);
@@ -422,48 +420,32 @@ export async function searchKnowledgebaseConceptsAction(params: ConceptSearchPag
     throw new Error('Unauthorized');
   }
 
-  if (serverEnv.LGS_ENABLED === 'true') {
-    if (!deps.lgsService) {
-      throw new Error('LGS service is not configured');
-    }
-
-    const graph = await deps.lgsService.getLocalGraphForOwner({
-      limit: 500,
-      ownerId: actor.id,
-      projectId: params.projectId,
-    });
-    const normalizedQuery = params.query?.trim().toLowerCase();
-    const filteredConcepts = graph.concepts.filter((concept: KnowledgebaseGraphConceptReadModel) => {
-      const matchesQuery = normalizedQuery
-        ? concept.name.toLowerCase().includes(normalizedQuery) ||
-          concept.definition.toLowerCase().includes(normalizedQuery)
-        : true;
-      const matchesDifficulty = params.difficulty
-        ? concept.difficulty === params.difficulty
-        : true;
-
-      return matchesQuery && matchesDifficulty;
-    });
-    const offset = params.offset ?? 0;
-    const limit = params.limit ?? 20;
-
-    return {
-      concepts: filteredConcepts.slice(offset, offset + limit),
-      totalCount: filteredConcepts.length,
-    };
+  if (!deps.lgsService) {
+    throw new Error('LGS service is not configured');
   }
 
-  if (serverEnv.LEGACY_KNOWLEDGEBASE_READS_ENABLED !== 'true') {
-    throw new Error(
-      'LGS concept search is disabled. Set LEGACY_KNOWLEDGEBASE_READS_ENABLED=true to use legacy concept search.'
-    );
-  }
-
-  return deps.knowledgebaseRepository.searchConceptsWithPagination({
+  const graph = await deps.lgsService.getLocalGraphForOwner({
+    limit: 500,
+    ownerId: actor.id,
     projectId: params.projectId,
-    query: params.query,
-    difficulty: params.difficulty,
-    limit: params.limit ?? 20,
-    offset: params.offset ?? 0,
   });
+  const normalizedQuery = params.query?.trim().toLowerCase();
+  const filteredConcepts = graph.concepts.filter((concept: KnowledgebaseGraphConceptReadModel) => {
+    const matchesQuery = normalizedQuery
+      ? concept.name.toLowerCase().includes(normalizedQuery) ||
+        concept.definition.toLowerCase().includes(normalizedQuery)
+      : true;
+    const matchesDifficulty = params.difficulty
+      ? concept.difficulty === params.difficulty
+      : true;
+
+    return matchesQuery && matchesDifficulty;
+  });
+  const offset = params.offset ?? 0;
+  const limit = params.limit ?? 20;
+
+  return {
+    concepts: filteredConcepts.slice(offset, offset + limit),
+    totalCount: filteredConcepts.length,
+  };
 }

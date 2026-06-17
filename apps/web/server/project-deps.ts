@@ -4,7 +4,6 @@ import {
   createAuditLogRepository,
   createDbClient,
   createIngestionRunRepository,
-  createKnowledgebaseRepository,
   createProjectRepository,
   createProjectSourceRepository,
 } from '@grasp/db';
@@ -30,7 +29,6 @@ function buildProjectDeps() {
     artifactRepository: createArtifactRepository(db),
     auditLogRepository: createAuditLogRepository(db),
     ingestionRunRepository: createIngestionRunRepository(db),
-    knowledgebaseRepository: createKnowledgebaseRepository(db),
     lgsService: createLgsService({
       apiKey: serverEnv.LGS_API_KEY,
       baseUrl: serverEnv.LGS_BASE_URL,
