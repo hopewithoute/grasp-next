@@ -1,0 +1,3 @@
+# Romeo and Juliet
+
+Romeo and Juliet is a tragedy written by William Shakespeare early in his career about two young Italian star-crossed lovers whose deaths ultimately reconcile their feuding families.
