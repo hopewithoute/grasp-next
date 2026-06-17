@@ -73,6 +73,43 @@ export interface SearchResponse {
   };
 }
 
+export interface QueryRequest {
+  tenantId?: string;
+  collectionId: string;
+  query: string;
+  topK?: number;
+  budgetPreset?: "lite" | "balanced" | "deep";
+  retrievalMode?: "hybrid" | "graph_lite";
+}
+
+export interface Citation {
+  chunkId: string;
+  documentId: string;
+  startOffset: number;
+  endOffset: number;
+}
+
+export interface RetrievedContext {
+  chunkId: string;
+  documentId: string;
+  content: string;
+  score: number;
+  startOffset: number;
+  endOffset: number;
+}
+
+export interface Trace {
+  budgetPreset: string;
+  steps: Array<Record<string, any>>;
+}
+
+export interface QueryResponse {
+  answer: string;
+  contexts: RetrievedContext[];
+  citations: Citation[];
+  trace: Trace;
+}
+
 export interface LocalGraphRequest {
   tenantId?: string;
   collectionId: string;
@@ -150,6 +187,10 @@ export class LazyGraphRagClient {
 
   async search(req: SearchRequest): Promise<SearchResponse> {
     return this.post<SearchResponse>('/v1/search', req);
+  }
+
+  async query(req: QueryRequest): Promise<QueryResponse> {
+    return this.post<QueryResponse>('/v1/query', req);
   }
 
   async getLocalGraph(req: LocalGraphRequest): Promise<LocalGraphResponse> {
