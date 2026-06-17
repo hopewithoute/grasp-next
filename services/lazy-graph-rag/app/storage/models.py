@@ -157,3 +157,61 @@ class GraphMutationEvent(LGSBase):
     after_snapshot = Column(JSONB, nullable=True)
     reason = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+class Community(LGSBase):
+    __tablename__ = 'communities'
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    collection_id = Column(String, nullable=False)
+    level = Column(Integer, nullable=False)
+    parent_community_id = Column(UUID(as_uuid=True), ForeignKey('lgs.communities.id', ondelete='SET NULL'), nullable=True)
+    algorithm = Column(String(255), nullable=False)
+    algorithm_version = Column(String(255), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+    __table_args__ = (
+        {"schema": "lgs"}
+    )
+
+class TermCommunityMembership(LGSBase):
+    __tablename__ = 'term_community_memberships'
+
+    community_id = Column(UUID(as_uuid=True), ForeignKey('lgs.communities.id', ondelete='CASCADE'), primary_key=True)
+    term_id = Column(UUID(as_uuid=True), ForeignKey('lgs.terms.id', ondelete='CASCADE'), primary_key=True)
+    membership_score = Column(Float, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    __table_args__ = (
+        {"schema": "lgs"}
+    )
+
+class RetrievalTrace(LGSBase):
+    __tablename__ = 'retrieval_traces'
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    tenant_id = Column(String, nullable=False, server_default='')
+    collection_id = Column(String, nullable=False)
+    query = Column(Text, nullable=False)
+    expanded_query = Column(Text, nullable=True)
+    budget_preset = Column(String(50), nullable=False)
+    relevance_test_budget = Column(Integer, nullable=False)
+    subquery_count = Column(Integer, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    __table_args__ = (
+        {"schema": "lgs"}
+    )
+
+class RetrievalTraceStep(LGSBase):
+    __tablename__ = 'retrieval_trace_steps'
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    trace_id = Column(UUID(as_uuid=True), ForeignKey('lgs.retrieval_traces.id', ondelete='CASCADE'), nullable=False)
+    step_type = Column(String(50), nullable=False)
+    payload = Column(JSONB, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    __table_args__ = (
+        {"schema": "lgs"}
+    )

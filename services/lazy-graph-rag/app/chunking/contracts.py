@@ -18,3 +18,7 @@ class DocumentChunk(BaseModel):
     end_offset: int
     estimated_tokens: int
     heading_path: List[str]
+
+class ChunkerContract:
+    def chunk_document(self, input_data: ChunkDocumentInput, options: ChunkingOptions) -> List[DocumentChunk]:
+        raise NotImplementedError

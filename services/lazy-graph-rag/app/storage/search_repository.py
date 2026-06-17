@@ -68,3 +68,45 @@ class SearchRepository:
             for chunk, doc in result
         }
         return [chunk_map[cid] for cid in chunk_ids if cid in chunk_map]
+
+    async def get_communities_for_chunks(self, chunk_ids: List[str]) -> List[Dict[str, Any]]:
+        if not chunk_ids:
+            return []
+        from app.storage.models import ChunkTerm, TermCommunityMembership
+        stmt = (
+            select(TermCommunityMembership.community_id, ChunkTerm.chunk_id, TermCommunityMembership.membership_score)
+            .join(TermCommunityMembership, ChunkTerm.term_id == TermCommunityMembership.term_id)
+            .where(ChunkTerm.chunk_id.in_(chunk_ids))
+        )
+        result = await self.session.execute(stmt)
+        return [{"community_id": str(row.community_id), "chunk_id": str(row.chunk_id), "score": row.membership_score} for row in result.all()]
+
+    async def get_chunks_in_community(self, community_id: str) -> List[Dict[str, Any]]:
+        from app.storage.models import ChunkTerm, TermCommunityMembership, Community
+        stmt = (
+            select(Chunk, Document)
+            .join(Document, Chunk.document_id == Document.id)
+            .join(ChunkTerm, Chunk.id == ChunkTerm.chunk_id)
+            .join(TermCommunityMembership, ChunkTerm.term_id == TermCommunityMembership.term_id)
+            .where(TermCommunityMembership.community_id == community_id)
+            .distinct()
+        )
+        result = await self.session.execute(stmt)
+        return [
+            {
+                "chunk_id": str(chunk.id),
+                "document_id": str(doc.id),
+                "source_id": doc.source_id,
+                "document_name": doc.document_name,
+                "content": chunk.content,
+                "start_offset": chunk.start_offset,
+                "end_offset": chunk.end_offset,
+            }
+            for chunk, doc in result
+        ]
+
+    async def get_sub_communities(self, community_id: str) -> List[str]:
+        from app.storage.models import Community
+        stmt = select(Community.id).where(Community.parent_community_id == community_id)
+        result = await self.session.execute(stmt)
+        return [str(row[0]) for row in result.all()]

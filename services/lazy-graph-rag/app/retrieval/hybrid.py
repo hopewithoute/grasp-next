@@ -12,7 +12,7 @@ class HybridSearcher:
         self.settings = get_settings()
         self.embedder = create_embedding_runtime(self.settings)
 
-    async def search(self, tenant_id: Optional[str], collection_id: str, query: str, top_k: int = 8) -> Dict[str, Any]:
+    async def search(self, tenant_id: Optional[str], collection_id: str, query: str, top_k: int = 8, retrieval_mode: str = "hybrid") -> Dict[str, Any]:
         # 1. Lexical search
         lexical_results = await self.repo.lexical_search(tenant_id, collection_id, query, top_k=50)
 
@@ -54,6 +54,7 @@ class HybridSearcher:
         return {
             "results": chunks_data,
             "trace": {
+                "retrieval_mode": retrieval_mode,
                 "lexical_count": len(lexical_results),
                 "vector_count": len(vector_results),
                 "rrf_pool_size": len(rrf_results),

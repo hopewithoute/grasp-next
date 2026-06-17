@@ -1,6 +1,9 @@
 import pytest
-from app.chunking.recursive import chunk_document
+from app.chunking.recursive import RecursiveChunker
 from app.chunking.contracts import ChunkDocumentInput, ChunkingOptions
+
+def chunk_document(input_data: ChunkDocumentInput, options: ChunkingOptions):
+    return RecursiveChunker().chunk_document(input_data, options)
 
 def test_chunk_document_empty_input():
     chunks = chunk_document(

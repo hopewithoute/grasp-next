@@ -5,7 +5,7 @@ from app.indexing.content_hash import compute_content_hash
 from app.storage.repositories import SourceRepository
 from app.parsing.text import parse_text
 from app.parsing.markdown import parse_markdown
-from app.chunking.recursive import chunk_document
+from app.chunking.factory import create_chunker
 from app.chunking.contracts import ChunkDocumentInput, ChunkingOptions
 from app.extraction.factory import create_term_extractor
 from app.extraction.contracts import Chunk as ExtractorChunk
@@ -32,8 +32,7 @@ class SourceIndexer:
                            content_metadata: Dict[str, Any]) -> Dict[str, Any]:
         tenant_id = normalize_tenant_id(tenant_id)
                            
-        # 1. Compute content hash
-        # To avoid re-indexing unchanged text
+        # 1. Compute content hash to avoid re-indexing unchanged text
         content_hash = compute_content_hash(content)
         
         # 2. Check existing
@@ -49,6 +48,56 @@ class SourceIndexer:
             }
 
         # 3. Parsing
+        normalized_content, merged_metadata = self._parse_content(content, source_type, content_metadata)
+
+        # 4. Chunking
+        chunks = self._chunk_document(normalized_content, source_type)
+        
+        # 5. ML Operations: Extract terms & Embed
+        # Done before opening a transaction to avoid holding DB locks
+        chunk_texts = [c.content for c in chunks]
+        embeddings = self._create_embeddings(chunk_texts)
+        candidates = self._extract_terms(chunks)
+        
+        # 6. Prepare DB Payloads
+        payloads = self._prepare_db_payloads(
+            tenant_id=tenant_id,
+            collection_id=collection_id,
+            source_id=source_id,
+            document_name=document_name,
+            source_type=source_type,
+            content_uri=content_uri,
+            content_hash=content_hash,
+            normalized_content=normalized_content,
+            merged_metadata=merged_metadata,
+            chunks=chunks,
+            embeddings=embeddings,
+            candidates=candidates
+        )
+        
+        # 7. Execute Transaction
+        await self.repo.delete_document_by_source(tenant_id, collection_id, source_id)
+        
+        doc_id = await self.repo.save_indexed_source(
+            payloads["document_data"],
+            payloads["chunks_data"],
+            payloads["terms_data"],
+            payloads["chunk_terms_data"]
+        )
+        
+        await self.repo.cleanup_orphan_terms(tenant_id, collection_id)
+        await self.session.commit()
+
+        return {
+            "status": "indexed",
+            "documentId": str(doc_id),
+            "chunkCount": len(payloads["chunks_data"]),
+            "termCount": len(payloads["terms_data"]),
+            "chunkTermCount": len(payloads["chunk_terms_data"]),
+            "contentHash": content_hash
+        }
+
+    def _parse_content(self, content: str, source_type: str, content_metadata: Dict[str, Any]) -> tuple[str, Dict[str, Any]]:
         if source_type == "markdown":
             parsed = parse_markdown(content)
         else:
@@ -56,32 +105,37 @@ class SourceIndexer:
             parsed = parse_text(content)
             
         merged_metadata = {**content_metadata, **parsed.metadata}
-        normalized_content = parsed.content
+        return parsed.content, merged_metadata
 
-        # 4. Chunking
-        chunk_input = ChunkDocumentInput(content=normalized_content, source_type="markdown" if source_type == "markdown" else "text")
+    def _chunk_document(self, normalized_content: str, source_type: str) -> list[Any]:
+        chunk_input = ChunkDocumentInput(
+            content=normalized_content, 
+            source_type="markdown" if source_type == "markdown" else "text"
+        )
         chunk_opts = ChunkingOptions(
             target_tokens=self.settings.LGS_CHUNK_TARGET_TOKENS,
             overlap_tokens=self.settings.LGS_CHUNK_OVERLAP_TOKENS,
             min_chunk_tokens=self.settings.LGS_CHUNK_MIN_TOKENS,
         )
-        chunks = chunk_document(chunk_input, chunk_opts)
-        
-        # 5. Extract terms & Embed
-        # We do this before opening a transaction to avoid holding DB locks during slow ML operations
-        
-        # 5a. Embed
-        chunk_texts = [c.content for c in chunks]
-        embeddings = self.embedder.create_embeddings(chunk_texts) if chunk_texts else []
-        if len(embeddings) != len(chunks):
-            raise RuntimeError(f"embedding_count_mismatch: expected {len(chunks)}, got {len(embeddings)}")
+        chunker = create_chunker(self.settings)
+        return chunker.chunk_document(chunk_input, chunk_opts)
+
+    def _create_embeddings(self, chunk_texts: list[str]) -> list[list[float]]:
+        if not chunk_texts:
+            return []
+            
+        embeddings = self.embedder.create_embeddings(chunk_texts)
+        if len(embeddings) != len(chunk_texts):
+            raise RuntimeError(f"embedding_count_mismatch: expected {len(chunk_texts)}, got {len(embeddings)}")
+            
         for index, embedding in enumerate(embeddings):
             if len(embedding) != self.settings.EMBEDDING_DIMENSIONS:
                 raise RuntimeError(
                     f"embedding_dimensions_mismatch:{index}: expected {self.settings.EMBEDDING_DIMENSIONS}, got {len(embedding)}"
                 )
-        
-        # 5b. Extract
+        return embeddings
+
+    def _extract_terms(self, chunks: list[Any]) -> list[Any]:
         ext_chunks = [
             ExtractorChunk(chunkId=str(i), content=c.content) 
             for i, c in enumerate(chunks)
@@ -91,13 +145,19 @@ class SourceIndexer:
             for label in self.settings.TERM_EXTRACTOR_LABELS.split(",")
             if label.strip()
         ]
-        candidates = self.extractor.extract_terms(
+        return self.extractor.extract_terms(
             ext_chunks,
             labels=labels,
             threshold=self.settings.TERM_EXTRACTOR_THRESHOLD,
         )
+
+    def _prepare_db_payloads(
+        self, tenant_id: str, collection_id: str, source_id: str, 
+        document_name: str, source_type: str, content_uri: Optional[str], 
+        content_hash: str, normalized_content: str, merged_metadata: Dict[str, Any], 
+        chunks: list[Any], embeddings: list[list[float]], candidates: list[Any]
+    ) -> Dict[str, Any]:
         
-        # 6. Prepare DB Payloads
         document_data = {
             "tenant_id": tenant_id,
             "collection_id": collection_id,
@@ -127,11 +187,11 @@ class SourceIndexer:
         ]
             
         terms_data_map = {
-            f"{cand.text.lower().strip()}:::{cand.label}": {
+            f"{cand.normalized_text}:::{cand.label}": {
                 "collection_id": collection_id,
                 "tenant_id": tenant_id,
                 "text": cand.text,
-                "normalized_text": cand.text.lower().strip(),
+                "normalized_text": cand.normalized_text,
                 "label": cand.label,
                 "status": "raw"
             }
@@ -141,7 +201,7 @@ class SourceIndexer:
         chunk_terms_data = [
             {
                 "chunk_id": chunks_data[int(cand.chunkId)]["id"],
-                "_normalized_text": cand.text.lower().strip(),
+                "_normalized_text": cand.normalized_text,
                 "_label": cand.label,
                 "source": "gliner",
                 "label": cand.label,
@@ -152,29 +212,9 @@ class SourceIndexer:
             for cand in candidates
         ]
 
-        terms_data = list(terms_data_map.values())
-
-        # 7. Execute Transaction
-        # Delete old
-        await self.repo.delete_document_by_source(tenant_id, collection_id, source_id)
-        
-        # Save new
-        doc_id = await self.repo.save_indexed_source(
-            document_data,
-            chunks_data,
-            terms_data,
-            chunk_terms_data
-        )
-        
-        # Cleanup
-        await self.repo.cleanup_orphan_terms(tenant_id, collection_id)
-        await self.session.commit()
-
         return {
-            "status": "indexed",
-            "documentId": str(doc_id),
-            "chunkCount": len(chunks_data),
-            "termCount": len(terms_data),
-            "chunkTermCount": len(chunk_terms_data),
-            "contentHash": content_hash
+            "document_data": document_data,
+            "chunks_data": chunks_data,
+            "terms_data": list(terms_data_map.values()),
+            "chunk_terms_data": chunk_terms_data
         }

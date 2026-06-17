@@ -1,7 +1,6 @@
 import re
 import math
 from typing import List
-from app.chunking.contracts import ChunkDocumentInput, ChunkingOptions, DocumentChunk
 from pydantic import BaseModel
 
 class Span(BaseModel):
@@ -62,37 +61,39 @@ def _get_partial_overlap(span: Span, needed_tokens: int) -> List[Span]:
     for s in reversed(smaller_spans):
         s_tokens = estimate_tokens(s.text)
         if tokens + s_tokens <= needed_tokens:
-            result.append(s)
+            result.insert(0, s)
             tokens += s_tokens
         else:
             chars_needed = (needed_tokens - tokens) * 4
             if chars_needed > 0 and s.text:
                 cut_index = max(0, len(s.text) - chars_needed)
-                result.append(Span(
+                partial_span = Span(
                     text=s.text[cut_index:],
                     start_offset=s.start_offset + cut_index,
                     end_offset=s.end_offset
-                ))
+                )
+                result.insert(0, partial_span)
             break
-    result.reverse()
+            
     return result
 
 def get_overlap_spans(spans: List[Span], overlap_tokens: int) -> List[Span]:
     tokens = 0
     result = []
-    for o_span in reversed(spans):
-        o_tokens = estimate_tokens(o_span.text)
-        if tokens + o_tokens <= overlap_tokens:
-            result.append(o_span)
-            tokens += o_tokens
+    for span in reversed(spans):
+        span_tokens = estimate_tokens(span.text)
+        if tokens + span_tokens <= overlap_tokens:
+            result.insert(0, span)
+            tokens += span_tokens
             if tokens == overlap_tokens:
                 break
         else:
             needed = overlap_tokens - tokens
             if needed > 0:
-                result.extend(reversed(_get_partial_overlap(o_span, needed)))
+                partial_spans = _get_partial_overlap(span, needed)
+                result = partial_spans + result
             break
-    result.reverse()
+            
     return result
 
 def _create_chunk_span(spans: List[Span]) -> Span:
@@ -147,29 +148,32 @@ def get_heading_path(offset: int, headings: List[Heading]) -> List[str]:
             break
     return [h.text for h in active_headings]
 
-def chunk_document(input_data: ChunkDocumentInput, options: ChunkingOptions) -> List[DocumentChunk]:
-    if not input_data.content:
-        return []
+from app.chunking.contracts import ChunkerContract, ChunkDocumentInput, ChunkingOptions, DocumentChunk
 
-    initial_span = Span(
-        text=input_data.content,
-        start_offset=0,
-        end_offset=len(input_data.content)
-    )
+class RecursiveChunker(ChunkerContract):
+    def chunk_document(self, input_data: ChunkDocumentInput, options: ChunkingOptions) -> List[DocumentChunk]:
+        if not input_data.content:
+            return []
 
-    split_spans = recursively_split(initial_span, options.target_tokens)
-    packed_spans = pack_spans(split_spans, options)
-
-    headings = extract_headings(input_data.content) if input_data.source_type == "markdown" else []
-
-    return [
-        DocumentChunk(
-            chunk_index=idx,
-            content=span.text,
-            start_offset=span.start_offset,
-            end_offset=span.end_offset,
-            estimated_tokens=estimate_tokens(span.text),
-            heading_path=get_heading_path(span.start_offset, headings)
+        initial_span = Span(
+            text=input_data.content,
+            start_offset=0,
+            end_offset=len(input_data.content)
         )
-        for idx, span in enumerate(packed_spans)
-    ]
+
+        split_spans = recursively_split(initial_span, options.target_tokens)
+        packed_spans = pack_spans(split_spans, options)
+
+        headings = extract_headings(input_data.content) if input_data.source_type == "markdown" else []
+
+        return [
+            DocumentChunk(
+                chunk_index=idx,
+                content=span.text,
+                start_offset=span.start_offset,
+                end_offset=span.end_offset,
+                estimated_tokens=estimate_tokens(span.text),
+                heading_path=get_heading_path(span.start_offset, headings)
+            )
+            for idx, span in enumerate(packed_spans)
+        ]

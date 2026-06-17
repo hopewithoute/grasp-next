@@ -12,6 +12,7 @@ class ExtractionCandidate(BaseModel):
     startOffset: int
     endOffset: int
     confidence: float
+    normalized_text: Optional[str] = None
 
 class ExtractorContract:
     def extract_terms(self, chunks: List[Chunk], labels: List[str], threshold: float = 0.5, language_hint: Optional[str] = None) -> List[ExtractionCandidate]:
