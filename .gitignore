@@ -19,6 +19,8 @@ __pycache__
 # Local model/eval artifacts
 .models/
 services/lazy-graph-rag/eval_*.log
+services/lazy-graph-rag/evals/ragbench/*_scores.json
+services/lazy-graph-rag/evals/ragbench/*_results.json
 # Tool configs
 .claude/
 .kiro/
