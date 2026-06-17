@@ -1,0 +1,4 @@
+interface:
+  display_name: "Agy Subagent Loop"
+  short_description: "Delegate to agy and review results"
+  default_prompt: "Use $agy-subagent-loop to hand off this task to agy, then review the result before answering."
