@@ -9,6 +9,8 @@ class Settings(BaseSettings):
     TERM_EXTRACTOR_API_KEY: Optional[str] = None
     TERM_EXTRACTOR_THRESHOLD: float = 0.5
     TERM_EXTRACTOR_LABELS: str = "concept,topic,technology,tool,framework,method,process,principle,metric,organization,person,location"
+    TERM_EXTRACTOR_MODE: str = "gliner"
+    SPACY_MODEL: str = "en_core_web_sm"
     EMBEDDING_BASE_URL: Optional[str] = None
     EMBEDDING_API_KEY: Optional[str] = None
     EMBEDDING_MODEL: str = "Qwen/Qwen3-Embedding-0.6B"
@@ -17,6 +19,10 @@ class Settings(BaseSettings):
     LGS_CHUNK_TARGET_TOKENS: int = 512
     LGS_CHUNK_OVERLAP_TOKENS: int = 64
     LGS_CHUNK_MIN_TOKENS: int = 80
+    GENERATOR_BASE_URL: Optional[str] = None
+    GENERATOR_API_KEY: Optional[str] = None
+    GENERATOR_MODEL: str = "gpt-4o-mini"
+    DECOMPOSER_ENABLED: bool = True
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
