@@ -4,11 +4,11 @@ from app.settings import get_settings
 router = APIRouter()
 
 @router.get("/health")
-def health_check():
+async def health_check():
     return {"status": "ok"}
 
 @router.get("/metadata")
-def metadata():
+async def metadata():
     settings = get_settings()
     return {
         "service": "lazy-graph-rag",

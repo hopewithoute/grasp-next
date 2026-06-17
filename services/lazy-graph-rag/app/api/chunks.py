@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel, UUID4
+from pydantic import BaseModel, UUID4, Field
 from typing import List, Optional, Dict, Any
 from app.storage.db import get_db_session
 from app.api.auth import verify_api_key
@@ -9,7 +9,6 @@ from app.storage.models import Chunk, Document
 from sqlalchemy.orm import selectinload
 
 router = APIRouter()
-from pydantic import BaseModel, UUID4, Field
 
 class GetChunksRequest(BaseModel):
     chunkIds: List[UUID4] = Field(..., max_length=5000)

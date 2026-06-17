@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
 from app.storage.graph_repository import GraphRepository
 from app.api.auth import verify_api_key
@@ -9,8 +9,6 @@ import logging
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
-
-from pydantic import BaseModel, Field
 
 class GraphRequest(BaseModel):
     tenantId: Optional[str] = None

@@ -7,7 +7,7 @@ from app.settings import get_settings
 security = HTTPBearer(auto_error=False)
 
 
-def verify_api_key(credentials: HTTPAuthorizationCredentials = Security(security)) -> None:
+async def verify_api_key(credentials: HTTPAuthorizationCredentials = Security(security)) -> None:
     settings = get_settings()
     expected_key = settings.LGS_API_KEY
     if not expected_key:
