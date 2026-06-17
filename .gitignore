@@ -14,6 +14,11 @@ __pycache__
 
 .env
 .env*.local
+.env.eval
+
+# Local model/eval artifacts
+.models/
+services/lazy-graph-rag/eval_*.log
 # Tool configs
 .claude/
 .kiro/
