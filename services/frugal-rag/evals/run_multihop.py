@@ -16,6 +16,7 @@ import argparse
 import random
 from pathlib import Path
 from typing import Dict, List, Any, Optional
+from dataclasses import dataclass
 
 logging.basicConfig(
     level=logging.INFO,
