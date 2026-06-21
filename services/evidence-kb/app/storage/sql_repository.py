@@ -57,6 +57,46 @@ class SqlEvidenceRepository:
         await self.session.refresh(source)
         return SourceRecord.model_validate(source)
 
+    async def delete_source_by_external_id(
+        self, tenant_id: str, external_source_id: str, project_id: str | None = None
+    ) -> bool:
+        conditions = [
+            KbSource.tenant_id == tenant_id,
+            KbSource.external_source_id == UUID(str(external_source_id)),
+        ]
+        if project_id:
+            conditions.append(KbSource.project_id == UUID(str(project_id)))
+            
+        stmt = delete(KbSource).where(*conditions)
+        result = await self.session.execute(stmt)
+        await self.session.commit()
+        return result.rowcount > 0
+
+    async def get_source_by_external_id(
+        self, tenant_id: str, external_source_id: str, project_id: str | None = None
+    ) -> SourceRecord | None:
+        conditions = [
+            KbSource.tenant_id == tenant_id,
+            KbSource.external_source_id == UUID(str(external_source_id)),
+        ]
+        if project_id:
+            conditions.append(KbSource.project_id == UUID(str(project_id)))
+            
+        stmt = select(KbSource).where(*conditions)
+        existing = (await self.session.execute(stmt)).scalar_one_or_none()
+        if existing:
+            return SourceRecord.model_validate(existing)
+        return None
+
+    async def delete_project(self, tenant_id: str, project_id: str) -> bool:
+        stmt = delete(KbSource).where(
+            KbSource.tenant_id == tenant_id,
+            KbSource.project_id == UUID(str(project_id)),
+        )
+        result = await self.session.execute(stmt)
+        await self.session.commit()
+        return result.rowcount > 0
+
     async def create_run(self, tenant_id: str, project_id: str, source_id: str) -> IngestionRunRecord:
         run = KbIngestionRun(
             id=uuid4(),
@@ -184,6 +224,26 @@ class SqlEvidenceRepository:
     async def get_passage(self, passage_id: str) -> PassageRecord | None:
         passage = await self.session.get(KbPassage, UUID(str(passage_id)))
         return PassageRecord.model_validate(passage) if passage else None
+
+    async def get_surrounding_passages(
+        self, passage_id: str, before: int = 1, after: int = 1
+    ) -> list[PassageRecord]:
+        passage = await self.session.get(KbPassage, UUID(str(passage_id)))
+        if not passage:
+            return []
+
+        stmt = (
+            select(KbPassage)
+            .where(
+                KbPassage.source_id == passage.source_id,
+                KbPassage.order >= passage.order - before,
+                KbPassage.order <= passage.order + after,
+                KbPassage.id != passage.id,
+            )
+            .order_by(KbPassage.order)
+        )
+        result = await self.session.execute(stmt)
+        return [PassageRecord.model_validate(p) for p in result.scalars().all()]
 
     async def find_weak_passages(
         self,
@@ -328,6 +388,7 @@ class SqlEvidenceRepository:
             target.status = CurationStatus.DEPRECATED.value  # type: ignore
         elif action_type in {"reject_source", "reject_passage"}:
             target.status = CurationStatus.REJECTED.value  # type: ignore
+            target.retrieval_enabled = False  # type: ignore
         elif action_type in {"set_source_retrieval_enabled", "set_passage_retrieval_enabled"}:
             target.retrieval_enabled = bool(action.get("enabled"))  # type: ignore
         elif action_type == "add_quality_warning":

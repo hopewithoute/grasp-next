@@ -35,6 +35,10 @@ async def list_passages(
     _: None = Depends(verify_api_key),
     repository: SqlEvidenceRepository = Depends(get_repository),
 ):
+    # TODO(Performance): Currently we fetch up to 1000 passages and let the client-side
+    # handle search, sorting, filtering, and pagination for a snappy UX.
+    # If a single source grows to have massive amounts of passages (>10k), 
+    # we should move filtering (status, text search) and sorting logic to the database level here.
     return await repository.list_source_passages(source_id, skip=skip, limit=limit)
 
 
@@ -48,3 +52,20 @@ async def inspect_passage(
     if not passage:
         raise HTTPException(status_code=404, detail="Passage not found")
     return passage
+
+
+@router.get("/passages/{passage_id}/surrounding", response_model=list[PassageRecord])
+async def get_surrounding_passages(
+    passage_id: str,
+    before: int = 1,
+    after: int = 1,
+    _: None = Depends(verify_api_key),
+    repository: SqlEvidenceRepository = Depends(get_repository),
+):
+    """Fetch the surrounding N passages before and after the given passage for expanded context."""
+    if before < 0 or after < 0:
+        raise HTTPException(status_code=400, detail="before and after must be >= 0")
+    if before > 10 or after > 10:
+        raise HTTPException(status_code=400, detail="Maximum surrounding window is 10")
+        
+    return await repository.get_surrounding_passages(passage_id, before=before, after=after)
