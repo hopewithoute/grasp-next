@@ -81,6 +81,8 @@ export function EvidenceExplorerPane({
           if (current && result.passages.some((passage) => passage.id === current)) return current;
           return result.passages[0]?.id ?? null;
         });
+      } catch {
+        setPassagesResult({ configured: false, error: 'Failed to load passages.', passages: [] });
       } finally {
         setIsLoadingPassages(false);
       }
@@ -93,6 +95,10 @@ export function EvidenceExplorerPane({
       void loadPassages(selectedSourceId);
     }
   }, [loadPassages, selectedSourceId]);
+
+  useEffect(() => {
+    setCurationError(null);
+  }, [selectedPassageId]);
 
   const sources = sourcesResult?.configured ? sourcesResult.sources : [];
   const passages = passagesResult?.configured ? passagesResult.passages : [];
