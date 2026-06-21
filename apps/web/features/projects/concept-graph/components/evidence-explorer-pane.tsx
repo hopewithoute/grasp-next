@@ -47,6 +47,7 @@ export function EvidenceExplorerPane({
   const [isLoadingSources, setIsLoadingSources] = useState(true);
   const [isLoadingPassages, setIsLoadingPassages] = useState(false);
   const [isApplyingCuration, setIsApplyingCuration] = useState(false);
+  const [curationError, setCurationError] = useState<string | null>(null);
   const [isRetrieving, setIsRetrieving] = useState(false);
 
   const loadSources = useCallback(async () => {
@@ -58,6 +59,8 @@ export function EvidenceExplorerPane({
         setPassagesResult(null);
       }
       setSelectedSourceId((current) => current ?? firstSourceId ?? null);
+    } catch {
+      setSourcesResult({ configured: false, error: 'Failed to load sources.', sources: [] });
     } finally {
       setIsLoadingSources(false);
     }
@@ -137,6 +140,7 @@ export function EvidenceExplorerPane({
       if (!selectedPassage || !selectedSourceId) return;
 
       setIsApplyingCuration(true);
+      setCurationError(null);
       try {
         await applyEvidenceKbCurationAction({
           projectId,
@@ -156,6 +160,8 @@ export function EvidenceExplorerPane({
         });
         await loadPassages(selectedSourceId);
         setCurrentPage(1);
+      } catch (error) {
+        setCurationError(error instanceof Error ? error.message : 'Curation action failed.');
       } finally {
         setIsApplyingCuration(false);
       }
@@ -288,6 +294,7 @@ export function EvidenceExplorerPane({
           </div>
 
           <PassageInspector
+            curationError={curationError}
             isApplying={isApplyingCuration}
             onApplyCuration={handleApplyPassageCuration}
             passage={selectedPassage}
@@ -626,10 +633,12 @@ function PassageList({
 }
 
 function PassageInspector({
+  curationError,
   isApplying,
   onApplyCuration,
   passage,
 }: {
+  curationError: string | null;
   isApplying: boolean;
   onApplyCuration: (action: 'certify' | 'clear_warnings' | 'reject' | 'toggle_retrieval') => void;
   passage: EvidenceKbPassage | null;
@@ -687,6 +696,12 @@ function PassageInspector({
       {passage.quality_warnings.length ? (
         <div className="border-status-warning-border bg-status-warning-surface text-status-warning-foreground mb-4 border p-3 font-mono text-[0.62rem] tracking-widest uppercase">
           {passage.quality_warnings.join(', ')}
+        </div>
+      ) : null}
+
+      {curationError ? (
+        <div className="border-destructive/40 bg-destructive/10 text-destructive mb-4 border p-3 font-mono text-[0.62rem] tracking-widest uppercase">
+          {curationError}
         </div>
       ) : null}
 
