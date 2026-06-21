@@ -3,7 +3,7 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ReactFlowProvider } from '@xyflow/react';
-import { FileText, LayoutGrid, Maximize, Minimize, Network } from 'lucide-react';
+import { Database, FileText, Maximize, Minimize, Network, Wand2 } from 'lucide-react';
 import type { ProjectSourceRecord } from '@grasp/domain';
 import { consumeUIMessageChunks } from '@/lib/ui-message-stream';
 import { cn } from '@/lib/utils';
@@ -15,19 +15,11 @@ import { useConceptGraphState } from '../hooks/use-concept-graph-state';
 import { PendingProposalsContext } from '../hooks/use-pending-proposals-context';
 import { type ChatItem, type ConceptRow, type RelationshipRow } from '../types';
 import { ChatPane } from './chat-pane';
-import { ConceptDataGridPane } from './concept-data-grid-pane';
 import { EvidenceExplorerPane } from './evidence-explorer-pane';
 import { GraphCanvasPane } from './graph-canvas-pane';
 import { LibraryPane } from './library-pane';
 
-function getWorkspaceGridColumns(inventoryCollapsed: boolean, refinementCollapsed: boolean) {
-  if (inventoryCollapsed && refinementCollapsed) return 'lg:grid-cols-[4rem_minmax(0,1fr)_4rem]';
-  if (inventoryCollapsed && !refinementCollapsed)
-    return 'lg:grid-cols-[4rem_minmax(0,1fr)_24rem] xl:grid-cols-[4rem_minmax(0,1fr)_28rem]';
-  if (!inventoryCollapsed && refinementCollapsed)
-    return 'lg:grid-cols-[22rem_minmax(0,1fr)_4rem] xl:grid-cols-[26rem_minmax(0,1fr)_4rem]';
-  return 'lg:grid-cols-[22rem_minmax(0,1fr)_24rem] xl:grid-cols-[26rem_minmax(0,1fr)_28rem]';
-}
+
 
 function getViewToggleButtonStyles(isActive: boolean) {
   return cn(
@@ -65,8 +57,6 @@ const ConceptGraphEditor = ({
     setPendingSelectedId,
     chatContextConceptIds,
     setChatContextConceptIds,
-    isInventoryCollapsed,
-    setIsInventoryCollapsed,
     isRefinementCollapsed,
     setIsRefinementCollapsed,
     hoveredChatConceptId,
@@ -78,6 +68,8 @@ const ConceptGraphEditor = ({
     isFullscreen,
     setIsFullscreen,
   } = useConceptGraphState(concepts);
+
+  const [selectedSourceId, setSelectedSourceId] = useState<string | null>(null);
 
   const items = useMemo<ChatItem[]>(
     () => [
@@ -135,9 +127,6 @@ const ConceptGraphEditor = ({
   );
 
   const isRunning = false;
-  const handleInventoryCollapseToggle = useCallback(() => {
-    setIsInventoryCollapsed((current: boolean) => !current);
-  }, [setIsInventoryCollapsed]);
   const handleRefinementCollapseToggle = useCallback(() => {
     setIsRefinementCollapsed((current: boolean) => !current);
   }, [setIsRefinementCollapsed]);
@@ -221,24 +210,12 @@ const ConceptGraphEditor = ({
       <section
         aria-label="Concept graph editor"
         className={cn(
-          'bg-background/50 grid overflow-hidden shadow-[0_0_30px_rgba(230,92,0,0.05)] transition-all duration-300',
+          'bg-background/50 flex overflow-hidden shadow-[0_0_30px_rgba(230,92,0,0.05)] transition-all duration-300',
           isFullscreen
             ? 'bg-background fixed inset-0 z-[100] !m-0 h-[100dvh] min-h-[100dvh] w-[100dvw] !rounded-none border-none'
-            : 'border-brand-accent/30 h-[75vh] min-h-[600px] w-full border lg:min-h-0',
-          getWorkspaceGridColumns(isInventoryCollapsed, isRefinementCollapsed)
+            : 'border-brand-accent/30 h-[75vh] min-h-[600px] w-full border lg:min-h-0'
         )}
       >
-        <LibraryPane
-          projectId={projectId}
-          collapsed={isInventoryCollapsed}
-          feed={ingestionFeed}
-          isActivityOpen={isActivityOpen}
-          isRunning={isIngestionRunning}
-          onCollapseToggle={handleInventoryCollapseToggle}
-          onIngestionTrigger={handleIngestionTrigger}
-          onActivityOpenChange={setIsActivityOpen}
-          sources={sources}
-        />
 
         {/* View Toggle defined once to pass into pane headers */}
         {(() => {
@@ -246,10 +223,10 @@ const ConceptGraphEditor = ({
             <div className="ml-2 flex border p-0.5 shadow-sm">
               <button
                 onClick={() => setViewMode('evidence')}
-                title="Evidence View"
+                title="Knowledge Base"
                 className={getViewToggleButtonStyles(viewMode === 'evidence')}
               >
-                <FileText className="size-3" />[ EVIDENCE ]
+                <Database className="size-3" />[ KNOWLEDGE_BASE ]
               </button>
               <button
                 onClick={() => setViewMode('graph')}
@@ -259,11 +236,11 @@ const ConceptGraphEditor = ({
                 <Network className="size-3" />[ GRAPH ]
               </button>
               <button
-                onClick={() => setViewMode('list')}
-                title="List View"
-                className={getViewToggleButtonStyles(viewMode === 'list')}
+                onClick={() => setViewMode('refinement')}
+                title="Refinement"
+                className={getViewToggleButtonStyles(viewMode === 'refinement')}
               >
-                <LayoutGrid className="size-3" />[ TABLE ]
+                <Wand2 className="size-3" />[ REFINEMENT ]
               </button>
               <div className="bg-border/40 mx-1 my-1 w-px" />
               <button
@@ -301,14 +278,34 @@ const ConceptGraphEditor = ({
                   viewToggle={viewToggleNode}
                 />
               ) : viewMode === 'evidence' ? (
-                <EvidenceExplorerPane projectId={projectId} viewToggle={viewToggleNode} />
+                <div className="grid min-h-0 flex-1 grid-cols-[22rem_minmax(0,1fr)] xl:grid-cols-[26rem_minmax(0,1fr)]">
+                  <LibraryPane
+                    projectId={projectId}
+                    feed={ingestionFeed}
+                    isActivityOpen={isActivityOpen}
+                    isRunning={isIngestionRunning}
+                    onIngestionTrigger={handleIngestionTrigger}
+                    onActivityOpenChange={setIsActivityOpen}
+                    sources={sources}
+                    selectedSourceId={selectedSourceId}
+                    onSelectSource={setSelectedSourceId}
+                  />
+                  <EvidenceExplorerPane 
+                    projectId={projectId} 
+                    viewToggle={viewToggleNode}
+                    externalSelectedSourceId={selectedSourceId}
+                    onSelectSource={setSelectedSourceId}
+                  />
+                </div>
               ) : (
-                <ConceptDataGridPane
+                <ChatPane
+                  key={projectId}
+                  items={items}
+                  onIngestionTrigger={handleIngestionTrigger}
                   projectId={projectId}
-                  concepts={concepts}
-                  relationships={relationships}
-                  onSelectConcept={handleSelectConcept}
-                  selectedConceptId={selectedConcept?.id ?? null}
+                  chatContextConcepts={chatContextConcepts}
+                  onRemoveChatContext={handleRemoveChatContext}
+                  onHoverChatContext={setHoveredChatConceptId}
                   viewToggle={viewToggleNode}
                 />
               )}
@@ -316,17 +313,6 @@ const ConceptGraphEditor = ({
           );
         })()}
 
-        <ChatPane
-          key={projectId}
-          collapsed={isRefinementCollapsed}
-          items={items}
-          onCollapseToggle={handleRefinementCollapseToggle}
-          onIngestionTrigger={handleIngestionTrigger}
-          projectId={projectId}
-          chatContextConcepts={chatContextConcepts}
-          onRemoveChatContext={handleRemoveChatContext}
-          onHoverChatContext={setHoveredChatConceptId}
-        />
       </section>
     </PendingProposalsContext.Provider>
   );
