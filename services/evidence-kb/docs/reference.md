@@ -445,6 +445,14 @@ If the `API_KEY` setting is configured, incoming requests must include the API k
   ```
 - **Error Response**: HTTP `404 Not Found` if `passage_id` does not exist.
 
+#### Get Surrounding Passages
+
+- **Path**: `GET /v1/passages/{passage_id}/surrounding`
+- **Query Parameters**:
+  - `before` (`int`, Optional, default `1`): Number of preceding passages to retrieve. Maximum is 10.
+  - `after` (`int`, Optional, default `1`): Number of succeeding passages to retrieve. Maximum is 10.
+- **Response Schema**: `list[PassageRecord]`. Returns passages that occur sequentially before and after the given passage, within the same source document.
+
 #### Find Weak Passages
 
 - **Path**: `GET /v1/passages/weak`

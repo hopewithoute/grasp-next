@@ -125,6 +125,7 @@ Detailed endpoint documentation, full schemas, and constraints can be read in th
 - `GET /v1/projects/{project_id}/sources/stale`: Retrieve sources flagged as needing review (e.g. non-certified, warnings present).
 - `GET /v1/sources/{source_id}/passages`: Retrieve all chunks/passages associated with a specific source.
 - `GET /v1/passages/{passage_id}`: Inspect a single passage record.
+- `GET /v1/passages/{passage_id}/surrounding`: Retrieve the surrounding context (preceding and succeeding passages) around a specific passage chunk.
 - `GET /v1/passages/weak`: Retrieve passages flagged with quality warnings or low scores.
 
 ### Curation & Export
