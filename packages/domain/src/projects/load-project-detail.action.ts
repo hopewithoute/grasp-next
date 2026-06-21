@@ -1,9 +1,5 @@
 import type { ConceptDifficultyDto } from '../concepts/concept.dto';
-import type {
-  IngestionRunRecord,
-  IngestionRunRepository,
-  KnowledgebaseRepository,
-} from '../knowledgebase';
+import type { IngestionRunRecord, IngestionRunRepository } from '../knowledgebase';
 import type { ProjectSourceRecord, ProjectSourceRepository } from '../project-sources';
 import { ProjectNotFoundError } from './project.errors';
 import type { ProjectRecord, ProjectRepository } from './project.types';
@@ -15,7 +11,6 @@ export type LoadProjectDetailInput = {
 
 export type LoadProjectDetailDeps = {
   ingestionRunRepository?: IngestionRunRepository;
-  knowledgebaseRepository?: KnowledgebaseRepository;
   projectRepository: ProjectRepository;
   projectSourceRepository: ProjectSourceRepository;
 };
@@ -67,22 +62,8 @@ export async function loadProjectDetail(
     deps.ingestionRunRepository?.findLatestByProject(project.id) ?? Promise.resolve(null),
     deps.projectSourceRepository.listByProject(project.id),
   ]);
-  const hasUsableSource = sources.some((source) => source.content?.trim());
-  const graphIsCurrentForSources =
-    hasUsableSource && isIngestionCurrentForSources(latestIngestionRun, sources);
 
-  const relationalReadModel = deps.knowledgebaseRepository
-    ? graphIsCurrentForSources
-      ? await deps.knowledgebaseRepository.findCurrentGraphByProject(project.id)
-      : null
-    : null;
-
-  const conceptReadModel = relationalReadModel
-    ? {
-        ...relationalReadModel,
-        source: 'relational_projection' as const,
-      }
-    : emptyKnowledgebaseReadModel();
+  const conceptReadModel = emptyKnowledgebaseReadModel();
 
   return {
     project,
@@ -92,26 +73,6 @@ export async function loadProjectDetail(
     relationships: conceptReadModel.relationships,
     sources,
   };
-}
-
-function isIngestionCurrentForSources(
-  latestIngestionRun: IngestionRunRecord | null,
-  sources: ProjectSourceRecord[]
-) {
-  if (latestIngestionRun?.status !== 'completed') {
-    return false;
-  }
-
-  const completedAt = latestIngestionRun.completedAt ?? latestIngestionRun.updatedAt;
-  const latestSourceUpdatedAt = sources.reduce<Date | null>((latest, source) => {
-    if (!source.content?.trim()) {
-      return latest;
-    }
-
-    return !latest || source.updatedAt > latest ? source.updatedAt : latest;
-  }, null);
-
-  return latestSourceUpdatedAt ? completedAt >= latestSourceUpdatedAt : false;
 }
 
 function emptyKnowledgebaseReadModel(): KnowledgebaseGraphReadModel {

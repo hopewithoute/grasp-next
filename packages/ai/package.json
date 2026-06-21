@@ -5,7 +5,6 @@
   "exports": {
     ".": "./src/index.ts",
     "./embeddings": "./src/utils/embeddings.ts",
-    "./legacy-ingestion": "./src/legacy-ingestion/index.ts",
     "./refinement": "./src/refinement/index.ts",
     "./evals": "./src/evals/index.ts",
     "./mastra": "./src/mastra/index.ts"
@@ -16,7 +15,6 @@
     "lint": "eslint . --max-warnings=0",
     "mastra:build": "mastra build",
     "test": "node --env-file=../../.env ./node_modules/vitest/vitest.mjs run",
-    "test:legacy-ingestion:real": "RUN_LEGACY_INGESTION_REAL_TESTS=true node --env-file=../../.env ./node_modules/vitest/vitest.mjs run src/legacy-ingestion/extract-chunk.integration.test.ts",
     "typecheck": "tsgo --noEmit"
   },
   "devDependencies": {
@@ -31,7 +29,6 @@
   },
   "dependencies": {
     "@grasp/domain": "workspace:*",
-    "@grasp/lazy-graph-rag-client": "workspace:*",
     "@mastra/core": "^1.33.0",
     "@mastra/evals": "^1.2.3",
     "@mastra/memory": "1.19.0",

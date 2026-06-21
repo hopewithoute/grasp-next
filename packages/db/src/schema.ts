@@ -1,24 +1,15 @@
-import { sql, SQL } from 'drizzle-orm';
 import {
   boolean,
-  customType,
   index,
   integer,
   jsonb,
   pgEnum,
   pgTable,
-  primaryKey,
-  real,
   text,
   timestamp,
-  unique,
   uniqueIndex,
   uuid,
-  varchar,
-  vector,
 } from 'drizzle-orm/pg-core';
-
-
 import {
   ARTIFACT_REVIEW_RUN_STATUS,
   ARTIFACT_REVIEW_RUN_STATUSES,
@@ -128,32 +119,6 @@ export const projectSources = pgTable('project_sources', {
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const sourcePassages = pgTable(
-  'source_passages',
-  {
-    id: uuid('id').primaryKey().defaultRandom(),
-    projectId: uuid('project_id')
-      .notNull()
-      .references(() => projects.id, { onDelete: 'cascade' }),
-    sourceId: uuid('source_id')
-      .notNull()
-      .references(() => projectSources.id, { onDelete: 'cascade' }),
-    blockId: text('block_id').notNull(),
-    kind: text('kind').notNull(),
-    text: text('text').notNull(),
-    location: jsonb('location').notNull(),
-    metadata: jsonb('metadata'),
-    order: integer('order').notNull(),
-    embedding: vector('embedding', { dimensions: 1536 }),
-    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
-  },
-  (table) => [
-    index('source_passages_project_idx').on(table.projectId),
-    uniqueIndex('source_passages_source_block_unique').on(table.sourceId, table.blockId),
-  ]
-);
-
 export const ingestionRuns = pgTable(
   'ingestion_runs',
   {
@@ -256,7 +221,6 @@ export const schema = {
   projects,
   projectSources,
   session,
-  sourcePassages,
   user,
   verification,
 };
@@ -275,5 +239,3 @@ export type Project = typeof projects.$inferSelect;
 export type NewProject = typeof projects.$inferInsert;
 export type ProjectSource = typeof projectSources.$inferSelect;
 export type NewProjectSource = typeof projectSources.$inferInsert;
-export type SourcePassage = typeof sourcePassages.$inferSelect;
-export type NewSourcePassage = typeof sourcePassages.$inferInsert;

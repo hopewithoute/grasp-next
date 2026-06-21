@@ -7,7 +7,6 @@ import {
   type LoadProjectDetailResult,
 } from '@grasp/domain';
 import { getActor } from '@/server/actor';
-import { serverEnv } from '@/server/env';
 import { createProjectDeps } from '@/server/project-deps';
 import { ConceptGraphWorkspace } from '../concept-graph/components/concept-graph-workspace';
 import type { ConceptRow, RelationshipRow } from '../concept-graph/types';
@@ -40,7 +39,6 @@ export async function ProjectDetailPage({ currentStage, projectId }: ProjectDeta
       { projectId, ownerId: actor.id },
       {
         ingestionRunRepository: deps.ingestionRunRepository,
-        knowledgebaseRepository: deps.knowledgebaseRepository,
         projectRepository: deps.projectRepository,
         projectSourceRepository: deps.projectSourceRepository,
       }
@@ -56,28 +54,6 @@ export async function ProjectDetailPage({ currentStage, projectId }: ProjectDeta
 
   if (isNotFound || !detail) {
     notFound();
-  }
-
-  if (serverEnv.LGS_ENABLED === 'true') {
-    if (!deps.lgsService) {
-      throw new Error('LGS service is not configured');
-    }
-
-    const lgsGraph = await deps.lgsService.getLocalGraphForOwner({
-      ownerId: actor.id,
-      projectId,
-    });
-
-    detail = {
-      ...detail,
-      concepts: lgsGraph.concepts,
-      knowledgebaseGraph: lgsGraph,
-      relationships: lgsGraph.relationships,
-    };
-  } else if (serverEnv.LEGACY_KNOWLEDGEBASE_READS_ENABLED !== 'true') {
-    throw new Error(
-      'LGS graph reads are disabled. Set LEGACY_KNOWLEDGEBASE_READS_ENABLED=true to use legacy graph reads.'
-    );
   }
 
   const stage = resolveStage(currentStage);

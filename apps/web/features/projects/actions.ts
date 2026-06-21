@@ -7,7 +7,6 @@ import {
   addProjectSourceDto,
   addProjectSourceFromUrl,
   addProjectSourceFromUrlDto,
-  applyGraphProposals,
   canCreateProject,
   createProject,
   createProjectDto,
@@ -15,18 +14,20 @@ import {
   deleteProjectDto,
   deleteProjectSource,
   deleteProjectSourceDto,
-  loadConceptEvidence,
   PROJECT_STATUS,
   safeParse,
   updateProjectDetails,
   updateProjectDetailsDto,
   updateProjectSource,
   updateProjectSourceDto,
-  type GraphProposalAction,
-  type KnowledgebaseGraphConceptReadModel,
 } from '@grasp/domain';
 import { getActor as auth } from '@/server/actor';
-import { serverEnv } from '@/server/env';
+import type {
+  EvidenceKbCurationAction,
+  EvidenceKbPassage,
+  EvidenceKbRetrieveResponse,
+  EvidenceKbSource,
+} from '@/server/evidence-kb-service';
 import { createProjectDeps } from '@/server/project-deps';
 
 // --- Form state types ---
@@ -99,7 +100,10 @@ export async function deleteProjectFormAction(
 
   try {
     const deps = createProjectDeps();
-    const project = await deps.projectRepository.findByIdForOwner(parsed.output.projectId, actor.id);
+    const project = await deps.projectRepository.findByIdForOwner(
+      parsed.output.projectId,
+      actor.id
+    );
 
     if (!project) {
       return { error: 'Unauthorized.' };
@@ -107,17 +111,6 @@ export async function deleteProjectFormAction(
 
     if (project.status === PROJECT_STATUS.PROCESSING) {
       return { error: 'Project cannot be deleted while processing.' };
-    }
-
-    if (serverEnv.LGS_ENABLED === 'true') {
-      if (!deps.lgsService) {
-        return { error: 'LGS service is not configured.' };
-      }
-
-      await deps.lgsService.deleteCollectionForOwner({
-        ownerId: actor.id,
-        projectId: project.id,
-      });
     }
 
     await deleteProject(parsed.output, deps, actor);
@@ -318,18 +311,6 @@ export async function deleteProjectSourceFormAction(
       return { error: 'Unauthorized.', success: false };
     }
 
-    if (serverEnv.LGS_ENABLED === 'true') {
-      if (!deps.lgsService) {
-        return { error: 'LGS service is not configured.', success: false };
-      }
-
-      await deps.lgsService.deleteSourceForOwner({
-        ownerId: actor.id,
-        projectId: existingSource.projectId,
-        sourceId: existingSource.id,
-      });
-    }
-
     const source = await deleteProjectSource(parsed.output, deps, actor);
 
     revalidatePath(`/dashboard/projects/${source.projectId}`);
@@ -343,72 +324,19 @@ export async function deleteProjectSourceFormAction(
   }
 }
 
-// --- Evidence query actions ---
-
-export async function getConceptEvidence(projectId: string, conceptId: string) {
-  const actor = await auth();
-
-  if (!actor) {
-    redirect('/sign-in');
-  }
-
-  const deps = createProjectDeps();
-
-  try {
-    const project = await deps.projectRepository.findByIdForOwner(projectId, actor.id);
-
-    if (!project) {
-      throw new Error('Unauthorized');
-    }
-
-    const evidence = await loadConceptEvidence(
-      { conceptId, projectId, ownerId: actor.id },
-      { knowledgebaseRepository: deps.knowledgebaseRepository }
-    );
-    return evidence;
-  } catch (error) {
-    console.error('Failed to load concept evidence', error);
-    return [];
-  }
-}
-
-// --- Graph proposal action ---
-
-export async function executeGraphProposalAction(
-  projectId: string,
-  proposalActions: GraphProposalAction[]
-) {
-  const actor = await auth();
-  if (!actor) throw new Error('Unauthorized');
-
-  const deps = createProjectDeps();
-  const project = await deps.projectRepository.findByIdForOwner(projectId, actor.id);
-
-  if (!project) {
-    throw new Error('Unauthorized');
-  }
-
-  const result = await applyGraphProposals(
-    { projectId, actions: proposalActions },
-    { knowledgebaseRepository: deps.knowledgebaseRepository }
-  );
-
-  revalidatePath(`/dashboard/projects/${projectId}`);
-
-  return result;
-}
-
 // --- Knowledgebase search ---
 
-export type ConceptSearchPaginationParams = {
-  projectId: string;
-  query?: string;
-  difficulty?: string;
-  limit?: number;
-  offset?: number;
-};
+export type EvidenceKbSourcesResult =
+  | { configured: false; error: string; sources: [] }
+  | { configured: true; error: null; sources: EvidenceKbSource[] };
 
-export async function searchKnowledgebaseConceptsAction(params: ConceptSearchPaginationParams) {
+export type EvidenceKbPassagesResult =
+  | { configured: false; error: string; passages: [] }
+  | { configured: true; error: null; passages: EvidenceKbPassage[] };
+
+export async function listEvidenceKbSourcesAction(
+  projectId: string
+): Promise<EvidenceKbSourcesResult> {
   const actor = await auth();
 
   if (!actor) {
@@ -416,54 +344,219 @@ export async function searchKnowledgebaseConceptsAction(params: ConceptSearchPag
   }
 
   const deps = createProjectDeps();
-  const project = await deps.projectRepository.findByIdForOwner(params.projectId, actor.id);
 
-  if (!project) {
-    throw new Error('Unauthorized');
-  }
-
-  if (serverEnv.LGS_ENABLED === 'true') {
-    if (!deps.lgsService) {
-      throw new Error('LGS service is not configured');
-    }
-
-    const graph = await deps.lgsService.getLocalGraphForOwner({
-      limit: 500,
-      ownerId: actor.id,
-      projectId: params.projectId,
-    });
-    const normalizedQuery = params.query?.trim().toLowerCase();
-    const filteredConcepts = graph.concepts.filter((concept: KnowledgebaseGraphConceptReadModel) => {
-      const matchesQuery = normalizedQuery
-        ? concept.name.toLowerCase().includes(normalizedQuery) ||
-          concept.definition.toLowerCase().includes(normalizedQuery)
-        : true;
-      const matchesDifficulty = params.difficulty
-        ? concept.difficulty === params.difficulty
-        : true;
-
-      return matchesQuery && matchesDifficulty;
-    });
-    const offset = params.offset ?? 0;
-    const limit = params.limit ?? 20;
-
+  if (!deps.evidenceKbService) {
     return {
-      concepts: filteredConcepts.slice(offset, offset + limit),
-      totalCount: filteredConcepts.length,
+      configured: false,
+      error: 'Evidence KB service is not configured.',
+      sources: [],
     };
   }
 
-  if (serverEnv.LEGACY_KNOWLEDGEBASE_READS_ENABLED !== 'true') {
-    throw new Error(
-      'LGS concept search is disabled. Set LEGACY_KNOWLEDGEBASE_READS_ENABLED=true to use legacy concept search.'
-    );
+  const sources = await deps.evidenceKbService.listSourcesForOwner({
+    ownerId: actor.id,
+    projectId,
+  });
+
+  return { configured: true, error: null, sources };
+}
+
+export async function listEvidenceKbPassagesAction(input: {
+  projectId: string;
+  sourceId: string;
+}): Promise<EvidenceKbPassagesResult> {
+  const actor = await auth();
+
+  if (!actor) {
+    throw new Error('Unauthorized');
   }
 
-  return deps.knowledgebaseRepository.searchConceptsWithPagination({
-    projectId: params.projectId,
-    query: params.query,
-    difficulty: params.difficulty,
-    limit: params.limit ?? 20,
-    offset: params.offset ?? 0,
+  const deps = createProjectDeps();
+
+  if (!deps.evidenceKbService) {
+    return {
+      configured: false,
+      error: 'Evidence KB service is not configured.',
+      passages: [],
+    };
+  }
+
+  const passages = await deps.evidenceKbService.listPassagesForOwner({
+    ownerId: actor.id,
+    projectId: input.projectId,
+    sourceId: input.sourceId,
   });
+
+  return { configured: true, error: null, passages };
+}
+
+export type EvidenceKbCurationResult =
+  | { configured: false; error: string; results: [] }
+  | {
+      configured: true;
+      error: null;
+      results: Array<{ action: unknown; error?: string; ok: boolean }>;
+    };
+
+export async function applyEvidenceKbCurationAction(input: {
+  actions: EvidenceKbCurationAction[];
+  projectId: string;
+}): Promise<EvidenceKbCurationResult> {
+  const actor = await auth();
+
+  if (!actor) {
+    throw new Error('Unauthorized');
+  }
+
+  const deps = createProjectDeps();
+
+  if (!deps.evidenceKbService) {
+    return {
+      configured: false,
+      error: 'Evidence KB service is not configured.',
+      results: [],
+    };
+  }
+
+  const result = await deps.evidenceKbService.applyCurationForOwner({
+    actions: input.actions,
+    ownerId: actor.id,
+    projectId: input.projectId,
+  });
+
+  revalidatePath(`/dashboard/projects/${input.projectId}`);
+
+  return { configured: true, error: null, results: result.results };
+}
+
+export type EvidenceKbBulkCurationResult =
+  | { configured: false; error: string; results: null }
+  | {
+      configured: true;
+      error: null;
+      results: {
+        total: number;
+        succeeded: number;
+        failed: number;
+        results: Array<{ action: unknown; error?: string; ok: boolean }>;
+      };
+    };
+
+export async function bulkEvidenceKbCurationAction(input: {
+  actions: EvidenceKbCurationAction[];
+  projectId: string;
+}): Promise<EvidenceKbBulkCurationResult> {
+  const actor = await auth();
+
+  if (!actor) {
+    throw new Error('Unauthorized');
+  }
+
+  const deps = createProjectDeps();
+
+  if (!deps.evidenceKbService) {
+    return {
+      configured: false,
+      error: 'Evidence KB service is not configured.',
+      results: null,
+    };
+  }
+
+  const result = await deps.evidenceKbService.bulkCurationForOwner({
+    actions: input.actions,
+    ownerId: actor.id,
+    projectId: input.projectId,
+  });
+
+  revalidatePath(`/dashboard/projects/${input.projectId}`);
+
+  return { configured: true, error: null, results: result };
+}
+
+export type EvidenceKbExportResult =
+  | { configured: false; error: string; passages: null }
+  | {
+      configured: true;
+      error: null;
+      passages: Array<{
+        id: string;
+        source_id: string;
+        text: string;
+        status: string;
+        quality_score: number;
+        quality_warnings: string[];
+        retrieval_enabled: boolean;
+        token_count: number;
+      }>;
+      total: number;
+    };
+
+export async function exportEvidenceKbPassagesAction(input: {
+  projectId: string;
+  sourceId?: string;
+  status?: string;
+}): Promise<EvidenceKbExportResult> {
+  const actor = await auth();
+
+  if (!actor) {
+    throw new Error('Unauthorized');
+  }
+
+  const deps = createProjectDeps();
+
+  if (!deps.evidenceKbService) {
+    return {
+      configured: false,
+      error: 'Evidence KB service is not configured.',
+      passages: null,
+    };
+  }
+
+  const result = await deps.evidenceKbService.exportPassagesForOwner({
+    ownerId: actor.id,
+    projectId: input.projectId,
+    sourceId: input.sourceId,
+    status: input.status,
+  });
+
+  return { configured: true, error: null, passages: result.passages, total: result.total };
+}
+
+export type EvidenceKbRetrieveResult =
+  | { configured: false; error: string; retrieval: null }
+  | { configured: true; error: null; retrieval: EvidenceKbRetrieveResponse };
+
+export async function retrieveEvidenceKbAction(input: {
+  filters?: Record<string, unknown>;
+  mode?: 'hybrid' | 'bm25_only' | 'vector_only';
+  projectId: string;
+  query: string;
+  topK?: number;
+}): Promise<EvidenceKbRetrieveResult> {
+  const actor = await auth();
+
+  if (!actor) {
+    throw new Error('Unauthorized');
+  }
+
+  const deps = createProjectDeps();
+
+  if (!deps.evidenceKbService) {
+    return {
+      configured: false,
+      error: 'Evidence KB service is not configured.',
+      retrieval: null,
+    };
+  }
+
+  const retrieval = await deps.evidenceKbService.retrieveForOwner({
+    filters: input.filters,
+    mode: input.mode,
+    ownerId: actor.id,
+    projectId: input.projectId,
+    query: input.query,
+    topK: input.topK,
+  });
+
+  return { configured: true, error: null, retrieval };
 }

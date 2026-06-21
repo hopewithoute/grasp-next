@@ -65,6 +65,12 @@ export type IngestionStreamEvent =
       droppedRefCount: number;
     }
   | { type: 'ingestion_complete'; conceptCount: number; relationshipCount: number }
+  | {
+      type: 'evidence_ingestion_complete';
+      passageCount: number;
+      sourceStatus: 'candidate' | 'certified' | 'deprecated' | 'rejected';
+      warningCount: number;
+    }
   | { type: 'ingestion_failed'; reason: string };
 
 export type FeedItem = {
@@ -132,7 +138,7 @@ export function IngestionActivityPanel({ feed, isRunning }: IngestionActivityPan
 
       <footer className="border-border border-t p-3">
         <p className="text-foreground/50 font-mono text-[0.6rem] tracking-widest uppercase">
-          [ EDIT SOURCE CONTENT TO REFINE THE KNOWLEDGE GRAPH ]
+          [ EDIT SOURCE CONTENT TO REFINE THE KNOWLEDGEBASE ]
         </p>
       </footer>
     </section>
@@ -226,6 +232,11 @@ function FeedEvent({ event }: { event: IngestionStreamEvent }) {
       icon = <CheckCircle2 className="size-3" />;
       tone = 'success';
       text = `Done: ${event.conceptCount} concepts, ${event.relationshipCount} relationships`;
+      break;
+    case 'evidence_ingestion_complete':
+      icon = <CheckCircle2 className="size-3" />;
+      tone = 'success';
+      text = `Done: ${event.passageCount} passages indexed${event.warningCount ? `, ${event.warningCount} warnings` : ''}`;
       break;
     case 'ingestion_failed':
       icon = <XCircle className="size-3" />;

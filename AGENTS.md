@@ -371,7 +371,12 @@ Overall average: **60-90% token reduction** on common development operations.
 
 <!-- /rtk-instructions -->
 
-## 13. TypeScript Compilation Constraints
+## Local Service Scripts (`services/evidence-kb`)
+
+For ease of running the Python FastAPI backend, a local `./run` script is available inside `services/evidence-kb`.
+You can run it to launch the server (`./run dev`), run pytest (`./run test`), run integration tests (`./run test-integration`), lint/format code (`./run lint`, `./run format`), and manage database migrations (`./run db-init`, `./run db-migrate`).
+
+## TypeScript Compilation Constraints
 
 **CRITICAL**: Do NOT use `tsc` directly in the terminal for type checking or compilation operations. Two of the last tasks crashed due to out-of-memory (OOM) errors during `tsc`.
 

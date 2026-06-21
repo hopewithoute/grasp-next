@@ -67,6 +67,12 @@ export type IngestionStreamEvent =
       droppedRefCount: number;
     }
   | { type: 'ingestion_complete'; conceptCount: number; relationshipCount: number }
+  | {
+      type: 'evidence_ingestion_complete';
+      passageCount: number;
+      sourceStatus: 'candidate' | 'certified' | 'deprecated' | 'rejected';
+      warningCount: number;
+    }
   | { type: 'ingestion_failed'; reason: string };
 
 /**

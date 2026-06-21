@@ -1,4 +1,3 @@
-import { revalidatePath } from 'next/cache';
 import { createUIMessageStream, createUIMessageStreamResponse } from 'ai';
 import { requiredString, safeParse, v } from '@grasp/domain';
 import { getActor } from '@/server/actor';

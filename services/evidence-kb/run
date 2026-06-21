@@ -1,0 +1,116 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# dependencies = [
+#     "rich>=12.0.0",
+# ]
+# ///
+
+import os
+import sys
+import subprocess
+from rich.console import Console
+from rich.panel import Panel
+from rich.table import Table
+
+console = Console()
+
+COMMANDS = {
+    "dev": {
+        "desc": "Start the development server (uvicorn)",
+        "cmd": "uv run --env-file ../../.env uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload",
+    },
+    "test": {
+        "desc": "Run pytest unit tests",
+        "cmd": "uv run pytest",
+    },
+    "test-integration": {
+        "desc": "Run pytest integration tests (requires running Postgres)",
+        "cmd": "uv run pytest tests/integration/ -v",
+    },
+    "lint": {
+        "desc": "Run ruff code quality checks",
+        "cmd": "uvx ruff check .",
+    },
+    "format": {
+        "desc": "Run ruff code formatting",
+        "cmd": "uvx ruff format .",
+    },
+    "db-init": {
+        "desc": "Initialize database schema & indexes",
+        "cmd": "uv run python -m app.storage.schema_init",
+    },
+    "db-migrate": {
+        "desc": "Apply Alembic database migrations to head",
+        "cmd": "uv run alembic upgrade head",
+    },
+}
+
+def run_cmd(name: str):
+    item = COMMANDS.get(name)
+    if not item:
+        console.print(f"[red]Unknown command: {name}[/red]")
+        sys.exit(1)
+    
+    cmd = item["cmd"]
+    console.print(Panel(f"Running: [bold green]{cmd}[/bold green]", title=f"Operation: {name}", border_style="cyan"))
+    try:
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        result = subprocess.run(cmd, shell=True, cwd=script_dir)
+        sys.exit(result.returncode)
+    except KeyboardInterrupt:
+        console.print("\n[yellow]Operation cancelled by user.[/yellow]")
+        sys.exit(130)
+
+def show_menu():
+    table = Table(title="evidence-kb Common Operations", border_style="cyan", header_style="bold magenta")
+    table.add_column("Key", justify="center", style="bold green", no_wrap=True)
+    table.add_column("Command", style="cyan")
+    table.add_column("Description", style="white")
+
+    for idx, (name, item) in enumerate(COMMANDS.items(), 1):
+        table.add_row(str(idx), name, item["desc"])
+    
+    console.print(table)
+    console.print("Type [bold yellow]q[/bold yellow] or [bold yellow]exit[/bold yellow] to quit.\n")
+
+    try:
+        choice = input("Enter choice (number or command name): ").strip().lower()
+        if choice in ["q", "quit", "exit"]:
+            console.print("[yellow]Exiting.[/yellow]")
+            return
+        
+        keys = list(COMMANDS.keys())
+        if choice.isdigit():
+            idx = int(choice) - 1
+            if 0 <= idx < len(keys):
+                run_cmd(keys[idx])
+                return
+        
+        if choice in COMMANDS:
+            run_cmd(choice)
+            return
+
+        console.print("[red]Invalid choice. Please try again.[/red]")
+        show_menu()
+    except (KeyboardInterrupt, EOFError):
+        console.print("\n[yellow]Exiting.[/yellow]")
+        sys.exit(0)
+
+def main():
+    if len(sys.argv) > 1:
+        arg = sys.argv[1]
+        if arg in ["--help", "-h"]:
+            console.print("[bold cyan]Usage:[/bold cyan]")
+            console.print("  ./run [command]      Run specific command directly")
+            console.print("  ./run                Launch interactive command selector\n")
+            console.print("[bold cyan]Available commands:[/bold cyan]")
+            for name, item in COMMANDS.items():
+                console.print(f"  [bold green]{name:<16}[/bold green] {item['desc']}")
+            sys.exit(0)
+        
+        run_cmd(arg)
+    else:
+        show_menu()
+
+if __name__ == "__main__":
+    main()

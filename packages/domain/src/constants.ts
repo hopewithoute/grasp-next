@@ -97,18 +97,6 @@ export const INGESTION_RUN_STATUSES = [
   INGESTION_RUN_STATUS.FAILED,
 ] as const;
 
-export const KNOWLEDGEBASE_VERSION_STATUS = {
-  GENERATED: 'generated',
-  APPROVED: 'approved',
-  NEEDS_REVISION: 'needs_revision',
-} as const;
-
-export const KNOWLEDGEBASE_VERSION_STATUSES = [
-  KNOWLEDGEBASE_VERSION_STATUS.GENERATED,
-  KNOWLEDGEBASE_VERSION_STATUS.APPROVED,
-  KNOWLEDGEBASE_VERSION_STATUS.NEEDS_REVISION,
-] as const;
-
 export const AUDIT_ENTITY_TYPE = {
   PROJECT: 'project',
   ARTIFACT: 'artifact',
@@ -137,7 +125,6 @@ export type ArtifactStatus = (typeof ARTIFACT_STATUSES)[number];
 export type ArtifactReviewRunStatus = (typeof ARTIFACT_REVIEW_RUN_STATUSES)[number];
 export type ExtractionMode = (typeof EXTRACTION_MODES)[number];
 export type IngestionRunStatus = (typeof INGESTION_RUN_STATUSES)[number];
-export type KnowledgebaseVersionStatus = (typeof KNOWLEDGEBASE_VERSION_STATUSES)[number];
 
 export const RELATIONSHIP_TYPE = {
   PREREQUISITE: 'prerequisite',

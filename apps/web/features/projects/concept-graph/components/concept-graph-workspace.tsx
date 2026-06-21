@@ -3,11 +3,10 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ReactFlowProvider } from '@xyflow/react';
-import { LayoutGrid, Maximize, Minimize, Network } from 'lucide-react';
+import { FileText, LayoutGrid, Maximize, Minimize, Network } from 'lucide-react';
 import type { ProjectSourceRecord } from '@grasp/domain';
 import { consumeUIMessageChunks } from '@/lib/ui-message-stream';
 import { cn } from '@/lib/utils';
-import { executeGraphProposalAction } from '../../actions';
 import {
   type FeedItem,
   type IngestionStreamEvent,
@@ -17,6 +16,7 @@ import { PendingProposalsContext } from '../hooks/use-pending-proposals-context'
 import { type ChatItem, type ConceptRow, type RelationshipRow } from '../types';
 import { ChatPane } from './chat-pane';
 import { ConceptDataGridPane } from './concept-data-grid-pane';
+import { EvidenceExplorerPane } from './evidence-explorer-pane';
 import { GraphCanvasPane } from './graph-canvas-pane';
 import { LibraryPane } from './library-pane';
 
@@ -151,21 +151,10 @@ const ConceptGraphEditor = ({
   );
 
   const handleAcceptProposal = useCallback(
-    async (proposalId: string) => {
-      const proposal = pendingProposals.find((p) => p.id === proposalId);
-      if (!proposal) return;
-
-      // Optimistically remove from state
+    (proposalId: string) => {
       setPendingProposals((current) => current.filter((p) => p.id !== proposalId));
-
-      try {
-        await executeGraphProposalAction(projectId, proposal.actions);
-      } catch (error) {
-        console.error('Failed to accept proposal', error);
-        // On error, we could add it back to state, but for MVP just log it
-      }
     },
-    [pendingProposals, projectId, setPendingProposals]
+    [setPendingProposals]
   );
 
   const handleRejectProposal = useCallback(
@@ -254,7 +243,14 @@ const ConceptGraphEditor = ({
         {/* View Toggle defined once to pass into pane headers */}
         {(() => {
           const viewToggleNode = (
-            <div className="flex border p-0.5 ml-2 shadow-sm">
+            <div className="ml-2 flex border p-0.5 shadow-sm">
+              <button
+                onClick={() => setViewMode('evidence')}
+                title="Evidence View"
+                className={getViewToggleButtonStyles(viewMode === 'evidence')}
+              >
+                <FileText className="size-3" />[ EVIDENCE ]
+              </button>
               <button
                 onClick={() => setViewMode('graph')}
                 title="Graph View"
@@ -304,6 +300,8 @@ const ConceptGraphEditor = ({
                   onRejectProposal={handleRejectProposal}
                   viewToggle={viewToggleNode}
                 />
+              ) : viewMode === 'evidence' ? (
+                <EvidenceExplorerPane projectId={projectId} viewToggle={viewToggleNode} />
               ) : (
                 <ConceptDataGridPane
                   projectId={projectId}

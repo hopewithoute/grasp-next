@@ -1,9 +1,8 @@
 'use client';
 
-import { useCallback, useEffect, useId, useRef, useState } from 'react';
+import { useId, useState } from 'react';
 import { BrainCircuit, ListFilter, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { searchKnowledgebaseConceptsAction } from '../../actions';
 import { useDebounce } from '../hooks/use-concept-graph-state';
 import { type ConceptRow, type DifficultyFilter, type RelationshipRow } from '../types';
 import { ConfidencePill, DifficultyChip, PaneHeader } from './shared-components';
@@ -46,17 +45,21 @@ function getFilterButtonStyles(value: DifficultyFilter, isSelected: boolean) {
 
 function getFilterIconStyles(value: DifficultyFilter) {
   switch (value) {
-    case 'beginner': return 'bg-status-success-foreground';
-    case 'intermediate': return 'bg-status-info-foreground';
-    case 'advanced': return 'bg-status-warning-foreground';
-    default: return 'bg-brand-accent';
+    case 'beginner':
+      return 'bg-status-success-foreground';
+    case 'intermediate':
+      return 'bg-status-info-foreground';
+    case 'advanced':
+      return 'bg-status-warning-foreground';
+    default:
+      return 'bg-brand-accent';
   }
 }
 
 export function ConceptDataGridPane({
-  projectId,
+  projectId: _projectId,
   concepts,
-  relationships,
+  relationships: _relationships,
   onSelectConcept,
   selectedConceptId,
   viewToggle,
@@ -69,93 +72,27 @@ export function ConceptDataGridPane({
   viewToggle?: React.ReactNode;
 }) {
   const searchInputId = useId();
-  const loadMoreRef = useRef<HTMLDivElement>(null);
 
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [difficultyFilter, setDifficultyFilter] = useState<DifficultyFilter>('all');
-  const [inventoryConcepts, setInventoryConcepts] = useState<ConceptRow[]>(concepts || []);
-  const [hasMore, setHasMore] = useState<boolean>(true);
-  const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false);
 
   const debouncedSearchQuery = useDebounce(searchQuery, 400);
 
-  const fetchConcepts = useCallback(
-    async (query: string, difficulty: string, offset: number, replace = false) => {
-      await Promise.resolve();
-      setIsLoadingMore(true);
-      try {
-        const result = await searchKnowledgebaseConceptsAction({
-          projectId,
-          query,
-          difficulty: difficulty === 'all' ? undefined : difficulty,
-          offset,
-          limit: 20, // using 20 for grid view instead of 5
-        });
-
-        setInventoryConcepts((prev: ConceptRow[]) => {
-          const fetchedConcepts = result.concepts as ConceptRow[];
-          if (replace) return fetchedConcepts;
-
-          const existingIds = new Set(prev.map((c: ConceptRow) => c.id));
-          const newConcepts = fetchedConcepts.filter((c: ConceptRow) => !existingIds.has(c.id));
-          return [...prev, ...newConcepts];
-        });
-        const nextLength = replace ? result.concepts.length : offset + result.concepts.length;
-        setHasMore(nextLength < result.totalCount);
-      } catch (error) {
-        console.error('Failed to fetch concepts', error);
-      } finally {
-        setIsLoadingMore(false);
+  const filteredConcepts = (concepts || []).filter((concept) => {
+    if (debouncedSearchQuery) {
+      const q = debouncedSearchQuery.toLowerCase();
+      if (
+        !concept.name.toLowerCase().includes(q) &&
+        !concept.definition.toLowerCase().includes(q)
+      ) {
+        return false;
       }
-    },
-    [projectId]
-  );
-
-  useEffect(() => {
-    const timeoutId = window.setTimeout(() => {
-      void fetchConcepts(debouncedSearchQuery, difficultyFilter, 0, true);
-    }, 0);
-
-    return () => window.clearTimeout(timeoutId);
-  }, [debouncedSearchQuery, difficultyFilter, fetchConcepts]);
-
-  const loadMoreConcepts = useCallback(() => {
-    if (!hasMore || isLoadingMore) return;
-    fetchConcepts(debouncedSearchQuery, difficultyFilter, inventoryConcepts.length, false);
-  }, [
-    hasMore,
-    isLoadingMore,
-    fetchConcepts,
-    debouncedSearchQuery,
-    difficultyFilter,
-    inventoryConcepts.length,
-  ]);
-
-  useEffect(() => {
-    if (!hasMore || isLoadingMore) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0]?.isIntersecting) {
-          loadMoreConcepts();
-        }
-      },
-      { root: null, rootMargin: '100px', threshold: 0.1 }
-    );
-
-    const currentRef = loadMoreRef.current;
-    if (currentRef) {
-      observer.observe(currentRef);
     }
-
-    return () => {
-      if (currentRef) {
-        observer.unobserve(currentRef);
-      }
-    };
-  }, [hasMore, isLoadingMore, loadMoreConcepts]);
-
-  const filteredConcepts = inventoryConcepts;
+    if (difficultyFilter !== 'all' && concept.difficulty !== difficultyFilter) {
+      return false;
+    }
+    return true;
+  });
 
   return (
     <section
@@ -202,10 +139,7 @@ export function ConceptDataGridPane({
               {value === 'all' ? (
                 <ListFilter className="size-3" strokeWidth={1} />
               ) : (
-                <span 
-                  aria-hidden 
-                  className={cn('size-1.5', getFilterIconStyles(value))} 
-                />
+                <span aria-hidden className={cn('size-1.5', getFilterIconStyles(value))} />
               )}
               [ {DIFFICULTY_FILTER_LABEL[value].toUpperCase()} ]
             </button>
@@ -267,23 +201,13 @@ export function ConceptDataGridPane({
                   </tr>
                 );
               })}
-              {filteredConcepts.length === 0 && !isLoadingMore && (
+              {filteredConcepts.length === 0 && (
                 <tr>
                   <td colSpan={4} className="text-muted-foreground px-4 py-8 text-center">
                     No concepts found in the current project matching your filters.
                   </td>
                 </tr>
               )}
-              {/* Intersection observer target for infinite scrolling */}
-              <tr>
-                <td colSpan={4} className="p-0">
-                  <div ref={loadMoreRef} className="flex h-16 items-center justify-center">
-                    {isLoadingMore ? (
-                      <span className="text-muted-foreground font-mono text-xs">Loading…</span>
-                    ) : null}
-                  </div>
-                </td>
-              </tr>
             </tbody>
           </table>
         </div>

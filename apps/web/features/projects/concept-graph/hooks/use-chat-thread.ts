@@ -3,11 +3,12 @@
 import { useCallback, useEffect, useRef, useState, type RefObject } from 'react';
 import { useRouter } from 'next/navigation';
 import { consumeUIMessageChunks } from '@/lib/ui-message-stream';
-import { addProjectSourceFromUrlFormAction, executeGraphProposalAction } from '../../actions';
+import { addProjectSourceFromUrlFormAction, applyEvidenceKbCurationAction } from '../../actions';
 import { readStoredChatMessages, writeStoredChatMessages } from '../chat-storage';
 import {
   type ChatItem,
   type ConceptRow,
+  type CurationProposalPayload,
   type ProposalPayload,
   type SourceProposalPayload,
   type StreamEvent,
@@ -18,10 +19,12 @@ export type UseChatThreadResult = {
   messages: ChatItem[];
   setMessages: React.Dispatch<React.SetStateAction<ChatItem[]>>;
   handleSubmit: (input: string) => Promise<void>;
-  handleApproveProposal: (id: string, proposal: ProposalPayload) => Promise<void>;
+  handleApproveProposal: (id: string) => void;
   handleRejectProposal: (id: string) => void;
   handleApproveSourceProposal: (id: string, proposal: SourceProposalPayload) => Promise<void>;
   handleRejectSourceProposal: (id: string) => void;
+  handleApproveCurationProposal: (id: string, proposal: CurationProposalPayload) => Promise<void>;
+  handleRejectCurationProposal: (id: string) => void;
   isLoading: boolean;
   scrollRef: RefObject<HTMLDivElement | null>;
 };
@@ -143,7 +146,12 @@ export function useChatThread(
             const proposal = chunk.data as ProposalPayload;
             setMessages((prev) => [
               ...prev,
-              { id: `proposal-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, kind: 'proposal', proposal, status: 'pending' },
+              {
+                id: `proposal-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+                kind: 'proposal',
+                proposal,
+                status: 'pending',
+              },
             ]);
             return;
           }
@@ -155,6 +163,20 @@ export function useChatThread(
               {
                 id: `source-proposal-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
                 kind: 'source_proposal',
+                proposal,
+                status: 'pending',
+              },
+            ]);
+            return;
+          }
+
+          if (chunk.type === 'data-agent-curation') {
+            const proposal = chunk.data as CurationProposalPayload;
+            setMessages((prev) => [
+              ...prev,
+              {
+                id: `curation-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+                kind: 'curation_proposal',
                 proposal,
                 status: 'pending',
               },
@@ -267,41 +289,25 @@ export function useChatThread(
     [projectId, chatContextConcepts, messages, isLoading, refresh]
   );
 
-  const handleApproveProposal = useCallback(
-    async (id: string, proposal: ProposalPayload) => {
-      setIsLoading(true);
-      try {
-        const result = await executeGraphProposalAction(projectId, proposal.actions);
-        const sysUserMsg = {
-          id: `sys-${Date.now()}`,
-          kind: 'message' as const,
-          role: 'user' as const,
-          text: '[System: User approved and applied the proposal]',
-          streaming: false,
-        };
-        setMessages((prev) => [
-          ...prev.map((m) => (m.id === id ? { ...m, status: 'approved' as const } : m)),
-          sysUserMsg,
-          {
-            id: `sys-reply-${Date.now()}`,
-            kind: 'message',
-            role: 'agent',
-            text: `Proposal successfully applied to the graph! (${result.applied} actions)`,
-            streaming: false,
-          },
-        ]);
-        refresh();
-      } catch (e) {
-        console.error(e);
-        setMessages((prev) =>
-          prev.map((m) => (m.id === id ? { ...m, status: 'pending' as const } : m))
-        );
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [projectId, refresh]
-  );
+  const handleApproveProposal = useCallback((id: string) => {
+    setMessages((prev) => [
+      ...prev.map((m) => (m.id === id ? { ...m, status: 'approved' as const } : m)),
+      {
+        id: `sys-${Date.now()}`,
+        kind: 'message' as const,
+        role: 'user' as const,
+        text: '[System: User approved and applied the proposal]',
+        streaming: false,
+      },
+      {
+        id: `sys-reply-${Date.now()}`,
+        kind: 'message',
+        role: 'agent',
+        text: 'Proposal acknowledged.',
+        streaming: false,
+      },
+    ]);
+  }, []);
 
   const handleRejectProposal = useCallback((id: string) => {
     setMessages((prev) => [
@@ -399,6 +405,85 @@ export function useChatThread(
     ]);
   }, []);
 
+  const handleApproveCurationProposal = useCallback(
+    async (id: string, proposal: CurationProposalPayload) => {
+      setIsLoading(true);
+      try {
+        const result = await applyEvidenceKbCurationAction({
+          projectId,
+          actions: proposal.actions,
+        });
+
+        if (!result.configured) {
+          setMessages((prev) => [
+            ...prev.map((m) => (m.id === id ? { ...m, status: 'pending' as const } : m)),
+            {
+              id: `sys-error-${Date.now()}`,
+              kind: 'message',
+              role: 'agent',
+              text: `Curation failed: ${result.error}`,
+              streaming: false,
+            },
+          ]);
+          return;
+        }
+
+        const applied = result.results.filter((r) => r.ok).length;
+        const failed = result.results.filter((r) => !r.ok).length;
+        const sysUserMsg = {
+          id: `sys-${Date.now()}`,
+          kind: 'message' as const,
+          role: 'user' as const,
+          text: '[System: User approved and applied the curation proposal]',
+          streaming: false,
+        };
+        setMessages((prev) => [
+          ...prev.map((m) => (m.id === id ? { ...m, status: 'approved' as const } : m)),
+          sysUserMsg,
+          {
+            id: `sys-reply-${Date.now()}`,
+            kind: 'message',
+            role: 'agent',
+            text:
+              failed > 0
+                ? `Curation applied: ${applied} succeeded, ${failed} failed.`
+                : `Curation applied successfully! ${applied} action${applied === 1 ? '' : 's'} processed.`,
+            streaming: false,
+          },
+        ]);
+        refresh();
+      } catch (e) {
+        console.error(e);
+        setMessages((prev) => [
+          ...prev.map((m) => (m.id === id ? { ...m, status: 'pending' as const } : m)),
+          {
+            id: `sys-error-${Date.now()}`,
+            kind: 'message',
+            role: 'agent',
+            text: `Curation failed: ${e instanceof Error ? e.message : 'Unknown error'}`,
+            streaming: false,
+          },
+        ]);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [projectId, refresh]
+  );
+
+  const handleRejectCurationProposal = useCallback((id: string) => {
+    setMessages((prev) => [
+      ...prev.map((m) => (m.id === id ? { ...m, status: 'rejected' as const } : m)),
+      {
+        id: `sys-${Date.now()}`,
+        kind: 'message',
+        role: 'user',
+        text: 'I reject this curation proposal. Please reconsider.',
+        streaming: false,
+      },
+    ]);
+  }, []);
+
   return {
     messages,
     setMessages,
@@ -407,6 +492,8 @@ export function useChatThread(
     handleRejectProposal,
     handleApproveSourceProposal,
     handleRejectSourceProposal,
+    handleApproveCurationProposal,
+    handleRejectCurationProposal,
     isLoading,
     scrollRef,
   };

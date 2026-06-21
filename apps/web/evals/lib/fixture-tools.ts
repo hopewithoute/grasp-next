@@ -1,5 +1,4 @@
 import { createRefinementTools } from '@grasp/ai/refinement';
-import type { KnowledgebaseRepository } from '@grasp/domain';
 
 export type RefinementToolFixture = {
   concepts?: Array<{
@@ -18,20 +17,10 @@ export type RefinementToolFixture = {
   }>;
 };
 
-export function createFixtureRefinementTools(fixture: RefinementToolFixture = {}) {
-  const repository = {
-    searchConceptsForIngestion: async () =>
-      (fixture.concepts ?? []).map((concept) => ({
-        confidence: concept.confidence ?? 1,
-        difficulty: concept.difficulty ?? 'beginner',
-        evidenceCount: concept.evidenceCount ?? 0,
-        ...concept,
-      })),
-  } as unknown as KnowledgebaseRepository;
-
+export function createFixtureRefinementTools() {
   return createRefinementTools({
-    knowledgebaseRepository: repository,
     projectId: 'eval-project',
+    ownerId: 'eval-owner',
   });
 }
 

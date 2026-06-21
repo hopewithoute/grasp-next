@@ -90,8 +90,9 @@ export async function POST(
         writer.write({ type: 'text-start', id: textId });
 
         const tools = createRefinementTools({
-          knowledgebaseRepository: deps.knowledgebaseRepository,
           projectId,
+          ownerId: actor.id,
+          evidenceKbService: deps.evidenceKbService || undefined,
         });
 
         try {
@@ -134,6 +135,15 @@ export async function POST(
               if (wroteText) needsNewline = true;
               writer.write({
                 type: 'data-source-proposal',
+                data: customData,
+              });
+              continue;
+            }
+
+            if (customType === 'data-agent-curation') {
+              if (wroteText) needsNewline = true;
+              writer.write({
+                type: 'data-agent-curation',
                 data: customData,
               });
               continue;
