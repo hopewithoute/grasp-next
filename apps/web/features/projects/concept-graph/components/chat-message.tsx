@@ -1,7 +1,12 @@
 'use client';
 
 import { memo } from 'react';
-import { type ChatItem, type CurationProposalPayload, type ProposalPayload, type SourceProposalPayload } from '../types';
+import {
+  type ChatItem,
+  type CurationProposalPayload,
+  type ProposalPayload,
+  type SourceProposalPayload,
+} from '../types';
 import { ChatEvent } from './chat-event';
 import { MarkdownText } from './chat-markdown';
 import { CurationProposalCard } from './curation-proposal-card';

@@ -10,9 +10,7 @@ describe('refinement agent instructions', () => {
     const content = refinementAgentInstructions[0].content;
     expect(content).toMatch(/MANDATORY APPROVAL FLOW/);
     expect(content).toMatch(/propose-evidence-curation/);
-    expect(content).toMatch(
-      /You are an assistant who drafts proposals, not a direct executor/
-    );
+    expect(content).toMatch(/You are an assistant who drafts proposals, not a direct executor/);
   });
 
   it('keeps conversational learning questions out of the mutation flow', () => {
@@ -20,8 +18,6 @@ describe('refinement agent instructions', () => {
     expect(content).toMatch(
       /When a user asks to explain, define, summarize, compare, or give examples/
     );
-    expect(content).toMatch(
-      /Do not offer to curate evidence unless the user explicitly asks/
-    );
+    expect(content).toMatch(/Do not offer to curate evidence unless the user explicitly asks/);
   });
 });

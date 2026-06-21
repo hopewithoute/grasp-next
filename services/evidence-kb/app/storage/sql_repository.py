@@ -77,11 +77,11 @@ class SqlEvidenceRepository:
         embeddings: list[list[float]] | None = None,
     ) -> None:
         await self.session.execute(delete(KbPassage).where(KbPassage.source_id == UUID(str(source.id))))
-        
+
         if not chunks:
             await self.session.commit()
             return
-            
+
         records = []
         for i, (block_id, text, location, order, tokens, quality_score, warnings) in enumerate(chunks):
             record = {
@@ -105,10 +105,7 @@ class SqlEvidenceRepository:
         if records:
             batch_size = 1000
             for i in range(0, len(records), batch_size):
-                await self.session.execute(
-                    insert(KbPassage),
-                    records[i:i + batch_size]
-                )
+                await self.session.execute(insert(KbPassage), records[i : i + batch_size])
             await self.session.commit()
 
     async def complete_run(self, run_id: str, stats: dict) -> IngestionRunRecord:
@@ -131,7 +128,9 @@ class SqlEvidenceRepository:
         await self.session.refresh(run)
         return IngestionRunRecord.model_validate(run)
 
-    async def list_project_sources(self, tenant_id: str, project_id: str, skip: int = 0, limit: int = 1000) -> list[SourceRecord]:
+    async def list_project_sources(
+        self, tenant_id: str, project_id: str, skip: int = 0, limit: int = 1000
+    ) -> list[SourceRecord]:
         stmt = (
             select(KbSource)
             .where(
@@ -154,6 +153,7 @@ class SqlEvidenceRepository:
     ) -> list[SourceRecord]:
         """Return sources that need attention: not certified, disabled retrieval, or have warnings."""
         from sqlalchemy import func, or_
+
         stmt = (
             select(KbSource)
             .where(
@@ -195,6 +195,7 @@ class SqlEvidenceRepository:
     ) -> list[PassageRecord]:
         """Return passages that need attention: low quality, warnings, disabled retrieval, or rejected."""
         from sqlalchemy import or_
+
         stmt = (
             select(KbPassage)
             .where(
@@ -232,7 +233,6 @@ class SqlEvidenceRepository:
         limit = top_k or settings.DEFAULT_TOP_K
         bm25_hits: list[tuple[PassageRecord, float]] = []
         vector_hits: list[tuple[PassageRecord, float]] = []
-
 
         bm25_coro = None
         vector_coro = None
@@ -363,7 +363,9 @@ class SqlEvidenceRepository:
         await self.session.commit()
         return results
 
-    async def export_passages(self, tenant_id: str, project_id: str, filters: dict, skip: int = 0, limit: int = 1000) -> list[PassageRecord]:
+    async def export_passages(
+        self, tenant_id: str, project_id: str, filters: dict, skip: int = 0, limit: int = 1000
+    ) -> list[PassageRecord]:
         source_stmt = select(KbSource.id).where(
             KbSource.tenant_id == tenant_id,
             KbSource.project_id == UUID(str(project_id)),
@@ -384,7 +386,7 @@ class SqlEvidenceRepository:
         passage_status = filters.get("passageStatus")
         if passage_status:
             stmt = stmt.where(KbPassage.status.in_(passage_status))
-            
+
         stmt = stmt.order_by(KbPassage.source_id, KbPassage.order).offset(skip).limit(limit)
         result = await self.session.execute(stmt)
         return [PassageRecord.model_validate(passage) for passage in result.scalars().all()]
@@ -399,6 +401,7 @@ class SqlEvidenceRepository:
     ) -> list[tuple[PassageRecord, float]]:
         """pgvector cosine distance search via SQL."""
         from sqlalchemy import select
+
         source_stmt = select(KbSource.id).where(
             KbSource.tenant_id == tenant_id,
             KbSource.project_id == UUID(str(project_id)),
@@ -442,11 +445,12 @@ class SqlEvidenceRepository:
         """PostgreSQL full-text search via tsvector."""
         import re
         from sqlalchemy import select, func
-        words = [w for w in re.split(r'\W+', query) if w]
+
+        words = [w for w in re.split(r"\W+", query) if w]
         if not words:
             return []
         or_query = " | ".join(words)
-        
+
         source_stmt = select(KbSource.id).where(
             KbSource.tenant_id == tenant_id,
             KbSource.project_id == UUID(str(project_id)),
@@ -457,7 +461,7 @@ class SqlEvidenceRepository:
         if source_status:
             source_stmt = source_stmt.where(KbSource.status.in_(source_status))
 
-        tsquery = func.to_tsquery('simple', or_query)
+        tsquery = func.to_tsquery("simple", or_query)
         score = func.ts_rank(KbPassage.search_vector, tsquery).label("score")
 
         stmt = select(KbPassage, score).where(

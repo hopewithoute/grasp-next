@@ -7,7 +7,6 @@ import {
   type LoadProjectDetailResult,
 } from '@grasp/domain';
 import { getActor } from '@/server/actor';
-import { serverEnv } from '@/server/env';
 import { createProjectDeps } from '@/server/project-deps';
 import { ConceptGraphWorkspace } from '../concept-graph/components/concept-graph-workspace';
 import type { ConceptRow, RelationshipRow } from '../concept-graph/types';
@@ -56,8 +55,6 @@ export async function ProjectDetailPage({ currentStage, projectId }: ProjectDeta
   if (isNotFound || !detail) {
     notFound();
   }
-
-
 
   const stage = resolveStage(currentStage);
   const sourceReady = detail.sources.some((source) => source.content?.trim());

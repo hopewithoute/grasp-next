@@ -4,11 +4,7 @@ import type { ProjectSourceRepository } from '../project-sources';
 import { deleteProject, ProjectDeleteBlockedError } from './delete-project.action';
 import { loadProjectDetail } from './load-project-detail.action';
 import { ProjectForbiddenError } from './project.errors';
-import type {
-  AuditLogRepository,
-  ProjectRecord,
-  ProjectRepository,
-} from './project.types';
+import type { AuditLogRepository, ProjectRecord, ProjectRepository } from './project.types';
 import { updateProjectDetails } from './update-project-details.action';
 
 const actor = { id: 'owner-1' };
@@ -148,8 +144,6 @@ describe('loadProjectDetail', () => {
     expect(detail.knowledgebaseGraph.source).toBe('none');
     expect(detail.knowledgebaseGraph.concepts.length).toBe(0);
   });
-
-
 
   it('does not expose stale graph data when the project has no usable source', async () => {
     const existingProject = requireProject(state);
@@ -320,8 +314,6 @@ function createIngestionRunRepository(
     },
   };
 }
-
-
 
 function createProjectRepository(state: TestState): ProjectRepository {
   return {

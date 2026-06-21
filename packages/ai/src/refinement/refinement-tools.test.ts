@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, expect, it } from 'vitest';
-import { createRefinementTools } from './refinement-tools';
 import type { EvidenceKbToolApi } from './evidence-tools';
+import { createRefinementTools } from './refinement-tools';
 
 const mockEvidenceKb: EvidenceKbToolApi = {
   retrieveForOwner: async () => ({
@@ -166,9 +166,7 @@ describe('evidence-kb tools', () => {
     expect(result.status).toBe('curation_submitted');
     expect(result.proposal).toEqual(proposal);
 
-    const curationEvent = written.find(
-      (c: any) => c.type === 'data-agent-curation'
-    );
+    const curationEvent = written.find((c: any) => c.type === 'data-agent-curation');
     expect(curationEvent).toBeTruthy();
     expect((curationEvent as any).data).toEqual(proposal);
   });

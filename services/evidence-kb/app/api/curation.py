@@ -59,7 +59,5 @@ async def export_passages(
     if request.status:
         filters["passageStatus"] = [request.status]
 
-    passages = await repository.export_passages(
-        tenant_id, project_id, filters, skip=request.skip, limit=request.limit
-    )
+    passages = await repository.export_passages(tenant_id, project_id, filters, skip=request.skip, limit=request.limit)
     return {"passages": passages, "total": len(passages)}

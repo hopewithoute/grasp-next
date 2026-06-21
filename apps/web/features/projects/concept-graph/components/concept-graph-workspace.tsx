@@ -243,7 +243,7 @@ const ConceptGraphEditor = ({
         {/* View Toggle defined once to pass into pane headers */}
         {(() => {
           const viewToggleNode = (
-            <div className="flex border p-0.5 ml-2 shadow-sm">
+            <div className="ml-2 flex border p-0.5 shadow-sm">
               <button
                 onClick={() => setViewMode('evidence')}
                 title="Evidence View"

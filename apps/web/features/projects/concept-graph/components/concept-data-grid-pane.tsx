@@ -56,7 +56,7 @@ function getFilterIconStyles(value: DifficultyFilter) {
 export function ConceptDataGridPane({
   projectId,
   concepts,
-  relationships,
+  relationships: _relationships,
   onSelectConcept,
   selectedConceptId,
   viewToggle,

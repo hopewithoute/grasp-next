@@ -27,5 +27,3 @@ export type IngestionRunRepository = {
     metadata?: unknown
   ): Promise<IngestionRunRecord | null>;
 };
-
-

@@ -3,6 +3,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ChevronDown, ChevronUp, Database, FileText, RefreshCw, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import type {
+  EvidenceKbPassage,
+  EvidenceKbRetrievedPassage,
+  EvidenceKbRetrieveResponse,
+  EvidenceKbSource,
+} from '@/server/evidence-kb-service';
 import {
   applyEvidenceKbCurationAction,
   listEvidenceKbPassagesAction,
@@ -11,12 +17,6 @@ import {
   type EvidenceKbPassagesResult,
   type EvidenceKbSourcesResult,
 } from '../../actions';
-import type {
-  EvidenceKbPassage,
-  EvidenceKbRetrievedPassage,
-  EvidenceKbRetrieveResponse,
-  EvidenceKbSource,
-} from '@/server/evidence-kb-service';
 import { PaneHeader } from './shared-components';
 
 type SortField = 'order' | 'quality_score' | 'token_count' | 'status';
@@ -199,8 +199,6 @@ export function EvidenceExplorerPane({
     [filteredAndSortedPassages]
   );
 
-
-
   // Pagination
   const totalPages = Math.ceil(filteredAndSortedPassages.length / PAGE_SIZE);
   const paginatedPassages = useMemo(() => {
@@ -228,7 +226,11 @@ export function EvidenceExplorerPane({
       className="border-border bg-background flex min-h-[520px] flex-1 flex-col border-b lg:min-h-0 lg:border-r lg:border-b-0"
     >
       <PaneHeader
-        meta={sourcesResult?.configured ? `${sources.length} SOURCES · ${filteredAndSortedPassages.length} PASSAGES` : 'NOT CONFIGURED'}
+        meta={
+          sourcesResult?.configured
+            ? `${sources.length} SOURCES · ${filteredAndSortedPassages.length} PASSAGES`
+            : 'NOT CONFIGURED'
+        }
         actions={viewToggle}
         title="[ EVIDENCE_EXPLORER ]"
       />
@@ -307,7 +309,9 @@ function SourceList({
   return (
     <aside className="border-border/40 min-h-0 border-r bg-white/[0.01]">
       <div className="border-border/40 flex items-center justify-between border-b px-3 py-2">
-        <span className="text-muted-foreground font-mono text-[0.62rem] tracking-widest uppercase">[ SOURCES ]</span>
+        <span className="text-muted-foreground font-mono text-[0.62rem] tracking-widest uppercase">
+          [ SOURCES ]
+        </span>
         <button
           className="text-muted-foreground hover:text-brand-accent inline-flex size-7 items-center justify-center"
           disabled={isLoading}
@@ -480,7 +484,9 @@ function PassageFilters({
         </select>
       </div>
       <div className="flex flex-wrap items-center gap-2">
-        <span className="text-muted-foreground font-mono text-[0.58rem] tracking-widest uppercase">SORT:</span>
+        <span className="text-muted-foreground font-mono text-[0.58rem] tracking-widest uppercase">
+          SORT:
+        </span>
         {(['order', 'quality_score', 'token_count', 'status'] as SortField[]).map((field) => (
           <button
             key={field}
@@ -491,10 +497,17 @@ function PassageFilters({
             onClick={() => onToggleSort(field)}
             type="button"
           >
-            {field === 'quality_score' ? 'QUALITY' : field === 'token_count' ? 'TOKENS' : field.toUpperCase()}
-            {sortField === field && (
-              sortDirection === 'asc' ? <ChevronUp className="inline size-3" /> : <ChevronDown className="inline size-3" />
-            )}
+            {field === 'quality_score'
+              ? 'QUALITY'
+              : field === 'token_count'
+                ? 'TOKENS'
+                : field.toUpperCase()}
+            {sortField === field &&
+              (sortDirection === 'asc' ? (
+                <ChevronUp className="inline size-3" />
+              ) : (
+                <ChevronDown className="inline size-3" />
+              ))}
           </button>
         ))}
         <span className="text-muted-foreground/70 ml-auto font-mono text-[0.58rem] tracking-widest uppercase">
@@ -527,7 +540,9 @@ function PassageFilters({
               </button>
             );
           })}
-          {totalPages > 5 && <span className="text-muted-foreground font-mono text-[0.56rem]">...</span>}
+          {totalPages > 5 && (
+            <span className="text-muted-foreground font-mono text-[0.56rem]">...</span>
+          )}
           {totalPages > 5 && (
             <button
               className={cn(
@@ -584,7 +599,9 @@ function PassageList({
               type="button"
             >
               <div className="text-muted-foreground mb-2 flex items-center justify-between gap-3 font-mono text-[0.58rem] tracking-widest uppercase">
-                <span>#{passage.order + 1} · {passage.status}</span>
+                <span>
+                  #{passage.order + 1} · {passage.status}
+                </span>
                 <span>{passage.token_count} TOK</span>
               </div>
               <p className="text-foreground/80 line-clamp-3 font-mono text-[0.68rem] leading-relaxed">
@@ -619,14 +636,19 @@ function PassageInspector({
     <aside className="border-border/40 min-h-0 overflow-auto border-l bg-white/[0.01] p-4">
       <div className="mb-4 flex items-center gap-2">
         <FileText className="text-brand-accent size-4" />
-        <h3 className="text-foreground font-mono text-xs tracking-widest uppercase">[ PASSAGE_INSPECTOR ]</h3>
+        <h3 className="text-foreground font-mono text-xs tracking-widest uppercase">
+          [ PASSAGE_INSPECTOR ]
+        </h3>
       </div>
 
       <dl className="mb-4 grid grid-cols-2 gap-2 font-mono text-[0.62rem] tracking-widest uppercase">
         <InspectorField label="Status" value={passage.status} />
         <InspectorField label="Quality" value={passage.quality_score.toFixed(2)} />
         <InspectorField label="Tokens" value={String(passage.token_count)} />
-        <InspectorField label="Retrieval" value={passage.retrieval_enabled ? 'enabled' : 'disabled'} />
+        <InspectorField
+          label="Retrieval"
+          value={passage.retrieval_enabled ? 'enabled' : 'disabled'}
+        />
       </dl>
 
       <div className="mb-4 grid grid-cols-2 gap-2">
@@ -658,7 +680,7 @@ function PassageInspector({
         </div>
       ) : null}
 
-      <pre className="border-border/40 text-foreground/85 whitespace-pre-wrap border bg-black/10 p-4 font-mono text-xs leading-relaxed">
+      <pre className="border-border/40 text-foreground/85 border bg-black/10 p-4 font-mono text-xs leading-relaxed whitespace-pre-wrap">
         {passage.text}
       </pre>
     </aside>
@@ -705,7 +727,12 @@ function EvidenceEmptyState({
   onRefresh?: () => void;
 }) {
   return (
-    <div className={cn('grid place-items-center px-4 text-center', compact ? 'h-40' : 'min-h-0 flex-1')}>
+    <div
+      className={cn(
+        'grid place-items-center px-4 text-center',
+        compact ? 'h-40' : 'min-h-0 flex-1'
+      )}
+    >
       <div className="space-y-3">
         <p className="text-muted-foreground/70 font-mono text-[0.65rem] leading-relaxed tracking-widest uppercase">
           [ {label} ]

@@ -1,23 +1,15 @@
-import { sql, SQL } from 'drizzle-orm';
 import {
   boolean,
-  customType,
   index,
   integer,
   jsonb,
   pgEnum,
   pgTable,
-  primaryKey,
-  real,
   text,
   timestamp,
-  unique,
   uniqueIndex,
   uuid,
-  varchar,
 } from 'drizzle-orm/pg-core';
-
-
 import {
   ARTIFACT_REVIEW_RUN_STATUS,
   ARTIFACT_REVIEW_RUN_STATUSES,

@@ -1,4 +1,16 @@
-from sqlalchemy import Boolean, CheckConstraint, Column, DateTime, Float, ForeignKey, Index, Integer, Text, UniqueConstraint, func
+from sqlalchemy import (
+    Boolean,
+    CheckConstraint,
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Index,
+    Integer,
+    Text,
+    UniqueConstraint,
+    func,
+)
 from sqlalchemy.dialects.postgresql import JSONB, TSVECTOR, UUID
 from sqlalchemy.orm import declarative_base, deferred
 from sqlalchemy.schema import Computed
@@ -55,7 +67,9 @@ class KbIngestionRun(EvidenceKbBase):
     id = Column(UUID(as_uuid=True), primary_key=True)
     tenant_id = Column(Text, nullable=False)
     project_id = Column(UUID(as_uuid=True), nullable=False)
-    source_id = Column(UUID(as_uuid=True), ForeignKey(f"{settings.DB_SCHEMA}.kb_sources.id", ondelete="CASCADE"), nullable=False)
+    source_id = Column(
+        UUID(as_uuid=True), ForeignKey(f"{settings.DB_SCHEMA}.kb_sources.id", ondelete="CASCADE"), nullable=False
+    )
     status = Column(Text, nullable=False, server_default="processing")
     failure_reason = Column(Text, nullable=True)
     stats = Column(JSONB, nullable=False, server_default="{}")
@@ -77,7 +91,9 @@ class KbPassage(EvidenceKbBase):
     id = Column(UUID(as_uuid=True), primary_key=True)
     tenant_id = Column(Text, nullable=False)
     project_id = Column(UUID(as_uuid=True), nullable=False)
-    source_id = Column(UUID(as_uuid=True), ForeignKey(f"{settings.DB_SCHEMA}.kb_sources.id", ondelete="CASCADE"), nullable=False)
+    source_id = Column(
+        UUID(as_uuid=True), ForeignKey(f"{settings.DB_SCHEMA}.kb_sources.id", ondelete="CASCADE"), nullable=False
+    )
     block_id = Column(Text, nullable=False)
     text = Column(Text, nullable=False)
     kind = Column(Text, nullable=False, server_default="text")

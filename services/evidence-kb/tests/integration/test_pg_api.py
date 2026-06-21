@@ -65,15 +65,14 @@ class TestIngestSource:
             "/v1/ingest/source",
             json={
                 "tenantId": "tenant-1",
-            "projectId": PROJECT_ID,
-            "externalSourceId": SOURCE_EXT_ID,
-            "title": "Updated Title",
+                "projectId": PROJECT_ID,
+                "externalSourceId": SOURCE_EXT_ID,
+                "title": "Updated Title",
                 "sourceType": "markdown",
                 "text": "Updated content after re-ingest.",
             },
         )
         assert response.status_code == 200
-        body = response.json()
         sources = client.get(f"/v1/projects/{PROJECT_ID}/sources", params={"tenantId": "tenant-1"}).json()
         assert len(sources) == 1
         assert sources[0]["title"] == "Updated Title"
@@ -157,7 +156,10 @@ class TestRetrieve:
         assert no_certified.json()["contexts"] == []
 
         passage_id = client.get(f"/v1/sources/{payload['sourceId']}/passages").json()[0]["id"]
-        client.post(f"/v1/curation/bulk?project_id={PROJECT_ID}", json={"actions": [{"type": "certify_passage", "passageId": passage_id}]})
+        client.post(
+            f"/v1/curation/bulk?project_id={PROJECT_ID}",
+            json={"actions": [{"type": "certify_passage", "passageId": passage_id}]},
+        )
 
         certified = client.post(
             "/v1/retrieve",
@@ -194,18 +196,22 @@ class TestCuration:
 
         client.post(
             f"/v1/curation/bulk?project_id={PROJECT_ID}",
-            json={"actions": [
-                {"type": "add_quality_warning", "passageId": passage_id, "warning": "needs_review"},
-            ]},
+            json={
+                "actions": [
+                    {"type": "add_quality_warning", "passageId": passage_id, "warning": "needs_review"},
+                ]
+            },
         )
         updated = client.get(f"/v1/passages/{passage_id}").json()
         assert "needs_review" in updated["quality_warnings"]
 
         client.post(
             f"/v1/curation/bulk?project_id={PROJECT_ID}",
-            json={"actions": [
-                {"type": "clear_quality_warning", "passageId": passage_id, "warning": "needs_review"},
-            ]},
+            json={
+                "actions": [
+                    {"type": "clear_quality_warning", "passageId": passage_id, "warning": "needs_review"},
+                ]
+            },
         )
         cleared = client.get(f"/v1/passages/{passage_id}").json()
         assert "needs_review" not in cleared["quality_warnings"]
@@ -217,18 +223,22 @@ class TestCuration:
 
         client.post(
             f"/v1/curation/bulk?project_id={PROJECT_ID}",
-            json={"actions": [
-                {"type": "set_passage_retrieval_enabled", "passageId": passage_id, "enabled": False},
-            ]},
+            json={
+                "actions": [
+                    {"type": "set_passage_retrieval_enabled", "passageId": passage_id, "enabled": False},
+                ]
+            },
         )
         disabled = client.get(f"/v1/passages/{passage_id}").json()
         assert disabled["retrieval_enabled"] is False
 
         client.post(
             f"/v1/curation/bulk?project_id={PROJECT_ID}",
-            json={"actions": [
-                {"type": "set_passage_retrieval_enabled", "passageId": passage_id, "enabled": True},
-            ]},
+            json={
+                "actions": [
+                    {"type": "set_passage_retrieval_enabled", "passageId": passage_id, "enabled": True},
+                ]
+            },
         )
         enabled = client.get(f"/v1/passages/{passage_id}").json()
         assert enabled["retrieval_enabled"] is True
@@ -250,7 +260,10 @@ class TestCuration:
         payload = ingest_sample_text()
         passage_id = client.get(f"/v1/sources/{payload['sourceId']}/passages").json()[0]["id"]
 
-        client.post(f"/v1/curation/bulk?project_id={PROJECT_ID}", json={"actions": [{"type": "certify_passage", "passageId": passage_id}]})
+        client.post(
+            f"/v1/curation/bulk?project_id={PROJECT_ID}",
+            json={"actions": [{"type": "certify_passage", "passageId": passage_id}]},
+        )
 
         resp = client.post(
             "/v1/retrieve",

@@ -10,16 +10,15 @@ export type WorkspaceEvent =
       target: string;
       relationshipType: string;
     }
-    | { type: 'evidence_attached'; concept: string; excerpt: string; location?: string }
-    | { type: 'ingestion_complete'; conceptCount: number; relationshipCount: number }
-    | {
-        type: 'evidence_ingestion_complete';
-        passageCount: number;
-        sourceStatus: 'candidate' | 'certified' | 'deprecated' | 'rejected';
-        warningCount: number;
-      }
-    | { type: 'agent_activity'; label: string; detail: string; status?: 'started' | 'completed' };
-
+  | { type: 'evidence_attached'; concept: string; excerpt: string; location?: string }
+  | { type: 'ingestion_complete'; conceptCount: number; relationshipCount: number }
+  | {
+      type: 'evidence_ingestion_complete';
+      passageCount: number;
+      sourceStatus: 'candidate' | 'certified' | 'deprecated' | 'rejected';
+      warningCount: number;
+    }
+  | { type: 'agent_activity'; label: string; detail: string; status?: 'started' | 'completed' };
 
 export type StreamEvent = Exclude<WorkspaceEvent, { type: 'assistant_message' }>;
 

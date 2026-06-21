@@ -6,7 +6,6 @@ from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from alembic import context
-from alembic.autogenerate import compare
 
 from app.settings import get_settings
 from app.storage.models import Base
@@ -32,9 +31,6 @@ def include_name(name, type_, parent_names):
     if type_ == "schema":
         return name == target_schema
     return True
-
-
-
 
 
 def run_migrations_offline() -> None:

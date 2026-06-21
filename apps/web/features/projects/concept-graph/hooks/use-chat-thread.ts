@@ -7,8 +7,8 @@ import { addProjectSourceFromUrlFormAction } from '../../actions';
 import { readStoredChatMessages, writeStoredChatMessages } from '../chat-storage';
 import {
   type ChatItem,
-  type CurationProposalPayload,
   type ConceptRow,
+  type CurationProposalPayload,
   type ProposalPayload,
   type SourceProposalPayload,
   type StreamEvent,
@@ -146,7 +146,12 @@ export function useChatThread(
             const proposal = chunk.data as ProposalPayload;
             setMessages((prev) => [
               ...prev,
-              { id: `proposal-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, kind: 'proposal', proposal, status: 'pending' },
+              {
+                id: `proposal-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+                kind: 'proposal',
+                proposal,
+                status: 'pending',
+              },
             ]);
             return;
           }
@@ -284,28 +289,25 @@ export function useChatThread(
     [projectId, chatContextConcepts, messages, isLoading, refresh]
   );
 
-  const handleApproveProposal = useCallback(
-    (id: string) => {
-      setMessages((prev) => [
-        ...prev.map((m) => (m.id === id ? { ...m, status: 'approved' as const } : m)),
-        {
-          id: `sys-${Date.now()}`,
-          kind: 'message' as const,
-          role: 'user' as const,
-          text: '[System: User approved and applied the proposal]',
-          streaming: false,
-        },
-        {
-          id: `sys-reply-${Date.now()}`,
-          kind: 'message',
-          role: 'agent',
-          text: 'Proposal acknowledged.',
-          streaming: false,
-        },
-      ]);
-    },
-    []
-  );
+  const handleApproveProposal = useCallback((id: string) => {
+    setMessages((prev) => [
+      ...prev.map((m) => (m.id === id ? { ...m, status: 'approved' as const } : m)),
+      {
+        id: `sys-${Date.now()}`,
+        kind: 'message' as const,
+        role: 'user' as const,
+        text: '[System: User approved and applied the proposal]',
+        streaming: false,
+      },
+      {
+        id: `sys-reply-${Date.now()}`,
+        kind: 'message',
+        role: 'agent',
+        text: 'Proposal acknowledged.',
+        streaming: false,
+      },
+    ]);
+  }, []);
 
   const handleRejectProposal = useCallback((id: string) => {
     setMessages((prev) => [
@@ -443,9 +445,10 @@ export function useChatThread(
             id: `sys-reply-${Date.now()}`,
             kind: 'message',
             role: 'agent',
-            text: failed > 0
-              ? `Curation applied: ${applied} succeeded, ${failed} failed.`
-              : `Curation applied successfully! ${applied} action${applied === 1 ? '' : 's'} processed.`,
+            text:
+              failed > 0
+                ? `Curation applied: ${applied} succeeded, ${failed} failed.`
+                : `Curation applied successfully! ${applied} action${applied === 1 ? '' : 's'} processed.`,
             streaming: false,
           },
         ]);

@@ -22,7 +22,6 @@ import {
   updateProjectSourceDto,
 } from '@grasp/domain';
 import { getActor as auth } from '@/server/actor';
-import { serverEnv } from '@/server/env';
 import type {
   EvidenceKbCurationAction,
   EvidenceKbPassage,
@@ -101,7 +100,10 @@ export async function deleteProjectFormAction(
 
   try {
     const deps = createProjectDeps();
-    const project = await deps.projectRepository.findByIdForOwner(parsed.output.projectId, actor.id);
+    const project = await deps.projectRepository.findByIdForOwner(
+      parsed.output.projectId,
+      actor.id
+    );
 
     if (!project) {
       return { error: 'Unauthorized.' };
@@ -324,7 +326,7 @@ export async function deleteProjectSourceFormAction(
 
 // --- Evidence query actions ---
 
-export async function getConceptEvidence(projectId: string, conceptId: string) {
+export async function getConceptEvidence(_projectId: string, _conceptId: string) {
   return [];
 }
 
@@ -338,7 +340,9 @@ export type EvidenceKbPassagesResult =
   | { configured: false; error: string; passages: [] }
   | { configured: true; error: null; passages: EvidenceKbPassage[] };
 
-export async function listEvidenceKbSourcesAction(projectId: string): Promise<EvidenceKbSourcesResult> {
+export async function listEvidenceKbSourcesAction(
+  projectId: string
+): Promise<EvidenceKbSourcesResult> {
   const actor = await auth();
 
   if (!actor) {
@@ -394,7 +398,11 @@ export async function listEvidenceKbPassagesAction(input: {
 
 export type EvidenceKbCurationResult =
   | { configured: false; error: string; results: [] }
-  | { configured: true; error: null; results: Array<{ action: unknown; error?: string; ok: boolean }> };
+  | {
+      configured: true;
+      error: null;
+      results: Array<{ action: unknown; error?: string; ok: boolean }>;
+    };
 
 export async function applyEvidenceKbCurationAction(input: {
   actions: EvidenceKbCurationAction[];

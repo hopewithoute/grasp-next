@@ -28,9 +28,7 @@ class EmbeddingClient:
             headers["Authorization"] = f"Bearer {self.api_key}"
         return headers
 
-    async def embed_texts(
-        self, texts: list[str], batch_size: int = 100
-    ) -> list[list[float]]:
+    async def embed_texts(self, texts: list[str], batch_size: int = 100) -> list[list[float]]:
         """Embed a batch of texts. Returns one vector per text."""
         if not texts:
             return []
@@ -38,9 +36,7 @@ class EmbeddingClient:
         all_embeddings = []
         semaphore = asyncio.Semaphore(5)  # Max 5 concurrent requests
 
-        async def fetch_batch(
-            batch: list[str], batch_index: int
-        ) -> tuple[int, list[list[float]]]:
+        async def fetch_batch(batch: list[str], batch_index: int) -> tuple[int, list[list[float]]]:
             payload = {"input": batch}
             if self.dimensions:
                 payload["dimensions"] = self.dimensions  # type: ignore

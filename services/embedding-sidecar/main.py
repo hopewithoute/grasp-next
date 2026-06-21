@@ -20,11 +20,15 @@ _embedding_model = None
 _embedding_model_path = os.environ.get("EMBEDDING_MODEL_PATH")
 _embedding_model_name = os.environ.get("EMBEDDING_MODEL", "local-embedding-model")
 _embedding_context_size = int(os.environ.get("EMBEDDING_CONTEXT_SIZE", "8192"))
-_embedding_threads = int(os.environ.get("EMBEDDING_THREADS", str(max(1, (os.cpu_count() or 2) // 2))))
+_embedding_threads = int(
+    os.environ.get("EMBEDDING_THREADS", str(max(1, (os.cpu_count() or 2) // 2)))
+)
 _embedding_gpu_layers = int(os.environ.get("EMBEDDING_GPU_LAYERS", "-1"))
 _embedding_batch_size = int(os.environ.get("EMBEDDING_BATCH_SIZE", "512"))
 _embedding_ubatch_size = int(os.environ.get("EMBEDDING_UBATCH_SIZE", "512"))
-_embedding_threads_batch = int(os.environ.get("EMBEDDING_THREADS_BATCH", str(_embedding_threads)))
+_embedding_threads_batch = int(
+    os.environ.get("EMBEDDING_THREADS_BATCH", str(_embedding_threads))
+)
 
 _max_batch_size = int(os.environ.get("EMBEDDING_MAX_BATCH_SIZE", "128"))
 _max_input_chars = int(os.environ.get("EMBEDDING_MAX_INPUT_CHARS", "20000"))
@@ -69,7 +73,9 @@ class BatchRequest:
         self.model_name = model_name
         self.future = asyncio.get_running_loop().create_future()
 
+
 _batch_queue: Optional[asyncio.Queue] = None
+
 
 async def batch_worker():
     while True:
@@ -77,7 +83,7 @@ async def batch_worker():
         try:
             req = await _batch_queue.get()
             requests.append(req)
-            
+
             current_len = len(req.inputs)
             while len(requests) < 32:
                 try:
@@ -94,10 +100,10 @@ async def batch_worker():
             combined_inputs = []
             for r in requests:
                 combined_inputs.extend(r.inputs)
-                
+
             if not combined_inputs:
                 continue
-                
+
             model_name = requests[0].model_name
 
             def _work():
@@ -114,25 +120,34 @@ async def batch_worker():
                 length = len(r.inputs)
                 r_items = items[offset : offset + length]
                 if not r.future.done():
-                    est_tokens = prompt_tokens // len(requests) if len(requests) > 0 else 0
+                    est_tokens = (
+                        prompt_tokens // len(requests) if len(requests) > 0 else 0
+                    )
                     r.future.set_result((r_items, est_tokens))
                 offset += length
-                
+
         except Exception as e:
             for r in requests:
                 if not r.future.done():
                     r.future.set_exception(e)
 
+
 @app.post("/v1/embeddings", response_model=EmbeddingResponse)
-async def create_embeddings(request: EmbeddingRequest, token: str = Depends(verify_token)):
+async def create_embeddings(
+    request: EmbeddingRequest, token: str = Depends(verify_token)
+):
     inputs = _normalize_input(request.input)
 
     if len(inputs) > _max_batch_size:
-        raise HTTPException(status_code=400, detail=f"too_many_inputs: max {_max_batch_size}")
+        raise HTTPException(
+            status_code=400, detail=f"too_many_inputs: max {_max_batch_size}"
+        )
 
     for text in inputs:
         if len(text) > _max_input_chars:
-            raise HTTPException(status_code=400, detail=f"input_too_large: max {_max_input_chars} chars")
+            raise HTTPException(
+                status_code=400, detail=f"input_too_large: max {_max_input_chars} chars"
+            )
 
     req = BatchRequest(inputs, request.model or _embedding_model_name)
     await _batch_queue.put(req)
@@ -140,14 +155,16 @@ async def create_embeddings(request: EmbeddingRequest, token: str = Depends(veri
     try:
         r_items, est_tokens = await req.future
     except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"Embedding inference failed: {exc}") from exc
+        raise HTTPException(
+            status_code=500, detail=f"Embedding inference failed: {exc}"
+        ) from exc
 
     data: List[EmbeddingItem] = []
     for index, embedding in enumerate(r_items):
         if request.dimensions is not None and len(embedding) != request.dimensions:
             raise HTTPException(
                 status_code=400,
-                detail=f"embedding_dimensions_mismatch: expected {request.dimensions}, got {len(embedding)}"
+                detail=f"embedding_dimensions_mismatch: expected {request.dimensions}, got {len(embedding)}",
             )
 
         data.append(EmbeddingItem(index=index, embedding=embedding))
@@ -158,13 +175,16 @@ async def create_embeddings(request: EmbeddingRequest, token: str = Depends(veri
         usage=EmbeddingUsage(prompt_tokens=est_tokens, total_tokens=est_tokens),
     )
 
-def _normalize_input(raw_input: Union[str, List[str], List[int], List[List[int]]]) -> List[str]:
+
+def _normalize_input(
+    raw_input: Union[str, List[str], List[int], List[List[int]]],
+) -> List[str]:
     if isinstance(raw_input, str):
         return [raw_input]
-        
+
     if not isinstance(raw_input, list) or len(raw_input) == 0:
         raise HTTPException(status_code=400, detail="embedding input must not be empty")
-        
+
     first_elem = raw_input[0]
     if isinstance(first_elem, str):
         return raw_input
@@ -174,7 +194,7 @@ def _normalize_input(raw_input: Union[str, List[str], List[int], List[List[int]]
     elif isinstance(first_elem, list):
         enc = tiktoken.get_encoding("cl100k_base")
         return [enc.decode(tokens) for tokens in raw_input]
-        
+
     raise HTTPException(status_code=400, detail="embedding input format not supported")
 
 
@@ -213,7 +233,9 @@ def get_embedding_model():
     if _embedding_model is not None:
         return _embedding_model
     if not _embedding_model_path:
-        raise HTTPException(status_code=503, detail="EMBEDDING_MODEL_PATH is not configured")
+        raise HTTPException(
+            status_code=503, detail="EMBEDDING_MODEL_PATH is not configured"
+        )
 
     try:
         from llama_cpp import Llama
@@ -231,7 +253,9 @@ def get_embedding_model():
         )
         return _embedding_model
     except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"Embedding model load failed: {exc}") from exc
+        raise HTTPException(
+            status_code=500, detail=f"Embedding model load failed: {exc}"
+        ) from exc
 
 
 def extract_embedding_items(result: Any) -> List[List[float]]:
@@ -249,7 +273,9 @@ def extract_embedding_items(result: Any) -> List[List[float]]:
             raise ValueError("embedding_invalid_item")
 
         embedding = item.get("embedding")
-        if not isinstance(embedding, list) or not all(isinstance(v, (int, float)) for v in embedding):
+        if not isinstance(embedding, list) or not all(
+            isinstance(v, (int, float)) for v in embedding
+        ):
             raise ValueError("embedding_invalid_vector")
 
         embeddings.append([float(v) for v in embedding])

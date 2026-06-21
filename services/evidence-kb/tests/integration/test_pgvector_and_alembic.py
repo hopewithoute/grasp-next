@@ -1,11 +1,13 @@
 """Integration tests: pgvector retrieval and Alembic migrations against live Postgres."""
 
 import os
+
 import psycopg2
 import pytest
 from fastapi.testclient import TestClient
 
 from app.main import app
+from app.storage.deps import get_embedding
 from tests.integration.conftest import _truncate_tables_sync
 
 DB_URL = os.environ.get("DATABASE_URL", "")
@@ -13,10 +15,8 @@ DB_NAME = "evidence_kb_test"
 DB_SCHEMA = os.environ.get("DB_SCHEMA", "evidence_kb_test_schema")
 PG_DSN = dict(host="localhost", dbname=DB_NAME, user="postgres", password="gas12kilo")
 
-
-from app.storage.deps import get_embedding
-
 client = TestClient(app, headers={"x-api-key": "test-key"})
+
 
 class DummyEmbeddingClient:
     async def embed_query(self, text: str) -> list[float]:
@@ -24,6 +24,7 @@ class DummyEmbeddingClient:
 
     async def embed_documents(self, texts: list[str]) -> list[list[float]]:
         return [[0.1] * 8 for _ in texts]
+
 
 app.dependency_overrides[get_embedding] = lambda: DummyEmbeddingClient()
 
@@ -68,7 +69,7 @@ class TestPgVectorRetrieval:
                     vec = [0.1 * (i + 1)] * 8  # 8-dim (EMBEDDING_DIMENSIONS=8)
                     vec_str = "[" + ",".join(str(v) for v in vec) + "]"
                     cur.execute(
-                        f'UPDATE {DB_SCHEMA}.kb_passages SET embedding = %s::vector WHERE id = %s',
+                        f"UPDATE {DB_SCHEMA}.kb_passages SET embedding = %s::vector WHERE id = %s",
                         (vec_str, pid),
                     )
         finally:
@@ -78,10 +79,12 @@ class TestPgVectorRetrieval:
 
     def test_vector_only_retrieval_with_embeddings(self):
         """When passages have embeddings, vector_only retrieval should use pgvector."""
-        self._ingest_with_embeddings([
-            "Photosynthesis converts light energy into chemical energy in plants.",
-            "Quantum mechanics describes the behavior of subatomic particles.",
-        ])
+        self._ingest_with_embeddings(
+            [
+                "Photosynthesis converts light energy into chemical energy in plants.",
+                "Quantum mechanics describes the behavior of subatomic particles.",
+            ]
+        )
 
         resp = client.post(
             "/v1/retrieve",
@@ -100,10 +103,12 @@ class TestPgVectorRetrieval:
 
     def test_bm25_only_retrieval_with_tsvector(self):
         """When passages have search_vector, bm25_only retrieval should use tsvector."""
-        self._ingest_with_embeddings([
-            "Photosynthesis converts light energy into chemical energy.",
-            "Quantum mechanics describes subatomic particle behavior.",
-        ])
+        self._ingest_with_embeddings(
+            [
+                "Photosynthesis converts light energy into chemical energy.",
+                "Quantum mechanics describes subatomic particle behavior.",
+            ]
+        )
 
         resp = client.post(
             "/v1/retrieve",
@@ -123,10 +128,12 @@ class TestPgVectorRetrieval:
 
     def test_hybrid_retrieval_fuses_bm25_and_vector(self):
         """Hybrid mode should combine pgvector and tsvector via RRF."""
-        self._ingest_with_embeddings([
-            "Photosynthesis converts light energy into chemical energy in plants.",
-            "Cellular respiration releases energy from glucose molecules.",
-        ])
+        self._ingest_with_embeddings(
+            [
+                "Photosynthesis converts light energy into chemical energy in plants.",
+                "Cellular respiration releases energy from glucose molecules.",
+            ]
+        )
 
         resp = client.post(
             "/v1/retrieve",
@@ -146,10 +153,12 @@ class TestPgVectorRetrieval:
 
     def test_retrieval_with_certified_filter(self):
         """Filters should work with pgvector retrieval."""
-        self._ingest_with_embeddings([
-            "Photosynthesis converts light energy.",
-            "Quantum mechanics describes particles.",
-        ])
+        self._ingest_with_embeddings(
+            [
+                "Photosynthesis converts light energy.",
+                "Quantum mechanics describes particles.",
+            ]
+        )
 
         # No certified passages → empty
         resp = client.post(
@@ -166,16 +175,18 @@ class TestPgVectorRetrieval:
 
     def test_embedding_stored_during_ingestion(self):
         """Verify passage embedding column is populated (via manual set in test)."""
-        source_id, passage_ids = self._ingest_with_embeddings([
-            "Test content for embedding verification.",
-        ])
+        source_id, passage_ids = self._ingest_with_embeddings(
+            [
+                "Test content for embedding verification.",
+            ]
+        )
 
         conn = psycopg2.connect(**PG_DSN)
         conn.autocommit = True
         try:
             with conn.cursor() as cur:
                 cur.execute(
-                    f'SELECT embedding IS NOT NULL FROM {DB_SCHEMA}.kb_passages WHERE id = %s',
+                    f"SELECT embedding IS NOT NULL FROM {DB_SCHEMA}.kb_passages WHERE id = %s",
                     (passage_ids[0],),
                 )
                 row = cur.fetchone()
@@ -205,7 +216,9 @@ class TestAlembicMigrations:
         # Stamp head
         result = subprocess.run(
             ["uv", "run", "alembic", "stamp", "head"],
-            capture_output=True, text=True, env=env,
+            capture_output=True,
+            text=True,
+            env=env,
             cwd=cwd,
         )
         assert result.returncode == 0, f"alembic stamp head failed: {result.stderr}"
@@ -213,7 +226,9 @@ class TestAlembicMigrations:
         # Check should report no new operations
         result = subprocess.run(
             ["uv", "run", "alembic", "check"],
-            capture_output=True, text=True, env=env,
+            capture_output=True,
+            text=True,
+            env=env,
             cwd=cwd,
         )
         assert "No new upgrade operations" in result.stderr or "No new upgrade operations" in result.stdout
@@ -234,20 +249,29 @@ class TestAlembicMigrations:
         # Upgrade to head
         result = subprocess.run(
             ["uv", "run", "alembic", "upgrade", "head"],
-            capture_output=True, text=True, env=env, cwd=cwd,
+            capture_output=True,
+            text=True,
+            env=env,
+            cwd=cwd,
         )
         assert result.returncode == 0
 
         # Downgrade to base
         result = subprocess.run(
             ["uv", "run", "alembic", "downgrade", "base"],
-            capture_output=True, text=True, env=env, cwd=cwd,
+            capture_output=True,
+            text=True,
+            env=env,
+            cwd=cwd,
         )
         assert result.returncode == 0
 
         # Upgrade to head again
         result = subprocess.run(
             ["uv", "run", "alembic", "upgrade", "head"],
-            capture_output=True, text=True, env=env, cwd=cwd,
+            capture_output=True,
+            text=True,
+            env=env,
+            cwd=cwd,
         )
         assert result.returncode == 0

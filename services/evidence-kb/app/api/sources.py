@@ -1,4 +1,3 @@
-from uuid import UUID
 from fastapi import APIRouter, Depends
 from app.api.auth import verify_api_key
 from app.models import SourceRecord

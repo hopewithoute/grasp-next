@@ -1,22 +1,19 @@
-import { createProposeWebSourceTool, createSearchWebTool } from './web-tools';
 import {
-  createSearchEvidenceTool,
-  createListEvidenceSourcesTool,
-  createProposeEvidenceCurationTool,
-  createFindWeakPassagesTool,
-  createFindStaleSourcesTool,
   createBulkCurationTool,
   createExportPassagesTool,
-  type EvidenceKbToolApi,
+  createFindStaleSourcesTool,
+  createFindWeakPassagesTool,
+  createListEvidenceSourcesTool,
+  createProposeEvidenceCurationTool,
+  createSearchEvidenceTool,
   EvidenceCurationProposalSchema,
   type EvidenceCurationProposal,
+  type EvidenceKbToolApi,
 } from './evidence-tools';
+import { createProposeWebSourceTool, createSearchWebTool } from './web-tools';
+
 // Re-export evidence-kb schemas and types
-export {
-  EvidenceCurationProposalSchema,
-  type EvidenceCurationProposal,
-  type EvidenceKbToolApi,
-};
+export { EvidenceCurationProposalSchema, type EvidenceCurationProposal, type EvidenceKbToolApi };
 
 export type RefinementDependencies = {
   projectId: string;

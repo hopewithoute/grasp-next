@@ -6,7 +6,6 @@ import {
   CircleDashed,
   FileText,
   GitBranch,
-  Info,
   MessageSquareText,
   Quote,
   Sparkles,
@@ -23,9 +22,7 @@ export const ChatEvent = memo(function ChatEvent({ event }: { event: StreamEvent
         tone.border
       )}
     >
-      <span
-        className={cn('grid size-6 shrink-0 place-items-center rounded-none', tone.iconBg)}
-      >
+      <span className={cn('grid size-6 shrink-0 place-items-center rounded-none', tone.iconBg)}>
         {tone.icon}
       </span>
       <div className="min-w-0 flex-1 space-y-1">
@@ -112,7 +109,7 @@ function getEventTone(event: StreamEvent): {
         copy: event.detail,
         icon:
           event.status === 'started' ? (
-            <CircleDashed className="size-3.5 animate-spin-slow" strokeWidth={1.5} />
+            <CircleDashed className="animate-spin-slow size-3.5" strokeWidth={1.5} />
           ) : (
             <CheckCircle2 className="size-3.5" strokeWidth={1.5} />
           ),
@@ -120,8 +117,7 @@ function getEventTone(event: StreamEvent): {
           event.status === 'started'
             ? 'bg-brand-accent/[0.08] text-brand-accent'
             : 'bg-emerald-500/10 text-emerald-500/70',
-        label:
-          event.status === 'started' ? 'text-brand-accent-foreground' : 'text-emerald-500/80',
+        label: event.status === 'started' ? 'text-brand-accent-foreground' : 'text-emerald-500/80',
         title: event.label,
       };
     default:

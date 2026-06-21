@@ -89,10 +89,11 @@ async def ingest_pdf(
         source_type="pdf",
         metadata={"filename": file.filename},
     )
-    
+
     import asyncio
+
     parsed_blocks = await asyncio.to_thread(parse_pdf_bytes, content)
-    
+
     return await _ingest_blocks(
         parsed_blocks=parsed_blocks,
         repository=repository,
@@ -113,6 +114,7 @@ async def _ingest_blocks(
     run = await repository.create_run(source.tenant_id, source.project_id, source.id)
 
     try:
+
         def process_blocks():
             _passage_chunks = []
             _chunk_texts = []
@@ -125,7 +127,7 @@ async def _ingest_blocks(
                         page=base_location.page,
                         heading=base_location.heading,
                         start_offset=chunk.start_offset,
-                        end_offset=chunk.end_offset
+                        end_offset=chunk.end_offset,
                     )
                     _passage_chunks.append(
                         (
@@ -143,6 +145,7 @@ async def _ingest_blocks(
             return _passage_chunks, _chunk_texts
 
         import asyncio
+
         passage_chunks, chunk_texts = await asyncio.to_thread(process_blocks)
 
         embeddings: list[list[float]] | None = None

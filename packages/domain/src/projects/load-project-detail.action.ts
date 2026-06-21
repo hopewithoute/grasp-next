@@ -63,7 +63,7 @@ export async function loadProjectDetail(
     deps.projectSourceRepository.listByProject(project.id),
   ]);
   const hasUsableSource = sources.some((source) => source.content?.trim());
-  const graphIsCurrentForSources =
+  const _graphIsCurrentForSources =
     hasUsableSource && isIngestionCurrentForSources(latestIngestionRun, sources);
 
   const conceptReadModel = emptyKnowledgebaseReadModel();

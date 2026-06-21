@@ -156,27 +156,60 @@ class EvidenceKbClient {
     return this.post<EvidenceKbApplyCurationResponse>('/v1/curation/apply', request);
   }
 
-  async bulkCuration(request: { actions: EvidenceKbCurationAction[]; projectId: string; tenantId: string }) {
+  async bulkCuration(request: {
+    actions: EvidenceKbCurationAction[];
+    projectId: string;
+    tenantId: string;
+  }) {
     const params = new URLSearchParams({
       project_id: request.projectId,
       tenant_id: request.tenantId,
     });
-    return this.post<{ failed: number; results: Array<{ action: unknown; error?: string; ok: boolean }>; succeeded: number; total: number }>(`/v1/curation/bulk?${params}`, { actions: request.actions });
+    return this.post<{
+      failed: number;
+      results: Array<{ action: unknown; error?: string; ok: boolean }>;
+      succeeded: number;
+      total: number;
+    }>(`/v1/curation/bulk?${params}`, { actions: request.actions });
   }
 
-  async exportPassages(request: { format?: string; projectId: string; sourceId?: string; status?: string; tenantId: string }) {
+  async exportPassages(request: {
+    format?: string;
+    projectId: string;
+    sourceId?: string;
+    status?: string;
+    tenantId: string;
+  }) {
     const params = new URLSearchParams({
       project_id: request.projectId,
       tenant_id: request.tenantId,
     });
-    return this.post<{ passages: Array<{ id: string; location: Record<string, unknown>; quality_score: number; quality_warnings: string[]; retrieval_enabled: boolean; source_id: string; status: string; text: string; token_count: number }>; total: number }>(`/v1/curation/export?${params}`, {
+    return this.post<{
+      passages: Array<{
+        id: string;
+        location: Record<string, unknown>;
+        quality_score: number;
+        quality_warnings: string[];
+        retrieval_enabled: boolean;
+        source_id: string;
+        status: string;
+        text: string;
+        token_count: number;
+      }>;
+      total: number;
+    }>(`/v1/curation/export?${params}`, {
       source_id: request.sourceId,
       status: request.status,
       format: request.format ?? 'json',
     });
   }
 
-  async findWeakPassages(request: { minQualityScore?: number; limit?: number; projectId: string; tenantId: string }) {
+  async findWeakPassages(request: {
+    minQualityScore?: number;
+    limit?: number;
+    projectId: string;
+    tenantId: string;
+  }) {
     const params = new URLSearchParams({
       project_id: request.projectId,
       tenant_id: request.tenantId,
@@ -191,7 +224,9 @@ class EvidenceKbClient {
       tenant_id: request.tenantId,
       limit: String(request.limit ?? 50),
     });
-    return this.get<EvidenceKbSource[]>(`/v1/projects/${request.projectId}/sources/stale?${params}`);
+    return this.get<EvidenceKbSource[]>(
+      `/v1/projects/${request.projectId}/sources/stale?${params}`
+    );
   }
 }
 
@@ -285,7 +320,11 @@ export function createEvidenceKbService(input: {
       });
     },
 
-    async inspectPassageForOwner(request: { ownerId: string; passageId: string; projectId: string }) {
+    async inspectPassageForOwner(request: {
+      ownerId: string;
+      passageId: string;
+      projectId: string;
+    }) {
       await requireOwnedProject(request.projectId, request.ownerId);
 
       return client.inspectPassage({ passageId: request.passageId });

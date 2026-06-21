@@ -28,6 +28,7 @@ DOCUMENTS = [
     "Fine-tuning a pre-trained model on a specific task can significantly improve its performance.",
 ]
 
+
 def run_server_and_benchmark(mode: str, gpu_layers: str) -> float:
     api_key = "benchmark-key"
     port = 8767
@@ -44,7 +45,16 @@ def run_server_and_benchmark(mode: str, gpu_layers: str) -> float:
 
     print(f"\nStarting server in {mode} mode (EMBEDDING_GPU_LAYERS={gpu_layers})...")
     process = subprocess.Popen(
-        [sys.executable, "-m", "uvicorn", "main:app", "--host", "127.0.0.1", "--port", str(port)],
+        [
+            sys.executable,
+            "-m",
+            "uvicorn",
+            "main:app",
+            "--host",
+            "127.0.0.1",
+            "--port",
+            str(port),
+        ],
         cwd=SIDECAR_DIR,
         env=env,
         stdout=subprocess.PIPE,
@@ -55,7 +65,7 @@ def run_server_and_benchmark(mode: str, gpu_layers: str) -> float:
     try:
         wait_for_health(base_url, api_key, process)
         print(f"Server ready. Sending {len(DOCUMENTS)} documents for embedding...")
-        
+
         # Warmup request
         payload_warmup = {
             "model": "Qwen/Qwen3-Embedding-0.6B",
@@ -71,7 +81,7 @@ def run_server_and_benchmark(mode: str, gpu_layers: str) -> float:
         start_time = time.time()
         request_json(base_url + "/v1/embeddings", api_key, payload)
         end_time = time.time()
-        
+
         duration = end_time - start_time
         print(f"{mode} Ingestion Time: {duration:.4f} seconds")
         return duration
@@ -83,18 +93,22 @@ def run_server_and_benchmark(mode: str, gpu_layers: str) -> float:
             process.kill()
             process.wait(timeout=10)
 
+
 def wait_for_health(base_url: str, api_key: str, process: subprocess.Popen) -> None:
     deadline = time.time() + 30
     while time.time() < deadline:
         if process.poll() is not None:
             output = process.stdout.read() if process.stdout else ""
-            raise SystemExit(f"embedding sidecar exited early with code {process.returncode}\n{output}")
+            raise SystemExit(
+                f"embedding sidecar exited early with code {process.returncode}\n{output}"
+            )
         try:
             request_json(base_url + "/metadata", api_key)
             return
         except Exception:
             time.sleep(0.5)
     raise SystemExit("embedding sidecar did not become ready within 30 seconds")
+
 
 def request_json(url: str, api_key: str, payload: dict | None = None) -> dict:
     data = None
@@ -112,6 +126,7 @@ def request_json(url: str, api_key: str, payload: dict | None = None) -> dict:
         body = exc.read().decode("utf-8", errors="replace")
         raise RuntimeError(f"{method} {url} failed with {exc.code}: {body}") from exc
 
+
 def main():
     print("=== Embedding Ingestion Benchmark: CPU vs GPU ===")
     cpu_time = run_server_and_benchmark("CPU", "0")
@@ -120,10 +135,11 @@ def main():
     print("\n=== Benchmark Results ===")
     print(f"CPU Time: {cpu_time:.4f}s")
     print(f"GPU Time: {gpu_time:.4f}s")
-    
+
     if cpu_time > 0 and gpu_time > 0:
         speedup = cpu_time / gpu_time
         print(f"GPU is {speedup:.2f}x faster than CPU")
+
 
 if __name__ == "__main__":
     main()

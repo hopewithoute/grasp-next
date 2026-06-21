@@ -111,7 +111,13 @@ describe('createEvidenceKbService', () => {
 
   it('maps retrieve requests with filters', async () => {
     fetchMock.mockResolvedValue(
-      jsonResponse({ contexts: [], debug: {}, query: 'postgres', retrievalMode: 'hybrid', retrievalRunId: 'ret-1' })
+      jsonResponse({
+        contexts: [],
+        debug: {},
+        query: 'postgres',
+        retrievalMode: 'hybrid',
+        retrievalRunId: 'ret-1',
+      })
     );
     const service = createEvidenceKbService({
       baseUrl: 'http://evidence-kb.local',

@@ -4,7 +4,4 @@ export {
   type KnowledgebaseRelationshipTypeDto,
 } from './knowledgebase.dto';
 
-export type {
-  IngestionRunRecord,
-  IngestionRunRepository,
-} from './knowledgebase.types';
+export type { IngestionRunRecord, IngestionRunRepository } from './knowledgebase.types';

@@ -19,7 +19,6 @@ os.environ["DB_SCHEMA"] = "evidence_kb_test_schema"
 os.environ["EVIDENCE_KB_API_KEY"] = "test-key"
 os.environ["EMBEDDING_DIMENSIONS"] = "8"
 
-import psycopg2
 from sqlalchemy.pool import NullPool
 import app.storage.db as db_module
 
@@ -28,15 +27,15 @@ def _init_schema_sync():
     """Initialize schema using SQLAlchemy sync engine to avoid event loop conflicts."""
     from sqlalchemy import create_engine, text
     from app.storage.models import Base
-    
+
     engine = create_engine("postgresql+psycopg2://postgres:gas12kilo@localhost:5432/evidence_kb_test")
     schema = os.environ["DB_SCHEMA"]
-    
+
     with engine.begin() as conn:
         conn.execute(text(f"DROP SCHEMA IF EXISTS {schema} CASCADE"))
         conn.execute(text(f"CREATE SCHEMA {schema}"))
         conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector CASCADE"))
-        
+
     Base.metadata.create_all(engine)
 
 
@@ -44,7 +43,7 @@ def _truncate_tables_sync():
     """Truncate all tables using SQLAlchemy sync engine."""
     from sqlalchemy import create_engine
     from app.storage.models import Base
-    
+
     engine = create_engine("postgresql+psycopg2://postgres:gas12kilo@localhost:5432/evidence_kb_test")
     with engine.begin() as conn:
         for table in reversed(Base.metadata.sorted_tables):
@@ -55,7 +54,7 @@ def _get_sessionmaker_with_null_pool():
     """Return a sessionmaker using NullPool so each checkout creates a fresh
     connection. This avoids asyncpg event-loop binding issues when the
     TestClient portal creates/destroys event loops between tests."""
-    from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+    from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
     from app.settings import get_settings
 
     settings = get_settings()

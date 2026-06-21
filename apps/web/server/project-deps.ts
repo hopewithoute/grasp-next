@@ -9,6 +9,7 @@ import {
 } from '@grasp/db';
 import { serverEnv } from './env';
 import { createEvidenceKbService } from './evidence-kb-service';
+
 export function createProjectDeps() {
   if (globalForProjectDeps.graspProjectDeps) {
     return globalForProjectDeps.graspProjectDeps;

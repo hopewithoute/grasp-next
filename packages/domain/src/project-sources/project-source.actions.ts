@@ -1,5 +1,4 @@
 import { AUDIT_ACTION, AUDIT_ENTITY_TYPE } from '../constants';
-
 import { ProjectForbiddenError } from '../projects/project.errors';
 import { canEditOwnedProject, type Actor } from '../projects/project.policy';
 import type { AuditLogRepository, ProjectRepository } from '../projects/project.types';
@@ -140,7 +139,6 @@ export async function deleteProjectSource(
   if (!source) {
     throw new ProjectForbiddenError();
   }
-
 
   await deps.auditLogRepository.write({
     actorId: actor.id,

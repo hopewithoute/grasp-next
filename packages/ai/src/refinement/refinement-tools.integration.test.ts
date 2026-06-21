@@ -13,10 +13,10 @@ describe('Refinement Tools (Integration)', () => {
   it('searchWebTool can search DuckDuckGo and return results', async () => {
     // This performs a REAL network request to DuckDuckGo
     try {
-      const result = (await (tools.searchWebTool as any).execute(
+      const result = await (tools.searchWebTool as any).execute(
         { query: 'React web framework' },
         {} as any
-      ));
+      );
 
       expect(result.results).toBeTruthy();
       expect(Array.isArray(result.results)).toBeTruthy();

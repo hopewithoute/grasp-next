@@ -24,23 +24,27 @@ export type EvidenceKbToolApi = {
       bm25_rank?: number | null;
       vector_rank?: number | null;
       rrf_score?: number | null;
-      location: { page?: number | null; heading?: string | null; start_offset?: number | null; end_offset?: number | null };
+      location: {
+        page?: number | null;
+        heading?: string | null;
+        start_offset?: number | null;
+        end_offset?: number | null;
+      };
     }>;
     retrievalMode: string;
     retrievalRunId: string;
   }>;
 
-  listSourcesForOwner(request: {
-    ownerId: string;
-    projectId: string;
-  }): Promise<Array<{
-    id: string;
-    title: string;
-    source_type: string;
-    status: string;
-    retrieval_enabled: boolean;
-    quality_warnings: string[];
-  }>>;
+  listSourcesForOwner(request: { ownerId: string; projectId: string }): Promise<
+    Array<{
+      id: string;
+      title: string;
+      source_type: string;
+      status: string;
+      retrieval_enabled: boolean;
+      quality_warnings: string[];
+    }>
+  >;
 
   inspectPassageForOwner(request: {
     ownerId: string;
@@ -70,29 +74,33 @@ export type EvidenceKbToolApi = {
     minQualityScore?: number;
     ownerId: string;
     projectId: string;
-  }): Promise<Array<{
-    id: string;
-    text: string;
-    status: string;
-    retrieval_enabled: boolean;
-    quality_score: number;
-    quality_warnings: string[];
-    source_id: string;
-    location: { page?: number | null; heading?: string | null };
-  }>>;
+  }): Promise<
+    Array<{
+      id: string;
+      text: string;
+      status: string;
+      retrieval_enabled: boolean;
+      quality_score: number;
+      quality_warnings: string[];
+      source_id: string;
+      location: { page?: number | null; heading?: string | null };
+    }>
+  >;
 
   findStaleSourcesForOwner(request: {
     limit?: number;
     ownerId: string;
     projectId: string;
-  }): Promise<Array<{
-    id: string;
-    title: string;
-    source_type: string;
-    status: string;
-    retrieval_enabled: boolean;
-    quality_warnings: string[];
-  }>>;
+  }): Promise<
+    Array<{
+      id: string;
+      title: string;
+      source_type: string;
+      status: string;
+      retrieval_enabled: boolean;
+      quality_warnings: string[];
+    }>
+  >;
 
   bulkCurationForOwner(request: {
     actions: Array<Record<string, unknown>>;
@@ -179,7 +187,10 @@ export function createSearchEvidenceTool(deps: {
         'hybrid'
       ),
       topK: v.optional(
-        described(v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(20)), 'Max results to return.'),
+        described(
+          v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(20)),
+          'Max results to return.'
+        ),
         8
       ),
     }),
@@ -320,7 +331,7 @@ export function createListEvidenceSourcesTool(deps: {
   });
 }
 
-export function createProposeEvidenceCurationTool(deps: {
+export function createProposeEvidenceCurationTool(_deps: {
   evidenceKbService: EvidenceKbToolApi;
   ownerId: string;
   projectId: string;
@@ -374,11 +385,17 @@ export function createFindWeakPassagesTool(deps: {
       'Find passages that need attention: low quality score, quality warnings, rejected status, or disabled retrieval. Use this to discover passages that should be reviewed or curated.',
     inputSchema: v.object({
       minQualityScore: v.optional(
-        described(v.pipe(v.number(), v.minValue(0), v.maxValue(1)), 'Minimum quality score threshold. Passages below this are flagged. Default: 0.5.'),
+        described(
+          v.pipe(v.number(), v.minValue(0), v.maxValue(1)),
+          'Minimum quality score threshold. Passages below this are flagged. Default: 0.5.'
+        ),
         0.5
       ),
       limit: v.optional(
-        described(v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(100)), 'Max results to return.'),
+        described(
+          v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(100)),
+          'Max results to return.'
+        ),
         20
       ),
     }),
@@ -451,7 +468,10 @@ export function createFindStaleSourcesTool(deps: {
       'Find sources that need review: not yet certified, have quality warnings, or have retrieval disabled. Use this to discover sources that should be curated or cleaned up.',
     inputSchema: v.object({
       limit: v.optional(
-        described(v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(100)), 'Max results to return.'),
+        described(
+          v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(100)),
+          'Max results to return.'
+        ),
         20
       ),
     }),
@@ -582,7 +602,12 @@ export function createExportPassagesTool(deps: {
       sourceId: v.optional(described(v.string(), 'Filter by specific source ID.')),
       status: v.optional(
         described(
-          v.union([v.literal('candidate'), v.literal('certified'), v.literal('deprecated'), v.literal('rejected')]),
+          v.union([
+            v.literal('candidate'),
+            v.literal('certified'),
+            v.literal('deprecated'),
+            v.literal('rejected'),
+          ]),
           'Filter by passage status.'
         )
       ),

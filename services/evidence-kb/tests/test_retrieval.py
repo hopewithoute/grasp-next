@@ -29,4 +29,3 @@ def test_rrf_fuse_combines_bm25_and_vector_ranks():
 
     assert fused[0][0].id == uuid.UUID(int=2)
     assert {item[0].id for item in fused} == {uuid.UUID(int=1), uuid.UUID(int=2), uuid.UUID(int=3)}
-
