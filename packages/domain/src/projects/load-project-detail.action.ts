@@ -62,9 +62,6 @@ export async function loadProjectDetail(
     deps.ingestionRunRepository?.findLatestByProject(project.id) ?? Promise.resolve(null),
     deps.projectSourceRepository.listByProject(project.id),
   ]);
-  const hasUsableSource = sources.some((source) => source.content?.trim());
-  const _graphIsCurrentForSources =
-    hasUsableSource && isIngestionCurrentForSources(latestIngestionRun, sources);
 
   const conceptReadModel = emptyKnowledgebaseReadModel();
 
@@ -78,25 +75,6 @@ export async function loadProjectDetail(
   };
 }
 
-function isIngestionCurrentForSources(
-  latestIngestionRun: IngestionRunRecord | null,
-  sources: ProjectSourceRecord[]
-) {
-  if (latestIngestionRun?.status !== 'completed') {
-    return false;
-  }
-
-  const completedAt = latestIngestionRun.completedAt ?? latestIngestionRun.updatedAt;
-  const latestSourceUpdatedAt = sources.reduce<Date | null>((latest, source) => {
-    if (!source.content?.trim()) {
-      return latest;
-    }
-
-    return !latest || source.updatedAt > latest ? source.updatedAt : latest;
-  }, null);
-
-  return latestSourceUpdatedAt ? completedAt >= latestSourceUpdatedAt : false;
-}
 
 function emptyKnowledgebaseReadModel(): KnowledgebaseGraphReadModel {
   return {

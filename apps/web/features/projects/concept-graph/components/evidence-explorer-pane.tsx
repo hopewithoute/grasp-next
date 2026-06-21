@@ -44,17 +44,19 @@ export function EvidenceExplorerPane({
   const [retrievalQuery, setRetrievalQuery] = useState('');
   const [retrieval, setRetrieval] = useState<EvidenceKbRetrieveResponse | null>(null);
   const [retrievalError, setRetrievalError] = useState<string | null>(null);
-  const [isLoadingSources, setIsLoadingSources] = useState(false);
+  const [isLoadingSources, setIsLoadingSources] = useState(true);
   const [isLoadingPassages, setIsLoadingPassages] = useState(false);
   const [isApplyingCuration, setIsApplyingCuration] = useState(false);
   const [isRetrieving, setIsRetrieving] = useState(false);
 
   const loadSources = useCallback(async () => {
-    setIsLoadingSources(true);
     try {
       const result = await listEvidenceKbSourcesAction(projectId);
       setSourcesResult(result);
       const firstSourceId = result.configured ? result.sources[0]?.id : null;
+      if (!firstSourceId) {
+        setPassagesResult(null);
+      }
       setSelectedSourceId((current) => current ?? firstSourceId ?? null);
     } finally {
       setIsLoadingSources(false);
@@ -84,12 +86,9 @@ export function EvidenceExplorerPane({
   );
 
   useEffect(() => {
-    if (!selectedSourceId) {
-      setPassagesResult(null);
-      return;
+    if (selectedSourceId) {
+      void loadPassages(selectedSourceId);
     }
-
-    void loadPassages(selectedSourceId);
   }, [loadPassages, selectedSourceId]);
 
   const sources = sourcesResult?.configured ? sourcesResult.sources : [];
@@ -206,11 +205,6 @@ export function EvidenceExplorerPane({
     return filteredAndSortedPassages.slice(start, start + PAGE_SIZE);
   }, [filteredAndSortedPassages, currentPage]);
 
-  // Reset to page 1 when filters change
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [query, statusFilter, sortField, sortDirection]);
-
   const toggleSort = (field: SortField) => {
     if (sortField === field) {
       setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'));
@@ -218,6 +212,7 @@ export function EvidenceExplorerPane({
       setSortField(field);
       setSortDirection('asc');
     }
+    setCurrentPage(1);
   };
 
   return (
@@ -245,8 +240,17 @@ export function EvidenceExplorerPane({
         <div className="grid min-h-0 flex-1 grid-cols-[18rem_minmax(0,1fr)_22rem] overflow-hidden">
           <SourceList
             isLoading={isLoadingSources}
-            onRefresh={loadSources}
-            onSelect={setSelectedSourceId}
+            onRefresh={() => {
+              setIsLoadingSources(true);
+              void loadSources();
+            }}
+            onSelect={(id) => {
+              if (id !== selectedSourceId) {
+                setSelectedSourceId(id);
+                setPassagesResult(null);
+                setCurrentPage(1);
+              }
+            }}
             selectedSourceId={selectedSourceId}
             sources={sources}
           />
@@ -264,8 +268,8 @@ export function EvidenceExplorerPane({
             <PassageFilters
               currentPage={currentPage}
               onPageChange={setCurrentPage}
-              onQueryChange={setQuery}
-              onStatusFilterChange={setStatusFilter}
+              onQueryChange={(val) => { setQuery(val); setCurrentPage(1); }}
+              onStatusFilterChange={(val) => { setStatusFilter(val); setCurrentPage(1); }}
               onToggleSort={toggleSort}
               query={query}
               sortDirection={sortDirection}
