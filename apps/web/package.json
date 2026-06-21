@@ -4,9 +4,6 @@
   "scripts": {
     "build": "next build --turbopack",
     "dev": "next dev --turbopack",
-    "eval:agents": "pnpm eval:refinement && pnpm eval:ingestion",
-    "eval:ingestion": "tsx evals/mastra/ingestion.eval.ts",
-    "eval:refinement": "tsx evals/mastra/refinement.eval.ts",
     "lint": "eslint . --max-warnings=0",
     "test": "node --env-file=../../.env ./node_modules/vitest/vitest.mjs run",
     "typecheck": "tsgo --noEmit"
@@ -16,7 +13,6 @@
     "@grasp/ai": "workspace:*",
     "@grasp/db": "workspace:*",
     "@grasp/domain": "workspace:*",
-    "@grasp/lazy-graph-rag-client": "workspace:*",
     "@tailwindcss/postcss": "^4.3.0",
     "@xyflow/react": "^12.10.2",
     "ai": "^6.0.190",

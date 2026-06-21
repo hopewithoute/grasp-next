@@ -29,7 +29,6 @@
   },
   "dependencies": {
     "@grasp/domain": "workspace:*",
-    "@grasp/lazy-graph-rag-client": "workspace:*",
     "@mastra/core": "^1.33.0",
     "@mastra/evals": "^1.2.3",
     "@mastra/memory": "1.19.0",
