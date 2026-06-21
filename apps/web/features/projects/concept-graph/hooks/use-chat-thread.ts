@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState, type RefObject } from 'react';
 import { useRouter } from 'next/navigation';
 import { consumeUIMessageChunks } from '@/lib/ui-message-stream';
-import { addProjectSourceFromUrlFormAction, executeGraphProposalAction } from '../../actions';
+import { addProjectSourceFromUrlFormAction } from '../../actions';
 import { readStoredChatMessages, writeStoredChatMessages } from '../chat-storage';
 import {
   type ChatItem,
@@ -19,7 +19,7 @@ export type UseChatThreadResult = {
   messages: ChatItem[];
   setMessages: React.Dispatch<React.SetStateAction<ChatItem[]>>;
   handleSubmit: (input: string) => Promise<void>;
-  handleApproveProposal: (id: string, proposal: ProposalPayload) => Promise<void>;
+  handleApproveProposal: (id: string) => void;
   handleRejectProposal: (id: string) => void;
   handleApproveSourceProposal: (id: string, proposal: SourceProposalPayload) => Promise<void>;
   handleRejectSourceProposal: (id: string) => void;
@@ -285,39 +285,26 @@ export function useChatThread(
   );
 
   const handleApproveProposal = useCallback(
-    async (id: string, proposal: ProposalPayload) => {
-      setIsLoading(true);
-      try {
-        const result = await executeGraphProposalAction(projectId, proposal.actions);
-        const sysUserMsg = {
+    (id: string) => {
+      setMessages((prev) => [
+        ...prev.map((m) => (m.id === id ? { ...m, status: 'approved' as const } : m)),
+        {
           id: `sys-${Date.now()}`,
           kind: 'message' as const,
           role: 'user' as const,
           text: '[System: User approved and applied the proposal]',
           streaming: false,
-        };
-        setMessages((prev) => [
-          ...prev.map((m) => (m.id === id ? { ...m, status: 'approved' as const } : m)),
-          sysUserMsg,
-          {
-            id: `sys-reply-${Date.now()}`,
-            kind: 'message',
-            role: 'agent',
-            text: `Proposal successfully applied to the graph! (${result.applied} actions)`,
-            streaming: false,
-          },
-        ]);
-        refresh();
-      } catch (e) {
-        console.error(e);
-        setMessages((prev) =>
-          prev.map((m) => (m.id === id ? { ...m, status: 'pending' as const } : m))
-        );
-      } finally {
-        setIsLoading(false);
-      }
+        },
+        {
+          id: `sys-reply-${Date.now()}`,
+          kind: 'message',
+          role: 'agent',
+          text: 'Proposal acknowledged.',
+          streaming: false,
+        },
+      ]);
     },
-    [projectId, refresh]
+    []
   );
 
   const handleRejectProposal = useCallback((id: string) => {

@@ -328,20 +328,6 @@ export async function getConceptEvidence(projectId: string, conceptId: string) {
   return [];
 }
 
-// --- Graph proposal action ---
-
-export type GraphProposalAction = {
-  type: string;
-  payload: Record<string, unknown>;
-};
-
-export async function executeGraphProposalAction(
-  projectId: string,
-  proposalActions: GraphProposalAction[]
-) {
-  return { success: true, applied: 0 };
-}
-
 // --- Knowledgebase search ---
 
 export type EvidenceKbSourcesResult =

@@ -7,7 +7,6 @@ import { FileText, LayoutGrid, Maximize, Minimize, Network } from 'lucide-react'
 import type { ProjectSourceRecord } from '@grasp/domain';
 import { consumeUIMessageChunks } from '@/lib/ui-message-stream';
 import { cn } from '@/lib/utils';
-import { executeGraphProposalAction } from '../../actions';
 import {
   type FeedItem,
   type IngestionStreamEvent,
@@ -152,21 +151,10 @@ const ConceptGraphEditor = ({
   );
 
   const handleAcceptProposal = useCallback(
-    async (proposalId: string) => {
-      const proposal = pendingProposals.find((p) => p.id === proposalId);
-      if (!proposal) return;
-
-      // Optimistically remove from state
+    (proposalId: string) => {
       setPendingProposals((current) => current.filter((p) => p.id !== proposalId));
-
-      try {
-        await executeGraphProposalAction(projectId, proposal.actions);
-      } catch (error) {
-        console.error('Failed to accept proposal', error);
-        // On error, we could add it back to state, but for MVP just log it
-      }
     },
-    [pendingProposals, projectId, setPendingProposals]
+    [setPendingProposals]
   );
 
   const handleRejectProposal = useCallback(

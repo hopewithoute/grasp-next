@@ -50,7 +50,7 @@ export async function runSourceIngestion(
     input.onEvent?.({
       type: 'evidence_ingestion_complete',
       passageCount: result.passageCount,
-      sourceStatus: 'candidate',
+      sourceStatus: result.status === 'completed' ? 'candidate' : 'deprecated',
       warningCount: result.warningCount,
     });
 
