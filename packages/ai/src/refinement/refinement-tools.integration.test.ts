@@ -1,15 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, expect, it } from 'vitest';
-import type { KnowledgebaseRepository } from '@grasp/domain';
 import { createRefinementTools } from './refinement-tools';
 
 // A mock repository since we're only testing the web tools
-const mockKnowledgebaseRepository = {} as unknown as KnowledgebaseRepository;
 
 describe('Refinement Tools (Integration)', () => {
   const tools = createRefinementTools({
-    knowledgebaseRepository: mockKnowledgebaseRepository,
     projectId: 'test-project-id',
+    ownerId: 'test-owner-id',
   });
 
   it('searchWebTool can search DuckDuckGo and return results', async () => {

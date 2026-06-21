@@ -3,7 +3,7 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ReactFlowProvider } from '@xyflow/react';
-import { LayoutGrid, Maximize, Minimize, Network } from 'lucide-react';
+import { FileText, LayoutGrid, Maximize, Minimize, Network } from 'lucide-react';
 import type { ProjectSourceRecord } from '@grasp/domain';
 import { consumeUIMessageChunks } from '@/lib/ui-message-stream';
 import { cn } from '@/lib/utils';
@@ -17,6 +17,7 @@ import { PendingProposalsContext } from '../hooks/use-pending-proposals-context'
 import { type ChatItem, type ConceptRow, type RelationshipRow } from '../types';
 import { ChatPane } from './chat-pane';
 import { ConceptDataGridPane } from './concept-data-grid-pane';
+import { EvidenceExplorerPane } from './evidence-explorer-pane';
 import { GraphCanvasPane } from './graph-canvas-pane';
 import { LibraryPane } from './library-pane';
 
@@ -256,6 +257,13 @@ const ConceptGraphEditor = ({
           const viewToggleNode = (
             <div className="flex border p-0.5 ml-2 shadow-sm">
               <button
+                onClick={() => setViewMode('evidence')}
+                title="Evidence View"
+                className={getViewToggleButtonStyles(viewMode === 'evidence')}
+              >
+                <FileText className="size-3" />[ EVIDENCE ]
+              </button>
+              <button
                 onClick={() => setViewMode('graph')}
                 title="Graph View"
                 className={getViewToggleButtonStyles(viewMode === 'graph')}
@@ -304,6 +312,8 @@ const ConceptGraphEditor = ({
                   onRejectProposal={handleRejectProposal}
                   viewToggle={viewToggleNode}
                 />
+              ) : viewMode === 'evidence' ? (
+                <EvidenceExplorerPane projectId={projectId} viewToggle={viewToggleNode} />
               ) : (
                 <ConceptDataGridPane
                   projectId={projectId}

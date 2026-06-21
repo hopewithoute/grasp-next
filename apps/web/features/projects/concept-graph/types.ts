@@ -10,9 +10,16 @@ export type WorkspaceEvent =
       target: string;
       relationshipType: string;
     }
-  | { type: 'evidence_attached'; concept: string; excerpt: string; location?: string }
-  | { type: 'ingestion_complete'; conceptCount: number; relationshipCount: number }
-  | { type: 'agent_activity'; label: string; detail: string; status?: 'started' | 'completed' };
+    | { type: 'evidence_attached'; concept: string; excerpt: string; location?: string }
+    | { type: 'ingestion_complete'; conceptCount: number; relationshipCount: number }
+    | {
+        type: 'evidence_ingestion_complete';
+        passageCount: number;
+        sourceStatus: 'candidate' | 'certified' | 'deprecated' | 'rejected';
+        warningCount: number;
+      }
+    | { type: 'agent_activity'; label: string; detail: string; status?: 'started' | 'completed' };
+
 
 export type StreamEvent = Exclude<WorkspaceEvent, { type: 'assistant_message' }>;
 
@@ -40,6 +47,18 @@ export type SourceProposalPayload = {
   snippet: string;
 };
 
+export type CurationAction =
+  | { type: 'certify_passage'; passageId: string }
+  | { type: 'reject_passage'; passageId: string }
+  | { type: 'set_passage_retrieval_enabled'; passageId: string; enabled: boolean }
+  | { type: 'add_quality_warning'; passageId: string; warning: string }
+  | { type: 'clear_quality_warning'; passageId: string; warning?: string };
+
+export type CurationProposalPayload = {
+  rationale: string;
+  actions: CurationAction[];
+};
+
 export type ChatItem =
   | {
       id: string;
@@ -63,6 +82,12 @@ export type ChatItem =
       id: string;
       kind: 'source_proposal';
       proposal: SourceProposalPayload;
+      status: 'pending' | 'approved' | 'rejected';
+    }
+  | {
+      id: string;
+      kind: 'curation_proposal';
+      proposal: CurationProposalPayload;
       status: 'pending' | 'approved' | 'rejected';
     };
 

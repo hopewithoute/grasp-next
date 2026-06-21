@@ -1,9 +1,10 @@
 'use client';
 
 import { memo } from 'react';
-import { type ChatItem, type ProposalPayload, type SourceProposalPayload } from '../types';
+import { type ChatItem, type CurationProposalPayload, type ProposalPayload, type SourceProposalPayload } from '../types';
 import { ChatEvent } from './chat-event';
 import { MarkdownText } from './chat-markdown';
+import { CurationProposalCard } from './curation-proposal-card';
 import { ProposalCard } from './proposal-card';
 import { SourceProposalCard } from './source-proposal-card';
 
@@ -16,6 +17,8 @@ export const ChatItemRow = memo(function ChatItemRow({
   onRejectProposal,
   onApproveSourceProposal,
   onRejectSourceProposal,
+  onApproveCurationProposal,
+  onRejectCurationProposal,
 }: {
   isLoading: boolean;
   item: ChatItem;
@@ -23,6 +26,8 @@ export const ChatItemRow = memo(function ChatItemRow({
   onRejectProposal: (id: string) => void;
   onApproveSourceProposal?: (id: string, proposal: SourceProposalPayload) => void;
   onRejectSourceProposal?: (id: string) => void;
+  onApproveCurationProposal?: (id: string, proposal: CurationProposalPayload) => void;
+  onRejectCurationProposal?: (id: string) => void;
 }) {
   if (item.kind === 'message') {
     return (
@@ -50,11 +55,25 @@ export const ChatItemRow = memo(function ChatItemRow({
     return (
       <li>
         <SourceProposalCard
-          proposal={item.proposal}
-          status={item.status}
           isProcessing={item.status !== 'pending' || isLoading}
           onApprove={() => onApproveSourceProposal?.(item.id, item.proposal)}
           onReject={() => onRejectSourceProposal?.(item.id)}
+          proposal={item.proposal}
+          status={item.status}
+        />
+      </li>
+    );
+  }
+
+  if (item.kind === 'curation_proposal') {
+    return (
+      <li>
+        <CurationProposalCard
+          isProcessing={item.status !== 'pending' || isLoading}
+          onApprove={() => onApproveCurationProposal?.(item.id, item.proposal)}
+          onReject={() => onRejectCurationProposal?.(item.id)}
+          proposal={item.proposal}
+          status={item.status}
         />
       </li>
     );

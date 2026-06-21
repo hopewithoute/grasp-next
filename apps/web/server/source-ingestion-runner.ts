@@ -1,11 +1,10 @@
 import 'server-only';
 import type { IngestionRunRepository, IngestionStreamEvent } from '@grasp/domain';
-import { serverEnv } from './env';
-import type { LgsService } from './lgs-service';
+import type { EvidenceKbService } from './evidence-kb-service';
 
 export type SourceIngestionDeps = {
+  evidenceKbService?: EvidenceKbService | null;
   ingestionRunRepository: IngestionRunRepository;
-  lgsService?: LgsService | null;
 };
 
 export type { IngestionStreamEvent };
@@ -28,17 +27,14 @@ export async function runSourceIngestion(
   });
 
   try {
-    if (serverEnv.LGS_ENABLED !== 'true') {
-      throw new Error('LGS ingestion is disabled.');
-    }
     if (!input.ownerId) {
-      throw new Error('ownerId is required for LGS ingestion');
+      throw new Error('ownerId is required for ingestion');
     }
-    if (!deps.lgsService) {
-      throw new Error('LGS service is not configured');
+    if (!deps.evidenceKbService) {
+      throw new Error('Evidence KB service is not configured');
     }
 
-    const result = await deps.lgsService.indexSourceForOwner({
+    const result = await deps.evidenceKbService.ingestSourceForOwner({
       content: input.content,
       ownerId: input.ownerId,
       projectId: input.projectId,
@@ -48,20 +44,21 @@ export async function runSourceIngestion(
     });
 
     await deps.ingestionRunRepository.markCompleted(ingestionRun.id, {
-      lgs: result,
+      evidenceKb: result,
     });
 
     input.onEvent?.({
-      type: 'ingestion_complete',
-      conceptCount: result.termCount,
-      relationshipCount: result.chunkTermCount,
+      type: 'evidence_ingestion_complete',
+      passageCount: result.passageCount,
+      sourceStatus: 'candidate',
+      warningCount: result.warningCount,
     });
 
     return result;
   } catch (error) {
     await deps.ingestionRunRepository.markFailed(
       ingestionRun.id,
-      error instanceof Error ? error.message : 'Unknown LGS ingestion error'
+      error instanceof Error ? error.message : 'Unknown source ingestion error'
     );
     throw error;
   }

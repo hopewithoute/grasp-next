@@ -8,8 +8,7 @@ import {
   createProjectSourceRepository,
 } from '@grasp/db';
 import { serverEnv } from './env';
-import { createLgsService } from './lgs-service';
-
+import { createEvidenceKbService } from './evidence-kb-service';
 export function createProjectDeps() {
   if (globalForProjectDeps.graspProjectDeps) {
     return globalForProjectDeps.graspProjectDeps;
@@ -28,12 +27,12 @@ function buildProjectDeps() {
   return {
     artifactRepository: createArtifactRepository(db),
     auditLogRepository: createAuditLogRepository(db),
-    ingestionRunRepository: createIngestionRunRepository(db),
-    lgsService: createLgsService({
-      apiKey: serverEnv.LGS_API_KEY,
-      baseUrl: serverEnv.LGS_BASE_URL,
+    evidenceKbService: createEvidenceKbService({
+      apiKey: serverEnv.EVIDENCE_KB_API_KEY,
+      baseUrl: serverEnv.EVIDENCE_KB_BASE_URL,
       projectRepository,
     }),
+    ingestionRunRepository: createIngestionRunRepository(db),
     projectRepository,
     projectSourceRepository: createProjectSourceRepository(db),
   };

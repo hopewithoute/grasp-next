@@ -27,6 +27,8 @@ export const serverEnvSchema = v.object({
   LGS_ENABLED: v.optional(v.pipe(v.unknown(), v.transform(String), v.picklist(['true', 'false'])), 'true'),
   LGS_BASE_URL: optionalString,
   LGS_API_KEY: optionalString,
+  EVIDENCE_KB_BASE_URL: optionalString,
+  EVIDENCE_KB_API_KEY: optionalString,
   GOOGLE_CLIENT_ID: optionalNonEmptyString,
   GOOGLE_CLIENT_SECRET: optionalNonEmptyString,
   CLOUDFLARE_ACCOUNT_ID: optionalString,

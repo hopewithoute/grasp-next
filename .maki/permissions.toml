@@ -1,0 +1,36 @@
+[websearch]
+allow = [
+    "RAG knowledge base curation audit inspect retrieval quality evaluation best practices",
+    "GraphRAG ingestion cost performance tradeoff vector BM25 hybrid retrieval RRF",
+]
+
+[write]
+allow = [
+    "/home/hopewithoute/.local/state/maki/plans/**",
+]
+
+[edit]
+allow = [
+    "/home/hopewithoute/.local/state/maki/plans/**",
+]
+
+[bash]
+allow = [
+    "rtk *",
+    "head *",
+    "tail *",
+    "pg_isready *",
+    "psql *",
+    "echo *",
+    "which *",
+    "whoami *",
+    "sudo *",
+    "ls *",
+    "grep *",
+    'PGPASSWORD="" *',
+    "printenv *",
+    "cat *",
+    "PGPASSWORD=gas12kilo *",
+    "mkdir *",
+    "touch *",
+]

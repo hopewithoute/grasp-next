@@ -97,6 +97,15 @@ function getEventTone(event: StreamEvent): {
         label: 'text-brand-accent',
         title: 'Ingestion complete',
       };
+    case 'evidence_ingestion_complete':
+      return {
+        border: 'border-brand-accent/20',
+        copy: `${event.passageCount} passages indexed${event.warningCount ? ` · ${event.warningCount} warnings` : ''}.`,
+        icon: <CheckCircle2 className="size-3.5" strokeWidth={1.5} />,
+        iconBg: 'bg-brand-accent/10 text-brand-accent',
+        label: 'text-brand-accent',
+        title: `Evidence ${event.sourceStatus}`,
+      };
     case 'agent_activity':
       return {
         border: event.status === 'started' ? 'border-brand-accent-border/18' : 'border-border/60',

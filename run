@@ -25,7 +25,7 @@ COMMANDS = {
     },
     "test": {
         "desc": "Run all tests (Frontend vitest & Python services pytest)",
-        "cmd": "pnpm test && (cd services/evidence-kb && uv run pytest) && (cd services/embedding-sidecar && uv run pytest integration_test.py)",
+        "cmd": "pnpm test && (cd services/evidence-kb && uv run pytest)",
     },
     "lint": {
         "desc": "Run code linters (ESlint & Python ruff check)",

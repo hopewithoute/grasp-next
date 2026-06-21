@@ -78,10 +78,16 @@ async def batch_worker():
             req = await _batch_queue.get()
             requests.append(req)
             
+            current_len = len(req.inputs)
             while len(requests) < 32:
                 try:
                     next_req = await asyncio.wait_for(_batch_queue.get(), timeout=0.05)
+                    if current_len + len(next_req.inputs) > _max_batch_size:
+                        # Put it back to the queue and stop accumulating
+                        await _batch_queue.put(next_req)
+                        break
                     requests.append(next_req)
+                    current_len += len(next_req.inputs)
                 except asyncio.TimeoutError:
                     break
 

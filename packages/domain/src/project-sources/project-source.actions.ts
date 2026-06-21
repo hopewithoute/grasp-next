@@ -1,5 +1,5 @@
 import { AUDIT_ACTION, AUDIT_ENTITY_TYPE } from '../constants';
-import type { KnowledgebaseMutationRepository } from '../knowledgebase/knowledgebase.types';
+
 import { ProjectForbiddenError } from '../projects/project.errors';
 import { canEditOwnedProject, type Actor } from '../projects/project.policy';
 import type { AuditLogRepository, ProjectRepository } from '../projects/project.types';
@@ -13,7 +13,6 @@ import type { ProjectSourceRecord, ProjectSourceRepository } from './project-sou
 
 export type ProjectSourceActionDeps = {
   auditLogRepository: AuditLogRepository;
-  knowledgebaseRepository: KnowledgebaseMutationRepository;
   projectRepository: ProjectRepository;
   projectSourceRepository: ProjectSourceRepository;
 };
@@ -142,7 +141,6 @@ export async function deleteProjectSource(
     throw new ProjectForbiddenError();
   }
 
-  await deps.knowledgebaseRepository.cleanupOrphans(source.projectId);
 
   await deps.auditLogRepository.write({
     actorId: actor.id,

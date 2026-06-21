@@ -9,7 +9,7 @@ export {
   createIngestionRunRepository,
   type DbIngestionRunRepository,
 } from './ingestion-run-repository';
-export * from './db';
+
 export {
   createProjectSourceRepository,
   type ProjectSourceRepository,

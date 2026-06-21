@@ -57,23 +57,7 @@ export async function ProjectDetailPage({ currentStage, projectId }: ProjectDeta
     notFound();
   }
 
-  if (serverEnv.LGS_ENABLED === 'true') {
-    if (!deps.lgsService) {
-      throw new Error('LGS service is not configured');
-    }
 
-    const lgsGraph = await deps.lgsService.getLocalGraphForOwner({
-      ownerId: actor.id,
-      projectId,
-    });
-
-    detail = {
-      ...detail,
-      concepts: lgsGraph.concepts,
-      knowledgebaseGraph: lgsGraph,
-      relationships: lgsGraph.relationships,
-    };
-  }
 
   const stage = resolveStage(currentStage);
   const sourceReady = detail.sources.some((source) => source.content?.trim());
