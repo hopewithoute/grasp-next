@@ -155,6 +155,7 @@ export function EvidenceExplorerPane({
           ],
         });
         await loadPassages(selectedSourceId);
+        setCurrentPage(1);
       } finally {
         setIsApplyingCuration(false);
       }

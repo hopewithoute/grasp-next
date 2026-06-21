@@ -324,12 +324,6 @@ export async function deleteProjectSourceFormAction(
   }
 }
 
-// --- Evidence query actions ---
-
-export async function getConceptEvidence(_projectId: string, _conceptId: string) {
-  return [];
-}
-
 // --- Knowledgebase search ---
 
 export type EvidenceKbSourcesResult =

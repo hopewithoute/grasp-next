@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState, type RefObject } from 'react';
 import { useRouter } from 'next/navigation';
 import { consumeUIMessageChunks } from '@/lib/ui-message-stream';
-import { addProjectSourceFromUrlFormAction } from '../../actions';
+import { addProjectSourceFromUrlFormAction, applyEvidenceKbCurationAction } from '../../actions';
 import { readStoredChatMessages, writeStoredChatMessages } from '../chat-storage';
 import {
   type ChatItem,
@@ -409,7 +409,6 @@ export function useChatThread(
     async (id: string, proposal: CurationProposalPayload) => {
       setIsLoading(true);
       try {
-        const { applyEvidenceKbCurationAction } = await import('../../actions');
         const result = await applyEvidenceKbCurationAction({
           projectId,
           actions: proposal.actions,
