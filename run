@@ -1,0 +1,117 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# dependencies = [
+#     "rich>=12.0.0",
+# ]
+# ///
+
+import os
+import sys
+import subprocess
+from rich.console import Console
+from rich.panel import Panel
+from rich.table import Table
+
+console = Console()
+
+COMMANDS = {
+    "dev": {
+        "desc": "Start all development servers (Next.js & Python services)",
+        "cmd": "just dev",
+    },
+    "build": {
+        "desc": "Build Next.js production bundle",
+        "cmd": "pnpm build",
+    },
+    "test": {
+        "desc": "Run all tests (Frontend vitest & Python services pytest)",
+        "cmd": "pnpm test && (cd services/evidence-kb && uv run pytest) && (cd services/embedding-sidecar && uv run pytest integration_test.py)",
+    },
+    "lint": {
+        "desc": "Run code linters (ESlint & Python ruff check)",
+        "cmd": "pnpm lint && (cd services/evidence-kb && uvx ruff check .) && (cd services/embedding-sidecar && uvx ruff check .)",
+    },
+    "format": {
+        "desc": "Run code formatters (Prettier & Python ruff format)",
+        "cmd": "pnpm format && (cd services/evidence-kb && uvx ruff format .) && (cd services/embedding-sidecar && uvx ruff format .)",
+    },
+    "typecheck": {
+        "desc": "Run TypeScript type checks (safe tsgo wrapper)",
+        "cmd": "pnpm typecheck",
+    },
+    "doctor": {
+        "desc": "Run React doctor diagnostics",
+        "cmd": "pnpm doctor",
+    },
+}
+
+def run_cmd(name: str):
+    item = COMMANDS.get(name)
+    if not item:
+        console.print(f"[red]Unknown command: {name}[/red]")
+        sys.exit(1)
+    
+    cmd = item["cmd"]
+    console.print(Panel(f"Running: [bold green]{cmd}[/bold green]", title=f"Operation: {name}", border_style="cyan"))
+    try:
+        result = subprocess.run(cmd, shell=True)
+        sys.exit(result.returncode)
+    except KeyboardInterrupt:
+        console.print("\n[yellow]Operation cancelled by user.[/yellow]")
+        sys.exit(130)
+
+def show_menu():
+    table = Table(title="grasp-next Common Operations", border_style="cyan", header_style="bold magenta")
+    table.add_column("Key", justify="center", style="bold green", no_wrap=True)
+    table.add_column("Command", style="cyan")
+    table.add_column("Description", style="white")
+
+    for idx, (name, item) in enumerate(COMMANDS.items(), 1):
+        table.add_row(str(idx), name, item["desc"])
+    
+    console.print(table)
+    console.print("Type [bold yellow]q[/bold yellow] or [bold yellow]exit[/bold yellow] to quit.\n")
+
+    try:
+        choice = input("Enter choice (number or command name): ").strip().lower()
+        if choice in ["q", "quit", "exit"]:
+            console.print("[yellow]Exiting.[/yellow]")
+            return
+        
+        # Match by number
+        keys = list(COMMANDS.keys())
+        if choice.isdigit():
+            idx = int(choice) - 1
+            if 0 <= idx < len(keys):
+                run_cmd(keys[idx])
+                return
+        
+        # Match by name
+        if choice in COMMANDS:
+            run_cmd(choice)
+            return
+
+        console.print("[red]Invalid choice. Please try again.[/red]")
+        show_menu()
+    except (KeyboardInterrupt, EOFError):
+        console.print("\n[yellow]Exiting.[/yellow]")
+        sys.exit(0)
+
+def main():
+    if len(sys.argv) > 1:
+        arg = sys.argv[1]
+        if arg in ["--help", "-h"]:
+            console.print("[bold cyan]Usage:[/bold cyan]")
+            console.print("  ./run [command]      Run specific command directly")
+            console.print("  ./run                Launch interactive command selector\n")
+            console.print("[bold cyan]Available commands:[/bold cyan]")
+            for name, item in COMMANDS.items():
+                console.print(f"  [bold green]{name:<12}[/bold green] {item['desc']}")
+            sys.exit(0)
+        
+        run_cmd(arg)
+    else:
+        show_menu()
+
+if __name__ == "__main__":
+    main()
