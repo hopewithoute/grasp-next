@@ -529,37 +529,42 @@ function PassageFilters({
           >
             PREV
           </button>
-          {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-            const page = i + 1;
-            return (
-              <button
-                key={page}
-                className={cn(
-                  'border-border/40 hover:border-brand-accent/50 border px-2 py-1 font-mono text-[0.56rem] tracking-widest uppercase',
-                  currentPage === page && 'border-brand-accent/70 bg-brand-accent/10'
-                )}
-                onClick={() => onPageChange(page)}
-                type="button"
-              >
-                {page}
-              </button>
+          {(() => {
+            const windowSize = 5;
+            const half = Math.floor(windowSize / 2);
+            let start = Math.max(1, currentPage - half);
+            let end = Math.min(totalPages, start + windowSize - 1);
+            if (end - start < windowSize - 1) {
+              start = Math.max(1, end - windowSize + 1);
+            }
+            const pages: number[] = [];
+            if (start > 1) {
+              pages.push(1);
+              if (start > 2) pages.push(-1);
+            }
+            for (let p = start; p <= end; p++) pages.push(p);
+            if (end < totalPages) {
+              if (end < totalPages - 1) pages.push(-1);
+              pages.push(totalPages);
+            }
+            return pages.map((page) =>
+              page === -1 ? (
+                <span key="ellipsis" className="text-muted-foreground font-mono text-[0.56rem]">...</span>
+              ) : (
+                <button
+                  key={page}
+                  className={cn(
+                    'border-border/40 hover:border-brand-accent/50 border px-2 py-1 font-mono text-[0.56rem] tracking-widest uppercase',
+                    currentPage === page && 'border-brand-accent/70 bg-brand-accent/10'
+                  )}
+                  onClick={() => onPageChange(page)}
+                  type="button"
+                >
+                  {page}
+                </button>
+              )
             );
-          })}
-          {totalPages > 5 && (
-            <span className="text-muted-foreground font-mono text-[0.56rem]">...</span>
-          )}
-          {totalPages > 5 && (
-            <button
-              className={cn(
-                'border-border/40 hover:border-brand-accent/50 border px-2 py-1 font-mono text-[0.56rem] tracking-widest uppercase',
-                currentPage === totalPages && 'border-brand-accent/70 bg-brand-accent/10'
-              )}
-              onClick={() => onPageChange(totalPages)}
-              type="button"
-            >
-              {totalPages}
-            </button>
-          )}
+          })()}
           <button
             className="border-border/40 hover:border-brand-accent/50 disabled:text-muted-foreground/35 border px-2 py-1 font-mono text-[0.56rem] tracking-widest uppercase"
             disabled={currentPage === totalPages}
