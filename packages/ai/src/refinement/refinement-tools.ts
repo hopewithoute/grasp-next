@@ -3,6 +3,7 @@ import {
   createExportPassagesTool,
   createFindStaleSourcesTool,
   createFindWeakPassagesTool,
+  createGetSurroundingPassagesTool,
   createListEvidenceSourcesTool,
   createProposeEvidenceCurationTool,
   createSearchEvidenceTool,
@@ -33,6 +34,7 @@ export function createRefinementTools(deps: RefinementDependencies) {
       projectId: deps.projectId,
     };
     evidenceTools['search-evidence'] = createSearchEvidenceTool(evidenceDeps);
+    evidenceTools['get-surrounding-passages'] = createGetSurroundingPassagesTool(evidenceDeps);
     evidenceTools['list-evidence-sources'] = createListEvidenceSourcesTool(evidenceDeps);
     evidenceTools['propose-evidence-curation'] = createProposeEvidenceCurationTool(evidenceDeps);
     evidenceTools['find-weak-passages'] = createFindWeakPassagesTool(evidenceDeps);

@@ -61,6 +61,25 @@ export type EvidenceKbToolApi = {
     location: { page?: number | null; heading?: string | null };
   }>;
 
+  getSurroundingPassagesForOwner(request: {
+    ownerId: string;
+    passageId: string;
+    projectId: string;
+    before?: number;
+    after?: number;
+  }): Promise<
+    Array<{
+      id: string;
+      text: string;
+      status: string;
+      retrieval_enabled: boolean;
+      quality_score: number;
+      quality_warnings: string[];
+      source_id: string;
+      location: { page?: number | null; heading?: string | null };
+    }>
+  >;
+
   applyCurationForOwner(request: {
     actions: Array<Record<string, unknown>>;
     ownerId: string;
@@ -676,6 +695,74 @@ export function createExportPassagesTool(deps: {
           tokenCount: p.token_count,
         })),
       };
+    },
+  });
+}
+
+export function createGetSurroundingPassagesTool(deps: {
+  evidenceKbService: EvidenceKbToolApi;
+  ownerId: string;
+  projectId: string;
+}) {
+  return createTool({
+    id: 'get-surrounding-passages',
+    description: 'Fetch the surrounding passages (before and after) for a specific passage ID to gain temporal or sequential context from the original source document.',
+    inputSchema: v.object({
+      passageId: described(v.string(), 'The target passage ID.'),
+      before: v.optional(described(v.number(), 'Number of preceding passages to retrieve (max 10). Default is 1.'), 1),
+      after: v.optional(described(v.number(), 'Number of succeeding passages to retrieve (max 10). Default is 1.'), 1),
+    }),
+    outputSchema: v.array(
+      v.object({
+        id: v.string(),
+        sourceId: v.string(),
+        text: v.string(),
+        status: v.string(),
+        qualityScore: v.number(),
+        qualityWarnings: v.array(v.string()),
+        retrievalEnabled: v.boolean(),
+      })
+    ),
+    execute: async ({ passageId, before, after }, context) => {
+      await context?.writer?.custom({
+        type: 'data-agent-activity',
+        data: {
+          type: 'agent_activity',
+          label: 'Expanding context',
+          detail: `Fetching surrounding passages for ${passageId}`,
+          status: 'started',
+        },
+        transient: true,
+      });
+
+      const passages = await deps.evidenceKbService.getSurroundingPassagesForOwner({
+        ownerId: deps.ownerId,
+        projectId: deps.projectId,
+        passageId,
+        before,
+        after,
+      });
+
+      await context?.writer?.custom({
+        type: 'data-agent-activity',
+        data: {
+          type: 'agent_activity',
+          label: 'Context fetched',
+          detail: `Found ${passages.length} surrounding passages.`,
+          status: 'completed',
+        },
+        transient: true,
+      });
+
+      return passages.map((p) => ({
+        id: p.id,
+        sourceId: p.source_id,
+        text: p.text,
+        status: p.status,
+        qualityScore: p.quality_score,
+        qualityWarnings: p.quality_warnings,
+        retrievalEnabled: p.retrieval_enabled,
+      }));
     },
   });
 }
