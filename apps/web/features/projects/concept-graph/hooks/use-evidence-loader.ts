@@ -13,21 +13,18 @@ export function useEvidenceLoader(_projectId: string) {
   const [isLoading, setIsLoading] = useState(false);
   const requestIdRef = useRef(0);
 
-  const open = useCallback(
-    (targetConceptId: string) => {
-      const requestId = requestIdRef.current + 1;
-      requestIdRef.current = requestId;
-      setConceptId(targetConceptId);
-      setEvidence([]);
-      setIsLoading(true);
+  const open = useCallback((targetConceptId: string) => {
+    const requestId = requestIdRef.current + 1;
+    requestIdRef.current = requestId;
+    setConceptId(targetConceptId);
+    setEvidence([]);
+    setIsLoading(true);
 
-      if (requestIdRef.current === requestId) {
-        setEvidence([]);
-        setIsLoading(false);
-      }
-    },
-    []
-  );
+    if (requestIdRef.current === requestId) {
+      setEvidence([]);
+      setIsLoading(false);
+    }
+  }, []);
 
   const close = useCallback(() => {
     requestIdRef.current += 1;

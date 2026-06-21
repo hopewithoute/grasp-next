@@ -75,7 +75,6 @@ export async function loadProjectDetail(
   };
 }
 
-
 function emptyKnowledgebaseReadModel(): KnowledgebaseGraphReadModel {
   return {
     concepts: [],

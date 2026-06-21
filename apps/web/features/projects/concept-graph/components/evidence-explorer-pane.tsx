@@ -281,8 +281,14 @@ export function EvidenceExplorerPane({
             <PassageFilters
               currentPage={currentPage}
               onPageChange={setCurrentPage}
-              onQueryChange={(val) => { setQuery(val); setCurrentPage(1); }}
-              onStatusFilterChange={(val) => { setStatusFilter(val); setCurrentPage(1); }}
+              onQueryChange={(val) => {
+                setQuery(val);
+                setCurrentPage(1);
+              }}
+              onStatusFilterChange={(val) => {
+                setStatusFilter(val);
+                setCurrentPage(1);
+              }}
               onToggleSort={toggleSort}
               query={query}
               sortDirection={sortDirection}
@@ -546,7 +552,7 @@ function PassageFilters({
             const windowSize = 5;
             const half = Math.floor(windowSize / 2);
             let start = Math.max(1, currentPage - half);
-            let end = Math.min(totalPages, start + windowSize - 1);
+            const end = Math.min(totalPages, start + windowSize - 1);
             if (end - start < windowSize - 1) {
               start = Math.max(1, end - windowSize + 1);
             }
@@ -562,7 +568,9 @@ function PassageFilters({
             }
             return pages.map((page) =>
               page === -1 ? (
-                <span key="ellipsis" className="text-muted-foreground font-mono text-[0.56rem]">...</span>
+                <span key="ellipsis" className="text-muted-foreground font-mono text-[0.56rem]">
+                  ...
+                </span>
               ) : (
                 <button
                   key={page}

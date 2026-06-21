@@ -45,15 +45,19 @@ function getFilterButtonStyles(value: DifficultyFilter, isSelected: boolean) {
 
 function getFilterIconStyles(value: DifficultyFilter) {
   switch (value) {
-    case 'beginner': return 'bg-status-success-foreground';
-    case 'intermediate': return 'bg-status-info-foreground';
-    case 'advanced': return 'bg-status-warning-foreground';
-    default: return 'bg-brand-accent';
+    case 'beginner':
+      return 'bg-status-success-foreground';
+    case 'intermediate':
+      return 'bg-status-info-foreground';
+    case 'advanced':
+      return 'bg-status-warning-foreground';
+    default:
+      return 'bg-brand-accent';
   }
 }
 
 export function ConceptDataGridPane({
-  projectId,
+  projectId: _projectId,
   concepts,
   relationships: _relationships,
   onSelectConcept,
@@ -77,7 +81,10 @@ export function ConceptDataGridPane({
   const filteredConcepts = (concepts || []).filter((concept) => {
     if (debouncedSearchQuery) {
       const q = debouncedSearchQuery.toLowerCase();
-      if (!concept.name.toLowerCase().includes(q) && !concept.definition.toLowerCase().includes(q)) {
+      if (
+        !concept.name.toLowerCase().includes(q) &&
+        !concept.definition.toLowerCase().includes(q)
+      ) {
         return false;
       }
     }
@@ -132,10 +139,7 @@ export function ConceptDataGridPane({
               {value === 'all' ? (
                 <ListFilter className="size-3" strokeWidth={1} />
               ) : (
-                <span 
-                  aria-hidden 
-                  className={cn('size-1.5', getFilterIconStyles(value))} 
-                />
+                <span aria-hidden className={cn('size-1.5', getFilterIconStyles(value))} />
               )}
               [ {DIFFICULTY_FILTER_LABEL[value].toUpperCase()} ]
             </button>
