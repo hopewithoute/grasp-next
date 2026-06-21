@@ -16,7 +16,8 @@ export type EvidenceKbIngestSourceResponse = {
 export type EvidenceKbSource = {
   external_source_id: string;
   id: string;
-  metadata: Record<string, unknown>;
+  metadata?: Record<string, unknown>;
+  metadata_?: Record<string, unknown>;
   project_id: string;
   quality_warnings: string[];
   retrieval_enabled: boolean;
@@ -102,6 +103,10 @@ class EvidenceKbClient {
     return this.fetch<T>(path, { method: 'GET' });
   }
 
+  private async delete<T>(path: string): Promise<T> {
+    return this.fetch<T>(path, { method: 'DELETE' });
+  }
+
   private async post<T>(path: string, body: unknown): Promise<T> {
     return this.fetch<T>(path, {
       method: 'POST',
@@ -112,6 +117,7 @@ class EvidenceKbClient {
   async ingestSource(request: {
     externalSourceId: string;
     metadata?: Record<string, unknown>;
+    metadata_?: Record<string, unknown>;
     projectId: string;
     sourceType: 'markdown' | 'text' | 'web';
     tenantId: string;
@@ -126,12 +132,51 @@ class EvidenceKbClient {
     return this.get<EvidenceKbSource[]>(`/v1/projects/${request.projectId}/sources?${params}`);
   }
 
+  async getSource(request: { projectId: string; sourceId: string; tenantId: string }) {
+    const params = new URLSearchParams({ tenantId: request.tenantId });
+    return this.get<EvidenceKbSource>(
+      `/v1/projects/${request.projectId}/sources/${request.sourceId}?${params}`
+    );
+  }
+
+  async getSourceBySourceId(request: { sourceId: string; tenantId: string }) {
+    const params = new URLSearchParams({ tenantId: request.tenantId });
+    return this.get<EvidenceKbSource>(`/v1/sources/${request.sourceId}?${params}`);
+  }
+
+  async deleteSource(request: { projectId: string; sourceId: string; tenantId: string }) {
+    const params = new URLSearchParams({ tenantId: request.tenantId });
+    return this.delete<{ ok: boolean; deleted: boolean }>(
+      `/v1/projects/${request.projectId}/sources/${request.sourceId}?${params}`
+    );
+  }
+
+  async deleteSourceBySourceId(request: { sourceId: string; tenantId: string }) {
+    const params = new URLSearchParams({ tenantId: request.tenantId });
+    return this.delete<{ ok: boolean; deleted: boolean }>(`/v1/sources/${request.sourceId}?${params}`);
+  }
+
+  async deleteProject(request: { projectId: string; tenantId: string }) {
+    const params = new URLSearchParams({ tenantId: request.tenantId });
+    return this.delete<{ ok: boolean; deleted: boolean }>(
+      `/v1/projects/${request.projectId}?${params}`
+    );
+  }
+
   async listPassages(request: { sourceId: string }) {
     return this.get<EvidenceKbPassage[]>(`/v1/sources/${request.sourceId}/passages`);
   }
 
   async inspectPassage(request: { passageId: string }) {
     return this.get<EvidenceKbPassage>(`/v1/passages/${request.passageId}`);
+  }
+
+  async getSurroundingPassages(request: { passageId: string; before?: number; after?: number }) {
+    const params = new URLSearchParams();
+    if (request.before !== undefined) params.set('before', request.before.toString());
+    if (request.after !== undefined) params.set('after', request.after.toString());
+    const query = params.toString() ? `?${params.toString()}` : '';
+    return this.get<EvidenceKbPassage[]>(`/v1/passages/${request.passageId}/surrounding${query}`);
   }
 
   async retrieve(request: {
@@ -152,8 +197,12 @@ class EvidenceKbClient {
     });
   }
 
-  async applyCuration(request: { actions: EvidenceKbCurationAction[] }) {
-    return this.post<EvidenceKbApplyCurationResponse>('/v1/curation/apply', request);
+  async applyCuration(request: { actions: EvidenceKbCurationAction[], projectId: string, tenantId: string }) {
+    const params = new URLSearchParams({
+      project_id: request.projectId,
+      tenant_id: request.tenantId,
+    });
+    return this.post<EvidenceKbApplyCurationResponse>(`/v1/curation/bulk?${params}`, { actions: request.actions });
   }
 
   async bulkCuration(request: {
@@ -262,7 +311,11 @@ export function createEvidenceKbService(input: {
     }) {
       await requireOwnedProject(request.projectId, request.ownerId);
 
-      return client.applyCuration({ actions: request.actions });
+      return client.applyCuration({ 
+        actions: request.actions, 
+        projectId: request.projectId, 
+        tenantId: request.ownerId 
+      });
     },
 
     async bulkCurationForOwner(request: {
@@ -330,6 +383,22 @@ export function createEvidenceKbService(input: {
       return client.inspectPassage({ passageId: request.passageId });
     },
 
+    async getSurroundingPassagesForOwner(request: {
+      ownerId: string;
+      passageId: string;
+      projectId: string;
+      before?: number;
+      after?: number;
+    }) {
+      await requireOwnedProject(request.projectId, request.ownerId);
+
+      return client.getSurroundingPassages({
+        passageId: request.passageId,
+        before: request.before,
+        after: request.after,
+      });
+    },
+
     async listPassagesForOwner(request: { ownerId: string; projectId: string; sourceId: string }) {
       await requireOwnedProject(request.projectId, request.ownerId);
 
@@ -340,6 +409,49 @@ export function createEvidenceKbService(input: {
       await requireOwnedProject(request.projectId, request.ownerId);
 
       return client.listSources({
+        projectId: request.projectId,
+        tenantId: request.ownerId,
+      });
+    },
+
+    async getSourceForOwner(request: { ownerId: string; projectId: string; sourceId: string }) {
+      await requireOwnedProject(request.projectId, request.ownerId);
+
+      return client.getSource({
+        projectId: request.projectId,
+        sourceId: request.sourceId,
+        tenantId: request.ownerId,
+      });
+    },
+
+    async getSourceBySourceIdForOwner(request: { ownerId: string; sourceId: string }) {
+      return client.getSourceBySourceId({
+        sourceId: request.sourceId,
+        tenantId: request.ownerId,
+      });
+    },
+
+    async deleteSourceForOwner(request: { ownerId: string; projectId: string; sourceId: string }) {
+      await requireOwnedProject(request.projectId, request.ownerId);
+
+      return client.deleteSource({
+        projectId: request.projectId,
+        sourceId: request.sourceId,
+        tenantId: request.ownerId,
+      });
+    },
+
+    async deleteSourceBySourceIdForOwner(request: { ownerId: string; sourceId: string }) {
+      return client.deleteSourceBySourceId({
+        sourceId: request.sourceId,
+        tenantId: request.ownerId,
+      });
+    },
+
+    async deleteProjectForOwner(request: { ownerId: string; projectId: string }) {
+      await requireOwnedProject(request.projectId, request.ownerId);
+
+      return client.deleteProject({
         projectId: request.projectId,
         tenantId: request.ownerId,
       });
