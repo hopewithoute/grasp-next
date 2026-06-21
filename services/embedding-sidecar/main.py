@@ -18,6 +18,9 @@ security = HTTPBearer()
 
 _embedding_model = None
 _embedding_model_path = os.environ.get("EMBEDDING_MODEL_PATH")
+if _embedding_model_path and not os.path.isabs(_embedding_model_path):
+    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+    _embedding_model_path = os.path.join(project_root, _embedding_model_path)
 _embedding_model_name = os.environ.get("EMBEDDING_MODEL", "local-embedding-model")
 _embedding_context_size = int(os.environ.get("EMBEDDING_CONTEXT_SIZE", "8192"))
 _embedding_threads = int(
