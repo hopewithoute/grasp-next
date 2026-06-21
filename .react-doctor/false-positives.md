@@ -1,5 +1,0 @@
-- `react-doctor/async-parallel` - `evals/**/*.eval.ts` - test scripts
-- `react-doctor/rendering-usetransition-loading` - `hooks/use-evidence-loader.ts` - state genuinely tracks async network loading
-- `react-doctor/async-await-in-loop` - `lib/ui-message-stream.ts` - awaiting stream chunks in `while(true)`
-- `react-doctor/no-danger` - `app/layout.tsx` - inline script that is provably safe and contains no user input
-- `react-doctor/async-await-in-loop` - `evals/mastra/refinement.eval.ts` - batch processing loop
