@@ -16,7 +16,7 @@ dev-next:
 
 # Start LazyGraphRAG python service
 dev-lgs:
-	cd services/lazy-graph-rag && uv run --env-file ../../.env uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
+	cd services/evidence-kb && uv run --env-file ../../.env uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
 
 # Start GLiNER sidecar python service
 dev-gliner:
@@ -37,7 +37,7 @@ eval-servers:
 
 # Start LazyGraphRAG python service for evaluation
 eval-lgs:
-	cd services/lazy-graph-rag && uv run --env-file ../../.env.eval uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
+	cd services/evidence-kb && uv run --env-file ../../.env.eval uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
 
 # Start GLiNER sidecar python service for evaluation
 eval-gliner:
