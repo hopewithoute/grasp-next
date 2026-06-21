@@ -16,32 +16,32 @@ console = Console()
 
 COMMANDS = {
     "dev": {
-        "desc": "Start all development servers (Next.js & Python services)",
-        "cmd": "just dev",
-    },
-    "build": {
-        "desc": "Build Next.js production bundle",
-        "cmd": "pnpm build",
+        "desc": "Start the development server (uvicorn)",
+        "cmd": "uv run --env-file ../../.env uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload",
     },
     "test": {
-        "desc": "Run all tests (Frontend vitest & Python services pytest)",
-        "cmd": "pnpm test && (cd services/evidence-kb && uv run pytest)",
+        "desc": "Run pytest unit tests",
+        "cmd": "uv run pytest",
+    },
+    "test-integration": {
+        "desc": "Run pytest integration tests (requires running Postgres)",
+        "cmd": "uv run pytest tests/integration/ -v",
     },
     "lint": {
-        "desc": "Run code linters (ESlint & Python ruff check)",
-        "cmd": "pnpm lint && (cd services/evidence-kb && uvx ruff check .) && (cd services/embedding-sidecar && uvx ruff check .)",
+        "desc": "Run ruff code quality checks",
+        "cmd": "uvx ruff check .",
     },
     "format": {
-        "desc": "Run code formatters (Prettier & Python ruff format)",
-        "cmd": "pnpm format && (cd services/evidence-kb && uvx ruff format .) && (cd services/embedding-sidecar && uvx ruff format .)",
+        "desc": "Run ruff code formatting",
+        "cmd": "uvx ruff format .",
     },
-    "typecheck": {
-        "desc": "Run TypeScript type checks (safe tsgo wrapper)",
-        "cmd": "pnpm typecheck",
+    "db-init": {
+        "desc": "Initialize database schema & indexes",
+        "cmd": "uv run python -m app.storage.schema_init",
     },
-    "doctor": {
-        "desc": "Run React doctor diagnostics",
-        "cmd": "pnpm doctor",
+    "db-migrate": {
+        "desc": "Apply Alembic database migrations to head",
+        "cmd": "uv run alembic upgrade head",
     },
 }
 
@@ -54,14 +54,15 @@ def run_cmd(name: str):
     cmd = item["cmd"]
     console.print(Panel(f"Running: [bold green]{cmd}[/bold green]", title=f"Operation: {name}", border_style="cyan"))
     try:
-        result = subprocess.run(cmd, shell=True)
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        result = subprocess.run(cmd, shell=True, cwd=script_dir)
         sys.exit(result.returncode)
     except KeyboardInterrupt:
         console.print("\n[yellow]Operation cancelled by user.[/yellow]")
         sys.exit(130)
 
 def show_menu():
-    table = Table(title="grasp-next Common Operations", border_style="cyan", header_style="bold magenta")
+    table = Table(title="evidence-kb Common Operations", border_style="cyan", header_style="bold magenta")
     table.add_column("Key", justify="center", style="bold green", no_wrap=True)
     table.add_column("Command", style="cyan")
     table.add_column("Description", style="white")
@@ -78,7 +79,6 @@ def show_menu():
             console.print("[yellow]Exiting.[/yellow]")
             return
         
-        # Match by number
         keys = list(COMMANDS.keys())
         if choice.isdigit():
             idx = int(choice) - 1
@@ -86,7 +86,6 @@ def show_menu():
                 run_cmd(keys[idx])
                 return
         
-        # Match by name
         if choice in COMMANDS:
             run_cmd(choice)
             return
@@ -106,7 +105,7 @@ def main():
             console.print("  ./run                Launch interactive command selector\n")
             console.print("[bold cyan]Available commands:[/bold cyan]")
             for name, item in COMMANDS.items():
-                console.print(f"  [bold green]{name:<12}[/bold green] {item['desc']}")
+                console.print(f"  [bold green]{name:<16}[/bold green] {item['desc']}")
             sys.exit(0)
         
         run_cmd(arg)

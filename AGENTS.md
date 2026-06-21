@@ -266,6 +266,11 @@ A unified entry script `./run` is available at the root of the repository to man
   ./run doctor
   ```
 
+## Local Service Scripts (`services/evidence-kb`)
+
+For ease of running the Python FastAPI backend, a local `./run` script is available inside `services/evidence-kb`. 
+You can run it to launch the server (`./run dev`), run pytest (`./run test`), run integration tests (`./run test-integration`), lint/format code (`./run lint`, `./run format`), and manage database migrations (`./run db-init`, `./run db-migrate`).
+
 ## RTK (Rust Token Killer) - Hook-Based Usage
 
 This repository uses **RTK (Rust Token Killer)** to optimize terminal tokens.

@@ -186,25 +186,42 @@ curl -X POST "http://localhost:8003/v1/curation/bulk?project_id=8b9de121-72f5-46
 
 ---
 
-## Testing & Linting
+## Development & Utility Script
 
-Verify your changes local to the `evidence-kb` directory:
+A unified helper script `./run` is available inside this directory for ease of running the service and performing common operations:
 
-### Unit Tests
-Fast unit testing running with a mocked/in-memory backend:
-```bash
-rtk pytest
-```
+* **Interactive Selector**: Run `./run` without arguments to launch a keyboard-selectable menu.
+* **Direct Command**: Run `./run <command>` to execute a specific operation directly.
 
-### Integration Tests
-Requires a running Postgres instance with the `pgvector` extension setup at `localhost:5432`:
-```bash
-rtk pytest tests/integration/ -v
-```
+### Available Commands:
 
-### Style & Format Verification
-Verify the code matches project stylistic guidelines:
-```bash
-rtk lint
-```
-*(Runs ruff format check and syntax checks)*
+* **Start the development server**:
+  ```bash
+  ./run dev
+  ```
+* **Run unit tests**:
+  ```bash
+  ./run test
+  ```
+* **Run integration tests** (requires running Postgres database):
+  ```bash
+  ./run test-integration
+  ```
+* **Check styling and lint errors**:
+  ```bash
+  ./run lint
+  ```
+* **Format Python code**:
+  ```bash
+  ./run format
+  ```
+* **Initialize database schema & indexes**:
+  ```bash
+  ./run db-init
+  ```
+* **Apply Alembic migrations**:
+  ```bash
+  ./run db-migrate
+  ```
+
+Alternatively, you can run the raw Python commands (e.g. `pytest`, `uvicorn`, `alembic`) directly inside your activated virtual environment. All terminal commands are automatically token-optimized under the hood.
