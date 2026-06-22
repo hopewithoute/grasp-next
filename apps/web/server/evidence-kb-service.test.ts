@@ -170,6 +170,43 @@ describe('createEvidenceKbService', () => {
     );
   });
 
+  it('maps source deletion', async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ deleted: true, ok: true }));
+    const service = createEvidenceKbService({
+      baseUrl: 'http://evidence-kb.local',
+      projectRepository: createProjectRepository(),
+    });
+
+    await service?.deleteSourceForOwner({
+      ownerId: 'owner-1',
+      projectId: 'project-1',
+      sourceId: 'source-1',
+    });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      'http://evidence-kb.local/v1/projects/project-1/sources/source-1?tenantId=owner-1',
+      expect.objectContaining({ method: 'DELETE' })
+    );
+  });
+
+  it('maps project deletion', async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ deleted: true, ok: true }));
+    const service = createEvidenceKbService({
+      baseUrl: 'http://evidence-kb.local',
+      projectRepository: createProjectRepository(),
+    });
+
+    await service?.deleteProjectForOwner({
+      ownerId: 'owner-1',
+      projectId: 'project-1',
+    });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      'http://evidence-kb.local/v1/projects/project-1?tenantId=owner-1',
+      expect.objectContaining({ method: 'DELETE' })
+    );
+  });
+
   it('fails before calling Evidence KB when the project is not owned by the actor', async () => {
     const service = createEvidenceKbService({
       baseUrl: 'http://evidence-kb.local',

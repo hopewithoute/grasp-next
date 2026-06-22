@@ -1,7 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { redirect } from 'next/navigation';
+// Removed unused redirect import
 import {
   addProjectSource,
   addProjectSourceDto,
@@ -27,6 +27,7 @@ import type {
   EvidenceKbPassage,
   EvidenceKbRetrieveResponse,
   EvidenceKbSource,
+  PaginatedPassagesResponse,
 } from '@/server/evidence-kb-service';
 import { createProjectDeps } from '@/server/project-deps';
 
@@ -34,6 +35,7 @@ import { createProjectDeps } from '@/server/project-deps';
 
 export type CreateProjectFormState = {
   error: string | null;
+  success?: boolean;
 };
 
 export type ProjectSourceFormState = {
@@ -50,6 +52,7 @@ export type UpdateProjectDetailsFormState = {
 
 export type DeleteProjectFormState = {
   error: string | null;
+  success?: boolean;
 };
 
 // --- Project form actions ---
@@ -61,7 +64,7 @@ export async function createProjectFormAction(
   const actor = await auth();
 
   if (!canCreateProject(actor)) {
-    return { error: 'Unauthorized.' };
+    return { error: 'Unauthorized.', success: false };
   }
 
   const parsed = safeParse(createProjectDto, {
@@ -70,14 +73,14 @@ export async function createProjectFormAction(
   });
 
   if (!parsed.success) {
-    return { error: 'Please check the project fields.' };
+    return { error: 'Please check the project fields.', success: false };
   }
 
   await createProject(parsed.output, createProjectDeps(), actor.id);
 
   revalidatePath('/dashboard/projects');
 
-  return { error: null };
+  return { error: null, success: true };
 }
 
 export async function deleteProjectFormAction(
@@ -114,14 +117,25 @@ export async function deleteProjectFormAction(
     }
 
     await deleteProject(parsed.output, deps, actor);
+
+    if (deps.evidenceKbService) {
+      try {
+        await deps.evidenceKbService.deleteProjectForOwner({
+          ownerId: actor.id,
+          projectId: project.id,
+        });
+      } catch (err) {
+        console.error('Failed to delete project from Evidence KB:', err);
+      }
+    }
   } catch (error) {
     return {
       error: error instanceof Error ? error.message : 'Project deletion failed.',
+      success: false,
     };
   }
 
-  revalidatePath('/dashboard/projects');
-  redirect('/dashboard/projects');
+  return { error: null, success: true };
 }
 
 export async function updateProjectDetailsFormAction(
@@ -246,6 +260,61 @@ export async function addProjectSourceFromUrlFormAction(
   }
 }
 
+export async function addProjectSourceFromPdfFormAction(
+  _state: ProjectSourceFormState,
+  formData: FormData
+): Promise<ProjectSourceFormState> {
+  const actor = await auth();
+
+  if (!actor) {
+    return { error: 'Unauthorized.', success: false };
+  }
+
+  const file = formData.get('file');
+  if (!(file instanceof File) || file.type !== 'application/pdf') {
+    return { error: 'Valid PDF file is required.', success: false };
+  }
+
+  const projectId = formData.get('projectId')?.toString() ?? '';
+  const title = formData.get('title')?.toString() ?? file.name;
+
+  try {
+    const deps = createProjectDeps();
+    const source = await deps.projectSourceRepository.createForProjectOwner(
+      projectId,
+      actor.id,
+      {
+        content: `[PDF FILE: ${file.name}]`,
+        title,
+        type: 'pdf',
+      }
+    );
+
+    if (!source) {
+      return { error: 'Failed to create source record.', success: false };
+    }
+
+    if (!deps.evidenceKbService) throw new Error('Evidence KB service is not configured');
+    await deps.evidenceKbService.ingestPdfForOwner({
+      externalSourceId: source.id,
+      file,
+      ownerId: actor.id,
+      projectId: projectId,
+      title,
+    });
+
+    revalidatePath('/dashboard/projects');
+    revalidatePath(`/dashboard/projects/${projectId}`);
+
+    return { error: null, sourceId: source.id, success: true };
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : 'PDF Upload failed.',
+      success: false,
+    };
+  }
+}
+
 export async function updateProjectSourceFormAction(
   _state: ProjectSourceFormState,
   formData: FormData
@@ -313,6 +382,19 @@ export async function deleteProjectSourceFormAction(
 
     const source = await deleteProjectSource(parsed.output, deps, actor);
 
+    if (deps.evidenceKbService) {
+      try {
+        await deps.evidenceKbService.deleteSourceForOwner({
+          ownerId: actor.id,
+          projectId: source.projectId,
+          sourceId: source.id,
+        });
+      } catch (err) {
+        // Best effort: Log the error but don't fail the source deletion
+        console.error('Failed to delete source from Evidence KB:', err);
+      }
+    }
+
     revalidatePath(`/dashboard/projects/${source.projectId}`);
 
     return { error: null, success: true };
@@ -331,8 +413,8 @@ export type EvidenceKbSourcesResult =
   | { configured: true; error: null; sources: EvidenceKbSource[] };
 
 export type EvidenceKbPassagesResult =
-  | { configured: false; error: string; passages: [] }
-  | { configured: true; error: null; passages: EvidenceKbPassage[] };
+  | { success: true; data: PaginatedPassagesResponse }
+  | { success: false; error: string };
 
 export async function listEvidenceKbSourcesAction(
   projectId: string
@@ -364,30 +446,41 @@ export async function listEvidenceKbSourcesAction(
 export async function listEvidenceKbPassagesAction(input: {
   projectId: string;
   sourceId: string;
+  query?: string;
+  status?: string;
+  retrieval_enabled?: boolean;
+  sort_field?: string;
+  sort_direction?: string;
+  skip?: number;
+  limit?: number;
 }): Promise<EvidenceKbPassagesResult> {
   const actor = await auth();
-
   if (!actor) {
-    throw new Error('Unauthorized');
+    return { success: false, error: 'Unauthorized' };
   }
 
   const deps = createProjectDeps();
-
   if (!deps.evidenceKbService) {
     return {
-      configured: false,
+      success: false,
       error: 'Evidence KB service is not configured.',
-      passages: [],
     };
   }
 
-  const passages = await deps.evidenceKbService.listPassagesForOwner({
+  const data = await deps.evidenceKbService.listPassagesForOwner({
     ownerId: actor.id,
     projectId: input.projectId,
     sourceId: input.sourceId,
+    query: input.query,
+    status: input.status,
+    retrieval_enabled: input.retrieval_enabled,
+    sort_field: input.sort_field,
+    sort_direction: input.sort_direction,
+    skip: input.skip,
+    limit: input.limit,
   });
 
-  return { configured: true, error: null, passages };
+  return { success: true, data };
 }
 
 export type EvidenceKbCurationResult =
@@ -560,3 +653,32 @@ export async function retrieveEvidenceKbAction(input: {
 
   return { configured: true, error: null, retrieval };
 }
+
+export async function getEvidenceKbSourceViewerUrlAction(input: {
+  projectId: string;
+  sourceId: string;
+}): Promise<{ url?: string; html?: string } | null> {
+  const actor = await auth();
+
+  if (!actor) {
+    return null;
+  }
+
+  const deps = createProjectDeps();
+
+  if (!deps.evidenceKbService) {
+    return null;
+  }
+
+  try {
+    const result = await deps.evidenceKbService.getSourceViewerUrlForOwner({
+      ownerId: actor.id,
+      sourceId: input.sourceId,
+    });
+    return result;
+  } catch (error) {
+    console.error('Failed to get viewer URL:', error);
+    return null;
+  }
+}
+

@@ -5,6 +5,11 @@ export type EvidenceKbService = ReturnType<typeof createEvidenceKbService>;
 
 export type EvidenceKbCurationStatus = 'candidate' | 'certified' | 'deprecated' | 'rejected';
 
+export type EvidenceKbViewerUrlResponse = {
+  url?: string;
+  html?: string;
+};
+
 export type EvidenceKbIngestSourceResponse = {
   ingestionRunId: string;
   passageCount: number;
@@ -49,6 +54,11 @@ export type EvidenceKbPassage = {
   token_count: number;
 };
 
+export type PaginatedPassagesResponse = {
+  items: EvidenceKbPassage[];
+  total: number;
+};
+
 export type EvidenceKbRetrievedPassage = {
   bm25_rank?: number | null;
   final_rank: number;
@@ -57,6 +67,10 @@ export type EvidenceKbRetrievedPassage = {
   rrf_score?: number | null;
   score: number;
   source_id: string;
+  status: 'candidate' | 'certified' | 'deprecated' | 'rejected';
+  quality_score: number;
+  token_count: number;
+  retrieval_enabled: boolean;
   text: string;
   vector_rank?: number | null;
 };
@@ -70,9 +84,9 @@ export type EvidenceKbRetrieveResponse = {
 };
 
 export type EvidenceKbCurationAction =
-  | { sourceId: string; type: 'certify_source' | 'deprecate_source' | 'reject_source' }
+  | { sourceId: string; type: 'certify_source' | 'deprecate_source' | 'reject_source' | 'reset_source' }
   | { enabled: boolean; sourceId: string; type: 'set_source_retrieval_enabled' }
-  | { passageId: string; type: 'certify_passage' | 'reject_passage' }
+  | { passageId: string; type: 'certify_passage' | 'reject_passage' | 'reset_passage' }
   | { enabled: boolean; passageId: string; type: 'set_passage_retrieval_enabled' }
   | { passageId: string; type: 'clear_quality_warning'; warning?: string }
   | { passageId: string; type: 'add_quality_warning'; warning: string };
@@ -87,7 +101,9 @@ class EvidenceKbClient {
   private async fetch<T>(path: string, options: RequestInit = {}): Promise<T> {
     const url = `${this.options.baseUrl.replace(/\/$/, '')}${path}`;
     const headers = new Headers(options.headers);
-    headers.set('Content-Type', 'application/json');
+    if (!(options.body instanceof FormData)) {
+      headers.set('Content-Type', 'application/json');
+    }
     if (this.options.apiKey) {
       headers.set('x-api-key', this.options.apiKey);
     }
@@ -114,6 +130,13 @@ class EvidenceKbClient {
     });
   }
 
+  private async postFormData<T>(path: string, body: FormData): Promise<T> {
+    return this.fetch<T>(path, {
+      method: 'POST',
+      body,
+    });
+  }
+
   async ingestSource(request: {
     externalSourceId: string;
     metadata?: Record<string, unknown>;
@@ -125,6 +148,23 @@ class EvidenceKbClient {
     title: string;
   }) {
     return this.post<EvidenceKbIngestSourceResponse>('/v1/ingest/source', request);
+  }
+
+  async ingestPdf(request: {
+    externalSourceId: string;
+    file: File | Blob;
+    projectId: string;
+    tenantId: string;
+    title: string;
+  }) {
+    const formData = new FormData();
+    formData.append('tenantId', request.tenantId);
+    formData.append('projectId', request.projectId);
+    formData.append('externalSourceId', request.externalSourceId);
+    formData.append('title', request.title);
+    formData.append('file', request.file, 'document.pdf');
+    
+    return this.postFormData<EvidenceKbIngestSourceResponse>('/v1/ingest/pdf', formData);
   }
 
   async listSources(request: { projectId: string; tenantId: string }) {
@@ -142,6 +182,11 @@ class EvidenceKbClient {
   async getSourceBySourceId(request: { sourceId: string; tenantId: string }) {
     const params = new URLSearchParams({ tenantId: request.tenantId });
     return this.get<EvidenceKbSource>(`/v1/sources/${request.sourceId}?${params}`);
+  }
+
+  async getSourceViewerUrl(request: { sourceId: string; tenantId: string }) {
+    const params = new URLSearchParams({ tenantId: request.tenantId });
+    return this.get<EvidenceKbViewerUrlResponse>(`/v1/sources/${request.sourceId}/viewer-url?${params}`);
   }
 
   async deleteSource(request: { projectId: string; sourceId: string; tenantId: string }) {
@@ -163,8 +208,25 @@ class EvidenceKbClient {
     );
   }
 
-  async listPassages(request: { sourceId: string }) {
-    return this.get<EvidenceKbPassage[]>(`/v1/sources/${request.sourceId}/passages`);
+  async listPassages(request: { 
+    limit?: number; 
+    query?: string; 
+    retrieval_enabled?: boolean; 
+    skip?: number; 
+    sort_direction?: string; 
+    sort_field?: string; 
+    sourceId: string;
+    status?: string; 
+  }) {
+    const params = new URLSearchParams();
+    Object.entries(request).forEach(([key, value]) => {
+      if (key !== 'sourceId' && value !== undefined && value !== '') {
+        params.set(key, String(value));
+      }
+    });
+    
+    const queryStr = params.toString() ? `?${params.toString()}` : '';
+    return this.get<PaginatedPassagesResponse>(`/v1/sources/${request.sourceId}/passages${queryStr}`);
   }
 
   async inspectPassage(request: { passageId: string }) {
@@ -383,6 +445,24 @@ export function createEvidenceKbService(input: {
       return client.inspectPassage({ passageId: request.passageId });
     },
 
+    async ingestPdfForOwner(request: {
+      externalSourceId: string;
+      file: File | Blob;
+      ownerId: string;
+      projectId: string;
+      title: string;
+    }) {
+      await requireOwnedProject(request.projectId, request.ownerId);
+
+      return client.ingestPdf({
+        externalSourceId: request.externalSourceId,
+        file: request.file,
+        projectId: request.projectId,
+        tenantId: request.ownerId,
+        title: request.title,
+      });
+    },
+
     async getSurroundingPassagesForOwner(request: {
       ownerId: string;
       passageId: string;
@@ -399,10 +479,30 @@ export function createEvidenceKbService(input: {
       });
     },
 
-    async listPassagesForOwner(request: { ownerId: string; projectId: string; sourceId: string }) {
+    async listPassagesForOwner(request: { 
+      limit?: number;
+      ownerId: string; 
+      projectId: string; 
+      query?: string;
+      retrieval_enabled?: boolean;
+      skip?: number;
+      sort_direction?: string;
+      sort_field?: string;
+      sourceId: string; 
+      status?: string;
+    }) {
       await requireOwnedProject(request.projectId, request.ownerId);
 
-      return client.listPassages({ sourceId: request.sourceId });
+      return client.listPassages({ 
+        limit: request.limit,
+        query: request.query,
+        retrieval_enabled: request.retrieval_enabled,
+        skip: request.skip,
+        sort_direction: request.sort_direction,
+        sort_field: request.sort_field,
+        sourceId: request.sourceId,
+        status: request.status,
+      });
     },
 
     async listSourcesForOwner(request: { ownerId: string; projectId: string }) {
@@ -426,6 +526,13 @@ export function createEvidenceKbService(input: {
 
     async getSourceBySourceIdForOwner(request: { ownerId: string; sourceId: string }) {
       return client.getSourceBySourceId({
+        sourceId: request.sourceId,
+        tenantId: request.ownerId,
+      });
+    },
+
+    async getSourceViewerUrlForOwner(request: { ownerId: string; sourceId: string }) {
+      return client.getSourceViewerUrl({
         sourceId: request.sourceId,
         tenantId: request.ownerId,
       });

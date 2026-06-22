@@ -11,6 +11,10 @@ const mockEvidenceKb: EvidenceKbToolApi = {
         source_id: 's-1',
         text: 'React was created by Facebook.',
         score: 0.95,
+        status: 'candidate',
+        quality_score: 0.9,
+        token_count: 50,
+        retrieval_enabled: true,
         final_rank: 1,
         bm25_rank: 1,
         vector_rank: 1,
@@ -66,6 +70,7 @@ const mockEvidenceKb: EvidenceKbToolApi = {
   ],
   bulkCurationForOwner: async () => ({ results: [], total: 0, succeeded: 0, failed: 0 }),
   exportPassagesForOwner: async () => ({ passages: [], total: 0 }),
+  getSurroundingPassagesForOwner: async () => [],
 };
 
 describe('refinement tools contract', () => {
