@@ -283,6 +283,18 @@ html {
   scroll-behavior: smooth;
 }
 
+pre {
+  @apply border-border/40 overflow-x-auto rounded-none border bg-black/5 dark:bg-white/5 p-3 font-mono text-[0.72rem] leading-5 text-foreground/90;
+}
+
+code {
+  @apply border-border/40 bg-black/5 dark:bg-white/5 text-brand-accent rounded-none border px-1 py-0.5 font-mono text-[0.78em];
+}
+
+pre > code {
+  @apply border-0 bg-transparent p-0 text-inherit;
+}
+
 ::selection {
   background: var(--brand-accent-surface);
   color: var(--foreground);
@@ -395,8 +407,8 @@ html {
   --accent: #E6E4DD;
   --accent-foreground: #1B1D22;
   --destructive: oklch(0.577 0.245 27.325);
-  --border: #E6E4DD;
-  --input: #E6E4DD;
+  --border: #C8C4B7;
+  --input: #C8C4B7;
   --ring: #E65C00;
   --brand-accent: #E65C00;
   --brand-accent-surface: rgba(230, 92, 0, 0.12);

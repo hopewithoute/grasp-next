@@ -4,6 +4,7 @@ import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { getActor } from '@/server/actor';
 import { signInWithGoogle } from './actions';
+import { AuthErrorToast } from './auth-error-toast';
 
 export type SignInPageProps = {
   searchParams: Promise<{
@@ -94,12 +95,15 @@ export async function SignInPage({ searchParams }: SignInPageProps) {
               </div>
 
               {hasError ? (
-                <div
-                  className="border-status-danger-border/50 bg-status-danger-surface/20 text-status-danger-foreground border px-4 py-3 font-mono text-[0.65rem] tracking-widest uppercase"
-                  role="alert"
-                >
-                  [ ERR ] Connection failed. Please allow third-party cookies and retry.
-                </div>
+                <>
+                  <AuthErrorToast hasError={hasError} />
+                  <div
+                    className="border-status-danger-border/50 bg-status-danger-surface/20 text-status-danger-foreground border px-4 py-3 font-mono text-[0.65rem] tracking-widest uppercase"
+                    role="alert"
+                  >
+                    [ ERR ] Connection failed. Please allow third-party cookies and retry.
+                  </div>
+                </>
               ) : null}
 
               <form action={signInWithGoogle}>

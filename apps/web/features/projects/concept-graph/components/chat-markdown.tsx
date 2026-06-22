@@ -6,6 +6,7 @@ import remarkGfm from 'remark-gfm';
 
 const MARKDOWN_REMARK_PLUGINS = [remarkGfm];
 
+/* eslint-disable @typescript-eslint/no-unused-vars */
 const MARKDOWN_COMPONENTS = {
   p: ({ node: _node, ...props }) => (
     <p className="text-foreground/90 whitespace-pre-wrap" {...props} />
@@ -30,17 +31,9 @@ const MARKDOWN_COMPONENTS = {
     <ol className="text-foreground/90 list-decimal space-y-1 pl-4" {...props} />
   ),
   li: ({ node: _node, ...props }) => <li {...props} />,
-  pre: ({ node: _node, ...props }) => (
-    <pre
-      className="border-border/40 text-muted-foreground/90 overflow-x-auto rounded-none border bg-black/40 p-3 font-mono text-[0.72rem] leading-5 [&>code]:border-0 [&>code]:bg-transparent [&>code]:p-0 [&>code]:text-inherit"
-      {...props}
-    />
-  ),
+  pre: ({ node: _node, ...props }) => <pre {...props} />,
   code: ({ node: _node, ...props }: HTMLAttributes<HTMLElement> & { node?: unknown }) => (
-    <code
-      className="border-border/40 bg-muted/20 text-brand-accent rounded-none border px-1 py-0.5 font-mono text-[0.78em]"
-      {...props}
-    />
+    <code {...props} />
   ),
   h1: ({ node: _node, ...props }) => (
     <h1 className="text-foreground mt-4 mb-2 text-lg font-semibold" {...props}>
@@ -81,6 +74,7 @@ const MARKDOWN_COMPONENTS = {
     />
   ),
 } satisfies ComponentProps<typeof ReactMarkdown>['components'];
+/* eslint-enable @typescript-eslint/no-unused-vars */
 
 export const MarkdownText = memo(function MarkdownText({ text }: { text: string }) {
   if (!text) return null;

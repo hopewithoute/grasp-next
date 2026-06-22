@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from 'next/font/google';
 import Script from 'next/script';
 import { MotionProvider } from '@/components/motion-provider';
 import { ThemeProvider } from '@/components/theme-provider';
+import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import './globals.css';
@@ -81,6 +82,7 @@ export default function RootLayout({
         >
           <MotionProvider>
             <TooltipProvider>{children}</TooltipProvider>
+            <Toaster />
           </MotionProvider>
         </ThemeProvider>
       </body>
