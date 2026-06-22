@@ -17,6 +17,9 @@ dependencies = [
     "python-multipart>=0.0.20",
     "sqlalchemy>=2.0.35",
     "uvicorn>=0.30.0",
+    "chonkie[semantic]>=1.6.8",
+    "aioboto3>=15.5.0",
+    "pymupdf4llm>=1.27.2.3",
 ]
 
 [tool.pytest.ini_options]

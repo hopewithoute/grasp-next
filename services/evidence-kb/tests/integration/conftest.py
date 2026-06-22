@@ -16,8 +16,13 @@ import os
 os.environ["DATABASE_URL"] = "postgresql+asyncpg://postgres:gas12kilo@localhost:5432/evidence_kb_test"
 os.environ["STORAGE_BACKEND"] = "postgres"
 os.environ["DB_SCHEMA"] = "evidence_kb_test_schema"
-os.environ["EVIDENCE_KB_API_KEY"] = "test-key"
+os.environ["API_KEY"] = "test-key"
 os.environ["EMBEDDING_DIMENSIONS"] = "8"
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
+os.environ["OMP_NUM_THREADS"] = "1"
+os.environ["OPENBLAS_NUM_THREADS"] = "1"
+os.environ["MKL_NUM_THREADS"] = "1"
+os.environ["EMBEDDING_SERVICE_URL"] = ""
 
 from sqlalchemy.pool import NullPool
 import app.storage.db as db_module

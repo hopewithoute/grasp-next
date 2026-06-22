@@ -17,7 +17,7 @@ console = Console()
 COMMANDS = {
     "dev": {
         "desc": "Start the development server (uvicorn)",
-        "cmd": "uv run --env-file ../../.env uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload",
+        "cmd": "uv run --env-file .env uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload",
     },
     "test": {
         "desc": "Run pytest unit tests",

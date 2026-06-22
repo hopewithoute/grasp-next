@@ -48,7 +48,7 @@ class TestIngestSource:
         payload = ingest_sample_text()
         passages = client.get(f"/v1/sources/{payload['sourceId']}/passages")
         assert passages.status_code == 200
-        body = passages.json()
+        body = passages.json()["items"]
         assert len(body) >= 1
         assert body[0]["status"] == "candidate"
         assert "Photosynthesis" in body[0]["text"]
@@ -100,11 +100,49 @@ class TestIngestSource:
         )
         assert response.status_code == 200
         source_id = response.json()["sourceId"]
-        passages = client.get(f"/v1/sources/{source_id}/passages").json()
+        passages = client.get(f"/v1/sources/{source_id}/passages").json()["items"]
         assert len(passages) >= 2
         pages = {p["location"]["page"] for p in passages}
         assert 1 in pages
         assert 2 in pages
+
+
+
+
+    def test_passages_pagination_filtering_sorting(self):
+        # Ingest a longer sample to get multiple passages
+        payload = ingest_sample_text()
+        source_id = payload['sourceId']
+        
+        # Test basic list to get count
+        res = client.get(f"/v1/sources/{source_id}/passages").json()
+        assert res["total"] >= 1
+        
+        # 1. Test pagination (skip/limit)
+        page1 = client.get(f"/v1/sources/{source_id}/passages?limit=1&skip=0").json()
+        assert len(page1["items"]) == 1
+        assert page1["total"] == res["total"]
+
+        # 2. Test filtering by query
+        res2 = client.get(f"/v1/sources/{source_id}/passages?query=Photosynthesis").json()
+        assert res2["total"] >= 1
+        assert "Photosynthesis" in res2["items"][0]["text"]
+        
+        # 3. Test filtering by status
+        res3 = client.get(f"/v1/sources/{source_id}/passages?status=candidate").json()
+        assert res3["total"] >= 1
+        assert res3["items"][0]["status"] == "candidate"
+
+        # 4. Test filtering by retrieval_enabled
+        res4 = client.get(f"/v1/sources/{source_id}/passages?retrieval_enabled=true").json()
+        assert res4["total"] >= 1
+        assert res4["items"][0]["retrieval_enabled"] is True
+
+        # 5. Test sorting
+        res_asc = client.get(f"/v1/sources/{source_id}/passages?sort_field=token_count&sort_direction=asc").json()
+        res_desc = client.get(f"/v1/sources/{source_id}/passages?sort_field=token_count&sort_direction=desc").json()
+        assert res_asc["items"][0]["token_count"] <= res_asc["items"][-1]["token_count"]
+        assert res_desc["items"][0]["token_count"] >= res_desc["items"][-1]["token_count"]
 
 
 class TestRetrieve:
@@ -155,7 +193,7 @@ class TestRetrieve:
         assert no_certified.status_code == 200
         assert no_certified.json()["contexts"] == []
 
-        passage_id = client.get(f"/v1/sources/{payload['sourceId']}/passages").json()[0]["id"]
+        passage_id = client.get(f"/v1/sources/{payload['sourceId']}/passages").json()["items"][0]["id"]
         client.post(
             f"/v1/curation/bulk?project_id={PROJECT_ID}",
             json={"actions": [{"type": "certify_passage", "passageId": passage_id}]},
@@ -176,7 +214,7 @@ class TestRetrieve:
 class TestCuration:
     def test_certify_passage(self):
         payload = ingest_sample_text()
-        passages = client.get(f"/v1/sources/{payload['sourceId']}/passages").json()
+        passages = client.get(f"/v1/sources/{payload['sourceId']}/passages").json()["items"]
         passage_id = passages[0]["id"]
 
         curation = client.post(
@@ -191,7 +229,7 @@ class TestCuration:
 
     def test_add_and_clear_quality_warning(self):
         payload = ingest_sample_text()
-        passages = client.get(f"/v1/sources/{payload['sourceId']}/passages").json()
+        passages = client.get(f"/v1/sources/{payload['sourceId']}/passages").json()["items"]
         passage_id = passages[0]["id"]
 
         client.post(
@@ -218,7 +256,7 @@ class TestCuration:
 
     def test_toggle_retrieval_enabled(self):
         payload = ingest_sample_text()
-        passages = client.get(f"/v1/sources/{payload['sourceId']}/passages").json()
+        passages = client.get(f"/v1/sources/{payload['sourceId']}/passages").json()["items"]
         passage_id = passages[0]["id"]
 
         client.post(
@@ -245,7 +283,7 @@ class TestCuration:
 
     def test_reject_passage(self):
         payload = ingest_sample_text()
-        passages = client.get(f"/v1/sources/{payload['sourceId']}/passages").json()
+        passages = client.get(f"/v1/sources/{payload['sourceId']}/passages").json()["items"]
         passage_id = passages[0]["id"]
 
         client.post(
@@ -258,7 +296,7 @@ class TestCuration:
     def test_curation_persists_across_requests(self):
         """Certify then retrieve - state must persist in Postgres."""
         payload = ingest_sample_text()
-        passage_id = client.get(f"/v1/sources/{payload['sourceId']}/passages").json()[0]["id"]
+        passage_id = client.get(f"/v1/sources/{payload['sourceId']}/passages").json()["items"][0]["id"]
 
         client.post(
             f"/v1/curation/bulk?project_id={PROJECT_ID}",
@@ -275,3 +313,46 @@ class TestCuration:
             },
         )
         assert len(resp.json()["contexts"]) >= 1
+
+class TestDeletion:
+    def test_delete_source(self):
+        payload = ingest_sample_text()
+        source_id = payload["sourceId"]
+        
+        # Verify it exists
+        passages = client.get(f"/v1/sources/{source_id}/passages")
+        assert passages.json()["total"] > 0
+        
+        # Delete source
+        del_resp = client.delete(
+            f"/v1/projects/{PROJECT_ID}/sources/{SOURCE_EXT_ID}",
+            params={"tenantId": "tenant-1"}
+        )
+        assert del_resp.status_code == 200
+        assert del_resp.json()["deleted"] is True
+        
+        # Verify passages are gone
+        passages_after = client.get(f"/v1/sources/{source_id}/passages")
+        assert passages_after.status_code == 200
+        assert passages_after.json()["total"] == 0
+        
+    def test_delete_project(self):
+        payload = ingest_sample_text()
+        source_id = payload["sourceId"]
+        
+        # Verify it exists
+        passages = client.get(f"/v1/sources/{source_id}/passages")
+        assert passages.json()["total"] > 0
+        
+        # Delete project
+        del_resp = client.delete(
+            f"/v1/projects/{PROJECT_ID}",
+            params={"tenantId": "tenant-1"}
+        )
+        assert del_resp.status_code == 200
+        assert del_resp.json()["deleted"] is True
+        
+        # Verify passages are gone
+        passages_after = client.get(f"/v1/sources/{source_id}/passages")
+        assert passages_after.status_code == 200
+        assert passages_after.json()["total"] == 0

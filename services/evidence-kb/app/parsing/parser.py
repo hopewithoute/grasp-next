@@ -7,12 +7,19 @@ def parse_text(content: str) -> list[tuple[str, Location]]:
 
 def parse_pdf_bytes(content: bytes) -> list[tuple[str, Location]]:
     import fitz
+    import pymupdf4llm
 
     with fitz.open(stream=content, filetype="pdf") as doc:
         pages: list[tuple[str, Location]] = []
-        for page_index in range(doc.page_count):
-            page = doc.load_page(page_index)
-            text = page.get_text("text")
-            if text.strip():  # type: ignore
-                pages.append((text, Location(page=page_index + 1)))  # type: ignore
+        md_pages = pymupdf4llm.to_markdown(doc, page_chunks=True)
+        
+        for chunk in md_pages:
+            page_text = chunk.get("text", "")
+            # Clean null bytes that might crash Postgres TEXT columns
+            page_text = page_text.replace("\x00", "").strip()
+            
+            if page_text:
+                page_number = chunk.get("metadata", {}).get("page_number", 1)
+                pages.append((page_text, Location(page=page_number)))
+                
         return pages

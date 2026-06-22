@@ -14,9 +14,11 @@ class EmbeddingClient:
         base_url: str,
         api_key: str | None = None,
         dimensions: int | None = None,
-        timeout: float = 30.0,
+        timeout: float = 300.0,
     ):
         self.base_url = base_url.rstrip("/")
+        if self.base_url.endswith("/v1/embeddings"):
+            self.base_url = self.base_url[:-14]
         self.api_key = api_key
         self.dimensions = dimensions
         self.timeout = timeout
@@ -28,13 +30,13 @@ class EmbeddingClient:
             headers["Authorization"] = f"Bearer {self.api_key}"
         return headers
 
-    async def embed_texts(self, texts: list[str], batch_size: int = 100) -> list[list[float]]:
+    async def embed_texts(self, texts: list[str], batch_size: int = 20) -> list[list[float]]:
         """Embed a batch of texts. Returns one vector per text."""
         if not texts:
             return []
 
         all_embeddings = []
-        semaphore = asyncio.Semaphore(5)  # Max 5 concurrent requests
+        semaphore = asyncio.Semaphore(2)  # Max 2 concurrent requests to prevent CPU choke
 
         async def fetch_batch(batch: list[str], batch_index: int) -> tuple[int, list[list[float]]]:
             payload = {"input": batch}
