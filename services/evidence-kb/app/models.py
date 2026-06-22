@@ -58,6 +58,11 @@ class PassageRecord(BaseModel):
     retrieval_enabled: bool = True
 
 
+class PaginatedPassagesResponse(BaseModel):
+    items: list[PassageRecord]
+    total: int
+
+
 class IngestionRunRecord(BaseModel):
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)
     id: UUID
@@ -74,6 +79,10 @@ class RetrievedPassage(BaseModel):
     passage_id: UUID
     source_id: UUID
     text: str
+    status: str
+    quality_score: float
+    token_count: int
+    retrieval_enabled: bool
     score: float
     bm25_rank: int | None = None
     vector_rank: int | None = None

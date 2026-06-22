@@ -15,6 +15,13 @@ class Settings(BaseSettings):
     RRF_K: int = 60
     DEFAULT_TOP_K: int = 12
 
+    # S3 / R2 Configuration
+    S3_ENDPOINT_URL: str | None = None
+    S3_ACCESS_KEY_ID: str | None = None
+    S3_SECRET_ACCESS_KEY: str | None = None
+    S3_BUCKET_NAME: str | None = None
+    S3_REGION: str = "auto"
+
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
 

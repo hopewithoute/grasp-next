@@ -159,11 +159,16 @@ class SqlEvidenceRepository:
         return IngestionRunRecord.model_validate(run)
 
     async def fail_run(self, run_id: str, reason: str) -> IngestionRunRecord:
+        try:
+            await self.session.rollback()
+        except Exception:
+            pass
+            
         run = await self.session.get(KbIngestionRun, UUID(str(run_id)))
         if run is None:
             raise KeyError(run_id)
         run.status = IngestionStatus.FAILED.value  # type: ignore
-        run.failure_reason = reason  # type: ignore
+        run.failure_reason = reason[:2000] if reason else "Unknown error"  # type: ignore
         await self.session.commit()
         await self.session.refresh(run)
         return IngestionRunRecord.model_validate(run)
@@ -211,15 +216,46 @@ class SqlEvidenceRepository:
         result = await self.session.execute(stmt)
         return [SourceRecord.model_validate(s) for s in result.scalars().all()]
 
-    async def list_source_passages(self, source_id: str, skip: int = 0, limit: int = 1000) -> list[PassageRecord]:
-        result = await self.session.execute(
-            select(KbPassage)
-            .where(KbPassage.source_id == UUID(str(source_id)))
-            .order_by(KbPassage.order)
-            .offset(skip)
-            .limit(limit)
-        )
-        return [PassageRecord.model_validate(passage) for passage in result.scalars().all()]
+    async def list_source_passages(
+        self,
+        source_id: str,
+        query: str | None = None,
+        status: str | None = None,
+        retrieval_enabled: bool | None = None,
+        sort_field: str = "order",
+        sort_direction: str = "asc",
+        skip: int = 0,
+        limit: int = 1000
+    ) -> tuple[list[PassageRecord], int]:
+        from sqlalchemy import func
+        
+        stmt = select(KbPassage).where(KbPassage.source_id == UUID(str(source_id)))
+        
+        if query:
+            stmt = stmt.where(KbPassage.text.ilike(f"%{query}%"))
+        if status:
+            stmt = stmt.where(KbPassage.status == status)
+        if retrieval_enabled is not None:
+            stmt = stmt.where(KbPassage.retrieval_enabled == retrieval_enabled)
+            
+        count_stmt = select(func.count()).select_from(stmt.subquery())
+        total = (await self.session.execute(count_stmt)).scalar_one()
+
+        sort_map = {
+            "quality_score": KbPassage.quality_score,
+            "token_count": KbPassage.token_count,
+            "status": KbPassage.status,
+            "order": KbPassage.order
+        }
+        order_col = sort_map.get(sort_field, KbPassage.order)
+        sort_func = order_col.desc if sort_direction.lower() == "desc" else order_col.asc
+        stmt = stmt.order_by(sort_func().nullslast())
+            
+        stmt = stmt.offset(skip).limit(limit)
+        
+        result = await self.session.execute(stmt)
+        items = [PassageRecord.model_validate(passage) for passage in result.scalars().all()]
+        return items, total
 
     async def get_passage(self, passage_id: str) -> PassageRecord | None:
         passage = await self.session.get(KbPassage, UUID(str(passage_id)))
@@ -325,6 +361,10 @@ class SqlEvidenceRepository:
                 passage_id=passage.id,
                 source_id=passage.source_id,
                 text=passage.text,
+                status=passage.status.value if hasattr(passage.status, 'value') else passage.status,
+                quality_score=passage.quality_score,
+                token_count=passage.token_count,
+                retrieval_enabled=passage.retrieval_enabled,
                 score=score,
                 bm25_rank=bm25_rank,
                 vector_rank=vector_rank,
@@ -389,6 +429,9 @@ class SqlEvidenceRepository:
         elif action_type in {"reject_source", "reject_passage"}:
             target.status = CurationStatus.REJECTED.value  # type: ignore
             target.retrieval_enabled = False  # type: ignore
+        elif action_type in {"reset_source", "reset_passage"}:
+            target.status = CurationStatus.CANDIDATE.value  # type: ignore
+            target.retrieval_enabled = True  # type: ignore
         elif action_type in {"set_source_retrieval_enabled", "set_passage_retrieval_enabled"}:
             target.retrieval_enabled = bool(action.get("enabled"))  # type: ignore
         elif action_type == "add_quality_warning":

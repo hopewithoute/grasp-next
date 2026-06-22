@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from app.api.auth import verify_api_key
-from app.models import PassageRecord
+from app.models import PassageRecord, PaginatedPassagesResponse
 from app.storage.deps import get_repository
 from app.storage.sql_repository import SqlEvidenceRepository
 
@@ -27,19 +27,33 @@ async def find_weak_passages(
     )
 
 
-@router.get("/sources/{source_id}/passages", response_model=list[PassageRecord])
+from typing import Optional
+from fastapi import Query
+
+@router.get("/sources/{source_id}/passages", response_model=PaginatedPassagesResponse)
 async def list_passages(
     source_id: str,
+    query: Optional[str] = None,
+    status: Optional[str] = None,
+    retrieval_enabled: Optional[bool] = None,
+    sort_field: str = Query("order"),
+    sort_direction: str = Query("asc"),
     skip: int = 0,
     limit: int = 1000,
     _: None = Depends(verify_api_key),
     repository: SqlEvidenceRepository = Depends(get_repository),
 ):
-    # TODO(Performance): Currently we fetch up to 1000 passages and let the client-side
-    # handle search, sorting, filtering, and pagination for a snappy UX.
-    # If a single source grows to have massive amounts of passages (>10k), 
-    # we should move filtering (status, text search) and sorting logic to the database level here.
-    return await repository.list_source_passages(source_id, skip=skip, limit=limit)
+    items, total = await repository.list_source_passages(
+        source_id,
+        query=query,
+        status=status,
+        retrieval_enabled=retrieval_enabled,
+        sort_field=sort_field,
+        sort_direction=sort_direction,
+        skip=skip,
+        limit=limit
+    )
+    return PaginatedPassagesResponse(items=items, total=total)
 
 
 @router.get("/passages/{passage_id}", response_model=PassageRecord)
