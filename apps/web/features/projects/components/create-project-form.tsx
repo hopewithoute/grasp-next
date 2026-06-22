@@ -1,12 +1,21 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useActionState, useEffect } from 'react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { createProjectFormAction } from '../actions';
 
 export function CreateProjectForm() {
-  const [state, formAction, isPending] = useActionState(createProjectFormAction, { error: null });
+  const [state, formAction, isPending] = useActionState(createProjectFormAction, { error: null, success: false });
+
+  useEffect(() => {
+    if (state.error) {
+      toast.error(state.error);
+    } else if (state.success) {
+      toast.success('Project initialized successfully.');
+    }
+  }, [state]);
 
   return (
     <form action={formAction} className="space-y-5">

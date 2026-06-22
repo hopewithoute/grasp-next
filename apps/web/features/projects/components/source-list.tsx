@@ -5,6 +5,7 @@ import type { ProjectSourceItem } from './source-material-form';
 
 type SourceListProps = {
   onSelectSource: (sourceId: string) => void;
+  onEditSource: (sourceId: string) => void;
   onAddNew: () => void;
   selectedSourceId: string | null;
   sources: ProjectSourceItem[];
@@ -12,6 +13,7 @@ type SourceListProps = {
 
 export function SourceList({
   onSelectSource,
+  onEditSource,
   onAddNew,
   selectedSourceId,
   sources,
@@ -44,32 +46,42 @@ export function SourceList({
 
               return (
                 <li key={source.id}>
-                  <button
-                    aria-label="Button"
-                    className={`w-full rounded-none border px-4 py-3 text-left transition ${
+                  <div
+                    className={`w-full rounded-none border px-4 py-3 text-left transition cursor-pointer ${
                       selectedSourceId === source.id
                         ? 'border-brand-accent/50 bg-brand-accent/10'
                         : 'border-border/40 hover:bg-background/50 bg-muted/20'
                     }`}
                     onClick={() => onSelectSource(source.id)}
-                    type="button"
                   >
                     <span className="mb-2 flex items-center justify-between gap-2">
                       <span className="text-foreground truncate font-mono text-[0.65rem] tracking-widest uppercase">
                         {source.title}
                       </span>
-                      <span className="text-muted-foreground/70 font-mono text-[0.6rem]">
-                        {String(index + 1).padStart(2, '0')}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          className="text-brand-accent hover:text-brand-accent-foreground font-mono text-[0.6rem] uppercase tracking-widest"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onEditSource(source.id);
+                          }}
+                        >
+                          [EDIT]
+                        </button>
+                        <span className="text-muted-foreground/70 font-mono text-[0.6rem]">
+                          {String(index + 1).padStart(2, '0')}
+                        </span>
+                      </div>
                     </span>
-                    <span className="text-muted-foreground/70 line-clamp-2 font-mono text-[0.6rem] leading-relaxed uppercase">
-                      {getSourcePreview(source.content)}
+                    <span className="text-muted-foreground/70 line-clamp-2 font-mono text-[0.6rem] leading-relaxed uppercase mt-2 block">
+                      {getSourcePreview(source)}
                     </span>
                     <span className="text-foreground/50 mt-3 flex items-center justify-between font-mono text-[0.6rem] tracking-[0.14em] uppercase">
                       <span>[{source.type}]</span>
                       <span>{counts.words} WORDS</span>
                     </span>
-                  </button>
+                  </div>
                 </li>
               );
             })}
@@ -84,8 +96,11 @@ export function SourceList({
   );
 }
 
-function getSourcePreview(value: string | null) {
-  const trimmed = value?.trim();
+function getSourcePreview(source: { content: string | null; type: string }) {
+  if (source.type === 'pdf') {
+    return '[PDF Document]';
+  }
+  const trimmed = source.content?.trim();
   if (!trimmed) {
     return 'Empty source';
   }

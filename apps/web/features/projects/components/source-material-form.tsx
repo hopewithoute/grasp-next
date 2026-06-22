@@ -1,12 +1,14 @@
 'use client';
 
-import { useActionState, useMemo, useRef, useState, useTransition } from 'react';
+import { useActionState, useEffect, useMemo, useRef, useState, useTransition } from 'react';
+import { toast } from 'sonner';
 import { FileText, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import {
   addProjectSourceFormAction,
+  addProjectSourceFromPdfFormAction,
   addProjectSourceFromUrlFormAction,
   deleteProjectSourceFormAction,
   updateProjectSourceFormAction,
@@ -26,29 +28,41 @@ type ProjectSourcesPanelProps = {
   projectId: string;
   sources: ProjectSourceItem[];
   onIngestionTrigger: (sourceId: string, title: string, type: string, content: string) => void;
+  selectedSourceId?: string | null;
+  onSelectSource?: (id: string | null) => void;
 };
 
 export function ProjectSourcesPanel({
   projectId,
   sources,
   onIngestionTrigger,
+  selectedSourceId: externalSelectedSourceId,
+  onSelectSource: externalOnSelectSource,
 }: ProjectSourcesPanelProps) {
-  const [selectedSourceId, setSelectedSourceId] = useState<string | null>(null);
+  const [internalSelectedSourceId, setInternalSelectedSourceId] = useState<string | null>(null);
+  const selectedSourceId = externalSelectedSourceId !== undefined ? externalSelectedSourceId : internalSelectedSourceId;
+  const setSelectedSourceId = externalOnSelectSource || setInternalSelectedSourceId;
+
+  const [editingSourceId, setEditingSourceId] = useState<string | null>(null);
   const [isAddingNew, setIsAddingNew] = useState(false);
-  const selectedSource = !isAddingNew
-    ? (sources.find((source) => source.id === selectedSourceId) ?? null)
+  
+  const editingSource = !isAddingNew && editingSourceId
+    ? (sources.find((source) => source.id === editingSourceId) ?? null)
     : null;
 
-  const isDialogOpen = isAddingNew || selectedSource !== null;
+  const isDialogOpen = isAddingNew || editingSource !== null;
 
   return (
     <div className="flex h-full flex-col gap-6">
       <div className="border-border/40 bg-background/50 flex flex-1 flex-col overflow-hidden rounded-none border p-4">
         <SourceList
           sources={sources}
-          selectedSourceId={selectedSource?.id ?? null}
+          selectedSourceId={selectedSourceId ?? null}
           onSelectSource={(id) => {
             setSelectedSourceId(id);
+          }}
+          onEditSource={(id) => {
+            setEditingSourceId(id);
             setIsAddingNew(false);
           }}
           onAddNew={() => setIsAddingNew(true)}
@@ -60,7 +74,7 @@ export function ProjectSourcesPanel({
         onOpenChange={(open) => {
           if (!open) {
             setIsAddingNew(false);
-            setSelectedSourceId(null);
+            setEditingSourceId(null);
           }
         }}
       >
@@ -74,15 +88,15 @@ export function ProjectSourcesPanel({
                 <DialogTitle className="text-foreground truncate font-mono text-lg tracking-widest uppercase">
                   {isAddingNew
                     ? 'Add new source'
-                    : selectedSource
-                      ? selectedSource.title
+                    : editingSource
+                      ? editingSource.title
                       : 'Source'}
                 </DialogTitle>
               </div>
-              {selectedSource && !isAddingNew && (
+              {editingSource && !isAddingNew && (
                 <span className="border-border/40 bg-background/50 text-muted-foreground/70 inline-flex w-fit items-center gap-1.5 rounded-none border px-2.5 py-1 font-mono text-[0.65rem] tracking-widest uppercase">
                   <FileText className="size-3" />
-                  {getTextCounts(selectedSource.content ?? '').words} WORDS
+                  {getTextCounts(editingSource.content ?? '').words} WORDS
                 </span>
               )}
             </div>
@@ -97,10 +111,10 @@ export function ProjectSourcesPanel({
                   onIngestionTrigger(sourceId, title, type, content);
                 }}
               />
-            ) : selectedSource ? (
+            ) : editingSource ? (
               <ProjectSourceEditForm
-                key={selectedSource.id}
-                source={selectedSource}
+                key={editingSource.id}
+                source={editingSource}
                 onIngestionTrigger={onIngestionTrigger}
               />
             ) : null}
@@ -118,7 +132,7 @@ function ProjectSourceAddForm({
   projectId: string;
   onIngestionTrigger?: (sourceId: string, title: string, type: string, content: string) => void;
 }) {
-  const [activeTab, setActiveTab] = useState<'text' | 'web'>('text');
+  const [activeTab, setActiveTab] = useState<'text' | 'web' | 'pdf'>('text');
 
   const [state, formAction, isPending] = useActionState(
     async (prevState: ProjectSourceFormState, formData: FormData) => {
@@ -152,36 +166,44 @@ function ProjectSourceAddForm({
     { error: null, success: false }
   );
 
+  const [pdfState, pdfFormAction, isPdfPending] = useActionState(
+    async (prevState: ProjectSourceFormState, formData: FormData) => {
+      const result = await addProjectSourceFromPdfFormAction(prevState, formData);
+      if (result.success) {
+        // PDF ingestion is completed in the action, so we don't trigger the stream UI
+        toast.success('PDF ingested successfully.');
+      }
+      return result;
+    },
+    { error: null, success: false }
+  );
+
   const formRef = useRef<HTMLFormElement>(null);
 
   return (
     <div className="flex h-full flex-1 flex-col gap-4">
       <div className="border-border/50 flex shrink-0 gap-2 border-b pb-2">
-        <button
-          type="button"
-          onClick={() => setActiveTab('text')}
-          className={`rounded-none px-3 py-1.5 font-mono text-[0.65rem] tracking-widest uppercase transition-colors ${
-            activeTab === 'text'
-              ? 'bg-brand-accent/20 text-brand-accent border-brand-accent border-b-2'
-              : 'text-muted-foreground/70 hover:text-foreground hover:bg-muted/30'
-          }`}
-        >
-          [ RAW TEXT / MARKDOWN ]
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab('web')}
-          className={`rounded-none px-3 py-1.5 font-mono text-[0.65rem] tracking-widest uppercase transition-colors ${
-            activeTab === 'web'
-              ? 'bg-brand-accent/20 text-brand-accent border-brand-accent border-b-2'
-              : 'text-muted-foreground/70 hover:text-foreground hover:bg-muted/30'
-          }`}
-        >
-          [ WEB URL ]
-        </button>
+        {[
+          { id: 'text', label: 'RAW TEXT / MARKDOWN' },
+          { id: 'web', label: 'WEB URL' },
+          { id: 'pdf', label: 'PDF UPLOAD' },
+        ].map((tab) => (
+          <button
+            key={tab.id}
+            type="button"
+            onClick={() => setActiveTab(tab.id as 'text' | 'web' | 'pdf')}
+            className={`rounded-none px-3 py-1.5 font-mono text-[0.65rem] tracking-widest uppercase transition-colors ${
+              activeTab === tab.id
+                ? 'bg-brand-accent/20 text-brand-accent border-brand-accent border-b-2'
+                : 'text-muted-foreground/70 hover:text-foreground hover:bg-muted/30'
+            }`}
+          >
+            [ {tab.label} ]
+          </button>
+        ))}
       </div>
 
-      {activeTab === 'text' ? (
+      {activeTab === 'text' && (
         <ProjectSourceFields
           action={formAction}
           error={state.error}
@@ -191,7 +213,8 @@ function ProjectSourceAddForm({
           submitLabel="Add source"
           success={state.success ? 'Source added.' : null}
         />
-      ) : (
+      )}
+      {activeTab === 'web' && (
         <ProjectSourceUrlFields
           action={urlFormAction}
           error={urlState.error}
@@ -200,6 +223,16 @@ function ProjectSourceAddForm({
           projectId={projectId}
           submitLabel="Fetch from URL"
           success={urlState.success ? 'Web source added.' : null}
+        />
+      )}
+      {activeTab === 'pdf' && (
+        <ProjectSourcePdfFields
+          action={pdfFormAction}
+          error={pdfState.error}
+          formRef={formRef}
+          isPending={isPdfPending}
+          projectId={projectId}
+          submitLabel="Upload & Ingest PDF"
         />
       )}
     </div>
@@ -223,6 +256,14 @@ function ProjectSourceUrlFields({
   submitLabel: string;
   success: string | null;
 }) {
+  useEffect(() => {
+    if (error) {
+      toast.error(error);
+    } else if (success) {
+      toast.success(success);
+    }
+  }, [error, success]);
+
   return (
     <form action={action} className="flex flex-1 flex-col gap-4" ref={formRef}>
       <input name="projectId" type="hidden" value={projectId} />
@@ -316,6 +357,14 @@ function ProjectSourceEditForm({
   const [, startDeleteTransition] = useTransition();
   const formRef = useRef<HTMLFormElement>(null);
 
+  useEffect(() => {
+    if (deleteState.error) {
+      toast.error(deleteState.error);
+    } else if (deleteState.success) {
+      toast.success('Source deleted.');
+    }
+  }, [deleteState.error, deleteState.success]);
+
   return (
     <div className="flex min-h-full flex-col gap-4">
       <ProjectSourceFields
@@ -386,6 +435,14 @@ function ProjectSourceFields({
   const [draft, setDraft] = useState(defaultDraft);
   const [mode, setMode] = useState<'edit' | 'preview'>('edit');
   const counts = useMemo(() => getTextCounts(draft), [draft]);
+
+  useEffect(() => {
+    if (error) {
+      toast.error(error);
+    } else if (success) {
+      toast.success(success);
+    }
+  }, [error, success]);
 
   return (
     <form action={action} className="flex flex-1 flex-col gap-4" ref={formRef}>
@@ -529,3 +586,83 @@ function getTextCounts(value: string) {
     words: trimmed ? trimmed.split(/\s+/).length : 0,
   };
 }
+
+function ProjectSourcePdfFields({
+  action,
+  error,
+  formRef,
+  isPending,
+  projectId,
+  submitLabel,
+}: {
+  action: (payload: FormData) => void;
+  error: string | null;
+  formRef?: React.RefObject<HTMLFormElement | null>;
+  isPending: boolean;
+  projectId: string;
+  submitLabel: string;
+}) {
+  useEffect(() => {
+    if (error) {
+      toast.error(error);
+    }
+  }, [error]);
+
+  return (
+    <form action={action} className="flex flex-1 flex-col gap-4" ref={formRef}>
+      <input name="projectId" type="hidden" value={projectId} />
+
+      <div className="shrink-0 space-y-2">
+        <label
+          className="text-muted-foreground/70 font-mono text-[0.65rem] tracking-widest uppercase"
+          htmlFor="new-pdf-title"
+        >
+          TITLE (Optional, will use filename if empty)
+        </label>
+        <Input
+          className="border-border/40 bg-background/50 text-foreground placeholder:text-muted-foreground/30 focus-visible:border-brand-accent/50 focus-visible:ring-brand-accent/20 h-11 rounded-none px-4 font-mono text-[0.65rem] tracking-widest uppercase shadow-none focus-visible:ring-1"
+          id="new-pdf-title"
+          name="title"
+          placeholder="E.G. PHYSICS TEXTBOOK CHAPTER 1"
+        />
+      </div>
+
+      <div className="flex min-h-0 flex-1 flex-col space-y-2">
+        <label
+          className="text-muted-foreground/70 font-mono text-[0.65rem] tracking-widest uppercase"
+          htmlFor="new-pdf-file"
+        >
+          PDF FILE
+        </label>
+        <div className="border-border/40 bg-background/50 flex flex-1 items-center justify-center rounded-none border border-dashed p-4">
+          <Input
+            accept="application/pdf"
+            className="file:text-brand-accent h-auto border-none bg-transparent file:border-0 file:bg-transparent file:font-mono file:text-[0.65rem] file:tracking-widest file:uppercase hover:file:cursor-pointer"
+            id="new-pdf-file"
+            name="file"
+            required
+            type="file"
+          />
+        </div>
+      </div>
+
+      {error ? (
+        <p className="text-foreground border border-[#e5685b]/30 bg-[#e5685b]/10 px-3 py-2 font-mono text-[0.65rem] tracking-widest uppercase">
+          {error}
+        </p>
+      ) : null}
+
+      <div className="mt-auto flex shrink-0 items-center gap-3 pt-2">
+        <Button
+          className="bg-brand-accent/20 text-brand-accent hover:bg-brand-accent hover:text-background h-10 rounded-none px-6 font-mono text-[0.65rem] tracking-widest uppercase transition-all"
+          disabled={isPending}
+          type="submit"
+        >
+          <FileText className="mr-1.5 size-3.5" />
+          {isPending ? '[ UPLOADING... ]' : `[ ${submitLabel} ]`}
+        </Button>
+      </div>
+    </form>
+  );
+}
+

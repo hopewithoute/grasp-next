@@ -1,6 +1,8 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useActionState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { deleteProjectFormAction, updateProjectDetailsFormAction } from '../actions';
 
@@ -20,6 +22,14 @@ export function ProjectDetailsForm({ description, projectId, title }: ProjectDet
     error: null,
     success: false,
   });
+
+  useEffect(() => {
+    if (state.error) {
+      toast.error(state.error);
+    } else if (state.success) {
+      toast.success('Details synchronized.');
+    }
+  }, [state]);
 
   return (
     <form action={formAction} className="space-y-4">
@@ -89,9 +99,21 @@ export function ProjectDetailsForm({ description, projectId, title }: ProjectDet
 }
 
 export function DeleteProjectForm({ disabled, projectId }: DeleteProjectFormProps) {
+  const router = useRouter();
   const [state, formAction, isPending] = useActionState(deleteProjectFormAction, {
     error: null,
+    success: false,
   });
+
+  useEffect(() => {
+    if (state.error) {
+      toast.error(state.error);
+    } else if (state.success) {
+      toast.success('Project purged successfully.');
+      router.push('/dashboard/projects');
+      router.refresh();
+    }
+  }, [state, router]);
 
   return (
     <form action={formAction} className="space-y-3">
