@@ -1,6 +1,12 @@
 {
   "version": 1,
   "skills": {
+    "chonkie": {
+      "source": "chonkie-inc/skills",
+      "sourceType": "github",
+      "skillPath": "skills/chonkie/SKILL.md",
+      "computedHash": "2c9c5d757ac3ce0632353f710662f98c685ae2f057377d3c6e4f288941e59146"
+    },
     "lavish": {
       "source": "kunchenguid/lavish-axi",
       "sourceType": "github",

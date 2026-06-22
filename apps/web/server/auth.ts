@@ -9,11 +9,11 @@ export const auth = betterAuth({
     provider: 'pg',
     schema,
   }),
-  socialProviders: {
+  socialProviders: serverEnv.GOOGLE_CLIENT_ID && serverEnv.GOOGLE_CLIENT_SECRET ? {
     google: {
-      clientId: serverEnv.GOOGLE_CLIENT_ID as string,
-      clientSecret: serverEnv.GOOGLE_CLIENT_SECRET as string,
+      clientId: serverEnv.GOOGLE_CLIENT_ID,
+      clientSecret: serverEnv.GOOGLE_CLIENT_SECRET,
     },
-  },
+  } : undefined,
   plugins: [nextCookies()],
 });

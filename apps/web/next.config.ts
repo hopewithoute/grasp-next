@@ -13,6 +13,11 @@ const nextConfig: NextConfig = {
     ],
   },
   serverExternalPackages: ['node-wreq', 'duck-duck-scrape'],
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '50mb',
+    },
+  },
 };
 
 export default nextConfig;
