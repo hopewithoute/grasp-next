@@ -7,6 +7,7 @@ export type EvidenceLoaderState = {
   isLoading: boolean;
 };
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function useEvidenceLoader(_projectId: string) {
   const [conceptId, setConceptId] = useState<string | null>(null);
   const [evidence, setEvidence] = useState<SourceEvidence[]>([]);

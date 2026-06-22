@@ -1,13 +1,12 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ChevronDown, ChevronUp, Database, FileText, RefreshCw, Search } from 'lucide-react';
+import { ChevronDown, ChevronUp, FileText, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type {
   EvidenceKbPassage,
   EvidenceKbRetrievedPassage,
   EvidenceKbRetrieveResponse,
-  EvidenceKbSource,
 } from '@/server/evidence-kb-service';
 import {
   applyEvidenceKbCurationAction,
@@ -18,153 +17,150 @@ import {
   type EvidenceKbSourcesResult,
 } from '../../actions';
 import { PaneHeader } from './shared-components';
+import { SourceViewer } from './source-viewer';
 
 type SortField = 'order' | 'quality_score' | 'token_count' | 'status';
 type SortDirection = 'asc' | 'desc';
 type StatusFilter = 'all' | 'candidate' | 'certified' | 'rejected' | 'deprecated';
+type RetrievalFilter = 'all' | 'enabled' | 'disabled';
 
 const PAGE_SIZE = 20;
 
 export function EvidenceExplorerPane({
   projectId,
   viewToggle,
+  externalSelectedSourceId,
+  onSelectSource,
 }: {
   projectId: string;
   viewToggle?: React.ReactNode;
+  externalSelectedSourceId?: string | null;
+  onSelectSource?: (id: string | null) => void;
 }) {
   const [sourcesResult, setSourcesResult] = useState<EvidenceKbSourcesResult | null>(null);
   const [passagesResult, setPassagesResult] = useState<EvidenceKbPassagesResult | null>(null);
-  const [selectedSourceId, setSelectedSourceId] = useState<string | null>(null);
+  const [internalSelectedSourceId, setInternalSelectedSourceId] = useState<string | null>(null);
+  const selectedSourceId = externalSelectedSourceId !== undefined ? externalSelectedSourceId : internalSelectedSourceId;
+  const setSelectedSourceId = onSelectSource || setInternalSelectedSourceId;
+  
   const [selectedPassageId, setSelectedPassageId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'passages' | 'raw'>('passages');
   const [query, setQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [retrievalFilter, setRetrievalFilter] = useState<RetrievalFilter>('all');
   const [sortField, setSortField] = useState<SortField>('order');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [currentPage, setCurrentPage] = useState(1);
-  const [retrievalQuery, setRetrievalQuery] = useState('');
-  const [retrieval, setRetrieval] = useState<EvidenceKbRetrieveResponse | null>(null);
-  const [retrievalError, setRetrievalError] = useState<string | null>(null);
-  const [isLoadingSources, setIsLoadingSources] = useState(true);
+  const [, setIsLoadingSources] = useState(true);
   const [isLoadingPassages, setIsLoadingPassages] = useState(false);
   const [isApplyingCuration, setIsApplyingCuration] = useState(false);
   const [curationError, setCurationError] = useState<string | null>(null);
-  const [isRetrieving, setIsRetrieving] = useState(false);
 
-  const loadSources = useCallback(async () => {
+  const loadSources = useCallback(async (background = false) => {
+    if (!background) setIsLoadingSources(true);
     try {
       const result = await listEvidenceKbSourcesAction(projectId);
       setSourcesResult(result);
-      const firstSourceId = result.configured ? result.sources[0]?.id : null;
+      // Only auto-select first source if we didn't already have one
+      const firstSourceId = result.configured ? result.sources[0]?.external_source_id : null;
       if (!firstSourceId) {
         setPassagesResult(null);
       }
-      setSelectedSourceId((current) => current ?? firstSourceId ?? null);
+      if (externalSelectedSourceId === undefined) {
+        setSelectedSourceId(firstSourceId ?? null);
+      }
     } catch {
       setSourcesResult({ configured: false, error: 'Failed to load sources.', sources: [] });
     } finally {
-      setIsLoadingSources(false);
+      if (!background) setIsLoadingSources(false);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadSources();
   }, [loadSources]);
 
   const loadPassages = useCallback(
-    async (sourceId: string) => {
-      setIsLoadingPassages(true);
+    async (sourceId: string, background = false) => {
+      if (!background) setIsLoadingPassages(true);
       try {
-        const result = await listEvidenceKbPassagesAction({ projectId, sourceId });
+        const result = await listEvidenceKbPassagesAction({
+          projectId,
+          sourceId,
+          query: query.trim() || undefined,
+          status: statusFilter === 'all' ? undefined : statusFilter,
+          retrieval_enabled: retrievalFilter === 'all' ? undefined : retrievalFilter === 'enabled',
+          sort_field: sortField,
+          sort_direction: sortDirection,
+          skip: (currentPage - 1) * PAGE_SIZE,
+          limit: PAGE_SIZE,
+        });
         setPassagesResult(result);
         setSelectedPassageId((current) => {
-          if (!result.configured) return null;
-          if (current && result.passages.some((passage) => passage.id === current)) return current;
-          return result.passages[0]?.id ?? null;
+          if (!result.success) return null;
+          if (current && result.data.items.some((passage) => passage.id === current)) return current;
+          return result.data.items[0]?.id ?? null;
         });
       } catch {
-        setPassagesResult({ configured: false, error: 'Failed to load passages.', passages: [] });
+        setPassagesResult({ success: false, error: 'Failed to load passages.' });
       } finally {
-        setIsLoadingPassages(false);
+        if (!background) setIsLoadingPassages(false);
       }
     },
-    [projectId]
+    [projectId, query, statusFilter, retrievalFilter, sortField, sortDirection, currentPage]
   );
 
-  useEffect(() => {
-    if (selectedSourceId) {
-      void loadPassages(selectedSourceId);
-    }
-  }, [loadPassages, selectedSourceId]);
+  const sources = sourcesResult?.configured ? sourcesResult.sources : [];
+  const selectedSource = sources.find((s) => s.external_source_id === selectedSourceId) ?? null;
+  const internalSourceId = selectedSource?.id;
 
   useEffect(() => {
+    if (internalSourceId) {
+      void loadPassages(internalSourceId);
+      // Removed the setInterval for background refresh because it would constantly reload the same page and interrupt pagination/filters unless handled carefully.
+      // If auto-refresh is needed, it should probably only refresh the current page and use the current state.
+      // Since states are in the dependency array of loadPassages, it will re-trigger naturally.
+    } else if (!selectedSourceId) {
+      setPassagesResult(null);
+      setSelectedPassageId(null);
+    }
+  }, [internalSourceId, selectedSourceId, loadPassages]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCurationError(null);
   }, [selectedPassageId]);
 
-  const sources = sourcesResult?.configured ? sourcesResult.sources : [];
-  const passages = passagesResult?.configured ? passagesResult.passages : [];
-  const selectedPassage = passages.find((passage) => passage.id === selectedPassageId) ?? null;
-
-  const filteredAndSortedPassages = useMemo(() => {
-    let result = [...passages];
-
-    // Apply text search filter
-    const normalizedQuery = query.trim().toLowerCase();
-    if (normalizedQuery) {
-      result = result.filter((passage) => passage.text.toLowerCase().includes(normalizedQuery));
-    }
-
-    // Apply status filter
-    if (statusFilter !== 'all') {
-      result = result.filter((passage) => passage.status === statusFilter);
-    }
-
-    // Apply sorting
-    result.sort((a, b) => {
-      let comparison = 0;
-      switch (sortField) {
-        case 'order':
-          comparison = a.order - b.order;
-          break;
-        case 'quality_score':
-          comparison = a.quality_score - b.quality_score;
-          break;
-        case 'token_count':
-          comparison = a.token_count - b.token_count;
-          break;
-        case 'status':
-          comparison = a.status.localeCompare(b.status);
-          break;
-      }
-      return sortDirection === 'asc' ? comparison : -comparison;
-    });
-
-    return result;
-  }, [passages, query, statusFilter, sortField, sortDirection]);
+  const passages = useMemo(() => (passagesResult?.success ? passagesResult.data.items : []), [passagesResult]);
+  const totalPassages = useMemo(() => (passagesResult?.success ? passagesResult.data.total : 0), [passagesResult]);
+  const selectedPassage = passages.find((p) => p.id === selectedPassageId) ?? null;
 
   const handleApplyPassageCuration = useCallback(
-    async (action: 'certify' | 'clear_warnings' | 'reject' | 'toggle_retrieval') => {
-      if (!selectedPassage || !selectedSourceId) return;
+    async (action: 'certify' | 'clear_warnings' | 'reject' | 'reset' | 'toggle_retrieval') => {
+      if (!selectedPassage || !selectedSource) return;
 
       setIsApplyingCuration(true);
       setCurationError(null);
       try {
+        const actionMap = {
+          certify: { type: 'certify_passage', passageId: selectedPassage.id },
+          reject: { type: 'reject_passage', passageId: selectedPassage.id },
+          reset: { type: 'reset_passage', passageId: selectedPassage.id },
+          toggle_retrieval: {
+            type: 'set_passage_retrieval_enabled',
+            passageId: selectedPassage.id,
+            enabled: !selectedPassage.retrieval_enabled,
+          },
+          clear_warnings: { type: 'clear_quality_warning', passageId: selectedPassage.id },
+        } as const;
+
         await applyEvidenceKbCurationAction({
           projectId,
-          actions: [
-            action === 'certify'
-              ? { passageId: selectedPassage.id, type: 'certify_passage' }
-              : action === 'reject'
-                ? { passageId: selectedPassage.id, type: 'reject_passage' }
-                : action === 'toggle_retrieval'
-                  ? {
-                      enabled: !selectedPassage.retrieval_enabled,
-                      passageId: selectedPassage.id,
-                      type: 'set_passage_retrieval_enabled',
-                    }
-                  : { passageId: selectedPassage.id, type: 'clear_quality_warning' },
-          ],
+          actions: [actionMap[action] as any],
         });
-        await loadPassages(selectedSourceId);
+        await loadPassages(selectedSource.id);
         setCurrentPage(1);
       } catch (error) {
         setCurationError(error instanceof Error ? error.message : 'Curation action failed.');
@@ -172,51 +168,12 @@ export function EvidenceExplorerPane({
         setIsApplyingCuration(false);
       }
     },
-    [loadPassages, projectId, selectedPassage, selectedSourceId]
+    [loadPassages, projectId, selectedPassage, selectedSource]
   );
 
-  const handleRetrieve = useCallback(async () => {
-    const normalizedQuery = retrievalQuery.trim();
-    if (!normalizedQuery) return;
 
-    setIsRetrieving(true);
-    setRetrievalError(null);
-    try {
-      const result = await retrieveEvidenceKbAction({
-        filters: { retrievalEnabled: true },
-        projectId,
-        query: normalizedQuery,
-        topK: 8,
-      });
-      if (!result.configured) {
-        setRetrieval(null);
-        setRetrievalError(result.error);
-        return;
-      }
-      setRetrieval(result.retrieval);
-    } catch (error) {
-      setRetrieval(null);
-      setRetrievalError(error instanceof Error ? error.message : 'Retrieval failed.');
-    } finally {
-      setIsRetrieving(false);
-    }
-  }, [projectId, retrievalQuery]);
 
-  const handleSelectRetrievedPassage = useCallback(
-    (result: EvidenceKbRetrievedPassage) => {
-      if (filteredAndSortedPassages.some((passage) => passage.id === result.passage_id)) {
-        setSelectedPassageId(result.passage_id);
-      }
-    },
-    [filteredAndSortedPassages]
-  );
-
-  // Pagination
-  const totalPages = Math.ceil(filteredAndSortedPassages.length / PAGE_SIZE);
-  const paginatedPassages = useMemo(() => {
-    const start = (currentPage - 1) * PAGE_SIZE;
-    return filteredAndSortedPassages.slice(start, start + PAGE_SIZE);
-  }, [filteredAndSortedPassages, currentPage]);
+  const totalPages = Math.ceil(totalPassages / PAGE_SIZE);
 
   const toggleSort = (field: SortField) => {
     if (sortField === field) {
@@ -231,16 +188,16 @@ export function EvidenceExplorerPane({
   return (
     <section
       aria-label="Evidence explorer"
-      className="border-border bg-background flex min-h-[520px] flex-1 flex-col border-b lg:min-h-0 lg:border-r lg:border-b-0"
+      className="border-border bg-background flex min-h-[520px] flex-1 flex-col border-b lg:min-h-0 lg:border-b-0"
     >
       <PaneHeader
         meta={
           sourcesResult?.configured
-            ? `${sources.length} SOURCES · ${filteredAndSortedPassages.length} PASSAGES`
+            ? `${sources.length} SOURCES · ${totalPassages} PASSAGES`
             : 'NOT CONFIGURED'
         }
         actions={viewToggle}
-        title="[ EVIDENCE_EXPLORER ]"
+        title="[ KNOWLEDGE_BASE ]"
       />
 
       {!sourcesResult ? (
@@ -249,60 +206,77 @@ export function EvidenceExplorerPane({
         <EvidenceEmptyState label={sourcesResult.error} />
       ) : sources.length === 0 ? (
         <EvidenceEmptyState label="No Evidence KB sources indexed yet." onRefresh={loadSources} />
+      ) : !selectedSource ? (
+        <EvidenceEmptyState label="Select a source from the Library to view its evidence." />
       ) : (
-        <div className="grid min-h-0 flex-1 grid-cols-[18rem_minmax(0,1fr)_22rem] overflow-hidden">
-          <SourceList
-            isLoading={isLoadingSources}
-            onRefresh={() => {
-              setIsLoadingSources(true);
-              void loadSources();
-            }}
-            onSelect={(id) => {
-              if (id !== selectedSourceId) {
-                setSelectedSourceId(id);
-                setPassagesResult(null);
-                setCurrentPage(1);
-              }
-            }}
-            selectedSourceId={selectedSourceId}
-            sources={sources}
-          />
+        <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_24rem] xl:grid-cols-[minmax(0,1fr)_26rem] overflow-hidden">
+          <div className="flex min-h-0 flex-col overflow-hidden border-r border-border/40">
+            <div className="flex shrink-0 items-center border-b border-border/40 bg-white/[0.01]">
+              <button
+                className={cn(
+                  'px-6 py-3 font-mono text-[0.65rem] tracking-widest uppercase transition-colors border-b-2',
+                  activeTab === 'passages'
+                    ? 'border-brand-accent text-brand-accent bg-brand-accent/5'
+                    : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-white/[0.02]'
+                )}
+                onClick={() => setActiveTab('passages')}
+              >
+                [ PARSED PASSAGES ]
+              </button>
+              <button
+                className={cn(
+                  'px-6 py-3 font-mono text-[0.65rem] tracking-widest uppercase transition-colors border-b-2',
+                  activeTab === 'raw'
+                    ? 'border-brand-accent text-brand-accent bg-brand-accent/5'
+                    : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-white/[0.02]'
+                )}
+                onClick={() => setActiveTab('raw')}
+              >
+                [ VIEW SOURCE ]
+              </button>
+            </div>
 
-          <div className="min-h-0 overflow-hidden">
-            <RetrievalReplay
-              error={retrievalError}
-              isRetrieving={isRetrieving}
-              onQueryChange={setRetrievalQuery}
-              onRetrieve={handleRetrieve}
-              onSelectResult={handleSelectRetrievedPassage}
-              query={retrievalQuery}
-              retrieval={retrieval}
-            />
-            <PassageFilters
-              currentPage={currentPage}
-              onPageChange={setCurrentPage}
-              onQueryChange={(val) => {
-                setQuery(val);
-                setCurrentPage(1);
-              }}
-              onStatusFilterChange={(val) => {
-                setStatusFilter(val);
-                setCurrentPage(1);
-              }}
-              onToggleSort={toggleSort}
-              query={query}
-              sortDirection={sortDirection}
-              sortField={sortField}
-              statusFilter={statusFilter}
-              totalPages={totalPages}
-              totalPassages={filteredAndSortedPassages.length}
-            />
-            <PassageList
-              isLoading={isLoadingPassages}
-              onSelect={setSelectedPassageId}
-              passages={paginatedPassages}
-              selectedPassageId={selectedPassageId}
-            />
+            <div className="min-h-0 flex-1 overflow-hidden flex flex-col">
+              {activeTab === 'passages' ? (
+                <>
+                  <PassageFilters
+                    currentPage={currentPage}
+                    onPageChange={(page) => {
+                      setCurrentPage(page);
+                      setSelectedPassageId(null);
+                    }}
+                    onQueryChange={(q) => {
+                      setQuery(q);
+                      setCurrentPage(1);
+                    }}
+                    onStatusFilterChange={(val) => {
+                      setStatusFilter(val);
+                      setCurrentPage(1);
+                    }}
+                    onRetrievalFilterChange={(val) => {
+                      setRetrievalFilter(val);
+                      setCurrentPage(1);
+                    }}
+                    onToggleSort={toggleSort}
+                    query={query}
+                    sortDirection={sortDirection}
+                    sortField={sortField}
+                    statusFilter={statusFilter}
+                    retrievalFilter={retrievalFilter}
+                    totalPages={totalPages}
+                    totalPassages={totalPassages}
+                  />
+                  <PassageList
+                    isLoading={isLoadingPassages}
+                    onSelect={setSelectedPassageId}
+                    passages={passages}
+                    selectedPassageId={selectedPassageId}
+                  />
+                </>
+              ) : (
+                <SourceViewer projectId={projectId} source={selectedSource as any} />
+              )}
+            </div>
           </div>
 
           <PassageInspector
@@ -317,157 +291,18 @@ export function EvidenceExplorerPane({
   );
 }
 
-function SourceList({
-  isLoading,
-  onRefresh,
-  onSelect,
-  selectedSourceId,
-  sources,
-}: {
-  isLoading: boolean;
-  onRefresh: () => void;
-  onSelect: (sourceId: string) => void;
-  selectedSourceId: string | null;
-  sources: EvidenceKbSource[];
-}) {
-  return (
-    <aside className="border-border/40 min-h-0 border-r bg-white/[0.01]">
-      <div className="border-border/40 flex items-center justify-between border-b px-3 py-2">
-        <span className="text-muted-foreground font-mono text-[0.62rem] tracking-widest uppercase">
-          [ SOURCES ]
-        </span>
-        <button
-          className="text-muted-foreground hover:text-brand-accent inline-flex size-7 items-center justify-center"
-          disabled={isLoading}
-          onClick={onRefresh}
-          type="button"
-        >
-          <RefreshCw className={cn('size-3', isLoading && 'animate-spin')} />
-        </button>
-      </div>
-      <div className="h-full overflow-auto p-2">
-        {sources.map((source) => (
-          <button
-            className={cn(
-              'border-border/40 hover:border-brand-accent/40 block w-full border p-3 text-left transition-colors',
-              selectedSourceId === source.id && 'border-brand-accent/70 bg-brand-accent/10'
-            )}
-            key={source.id}
-            onClick={() => onSelect(source.id)}
-            type="button"
-          >
-            <span className="text-foreground line-clamp-2 font-mono text-xs tracking-widest uppercase">
-              {source.title}
-            </span>
-            <span className="text-muted-foreground mt-2 flex items-center gap-2 font-mono text-[0.6rem] tracking-widest uppercase">
-              <Database className="size-3" /> {source.status} · {source.source_type}
-            </span>
-          </button>
-        ))}
-      </div>
-    </aside>
-  );
-}
-
-function RetrievalReplay({
-  error,
-  isRetrieving,
-  onQueryChange,
-  onRetrieve,
-  onSelectResult,
-  query,
-  retrieval,
-}: {
-  error: string | null;
-  isRetrieving: boolean;
-  onQueryChange: (query: string) => void;
-  onRetrieve: () => void;
-  onSelectResult: (result: EvidenceKbRetrievedPassage) => void;
-  query: string;
-  retrieval: EvidenceKbRetrieveResponse | null;
-}) {
-  return (
-    <section className="border-border/40 border-b bg-white/[0.01] p-3">
-      <div className="mb-2 flex items-center justify-between gap-3">
-        <span className="text-muted-foreground font-mono text-[0.62rem] tracking-widest uppercase">
-          [ RETRIEVAL_REPLAY ]
-        </span>
-        {retrieval ? (
-          <span className="text-muted-foreground/70 font-mono text-[0.58rem] tracking-widest uppercase">
-            {retrieval.contexts.length} HITS · {retrieval.retrievalMode}
-          </span>
-        ) : null}
-      </div>
-      <div className="flex gap-2">
-        <label className="border-border/40 bg-background/50 focus-within:border-brand-accent flex h-9 min-w-0 flex-1 items-center gap-2 border px-3">
-          <Search className="text-muted-foreground size-3.5" />
-          <input
-            className="text-foreground placeholder:text-muted-foreground/50 flex-1 bg-transparent font-mono text-[0.65rem] tracking-widest uppercase outline-none"
-            onChange={(event) => onQueryChange(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter') onRetrieve();
-            }}
-            placeholder="[ REPLAY QUERY... ]"
-            value={query}
-          />
-        </label>
-        <button
-          className="border-border/40 hover:border-brand-accent/50 hover:text-brand-accent disabled:text-muted-foreground/35 border px-3 font-mono text-[0.62rem] tracking-widest uppercase"
-          disabled={isRetrieving || !query.trim()}
-          onClick={onRetrieve}
-          type="button"
-        >
-          [ {isRetrieving ? 'Running' : 'Run'} ]
-        </button>
-      </div>
-
-      {error ? (
-        <p className="text-destructive mt-2 font-mono text-[0.62rem] tracking-widest uppercase">
-          [ {error} ]
-        </p>
-      ) : null}
-
-      {retrieval?.contexts.length ? (
-        <div className="mt-3 max-h-44 space-y-2 overflow-auto pr-1">
-          {retrieval.contexts.map((context) => (
-            <button
-              className="border-border/40 hover:border-brand-accent/40 block w-full border bg-black/10 p-2 text-left transition-colors"
-              key={`${retrieval.retrievalRunId}-${context.passage_id}`}
-              onClick={() => onSelectResult(context)}
-              type="button"
-            >
-              <div className="text-muted-foreground mb-1 flex flex-wrap gap-x-3 gap-y-1 font-mono text-[0.56rem] tracking-widest uppercase">
-                <span>#{context.final_rank}</span>
-                <span>score {context.score.toFixed(4)}</span>
-                <span>bm25 {context.bm25_rank ?? '-'}</span>
-                <span>vec {context.vector_rank ?? '-'}</span>
-                <span>rrf {context.rrf_score?.toFixed(4) ?? '-'}</span>
-              </div>
-              <p className="text-foreground/80 line-clamp-2 font-mono text-[0.62rem] leading-relaxed">
-                {context.text}
-              </p>
-            </button>
-          ))}
-        </div>
-      ) : retrieval ? (
-        <p className="text-muted-foreground/70 mt-2 font-mono text-[0.62rem] tracking-widest uppercase">
-          [ NO HITS ]
-        </p>
-      ) : null}
-    </section>
-  );
-}
-
 function PassageFilters({
   currentPage,
   onPageChange,
   onQueryChange,
   onStatusFilterChange,
+  onRetrievalFilterChange,
   onToggleSort,
   query,
   sortDirection,
   sortField,
   statusFilter,
+  retrievalFilter,
   totalPages,
   totalPassages,
 }: {
@@ -475,11 +310,13 @@ function PassageFilters({
   onPageChange: (page: number) => void;
   onQueryChange: (query: string) => void;
   onStatusFilterChange: (status: StatusFilter) => void;
+  onRetrievalFilterChange: (filter: RetrievalFilter) => void;
   onToggleSort: (field: SortField) => void;
   query: string;
   sortDirection: SortDirection;
   sortField: SortField;
   statusFilter: StatusFilter;
+  retrievalFilter: RetrievalFilter;
   totalPages: number;
   totalPassages: number;
 }) {
@@ -504,7 +341,15 @@ function PassageFilters({
           <option value="candidate">CANDIDATE</option>
           <option value="certified">CERTIFIED</option>
           <option value="rejected">REJECTED</option>
-          <option value="deprecated">DEPRECATED</option>
+        </select>
+        <select
+          className="border-border/40 bg-background/50 h-9 border px-2 font-mono text-[0.62rem] tracking-widest uppercase"
+          onChange={(event) => onRetrievalFilterChange(event.target.value as RetrievalFilter)}
+          value={retrievalFilter}
+        >
+          <option value="all">ALL RETRIEVAL</option>
+          <option value="enabled">ENABLED ONLY</option>
+          <option value="disabled">DISABLED ONLY</option>
         </select>
       </div>
       <div className="flex flex-wrap items-center gap-2">
@@ -633,7 +478,17 @@ function PassageList({
                 <span>
                   #{passage.order + 1} · {passage.status}
                 </span>
-                <span>{passage.token_count} TOK</span>
+                <span className="flex items-center gap-2">
+                  {!passage.retrieval_enabled && (
+                    <span className="text-status-warning-foreground">[ DISABLED ]</span>
+                  )}
+                  <span className={cn(
+                    passage.quality_warnings.length > 0 && "text-status-warning-foreground"
+                  )}>
+                    {passage.quality_score.toFixed(2)} Q
+                  </span>
+                  <span>{passage.token_count} TOK</span>
+                </span>
               </div>
               <p className="text-foreground/80 line-clamp-3 font-mono text-[0.68rem] leading-relaxed">
                 {passage.text}
@@ -646,7 +501,7 @@ function PassageList({
   );
 }
 
-function PassageInspector({
+export function PassageInspector({
   curationError,
   isApplying,
   onApplyCuration,
@@ -654,19 +509,19 @@ function PassageInspector({
 }: {
   curationError: string | null;
   isApplying: boolean;
-  onApplyCuration: (action: 'certify' | 'clear_warnings' | 'reject' | 'toggle_retrieval') => void;
+  onApplyCuration: (action: 'certify' | 'clear_warnings' | 'reject' | 'toggle_retrieval' | 'reset') => void;
   passage: EvidenceKbPassage | null;
 }) {
   if (!passage) {
     return (
-      <aside className="border-border/40 border-l">
+      <aside className="border-border/40">
         <EvidenceEmptyState label="Select a passage to inspect." compact />
       </aside>
     );
   }
 
   return (
-    <aside className="border-border/40 min-h-0 overflow-auto border-l bg-white/[0.01] p-4">
+    <aside className="border-border/40 min-h-0 overflow-auto bg-white/[0.01] p-4">
       <div className="mb-4 flex items-center gap-2">
         <FileText className="text-brand-accent size-4" />
         <h3 className="text-foreground font-mono text-xs tracking-widest uppercase">
@@ -684,27 +539,61 @@ function PassageInspector({
         />
       </dl>
 
-      <div className="mb-4 grid grid-cols-2 gap-2">
-        <CurationButton
-          disabled={isApplying || passage.status === 'certified'}
-          label="Certify"
-          onClick={() => onApplyCuration('certify')}
-        />
-        <CurationButton
-          disabled={isApplying || passage.status === 'rejected'}
-          label="Reject"
-          onClick={() => onApplyCuration('reject')}
-        />
-        <CurationButton
-          disabled={isApplying}
-          label={passage.retrieval_enabled ? 'Disable Retrieval' : 'Enable Retrieval'}
-          onClick={() => onApplyCuration('toggle_retrieval')}
-        />
-        <CurationButton
-          disabled={isApplying || passage.quality_warnings.length === 0}
-          label="Clear Warnings"
-          onClick={() => onApplyCuration('clear_warnings')}
-        />
+      <div className="mb-4 space-y-2">
+        <div className="flex w-full divide-x divide-border/40 border border-border/40">
+          <button
+            className={cn(
+              "flex-1 px-2 py-2 text-center font-mono text-[0.58rem] tracking-widest uppercase transition-colors disabled:cursor-not-allowed",
+              passage.status === 'candidate'
+                ? "bg-brand-accent/20 text-brand-accent"
+                : "text-foreground/80 hover:bg-brand-accent/10 hover:text-brand-accent disabled:text-muted-foreground/35"
+            )}
+            disabled={isApplying || passage.status === 'candidate'}
+            onClick={() => onApplyCuration('reset')}
+            type="button"
+          >
+            Candidate
+          </button>
+          <button
+            className={cn(
+              "flex-1 px-2 py-2 text-center font-mono text-[0.58rem] tracking-widest uppercase transition-colors disabled:cursor-not-allowed",
+              passage.status === 'certified'
+                ? "bg-status-success-surface text-status-success-foreground"
+                : "text-foreground/80 hover:bg-status-success-surface/50 hover:text-status-success-foreground disabled:text-muted-foreground/35"
+            )}
+            disabled={isApplying || passage.status === 'certified'}
+            onClick={() => onApplyCuration('certify')}
+            type="button"
+          >
+            Certified
+          </button>
+          <button
+            className={cn(
+              "flex-1 px-2 py-2 text-center font-mono text-[0.58rem] tracking-widest uppercase transition-colors disabled:cursor-not-allowed",
+              passage.status === 'rejected'
+                ? "bg-destructive/20 text-destructive"
+                : "text-foreground/80 hover:bg-destructive/10 hover:text-destructive disabled:text-muted-foreground/35"
+            )}
+            disabled={isApplying || passage.status === 'rejected'}
+            onClick={() => onApplyCuration('reject')}
+            type="button"
+          >
+            Rejected
+          </button>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2">
+          <CurationButton
+            disabled={isApplying}
+            label={passage.retrieval_enabled ? 'Disable Retrieval' : 'Enable Retrieval'}
+            onClick={() => onApplyCuration('toggle_retrieval')}
+          />
+          <CurationButton
+            disabled={isApplying || passage.quality_warnings.length === 0}
+            label="Clear Warnings"
+            onClick={() => onApplyCuration('clear_warnings')}
+          />
+        </div>
       </div>
 
       {passage.quality_warnings.length ? (
@@ -719,7 +608,7 @@ function PassageInspector({
         </div>
       ) : null}
 
-      <pre className="border-border/40 text-foreground/85 border bg-black/10 p-4 font-mono text-xs leading-relaxed whitespace-pre-wrap">
+      <pre className="border-border/40 text-foreground/85 border bg-muted/30 p-4 font-mono text-xs leading-relaxed whitespace-pre-wrap">
         {passage.text}
       </pre>
     </aside>
@@ -737,7 +626,7 @@ function CurationButton({
 }) {
   return (
     <button
-      className="border-border/40 hover:border-brand-accent/50 hover:text-brand-accent disabled:text-muted-foreground/35 disabled:hover:border-border/40 border px-2 py-2 font-mono text-[0.58rem] tracking-widest uppercase transition-colors disabled:cursor-not-allowed"
+      className="border-border/40 hover:border-brand-accent/50 hover:text-brand-accent disabled:text-muted-foreground/35 disabled:hover:border-border/40 flex items-center justify-center text-center whitespace-nowrap border px-2 py-2 font-mono text-[0.58rem] tracking-widest uppercase transition-colors disabled:cursor-not-allowed"
       disabled={disabled}
       onClick={onClick}
       type="button"
@@ -756,7 +645,7 @@ function InspectorField({ label, value }: { label: string; value: string }) {
   );
 }
 
-function EvidenceEmptyState({
+export function EvidenceEmptyState({
   compact,
   label,
   onRefresh,
