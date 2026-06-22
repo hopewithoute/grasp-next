@@ -3,7 +3,7 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ReactFlowProvider } from '@xyflow/react';
-import { Database, FileText, Maximize, Minimize, Network, Wand2 } from 'lucide-react';
+import { Database, FileText, Maximize, Minimize, Network, Search, Wand2 } from 'lucide-react';
 import type { ProjectSourceRecord } from '@grasp/domain';
 import { consumeUIMessageChunks } from '@/lib/ui-message-stream';
 import { cn } from '@/lib/utils';
@@ -17,6 +17,7 @@ import { type ChatItem, type ConceptRow, type RelationshipRow } from '../types';
 import { ChatPane } from './chat-pane';
 import { EvidenceExplorerPane } from './evidence-explorer-pane';
 import { GraphCanvasPane } from './graph-canvas-pane';
+import { TestRetrievalPane } from './test-retrieval-pane';
 import { LibraryPane } from './library-pane';
 
 
@@ -229,6 +230,13 @@ const ConceptGraphEditor = ({
                 <Database className="size-3" />[ KNOWLEDGE_BASE ]
               </button>
               <button
+                onClick={() => setViewMode('retrieval')}
+                title="Test Retrieval"
+                className={getViewToggleButtonStyles(viewMode === 'retrieval')}
+              >
+                <Search className="size-3" />[ TEST_RETRIEVAL ]
+              </button>
+              <button
                 onClick={() => setViewMode('graph')}
                 title="Graph View"
                 className={getViewToggleButtonStyles(viewMode === 'graph')}
@@ -277,6 +285,8 @@ const ConceptGraphEditor = ({
                   onRejectProposal={handleRejectProposal}
                   viewToggle={viewToggleNode}
                 />
+              ) : viewMode === 'retrieval' ? (
+                <TestRetrievalPane projectId={projectId} viewToggle={viewToggleNode} />
               ) : viewMode === 'evidence' ? (
                 <div className="grid min-h-0 flex-1 grid-cols-[22rem_minmax(0,1fr)] xl:grid-cols-[26rem_minmax(0,1fr)]">
                   <LibraryPane

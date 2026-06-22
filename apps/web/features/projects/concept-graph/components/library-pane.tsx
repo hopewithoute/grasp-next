@@ -5,43 +5,31 @@ import type { ProjectSourceRecord } from '@grasp/domain';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { IngestionActivityPanel, type FeedItem } from '../../components/ingestion-activity-panel';
 import { ProjectSourcesPanel } from '../../components/source-material-form';
-import { CollapsedPaneRail, PaneHeader } from './shared-components';
+import { PaneHeader } from './shared-components';
 
 type LibraryPaneProps = {
   projectId: string;
-  collapsed: boolean;
   feed: FeedItem[];
   isActivityOpen: boolean;
   isRunning: boolean;
-  onCollapseToggle: () => void;
   onIngestionTrigger: (sourceId: string, title: string, type: string, content: string) => void;
   onActivityOpenChange: (open: boolean) => void;
   sources: ProjectSourceRecord[];
+  selectedSourceId?: string | null;
+  onSelectSource?: (id: string | null) => void;
 };
 
 export function LibraryPane({
   projectId,
-  collapsed,
   feed,
   isActivityOpen,
   isRunning,
-  onCollapseToggle,
   onIngestionTrigger,
   onActivityOpenChange,
   sources,
+  selectedSourceId,
+  onSelectSource,
 }: LibraryPaneProps) {
-  if (collapsed) {
-    return (
-      <CollapsedPaneRail
-        ariaLabel="Expand concept inventory"
-        meta={`${sources.length} ITEMS`}
-        onToggle={onCollapseToggle}
-        side="left"
-        title="[ SOURCES ]"
-      />
-    );
-  }
-
   return (
     <aside
       aria-label="Library"
@@ -67,7 +55,6 @@ export function LibraryPane({
             </button>
           </div>
         }
-        onCollapseToggle={onCollapseToggle}
         side="left"
         title="[ LIBRARY ]"
       />
@@ -76,6 +63,8 @@ export function LibraryPane({
         <ProjectSourcesPanel
           projectId={projectId}
           sources={sources}
+          selectedSourceId={selectedSourceId}
+          onSelectSource={onSelectSource}
           onIngestionTrigger={(sourceId, title, type, content) => {
             onIngestionTrigger(sourceId, title, type, content);
           }}

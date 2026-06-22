@@ -6,26 +6,24 @@ import { useChatThread } from '../hooks/use-chat-thread';
 import { usePendingProposals } from '../hooks/use-pending-proposals-context';
 import { type ConceptRow } from '../types';
 import { ChatItemRow } from './chat-message';
-import { CollapsedPaneRail, PaneHeader } from './shared-components';
+import { PaneHeader } from './shared-components';
 
 export function ChatPane({
-  collapsed,
   items,
-  onCollapseToggle,
   onIngestionTrigger,
   projectId,
   chatContextConcepts,
   onRemoveChatContext,
   onHoverChatContext,
+  viewToggle,
 }: {
-  collapsed: boolean;
   items: import('../types').ChatItem[];
-  onCollapseToggle: () => void;
   onIngestionTrigger: (sourceId: string, title: string, type: string, content: string) => void;
   projectId: string;
   chatContextConcepts: ConceptRow[];
   onRemoveChatContext: (id: string) => void;
   onHoverChatContext?: (id: string | null) => void;
+  viewToggle?: React.ReactNode;
 }) {
   const {
     messages,
@@ -42,18 +40,6 @@ export function ChatPane({
 
   // Derive pending proposals (syncs to parent state via useDerivedPendingProposals)
   usePendingProposals();
-
-  if (collapsed) {
-    return (
-      <CollapsedPaneRail
-        ariaLabel="Expand refinement"
-        meta={`${items.length} EVENTS`}
-        onToggle={onCollapseToggle}
-        side="right"
-        title="[ REFINEMENT ]"
-      />
-    );
-  }
 
   const hasPendingProposal = messages.some(
     (m) =>
@@ -72,9 +58,9 @@ export function ChatPane({
             {items.length} EVENTS
           </span>
         }
-        onCollapseToggle={onCollapseToggle}
         side="right"
         title="[ REFINEMENT ]"
+        actions={viewToggle}
       />
 
       <div className="min-h-0 flex-1 overflow-y-auto p-4" ref={scrollRef}>
