@@ -8,6 +8,13 @@
       "when": 1781286524571,
       "tag": "0000_sudden_franklin_storm",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1782063878211,
+      "tag": "0001_shallow_rictor",
+      "breakpoints": true
     }
   ]
 }

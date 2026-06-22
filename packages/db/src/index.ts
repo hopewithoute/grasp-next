@@ -10,10 +10,6 @@ export {
   type DbIngestionRunRepository,
 } from './ingestion-run-repository';
 
-export {
-  createProjectSourceRepository,
-  type ProjectSourceRepository,
-} from './project-source-repository';
 export { createProjectRepository, type ProjectRepository } from './project-repository';
 export * from './schema';
 export { eq } from 'drizzle-orm';

@@ -105,19 +105,6 @@ export const projects = pgTable('projects', {
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const projectSources = pgTable('project_sources', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  projectId: uuid('project_id')
-    .notNull()
-    .references(() => projects.id, { onDelete: 'cascade' }),
-  type: projectSourceType('type').notNull(),
-  title: text('title').notNull(),
-  content: text('content'),
-  fileRef: text('file_ref'),
-  metadata: jsonb('metadata'),
-  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
-});
 
 export const ingestionRuns = pgTable(
   'ingestion_runs',
@@ -126,7 +113,7 @@ export const ingestionRuns = pgTable(
     projectId: uuid('project_id')
       .notNull()
       .references(() => projects.id, { onDelete: 'cascade' }),
-    sourceId: uuid('source_id').references(() => projectSources.id, { onDelete: 'set null' }),
+    sourceId: text('source_id'),
     status: ingestionRunStatus('status').notNull().default(INGESTION_RUN_STATUS.INGESTING),
     failureReason: text('failure_reason'),
     metadata: jsonb('metadata'),
@@ -219,7 +206,6 @@ export const schema = {
   auditLogs,
   ingestionRuns,
   projects,
-  projectSources,
   session,
   user,
   verification,
@@ -237,5 +223,3 @@ export type IngestionRun = typeof ingestionRuns.$inferSelect;
 export type NewIngestionRun = typeof ingestionRuns.$inferInsert;
 export type Project = typeof projects.$inferSelect;
 export type NewProject = typeof projects.$inferInsert;
-export type ProjectSource = typeof projectSources.$inferSelect;
-export type NewProjectSource = typeof projectSources.$inferInsert;
