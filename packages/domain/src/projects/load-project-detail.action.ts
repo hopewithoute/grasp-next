@@ -60,7 +60,7 @@ export async function loadProjectDetail(
 
   const [latestIngestionRun, sources] = await Promise.all([
     deps.ingestionRunRepository?.findLatestByProject(project.id) ?? Promise.resolve(null),
-    deps.projectSourceRepository.listByProject(project.id),
+    deps.projectSourceRepository.listByProjectForOwner(project.id, input.ownerId),
   ]);
 
   const conceptReadModel = emptyKnowledgebaseReadModel();

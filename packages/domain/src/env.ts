@@ -1,7 +1,12 @@
 import { parse, urlString, v } from './validation';
 
 const optionalString = v.optional(v.string());
-const optionalNonEmptyString = v.optional(v.pipe(v.string(), v.minLength(1)));
+const optionalNonEmptyString = v.optional(
+  v.pipe(
+    v.string(),
+    v.transform((val) => (val === '' ? undefined : val))
+  )
+);
 const optionalPositiveInteger = v.optional(
   v.pipe(v.unknown(), v.transform(Number), v.number(), v.integer(), v.minValue(1))
 );

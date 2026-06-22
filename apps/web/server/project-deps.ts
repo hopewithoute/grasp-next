@@ -5,10 +5,11 @@ import {
   createDbClient,
   createIngestionRunRepository,
   createProjectRepository,
-  createProjectSourceRepository,
 } from '@grasp/db';
 import { serverEnv } from './env';
 import { createEvidenceKbService } from './evidence-kb-service';
+
+import { createEvidenceKbProjectSourceRepository } from './project-source-repository-adapter';
 
 export function createProjectDeps() {
   if (globalForProjectDeps.graspProjectDeps) {
@@ -25,17 +26,19 @@ function buildProjectDeps() {
 
   const projectRepository = createProjectRepository(db);
 
+  const evidenceKbService = createEvidenceKbService({
+    apiKey: serverEnv.EVIDENCE_KB_API_KEY,
+    baseUrl: serverEnv.EVIDENCE_KB_BASE_URL,
+    projectRepository,
+  });
+
   return {
     artifactRepository: createArtifactRepository(db),
     auditLogRepository: createAuditLogRepository(db),
-    evidenceKbService: createEvidenceKbService({
-      apiKey: serverEnv.EVIDENCE_KB_API_KEY,
-      baseUrl: serverEnv.EVIDENCE_KB_BASE_URL,
-      projectRepository,
-    }),
+    evidenceKbService,
     ingestionRunRepository: createIngestionRunRepository(db),
     projectRepository,
-    projectSourceRepository: createProjectSourceRepository(db),
+    projectSourceRepository: createEvidenceKbProjectSourceRepository(evidenceKbService),
   };
 }
 
