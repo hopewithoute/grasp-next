@@ -16,15 +16,9 @@ Grasp is a monorepo for an adaptive learning studio built around project-based a
   Python FastAPI service for ingestion, passage storage, retrieval, curation, and topic graph generation.
 - `services/embedding-sidecar`
   Local embedding runtime used by `evidence-kb` when OpenAI-compatible embeddings are needed.
-- `docs`
-  Product, feature, and architecture documentation.
 
 ## Primary Docs
 
-- [docs/prd.md](/var/www/grasp-next/docs/prd.md:1)
-  Product requirements and the current MVP direction.
-- [docs/feature_tracker.md](/var/www/grasp-next/docs/feature_tracker.md:1)
-  Feature-by-feature implementation status.
 - [services/evidence-kb/README.md](/var/www/grasp-next/services/evidence-kb/README.md:1)
   Setup and API overview for the ingestion/retrieval backend.
 - [services/evidence-kb/docs/README.md](/var/www/grasp-next/services/evidence-kb/docs/README.md:1)
