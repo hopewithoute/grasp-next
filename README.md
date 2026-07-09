@@ -9,7 +9,7 @@
 
 > An adaptive learning studio built around project-based authoring, evidence-backed source ingestion, and concept graph workflows.
 
-Grasp is an open-source platform designed to intelligently map and process knowledge. By leveraging Hybrid RAG (Retrieval-Augmented Generation) with BM25 + vector search and intelligent concept extraction, Grasp allows users to ingest source materials, construct visual knowledge graphs, and build highly adaptive learning pathways.
+Grasp is an platform designed to intelligently map and process knowledge. By leveraging Hybrid RAG (Retrieval-Augmented Generation) with BM25 + vector search and intelligent concept extraction, Grasp allows users to ingest source materials, construct visual knowledge graphs, and build highly adaptive learning pathways.
 
 ---
 
