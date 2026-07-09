@@ -28,19 +28,15 @@ export function SourceList({
 }: SourceListProps) {
   const router = useRouter();
   const [liveRuns, setLiveRuns] = useState<IngestionRunRecord[]>(ingestionRuns);
-  const [prevRunsProp, setPrevRunsProp] = useState<IngestionRunRecord[]>(ingestionRuns);
 
-  // Sync initial props to local state during render (derived state pattern)
-  if (ingestionRuns !== prevRunsProp) {
-    setPrevRunsProp(ingestionRuns);
+  useEffect(() => {
     setLiveRuns(ingestionRuns);
-  }
+  }, [ingestionRuns]);
 
   useEffect(() => {
     const isAnyIngesting = liveRuns.some((r) => r.status === 'ingesting');
     if (!isAnyIngesting) return;
 
-    // NOTE: Phase 4 implemented - using EventSource for real-time reactivity without interval polling.
     const eventSource = new EventSource(`/api/projects/${projectId}/runs/events`);
 
     eventSource.onmessage = async (event) => {
@@ -174,12 +170,4 @@ function getSourcePreview(source: { content: string | null; type: string }) {
     return 'Empty source';
   }
   return trimmed.length > 140 ? `${trimmed.slice(0, 137)}...` : trimmed;
-}
-
-function getTextCounts(value: string) {
-  const trimmed = value.trim();
-  return {
-    characters: value.length,
-    words: trimmed ? trimmed.split(/\s+/).length : 0,
-  };
 }
