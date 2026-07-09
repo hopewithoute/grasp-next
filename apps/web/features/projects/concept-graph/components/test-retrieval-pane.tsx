@@ -4,7 +4,7 @@ import {
   EvidenceKbRetrievedPassage,
   EvidenceKbRetrieveResponse,
   EvidenceKbPassage,
-} from '@/server/evidence-kb-service';
+} from '@/server/evidence-kb';
 import { applyEvidenceKbCurationAction, retrieveEvidenceKbAction } from '../../actions';
 import { PassageInspector, EvidenceEmptyState } from './evidence-explorer-pane';
 

@@ -1,23 +1,75 @@
 'use client';
 
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Plus } from 'lucide-react';
+import type { IngestionRunRecord } from '@grasp/domain';
+import { getProjectIngestionRunsAction } from '../actions';
 import type { ProjectSourceItem } from './source-material-form';
 
 type SourceListProps = {
+  projectId: string;
   onSelectSource: (sourceId: string) => void;
   onEditSource: (sourceId: string) => void;
   onAddNew: () => void;
   selectedSourceId: string | null;
   sources: ProjectSourceItem[];
+  ingestionRuns?: IngestionRunRecord[];
 };
 
 export function SourceList({
+  projectId,
   onSelectSource,
   onEditSource,
   onAddNew,
   selectedSourceId,
   sources,
+  ingestionRuns = [],
 }: SourceListProps) {
+  const router = useRouter();
+  const [liveRuns, setLiveRuns] = useState<IngestionRunRecord[]>(ingestionRuns);
+  const [prevRunsProp, setPrevRunsProp] = useState<IngestionRunRecord[]>(ingestionRuns);
+
+  // Sync initial props to local state during render (derived state pattern)
+  if (ingestionRuns !== prevRunsProp) {
+    setPrevRunsProp(ingestionRuns);
+    setLiveRuns(ingestionRuns);
+  }
+
+  useEffect(() => {
+    const isAnyIngesting = liveRuns.some((r) => r.status === 'ingesting');
+    if (!isAnyIngesting) return;
+
+    // NOTE: Phase 4 implemented - using EventSource for real-time reactivity without interval polling.
+    const eventSource = new EventSource(`/api/projects/${projectId}/runs/events`);
+
+    eventSource.onmessage = async (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.status) {
+          // A run status changed, let's fetch the latest runs
+          const updatedRuns = await getProjectIngestionRunsAction(projectId);
+          setLiveRuns(updatedRuns);
+          
+          if (!updatedRuns.some((r) => r.status === 'ingesting')) {
+            router.refresh();
+          }
+        }
+      } catch (err) {
+        console.error('Error handling SSE message:', err);
+      }
+    };
+
+    eventSource.onerror = (err) => {
+      console.error('SSE connection error:', err);
+      // Optional: fallback to manual polling if SSE breaks, or rely on browser's EventSource auto-reconnect
+    };
+
+    return () => {
+      eventSource.close();
+    };
+  }, [liveRuns, projectId, router]);
+
   return (
     <aside className="flex h-full min-w-0 flex-col gap-3 overflow-hidden">
       <div className="flex shrink-0 items-center justify-between gap-3">
@@ -78,8 +130,25 @@ export function SourceList({
                       {getSourcePreview(source)}
                     </span>
                     <span className="text-foreground/50 mt-3 flex items-center justify-between font-mono text-[0.6rem] tracking-[0.14em] uppercase">
-                      <span>[{source.type}]</span>
-                      <span>{counts.words} WORDS</span>
+                      <span className="flex items-center gap-2">
+                        <span>[{source.type}]</span>
+                      </span>
+                      <span>
+                        {(() => {
+                          const latestRunForSource = liveRuns.find((r) => String(r.sourceId) === source.id);
+                          if (!latestRunForSource) return null;
+                          if (latestRunForSource.status === 'ingesting') {
+                            return <span className="text-brand-accent animate-pulse">INGESTING...</span>;
+                          }
+                          if (latestRunForSource.status === 'completed') {
+                            return <span className="text-status-success-foreground">PROCESSED</span>;
+                          }
+                          if (latestRunForSource.status === 'failed') {
+                            return <span className="text-status-danger-foreground">FAILED</span>;
+                          }
+                          return null;
+                        })()}
+                      </span>
                     </span>
                   </div>
                 </li>

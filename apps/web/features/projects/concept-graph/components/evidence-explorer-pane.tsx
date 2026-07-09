@@ -7,17 +7,16 @@ import type {
   EvidenceKbPassage,
   EvidenceKbRetrievedPassage,
   EvidenceKbRetrieveResponse,
-} from '@/server/evidence-kb-service';
+} from '@/server/evidence-kb';
 import {
   applyEvidenceKbCurationAction,
   listEvidenceKbPassagesAction,
-  listEvidenceKbSourcesAction,
   retrieveEvidenceKbAction,
   type EvidenceKbPassagesResult,
-  type EvidenceKbSourcesResult,
 } from '../../actions';
 import { PaneHeader } from './shared-components';
 import { SourceViewer } from './source-viewer';
+import type { ProjectSourceRecord } from '@grasp/domain';
 
 type SortField = 'order' | 'quality_score' | 'token_count' | 'status';
 type SortDirection = 'asc' | 'desc';
@@ -31,13 +30,14 @@ export function EvidenceExplorerPane({
   viewToggle,
   externalSelectedSourceId,
   onSelectSource,
+  sources,
 }: {
   projectId: string;
   viewToggle?: React.ReactNode;
   externalSelectedSourceId?: string | null;
   onSelectSource?: (id: string | null) => void;
+  sources: ProjectSourceRecord[];
 }) {
-  const [sourcesResult, setSourcesResult] = useState<EvidenceKbSourcesResult | null>(null);
   const [passagesResult, setPassagesResult] = useState<EvidenceKbPassagesResult | null>(null);
   const [internalSelectedSourceId, setInternalSelectedSourceId] = useState<string | null>(null);
   const selectedSourceId = externalSelectedSourceId !== undefined ? externalSelectedSourceId : internalSelectedSourceId;
@@ -51,36 +51,20 @@ export function EvidenceExplorerPane({
   const [sortField, setSortField] = useState<SortField>('order');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [currentPage, setCurrentPage] = useState(1);
-  const [, setIsLoadingSources] = useState(true);
   const [isLoadingPassages, setIsLoadingPassages] = useState(false);
   const [isApplyingCuration, setIsApplyingCuration] = useState(false);
   const [curationError, setCurationError] = useState<string | null>(null);
 
-  const loadSources = useCallback(async (background = false) => {
-    if (!background) setIsLoadingSources(true);
-    try {
-      const result = await listEvidenceKbSourcesAction(projectId);
-      setSourcesResult(result);
-      // Only auto-select first source if we didn't already have one
-      const firstSourceId = result.configured ? result.sources[0]?.external_source_id : null;
-      if (!firstSourceId) {
-        setPassagesResult(null);
-      }
-      if (externalSelectedSourceId === undefined) {
-        setSelectedSourceId(firstSourceId ?? null);
-      }
-    } catch {
-      setSourcesResult({ configured: false, error: 'Failed to load sources.', sources: [] });
-    } finally {
-      if (!background) setIsLoadingSources(false);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projectId]);
-
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    void loadSources();
-  }, [loadSources]);
+    // Only auto-select first source if we didn't already have one
+    const firstSourceId = sources.length > 0 ? sources[0]?.id : null;
+    if (!firstSourceId) {
+      setPassagesResult(null);
+    }
+    if (externalSelectedSourceId === undefined) {
+      setSelectedSourceId(firstSourceId ?? null);
+    }
+  }, [sources, externalSelectedSourceId, setSelectedSourceId]);
 
   const loadPassages = useCallback(
     async (sourceId: string, background = false) => {
@@ -112,8 +96,7 @@ export function EvidenceExplorerPane({
     [projectId, query, statusFilter, retrievalFilter, sortField, sortDirection, currentPage]
   );
 
-  const sources = sourcesResult?.configured ? sourcesResult.sources : [];
-  const selectedSource = sources.find((s) => s.external_source_id === selectedSourceId) ?? null;
+  const selectedSource = sources.find((s) => s.id === selectedSourceId) ?? null;
   const internalSourceId = selectedSource?.id;
 
   useEffect(() => {
@@ -191,49 +174,42 @@ export function EvidenceExplorerPane({
       className="border-border bg-background flex min-h-[520px] flex-1 flex-col border-b lg:min-h-0 lg:border-b-0"
     >
       <PaneHeader
-        meta={
-          sourcesResult?.configured
-            ? `${sources.length} SOURCES · ${totalPassages} PASSAGES`
-            : 'NOT CONFIGURED'
-        }
         actions={viewToggle}
         title="[ KNOWLEDGE_BASE ]"
       />
 
-      {!sourcesResult ? (
-        <EvidenceEmptyState label="Loading Evidence KB..." />
-      ) : !sourcesResult.configured ? (
-        <EvidenceEmptyState label={sourcesResult.error} />
-      ) : sources.length === 0 ? (
-        <EvidenceEmptyState label="No Evidence KB sources indexed yet." onRefresh={loadSources} />
+      {sources.length === 0 ? (
+        <EvidenceEmptyState label="No Evidence KB sources indexed yet." />
       ) : !selectedSource ? (
         <EvidenceEmptyState label="Select a source from the Library to view its evidence." />
       ) : (
         <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_24rem] xl:grid-cols-[minmax(0,1fr)_26rem] overflow-hidden">
           <div className="flex min-h-0 flex-col overflow-hidden border-r border-border/40">
-            <div className="flex shrink-0 items-center border-b border-border/40 bg-white/[0.01]">
-              <button
-                className={cn(
-                  'px-6 py-3 font-mono text-[0.65rem] tracking-widest uppercase transition-colors border-b-2',
-                  activeTab === 'passages'
-                    ? 'border-brand-accent text-brand-accent bg-brand-accent/5'
-                    : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-white/[0.02]'
-                )}
-                onClick={() => setActiveTab('passages')}
-              >
-                [ PARSED PASSAGES ]
-              </button>
-              <button
-                className={cn(
-                  'px-6 py-3 font-mono text-[0.65rem] tracking-widest uppercase transition-colors border-b-2',
-                  activeTab === 'raw'
-                    ? 'border-brand-accent text-brand-accent bg-brand-accent/5'
-                    : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-white/[0.02]'
-                )}
-                onClick={() => setActiveTab('raw')}
-              >
-                [ VIEW SOURCE ]
-              </button>
+            <div className="flex shrink-0 items-center justify-between border-b border-border/40 bg-white/[0.01]">
+              <div className="flex items-center">
+                <button
+                  className={cn(
+                    'px-6 py-3 font-mono text-[0.65rem] tracking-widest uppercase transition-colors border-b-2',
+                    activeTab === 'passages'
+                      ? 'border-brand-accent text-brand-accent bg-brand-accent/5'
+                      : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-white/[0.02]'
+                  )}
+                  onClick={() => setActiveTab('passages')}
+                >
+                  [ PARSED PASSAGES ]
+                </button>
+                <button
+                  className={cn(
+                    'px-6 py-3 font-mono text-[0.65rem] tracking-widest uppercase transition-colors border-b-2',
+                    activeTab === 'raw'
+                      ? 'border-brand-accent text-brand-accent bg-brand-accent/5'
+                      : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-white/[0.02]'
+                  )}
+                  onClick={() => setActiveTab('raw')}
+                >
+                  [ VIEW SOURCE ]
+                </button>
+              </div>
             </div>
 
             <div className="min-h-0 flex-1 overflow-hidden flex flex-col">
@@ -483,7 +459,7 @@ function PassageList({
                     <span className="text-status-warning-foreground">[ DISABLED ]</span>
                   )}
                   <span className={cn(
-                    passage.quality_warnings.length > 0 && "text-status-warning-foreground"
+                    (passage.quality_warnings?.length || 0) > 0 && "text-status-warning-foreground"
                   )}>
                     {passage.quality_score.toFixed(2)} Q
                   </span>
@@ -530,7 +506,7 @@ export function PassageInspector({
       </div>
 
       <dl className="mb-4 grid grid-cols-2 gap-2 font-mono text-[0.62rem] tracking-widest uppercase">
-        <InspectorField label="Status" value={passage.status} />
+        <InspectorField label="Status" value={passage.status || 'unknown'} />
         <InspectorField label="Quality" value={passage.quality_score.toFixed(2)} />
         <InspectorField label="Tokens" value={String(passage.token_count)} />
         <InspectorField
@@ -589,16 +565,16 @@ export function PassageInspector({
             onClick={() => onApplyCuration('toggle_retrieval')}
           />
           <CurationButton
-            disabled={isApplying || passage.quality_warnings.length === 0}
+            disabled={isApplying || (passage.quality_warnings?.length || 0) === 0}
             label="Clear Warnings"
             onClick={() => onApplyCuration('clear_warnings')}
           />
         </div>
       </div>
 
-      {passage.quality_warnings.length ? (
+      {(passage.quality_warnings?.length || 0) ? (
         <div className="border-status-warning-border bg-status-warning-surface text-status-warning-foreground mb-4 border p-3 font-mono text-[0.62rem] tracking-widest uppercase">
-          {passage.quality_warnings.join(', ')}
+          {passage.quality_warnings?.join(', ')}
         </div>
       ) : null}
 

@@ -1,32 +1,30 @@
 'use client';
 
 import { Activity, Loader2 } from 'lucide-react';
-import type { ProjectSourceRecord } from '@grasp/domain';
+import type { IngestionRunRecord, ProjectSourceRecord } from '@grasp/domain';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { IngestionActivityPanel, type FeedItem } from '../../components/ingestion-activity-panel';
+import { IngestionActivityPanel } from '../../components/ingestion-activity-panel';
 import { ProjectSourcesPanel } from '../../components/source-material-form';
 import { PaneHeader } from './shared-components';
 
 type LibraryPaneProps = {
   projectId: string;
-  feed: FeedItem[];
   isActivityOpen: boolean;
   isRunning: boolean;
-  onIngestionTrigger: (sourceId: string, title: string, type: string, content: string) => void;
   onActivityOpenChange: (open: boolean) => void;
   sources: ProjectSourceRecord[];
+  ingestionRuns?: IngestionRunRecord[];
   selectedSourceId?: string | null;
   onSelectSource?: (id: string | null) => void;
 };
 
 export function LibraryPane({
   projectId,
-  feed,
   isActivityOpen,
   isRunning,
-  onIngestionTrigger,
   onActivityOpenChange,
   sources,
+  ingestionRuns = [],
   selectedSourceId,
   onSelectSource,
 }: LibraryPaneProps) {
@@ -63,17 +61,21 @@ export function LibraryPane({
         <ProjectSourcesPanel
           projectId={projectId}
           sources={sources}
+          ingestionRuns={ingestionRuns}
           selectedSourceId={selectedSourceId}
           onSelectSource={onSelectSource}
-          onIngestionTrigger={(sourceId, title, type, content) => {
-            onIngestionTrigger(sourceId, title, type, content);
-          }}
+          onActivityOpenChange={onActivityOpenChange}
         />
       </div>
 
       <Dialog open={isActivityOpen} onOpenChange={onActivityOpenChange}>
         <DialogContent className="bg-background flex h-[500px] flex-col overflow-hidden p-0 sm:max-w-[500px]">
-          <IngestionActivityPanel projectId={projectId} feed={feed} isRunning={isRunning} />
+          <IngestionActivityPanel
+            projectId={projectId}
+            ingestionRuns={ingestionRuns}
+            sources={sources}
+            isRunning={isRunning}
+          />
         </DialogContent>
       </Dialog>
     </aside>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import type { EvidenceKbSource } from '../../../../server/evidence-kb-service';
+import type { EvidenceKbSource } from '../../../../server/evidence-kb';
 import { getEvidenceKbSourceViewerUrlAction } from '../../actions';
 import { Loader2 } from 'lucide-react';
 
