@@ -69,9 +69,14 @@ class IngestionRunRecord(BaseModel):
     tenant_id: str
     project_id: UUID
     source_id: UUID
+    external_source_id: UUID | None = None
     status: IngestionStatus
     failure_reason: str | None = None
     stats: dict[str, Any] = Field(default_factory=dict)
+    started_at: Any | None = None
+    completed_at: Any | None = None
+    created_at: Any | None = None
+    updated_at: Any | None = None
 
 
 class RetrievedPassage(BaseModel):
@@ -101,3 +106,24 @@ class RetrievalRunRecord(BaseModel):
     filters: dict[str, Any] = Field(default_factory=dict)
     latency_ms: int = 0
     contexts: list[RetrievedPassage] = Field(default_factory=list)
+
+
+class TopicRecord(BaseModel):
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
+    id: UUID
+    tenant_id: str
+    project_id: UUID
+    name: str
+    description: str | None = None
+    is_user_defined: bool = False
+
+
+class TopicEdge(BaseModel):
+    source: UUID
+    target: UUID
+    weight: int
+
+
+class ConceptGraphResponse(BaseModel):
+    nodes: list[TopicRecord]
+    edges: list[TopicEdge]
