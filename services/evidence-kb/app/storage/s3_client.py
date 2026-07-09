@@ -30,7 +30,7 @@ class S3Client:
             logger.warning("S3 is not configured. Skipping upload.")
             return object_name
 
-        async with self.session.client("s3", endpoint_url=self.settings.S3_ENDPOINT_URL) as s3:
+        async with self.session.client("s3", endpoint_url=self.settings.S3_ENDPOINT_URL) as s3:  # type: ignore
             try:
                 await s3.put_object(
                     Bucket=self.settings.S3_BUCKET_NAME,
@@ -44,6 +44,26 @@ class S3Client:
                 logger.error(f"Failed to upload to S3: {e}")
                 raise
 
+    async def download_file_bytes(self, object_name: str) -> Optional[bytes]:
+        """
+        Downloads bytes from S3/R2 and returns them.
+        """
+        if not self.is_configured:
+            logger.warning("S3 is not configured. Skipping download.")
+            return None
+
+        async with self.session.client("s3", endpoint_url=self.settings.S3_ENDPOINT_URL) as s3:  # type: ignore
+            try:
+                response = await s3.get_object(
+                    Bucket=self.settings.S3_BUCKET_NAME,
+                    Key=object_name,
+                )
+                content = await response['Body'].read()
+                return content
+            except ClientError as e:
+                logger.error(f"Failed to download from S3: {e}")
+                raise
+
     async def generate_presigned_url(self, object_name: str, expiration: int = 3600) -> Optional[str]:
         """
         Generates a presigned URL for downloading/viewing the file.
@@ -51,7 +71,7 @@ class S3Client:
         if not self.is_configured:
             return None
 
-        async with self.session.client("s3", endpoint_url=self.settings.S3_ENDPOINT_URL) as s3:
+        async with self.session.client("s3", endpoint_url=self.settings.S3_ENDPOINT_URL) as s3:  # type: ignore
             try:
                 url = await s3.generate_presigned_url(
                     "get_object",
