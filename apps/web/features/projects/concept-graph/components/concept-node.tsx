@@ -14,8 +14,10 @@ import { type ConceptNodeData } from '../types';
 import { ConfidencePill, DifficultyChip } from './shared-components';
 
 function getNodeStyle(data: ConceptNodeData) {
-  const base =
-    'bg-card w-[19rem] rounded-none border px-4 py-3 transition-all duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)]';
+  const base = cn(
+    'bg-card w-[19rem] rounded-none border px-4 py-3 transition-all duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)]',
+    data.isUserDefined === false && 'border-dashed'
+  );
   const dimming = data.dimmed ? 'opacity-30 grayscale-[50%]' : 'opacity-100';
 
   if (data.selected) {
@@ -144,6 +146,11 @@ export const ConceptNode = memo(function ConceptNode({
           />
           <p className="text-foreground line-clamp-2 font-mono text-xs tracking-widest uppercase">
             {data.label}
+            {data.isUserDefined === false && (
+              <span className="text-brand-accent ml-1 font-bold" title="Auto-defined topic">
+                *
+              </span>
+            )}
           </p>
           <div className="mt-2 flex items-center justify-between gap-2">
             <DifficultyChip difficulty={data.difficulty} />

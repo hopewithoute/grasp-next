@@ -105,6 +105,7 @@ export type ConceptRow = {
   name: string;
   sourceEvidence?: SourceEvidence[] | null;
   evidenceCount?: number;
+  isUserDefined?: boolean;
 };
 
 export type RelationshipRow = {
@@ -142,4 +143,5 @@ export type ConceptNodeData = {
   onViewDetails?: () => void;
   onAcceptProposal?: (proposalId: string) => void;
   onRejectProposal?: (proposalId: string) => void;
+  isUserDefined?: boolean;
 };

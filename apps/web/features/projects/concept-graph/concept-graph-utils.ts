@@ -68,6 +68,7 @@ export function buildConceptGraph(
         confidence: concept.confidence,
         difficulty: concept.difficulty,
         label: concept.name,
+        isUserDefined: concept.isUserDefined,
       },
       height: NODE_HEIGHT,
       id: concept.id,

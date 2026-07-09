@@ -10,7 +10,7 @@ import { PaneHeader } from './shared-components';
 
 export function ChatPane({
   items,
-  onIngestionTrigger,
+  onActivityOpenChange,
   projectId,
   chatContextConcepts,
   onRemoveChatContext,
@@ -18,7 +18,7 @@ export function ChatPane({
   viewToggle,
 }: {
   items: import('../types').ChatItem[];
-  onIngestionTrigger: (sourceId: string, title: string, type: string, content: string) => void;
+  onActivityOpenChange: (open: boolean) => void;
   projectId: string;
   chatContextConcepts: ConceptRow[];
   onRemoveChatContext: (id: string) => void;
@@ -36,7 +36,7 @@ export function ChatPane({
     handleRejectCurationProposal,
     isLoading,
     scrollRef,
-  } = useChatThread(projectId, chatContextConcepts, onIngestionTrigger);
+  } = useChatThread(projectId, chatContextConcepts, onActivityOpenChange);
 
   // Derive pending proposals (syncs to parent state via useDerivedPendingProposals)
   usePendingProposals();

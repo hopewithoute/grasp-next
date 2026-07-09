@@ -4,23 +4,16 @@ import { useCallback, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ReactFlowProvider } from '@xyflow/react';
 import { Database, FileText, Maximize, Minimize, Network, Search, Wand2 } from 'lucide-react';
-import type { ProjectSourceRecord } from '@grasp/domain';
-import { consumeUIMessageChunks } from '@/lib/ui-message-stream';
+import type { IngestionRunRecord, ProjectSourceRecord } from '@grasp/domain';
 import { cn } from '@/lib/utils';
-import {
-  type FeedItem,
-  type IngestionStreamEvent,
-} from '../../components/ingestion-activity-panel';
 import { useConceptGraphState } from '../hooks/use-concept-graph-state';
 import { PendingProposalsContext } from '../hooks/use-pending-proposals-context';
 import { type ChatItem, type ConceptRow, type RelationshipRow } from '../types';
 import { ChatPane } from './chat-pane';
 import { EvidenceExplorerPane } from './evidence-explorer-pane';
 import { GraphCanvasPane } from './graph-canvas-pane';
-import { TestRetrievalPane } from './test-retrieval-pane';
 import { LibraryPane } from './library-pane';
-
-
+import { TestRetrievalPane } from './test-retrieval-pane';
 
 function getViewToggleButtonStyles(isActive: boolean) {
   return cn(
@@ -36,6 +29,7 @@ type ConceptGraphWorkspaceProps = {
   projectId: string;
   relationships: RelationshipRow[];
   sources?: ProjectSourceRecord[];
+  ingestionRuns?: IngestionRunRecord[];
 };
 
 export function ConceptGraphWorkspace(props: ConceptGraphWorkspaceProps) {
@@ -51,6 +45,7 @@ const ConceptGraphEditor = ({
   projectId,
   relationships,
   sources = [],
+  ingestionRuns = [],
 }: ConceptGraphWorkspaceProps) => {
   const router = useRouter();
   const {
@@ -156,54 +151,19 @@ const ConceptGraphEditor = ({
 
   const pendingProposalsValue = useMemo(() => ({ pendingProposals }), [pendingProposals]);
   const [isActivityOpen, setIsActivityOpen] = useState(false);
-  const [isIngestionRunning, setIsIngestionRunning] = useState(false);
-  const [ingestionFeed, setIngestionFeed] = useState<FeedItem[]>([]);
+  const isIngestionRunning = useMemo(
+    () => ingestionRuns.some((run) => run.status === 'ingesting'),
+    [ingestionRuns]
+  );
 
-  const handleIngestionTrigger = useCallback(
-    async (sourceId: string, sourceTitle: string, sourceType: string, content: string) => {
-      setIsIngestionRunning(true);
-      setIngestionFeed([]);
-      setIsActivityOpen(true);
-
-      const response = await fetch(`/api/v1/projects/${projectId}/ingestion/stream`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sourceId, sourceTitle, sourceType, content }),
-      });
-
-      if (!response.ok || !response.body) {
-        setIsIngestionRunning(false);
-        setIngestionFeed((feed) => [
-          ...feed,
-          {
-            id: `err-${Date.now()}`,
-            event: { type: 'ingestion_failed', reason: 'Request failed' },
-          },
-        ]);
-        return;
-      }
-
-      let hasError = false;
-
-      await consumeUIMessageChunks(response.body, (chunk) => {
-        if (chunk.type === 'data-ingestion') {
-          const event = chunk.data as IngestionStreamEvent;
-          if (event.type === 'ingestion_failed') hasError = true;
-          setIngestionFeed((feed) => [
-            ...feed,
-            { id: `${event.type}-${Date.now()}-${feed.length}`, event },
-          ]);
-        }
-      });
-
-      setIsIngestionRunning(false);
-      router.refresh();
-
-      if (!hasError) {
-        setTimeout(() => setIsActivityOpen(false), 1200);
+  const handleActivityOpenChange = useCallback(
+    (open: boolean) => {
+      setIsActivityOpen(open);
+      if (open) {
+        router.refresh();
       }
     },
-    [projectId, router]
+    [router]
   );
 
   return (
@@ -217,7 +177,6 @@ const ConceptGraphEditor = ({
             : 'border-brand-accent/30 h-[75vh] min-h-[600px] w-full border lg:min-h-0'
         )}
       >
-
         {/* View Toggle defined once to pass into pane headers */}
         {(() => {
           const viewToggleNode = (
@@ -291,27 +250,27 @@ const ConceptGraphEditor = ({
                 <div className="grid min-h-0 flex-1 grid-cols-[22rem_minmax(0,1fr)] xl:grid-cols-[26rem_minmax(0,1fr)]">
                   <LibraryPane
                     projectId={projectId}
-                    feed={ingestionFeed}
                     isActivityOpen={isActivityOpen}
                     isRunning={isIngestionRunning}
-                    onIngestionTrigger={handleIngestionTrigger}
-                    onActivityOpenChange={setIsActivityOpen}
+                    onActivityOpenChange={handleActivityOpenChange}
                     sources={sources}
+                    ingestionRuns={ingestionRuns}
                     selectedSourceId={selectedSourceId}
                     onSelectSource={setSelectedSourceId}
                   />
-                  <EvidenceExplorerPane 
-                    projectId={projectId} 
+                  <EvidenceExplorerPane
+                    projectId={projectId}
                     viewToggle={viewToggleNode}
                     externalSelectedSourceId={selectedSourceId}
                     onSelectSource={setSelectedSourceId}
+                    sources={sources}
                   />
                 </div>
               ) : (
                 <ChatPane
                   key={projectId}
                   items={items}
-                  onIngestionTrigger={handleIngestionTrigger}
+                  onActivityOpenChange={handleActivityOpenChange}
                   projectId={projectId}
                   chatContextConcepts={chatContextConcepts}
                   onRemoveChatContext={handleRemoveChatContext}
@@ -322,7 +281,6 @@ const ConceptGraphEditor = ({
             </div>
           );
         })()}
-
       </section>
     </PendingProposalsContext.Provider>
   );

@@ -62,7 +62,7 @@ export const conceptDifficultyVariants = cva(
 );
 
 export const sourceTextareaVariants = cva(
-  'w-full resize-y rounded-[1.25rem] border border-border bg-input p-4 text-sm leading-6 text-foreground outline-none shadow-none placeholder:text-muted-foreground/50 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/20',
+  'w-full resize-y rounded-none border border-border bg-background p-4 font-mono text-[0.8rem] leading-6 text-foreground outline-none shadow-none placeholder:text-muted-foreground/50 focus-visible:border-brand-accent focus-visible:bg-brand-accent/5',
   {
     variants: {
       compact: {
@@ -76,11 +76,11 @@ export const sourceTextareaVariants = cva(
   }
 );
 
-export const sourceModeButtonVariants = cva('rounded-full px-2.5 py-1 transition-colors', {
+export const sourceModeButtonVariants = cva('rounded-none px-3 py-1 transition-colors font-mono text-[0.65rem] tracking-widest uppercase', {
   variants: {
     active: {
-      false: 'text-muted-foreground hover:text-foreground',
-      true: 'bg-brand-accent-surface text-brand-accent-foreground border border-brand-accent-border',
+      false: 'text-muted-foreground/70 hover:text-foreground',
+      true: 'bg-brand-accent/10 text-brand-accent border-brand-accent/50',
     },
   },
   defaultVariants: {

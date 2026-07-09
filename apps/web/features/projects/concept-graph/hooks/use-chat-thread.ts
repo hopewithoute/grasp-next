@@ -32,7 +32,7 @@ export type UseChatThreadResult = {
 export function useChatThread(
   projectId: string,
   chatContextConcepts: ConceptRow[],
-  onIngestionTrigger?: (sourceId: string, title: string, type: string, content: string) => void
+  onActivityOpenChange?: (open: boolean) => void
 ): UseChatThreadResult {
   const { refresh } = useRouter();
   const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -350,9 +350,7 @@ export function useChatThread(
           return;
         }
 
-        if (result.sourceId && result.content !== undefined) {
-          onIngestionTrigger?.(result.sourceId, proposal.title, 'web', result.content);
-        }
+        onActivityOpenChange?.(true);
 
         const sysUserMsg = {
           id: `sys-${Date.now()}`,
@@ -389,7 +387,7 @@ export function useChatThread(
         setIsLoading(false);
       }
     },
-    [projectId, refresh, onIngestionTrigger]
+    [projectId, refresh, onActivityOpenChange]
   );
 
   const handleRejectSourceProposal = useCallback((id: string) => {
