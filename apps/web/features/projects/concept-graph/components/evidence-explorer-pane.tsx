@@ -58,18 +58,24 @@ export function EvidenceExplorerPane({
   const [isApplyingCuration, setIsApplyingCuration] = useState(false);
   const [curationError, setCurationError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const [prevSources, setPrevSources] = useState(sources);
+  const [prevExternalSelectedSourceId, setPrevExternalSelectedSourceId] = useState(externalSelectedSourceId);
+  const [prevSelectedSourceId, setPrevSelectedSourceId] = useState(selectedSourceId);
+  const [prevSelectedPassageIdInner, setPrevSelectedPassageIdInner] = useState<string | null>(null);
+
+  if (sources !== prevSources || externalSelectedSourceId !== prevExternalSelectedSourceId) {
+    setPrevSources(sources);
+    setPrevExternalSelectedSourceId(externalSelectedSourceId);
+    
     // Only auto-select first source if we didn't already have one
     const firstSourceId = sources.length > 0 ? sources[0]?.id : null;
     if (!firstSourceId) {
-       
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setPassagesResult(null);
     }
     if (externalSelectedSourceId === undefined) {
       setSelectedSourceId(firstSourceId ?? null);
     }
-  }, [sources, externalSelectedSourceId, setSelectedSourceId]);
+  }
 
   const loadPassages = useCallback(
     async (sourceId: string, background = false) => {
@@ -104,24 +110,24 @@ export function EvidenceExplorerPane({
   const selectedSource = sources.find((s) => s.id === selectedSourceId) ?? null;
   const internalSourceId = selectedSource?.id;
 
-  useEffect(() => {
-     
-    if (internalSourceId) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      void loadPassages(internalSourceId);
-      // Removed the setInterval for background refresh because it would constantly reload the same page and interrupt pagination/filters unless handled carefully.
-      // If auto-refresh is needed, it should probably only refresh the current page and use the current state.
-      // Since states are in the dependency array of loadPassages, it will re-trigger naturally.
-    } else if (!selectedSourceId) {
+  if (selectedSourceId !== prevSelectedSourceId) {
+    setPrevSelectedSourceId(selectedSourceId);
+    if (!selectedSourceId) {
       setPassagesResult(null);
       setSelectedPassageId(null);
     }
-  }, [internalSourceId, selectedSourceId, loadPassages]);
+  }
+
+  if (selectedPassageId !== prevSelectedPassageIdInner) {
+    setPrevSelectedPassageIdInner(selectedPassageId);
+    setCurationError(null);
+  }
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setCurationError(null);
-  }, [selectedPassageId]);
+    if (internalSourceId) {
+      void loadPassages(internalSourceId);
+    }
+  }, [internalSourceId, loadPassages]);
 
   const passages = useMemo(() => (passagesResult?.success ? passagesResult.data.items : []), [passagesResult]);
   const totalPassages = useMemo(() => (passagesResult?.success ? passagesResult.data.total : 0), [passagesResult]);
