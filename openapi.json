@@ -1,0 +1,2594 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Evidence KB",
+    "description": "Evidence-centric knowledgebase ingestion and retrieval service",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "summary": "Health Check",
+        "operationId": "health_check",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/metadata": {
+      "get": {
+        "summary": "Metadata",
+        "operationId": "metadata",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/ingest/source": {
+      "post": {
+        "tags": [
+          "ingest"
+        ],
+        "summary": "Ingest Source",
+        "operationId": "ingest_source",
+        "parameters": [
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IngestSourceRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IngestSourceResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/ingest/pdf": {
+      "post": {
+        "tags": [
+          "ingest"
+        ],
+        "summary": "Ingest Pdf",
+        "operationId": "ingest_pdf",
+        "parameters": [
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_ingest_pdf"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IngestSourceResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/ingest/runs/{run_id}": {
+      "get": {
+        "tags": [
+          "ingest"
+        ],
+        "summary": "Get Ingestion Run",
+        "operationId": "get_ingestion_run",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          },
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IngestionRunRecord"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/ingest/projects/{project_id}/runs": {
+      "get": {
+        "tags": [
+          "ingest"
+        ],
+        "summary": "List Runs For Project",
+        "operationId": "list_runs_for_project",
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 100,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/IngestionRunRecord"
+                  },
+                  "title": "Response List Runs For Project"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/projects/{project_id}/sources/stale": {
+      "get": {
+        "tags": [
+          "sources"
+        ],
+        "summary": "Find Stale Sources",
+        "description": "Return sources that need attention: not certified, disabled retrieval, or have warnings.",
+        "operationId": "find_stale_sources",
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "tenant_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "default",
+              "title": "Tenant Id"
+            }
+          },
+          {
+            "name": "skip",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "title": "Skip"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SourceRecord"
+                  },
+                  "title": "Response Find Stale Sources"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/projects/{project_id}/sources": {
+      "get": {
+        "tags": [
+          "sources"
+        ],
+        "summary": "List Sources",
+        "operationId": "list_sources",
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "tenantId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Tenantid"
+            }
+          },
+          {
+            "name": "skip",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "title": "Skip"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 1000,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SourceRecord"
+                  },
+                  "title": "Response List Sources"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/projects/{project_id}/sources/{external_source_id}": {
+      "delete": {
+        "tags": [
+          "sources"
+        ],
+        "summary": "Delete Source With Project",
+        "operationId": "delete_source_with_project",
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "external_source_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "External Source Id"
+            }
+          },
+          {
+            "name": "tenantId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Tenantid"
+            }
+          },
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "sources"
+        ],
+        "summary": "Get Source With Project",
+        "operationId": "get_source_with_project",
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "external_source_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "External Source Id"
+            }
+          },
+          {
+            "name": "tenantId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Tenantid"
+            }
+          },
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SourceRecord"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/projects/{project_id}": {
+      "delete": {
+        "tags": [
+          "sources"
+        ],
+        "summary": "Delete Project",
+        "operationId": "delete_project",
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "tenantId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Tenantid"
+            }
+          },
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/sources/{external_source_id}": {
+      "delete": {
+        "tags": [
+          "sources"
+        ],
+        "summary": "Delete Source",
+        "operationId": "delete_source",
+        "parameters": [
+          {
+            "name": "external_source_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "External Source Id"
+            }
+          },
+          {
+            "name": "tenantId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Tenantid"
+            }
+          },
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "sources"
+        ],
+        "summary": "Get Source",
+        "operationId": "get_source",
+        "parameters": [
+          {
+            "name": "external_source_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "External Source Id"
+            }
+          },
+          {
+            "name": "tenantId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Tenantid"
+            }
+          },
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SourceRecord"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/sources/{external_source_id}/download-url": {
+      "get": {
+        "tags": [
+          "sources"
+        ],
+        "summary": "Get Source Download Url",
+        "operationId": "get_source_download_url",
+        "parameters": [
+          {
+            "name": "external_source_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "External Source Id"
+            }
+          },
+          {
+            "name": "tenantId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Tenantid"
+            }
+          },
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/sources/{external_source_id}/viewer-url": {
+      "get": {
+        "tags": [
+          "sources"
+        ],
+        "summary": "Get Source Viewer Url",
+        "operationId": "get_source_viewer_url",
+        "parameters": [
+          {
+            "name": "external_source_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "External Source Id"
+            }
+          },
+          {
+            "name": "tenantId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Tenantid"
+            }
+          },
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/passages/weak": {
+      "get": {
+        "tags": [
+          "passages"
+        ],
+        "summary": "Find Weak Passages",
+        "description": "Return passages that need attention: low quality, warnings, disabled retrieval, or rejected.",
+        "operationId": "find_weak_passages",
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "tenant_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "default",
+              "title": "Tenant Id"
+            }
+          },
+          {
+            "name": "min_quality_score",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "default": 0.5,
+              "title": "Min Quality Score"
+            }
+          },
+          {
+            "name": "skip",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "title": "Skip"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PassageRecord"
+                  },
+                  "title": "Response Find Weak Passages"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/sources/{source_id}/passages": {
+      "get": {
+        "tags": [
+          "passages"
+        ],
+        "summary": "List Passages",
+        "operationId": "list_passages",
+        "parameters": [
+          {
+            "name": "source_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Source Id"
+            }
+          },
+          {
+            "name": "query",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Query"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "name": "retrieval_enabled",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Retrieval Enabled"
+            }
+          },
+          {
+            "name": "sort_field",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "order",
+              "title": "Sort Field"
+            }
+          },
+          {
+            "name": "sort_direction",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "asc",
+              "title": "Sort Direction"
+            }
+          },
+          {
+            "name": "skip",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "title": "Skip"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 1000,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedPassagesResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/passages/{passage_id}": {
+      "get": {
+        "tags": [
+          "passages"
+        ],
+        "summary": "Inspect Passage",
+        "operationId": "inspect_passage",
+        "parameters": [
+          {
+            "name": "passage_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Passage Id"
+            }
+          },
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PassageRecord"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/passages/{passage_id}/surrounding": {
+      "get": {
+        "tags": [
+          "passages"
+        ],
+        "summary": "Get Surrounding Passages",
+        "description": "Fetch the surrounding N passages before and after the given passage for expanded context.",
+        "operationId": "get_surrounding_passages",
+        "parameters": [
+          {
+            "name": "passage_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Passage Id"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 1,
+              "title": "Before"
+            }
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 1,
+              "title": "After"
+            }
+          },
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PassageRecord"
+                  },
+                  "title": "Response Get Surrounding Passages"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/retrieve": {
+      "post": {
+        "tags": [
+          "retrieve"
+        ],
+        "summary": "Retrieve",
+        "operationId": "retrieve",
+        "parameters": [
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RetrieveRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RetrieveResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/curation/bulk": {
+      "post": {
+        "tags": [
+          "curation"
+        ],
+        "summary": "Bulk Curation",
+        "description": "Apply multiple curation actions in a single batch with summary.",
+        "operationId": "bulk_curation",
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "tenant_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "default",
+              "title": "Tenant Id"
+            }
+          },
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkCurationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkCurationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/curation/export": {
+      "post": {
+        "tags": [
+          "curation"
+        ],
+        "summary": "Export Passages",
+        "description": "Export passages with optional filtering.",
+        "operationId": "export_passages",
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "tenant_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "default",
+              "title": "Tenant Id"
+            }
+          },
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExportPassagesRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/projects/{project_id}/topics": {
+      "get": {
+        "tags": [
+          "topics"
+        ],
+        "summary": "List Topics",
+        "description": "List all topics for a project.",
+        "operationId": "list_topics",
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "tenantId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Tenantid"
+            }
+          },
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TopicRecord"
+                  },
+                  "title": "Response List Topics"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/projects/{project_id}/concept-graph": {
+      "get": {
+        "tags": [
+          "topics"
+        ],
+        "summary": "Get Concept Graph",
+        "description": "Return the concept graph nodes (topics) and edges (co-occurrences).",
+        "operationId": "get_concept_graph",
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "tenantId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Tenantid"
+            }
+          },
+          {
+            "name": "min_weight",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "description": "Minimum edge weight (co-occurrences) to include",
+              "default": 2,
+              "title": "Min Weight"
+            },
+            "description": "Minimum edge weight (co-occurrences) to include"
+          },
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConceptGraphResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Body_ingest_pdf": {
+        "properties": {
+          "tenantId": {
+            "type": "string",
+            "title": "Tenantid"
+          },
+          "projectId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Projectid"
+          },
+          "externalSourceId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Externalsourceid"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "file": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "File"
+          }
+        },
+        "type": "object",
+        "required": [
+          "tenantId",
+          "projectId",
+          "externalSourceId",
+          "title",
+          "file"
+        ],
+        "title": "Body_ingest_pdf"
+      },
+      "BulkCurationRequest": {
+        "properties": {
+          "actions": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "maxItems": 1000,
+            "title": "Actions"
+          }
+        },
+        "type": "object",
+        "required": [
+          "actions"
+        ],
+        "title": "BulkCurationRequest"
+      },
+      "BulkCurationResponse": {
+        "properties": {
+          "results": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Results"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "succeeded": {
+            "type": "integer",
+            "title": "Succeeded"
+          },
+          "failed": {
+            "type": "integer",
+            "title": "Failed"
+          }
+        },
+        "type": "object",
+        "required": [
+          "results",
+          "total",
+          "succeeded",
+          "failed"
+        ],
+        "title": "BulkCurationResponse"
+      },
+      "ConceptGraphResponse": {
+        "properties": {
+          "nodes": {
+            "items": {
+              "$ref": "#/components/schemas/TopicRecord"
+            },
+            "type": "array",
+            "title": "Nodes"
+          },
+          "edges": {
+            "items": {
+              "$ref": "#/components/schemas/TopicEdge"
+            },
+            "type": "array",
+            "title": "Edges"
+          }
+        },
+        "type": "object",
+        "required": [
+          "nodes",
+          "edges"
+        ],
+        "title": "ConceptGraphResponse"
+      },
+      "CurationStatus": {
+        "type": "string",
+        "enum": [
+          "candidate",
+          "certified",
+          "deprecated",
+          "rejected"
+        ],
+        "title": "CurationStatus"
+      },
+      "ExportPassagesRequest": {
+        "properties": {
+          "source_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Id"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
+          "format": {
+            "type": "string",
+            "title": "Format",
+            "default": "json"
+          },
+          "skip": {
+            "type": "integer",
+            "title": "Skip",
+            "default": 0
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit",
+            "default": 1000
+          }
+        },
+        "type": "object",
+        "title": "ExportPassagesRequest"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "IngestSourceRequest": {
+        "properties": {
+          "tenantId": {
+            "type": "string",
+            "title": "Tenantid"
+          },
+          "projectId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Projectid"
+          },
+          "externalSourceId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Externalsourceid"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "sourceType": {
+            "type": "string",
+            "enum": [
+              "text",
+              "markdown",
+              "html",
+              "pdf",
+              "web"
+            ],
+            "title": "Sourcetype"
+          },
+          "text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text"
+          },
+          "fileUrl": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fileurl"
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Metadata"
+          }
+        },
+        "type": "object",
+        "required": [
+          "tenantId",
+          "projectId",
+          "externalSourceId",
+          "title",
+          "sourceType"
+        ],
+        "title": "IngestSourceRequest"
+      },
+      "IngestSourceResponse": {
+        "properties": {
+          "ingestionRunId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Ingestionrunid"
+          },
+          "sourceId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Sourceid"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "passageCount": {
+            "type": "integer",
+            "title": "Passagecount"
+          },
+          "warningCount": {
+            "type": "integer",
+            "title": "Warningcount"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ingestionRunId",
+          "sourceId",
+          "status",
+          "passageCount",
+          "warningCount"
+        ],
+        "title": "IngestSourceResponse"
+      },
+      "IngestionRunRecord": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "tenant_id": {
+            "type": "string",
+            "title": "Tenant Id"
+          },
+          "project_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Project Id"
+          },
+          "source_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Source Id"
+          },
+          "status": {
+            "$ref": "#/components/schemas/IngestionStatus"
+          },
+          "failure_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Failure Reason"
+          },
+          "stats": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Stats"
+          },
+          "started_at": {
+            "anyOf": [
+              {},
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          },
+          "completed_at": {
+            "anyOf": [
+              {},
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
+          },
+          "created_at": {
+            "anyOf": [
+              {},
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
+          },
+          "updated_at": {
+            "anyOf": [
+              {},
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "tenant_id",
+          "project_id",
+          "source_id",
+          "status"
+        ],
+        "title": "IngestionRunRecord"
+      },
+      "IngestionStatus": {
+        "type": "string",
+        "enum": [
+          "queued",
+          "processing",
+          "completed",
+          "failed"
+        ],
+        "title": "IngestionStatus"
+      },
+      "Location": {
+        "properties": {
+          "page": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page"
+          },
+          "heading": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Heading"
+          },
+          "start_offset": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start Offset"
+          },
+          "end_offset": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Offset"
+          }
+        },
+        "type": "object",
+        "title": "Location"
+      },
+      "PaginatedPassagesResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/PassageRecord"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total"
+        ],
+        "title": "PaginatedPassagesResponse"
+      },
+      "PassageRecord": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "tenant_id": {
+            "type": "string",
+            "title": "Tenant Id"
+          },
+          "project_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Project Id"
+          },
+          "source_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Source Id"
+          },
+          "block_id": {
+            "type": "string",
+            "title": "Block Id"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "location": {
+            "$ref": "#/components/schemas/Location"
+          },
+          "order": {
+            "type": "integer",
+            "title": "Order"
+          },
+          "token_count": {
+            "type": "integer",
+            "title": "Token Count"
+          },
+          "quality_score": {
+            "type": "number",
+            "title": "Quality Score"
+          },
+          "quality_warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Quality Warnings"
+          },
+          "status": {
+            "$ref": "#/components/schemas/CurationStatus",
+            "default": "candidate"
+          },
+          "retrieval_enabled": {
+            "type": "boolean",
+            "title": "Retrieval Enabled",
+            "default": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "tenant_id",
+          "project_id",
+          "source_id",
+          "block_id",
+          "text",
+          "kind",
+          "location",
+          "order",
+          "token_count",
+          "quality_score"
+        ],
+        "title": "PassageRecord"
+      },
+      "RetrieveRequest": {
+        "properties": {
+          "tenantId": {
+            "type": "string",
+            "title": "Tenantid"
+          },
+          "projectId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Projectid"
+          },
+          "query": {
+            "type": "string",
+            "maxLength": 2000,
+            "title": "Query"
+          },
+          "topK": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 1.0,
+            "title": "Topk",
+            "default": 12
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "hybrid",
+              "bm25_only",
+              "vector_only"
+            ],
+            "title": "Mode",
+            "default": "hybrid"
+          },
+          "filters": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Filters"
+          }
+        },
+        "type": "object",
+        "required": [
+          "tenantId",
+          "projectId",
+          "query"
+        ],
+        "title": "RetrieveRequest"
+      },
+      "RetrieveResponse": {
+        "properties": {
+          "retrievalRunId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Retrievalrunid"
+          },
+          "query": {
+            "type": "string",
+            "title": "Query"
+          },
+          "retrievalMode": {
+            "type": "string",
+            "title": "Retrievalmode"
+          },
+          "contexts": {
+            "items": {
+              "$ref": "#/components/schemas/RetrievedPassage"
+            },
+            "type": "array",
+            "title": "Contexts"
+          },
+          "debug": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Debug"
+          }
+        },
+        "type": "object",
+        "required": [
+          "retrievalRunId",
+          "query",
+          "retrievalMode",
+          "contexts",
+          "debug"
+        ],
+        "title": "RetrieveResponse"
+      },
+      "RetrievedPassage": {
+        "properties": {
+          "passage_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Passage Id"
+          },
+          "source_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Source Id"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "quality_score": {
+            "type": "number",
+            "title": "Quality Score"
+          },
+          "token_count": {
+            "type": "integer",
+            "title": "Token Count"
+          },
+          "retrieval_enabled": {
+            "type": "boolean",
+            "title": "Retrieval Enabled"
+          },
+          "score": {
+            "type": "number",
+            "title": "Score"
+          },
+          "bm25_rank": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bm25 Rank"
+          },
+          "vector_rank": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vector Rank"
+          },
+          "rrf_score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rrf Score"
+          },
+          "final_rank": {
+            "type": "integer",
+            "title": "Final Rank"
+          },
+          "location": {
+            "$ref": "#/components/schemas/Location"
+          }
+        },
+        "type": "object",
+        "required": [
+          "passage_id",
+          "source_id",
+          "text",
+          "status",
+          "quality_score",
+          "token_count",
+          "retrieval_enabled",
+          "score",
+          "final_rank",
+          "location"
+        ],
+        "title": "RetrievedPassage"
+      },
+      "SourceRecord": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "tenant_id": {
+            "type": "string",
+            "title": "Tenant Id"
+          },
+          "project_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Project Id"
+          },
+          "external_source_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "External Source Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "source_type": {
+            "type": "string",
+            "enum": [
+              "text",
+              "markdown",
+              "html",
+              "pdf",
+              "web"
+            ],
+            "title": "Source Type"
+          },
+          "metadata_": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Metadata"
+          },
+          "status": {
+            "$ref": "#/components/schemas/CurationStatus",
+            "default": "candidate"
+          },
+          "retrieval_enabled": {
+            "type": "boolean",
+            "title": "Retrieval Enabled",
+            "default": true
+          },
+          "quality_warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Quality Warnings"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "tenant_id",
+          "project_id",
+          "external_source_id",
+          "title",
+          "source_type"
+        ],
+        "title": "SourceRecord"
+      },
+      "TopicEdge": {
+        "properties": {
+          "source": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Source"
+          },
+          "target": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Target"
+          },
+          "weight": {
+            "type": "integer",
+            "title": "Weight"
+          }
+        },
+        "type": "object",
+        "required": [
+          "source",
+          "target",
+          "weight"
+        ],
+        "title": "TopicEdge"
+      },
+      "TopicRecord": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "tenant_id": {
+            "type": "string",
+            "title": "Tenant Id"
+          },
+          "project_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Project Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "is_user_defined": {
+            "type": "boolean",
+            "title": "Is User Defined",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "tenant_id",
+          "project_id",
+          "name"
+        ],
+        "title": "TopicRecord"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  }
+}

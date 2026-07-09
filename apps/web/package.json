@@ -36,6 +36,8 @@
     "valibot": "^1.4.1"
   },
   "devDependencies": {
+    "@hey-api/client-fetch": "^0.13.1",
+    "@hey-api/openapi-ts": "^0.99.0",
     "@types/html-to-text": "^9.0.4",
     "@types/node": "^25.0.0",
     "@types/react": "^19.2.7",

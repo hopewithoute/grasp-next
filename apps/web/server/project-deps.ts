@@ -7,18 +7,18 @@ import {
   createProjectRepository,
 } from '@grasp/db';
 import { serverEnv } from './env';
-import { createEvidenceKbService } from './evidence-kb-service';
+import { createEvidenceKbService } from './evidence-kb';
 
 import { createEvidenceKbProjectSourceRepository } from './project-source-repository-adapter';
 
 export function createProjectDeps() {
-  if (globalForProjectDeps.graspProjectDeps) {
-    return globalForProjectDeps.graspProjectDeps;
+  if (globalForProjectDeps.graspProjectDepsV2) {
+    return globalForProjectDeps.graspProjectDepsV2;
   }
 
-  globalForProjectDeps.graspProjectDeps = buildProjectDeps();
+  globalForProjectDeps.graspProjectDepsV2 = buildProjectDeps();
 
-  return globalForProjectDeps.graspProjectDeps;
+  return globalForProjectDeps.graspProjectDepsV2;
 }
 
 function buildProjectDeps() {
@@ -45,5 +45,5 @@ function buildProjectDeps() {
 type ProjectDeps = ReturnType<typeof buildProjectDeps>;
 
 const globalForProjectDeps = globalThis as typeof globalThis & {
-  graspProjectDeps?: ProjectDeps;
+  graspProjectDepsV2?: ProjectDeps;
 };
