@@ -8,12 +8,14 @@ def rrf_fuse(
     rrf_k: int = 60,  # Nilai default default standar RRF adalah 60
 ) -> list[tuple[PassageRecord, float, int | None, int | None]]:
 
-    by_id: dict[str, PassageRecord] = {}
-    scores: dict[str, float] = {}  # Menggunakan dict standar
-    bm25_ranks: dict[str, int] = {}
-    vector_ranks: dict[str, int] = {}
+    from uuid import UUID
 
-    def _process_hits(hits: list[tuple[PassageRecord, float]], ranks: dict[str, int]) -> None:
+    by_id: dict[UUID, PassageRecord] = {}
+    scores: dict[UUID, float] = {}  # Menggunakan dict standar
+    bm25_ranks: dict[UUID, int] = {}
+    vector_ranks: dict[UUID, int] = {}
+
+    def _process_hits(hits: list[tuple[PassageRecord, float]], ranks: dict[UUID, int]) -> None:
         for rank, (passage, _) in enumerate(hits, start=1):
             by_id[passage.id] = passage
             ranks[passage.id] = rank

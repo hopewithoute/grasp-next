@@ -1,8 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException
+from typing import Optional
+from fastapi import APIRouter, Depends, Query
 from app.api.auth import verify_api_key
 from app.models import PassageRecord, PaginatedPassagesResponse
-from app.storage.deps import get_repository
-from app.storage.sql_repository import SqlEvidenceRepository
+from app.actions.passages_action import PassagesAction
 
 router = APIRouter(prefix="/v1", tags=["passages"])
 
@@ -15,10 +15,10 @@ async def find_weak_passages(
     skip: int = 0,
     limit: int = 50,
     _: None = Depends(verify_api_key),
-    repository: SqlEvidenceRepository = Depends(get_repository),
+    action: PassagesAction = Depends(),
 ):
     """Return passages that need attention: low quality, warnings, disabled retrieval, or rejected."""
-    return await repository.find_weak_passages(
+    return await action.find_weak_passages(
         tenant_id=tenant_id,
         project_id=project_id,
         min_quality_score=min_quality_score,
@@ -26,9 +26,6 @@ async def find_weak_passages(
         limit=limit,
     )
 
-
-from typing import Optional
-from fastapi import Query
 
 @router.get("/sources/{source_id}/passages", response_model=PaginatedPassagesResponse)
 async def list_passages(
@@ -41,9 +38,9 @@ async def list_passages(
     skip: int = 0,
     limit: int = 1000,
     _: None = Depends(verify_api_key),
-    repository: SqlEvidenceRepository = Depends(get_repository),
+    action: PassagesAction = Depends(),
 ):
-    items, total = await repository.list_source_passages(
+    items, total = await action.list_passages(
         source_id,
         query=query,
         status=status,
@@ -51,7 +48,7 @@ async def list_passages(
         sort_field=sort_field,
         sort_direction=sort_direction,
         skip=skip,
-        limit=limit
+        limit=limit,
     )
     return PaginatedPassagesResponse(items=items, total=total)
 
@@ -60,12 +57,9 @@ async def list_passages(
 async def inspect_passage(
     passage_id: str,
     _: None = Depends(verify_api_key),
-    repository: SqlEvidenceRepository = Depends(get_repository),
+    action: PassagesAction = Depends(),
 ):
-    passage = await repository.get_passage(passage_id)
-    if not passage:
-        raise HTTPException(status_code=404, detail="Passage not found")
-    return passage
+    return await action.inspect_passage(passage_id)
 
 
 @router.get("/passages/{passage_id}/surrounding", response_model=list[PassageRecord])
@@ -74,12 +68,7 @@ async def get_surrounding_passages(
     before: int = 1,
     after: int = 1,
     _: None = Depends(verify_api_key),
-    repository: SqlEvidenceRepository = Depends(get_repository),
+    action: PassagesAction = Depends(),
 ):
     """Fetch the surrounding N passages before and after the given passage for expanded context."""
-    if before < 0 or after < 0:
-        raise HTTPException(status_code=400, detail="before and after must be >= 0")
-    if before > 10 or after > 10:
-        raise HTTPException(status_code=400, detail="Maximum surrounding window is 10")
-        
-    return await repository.get_surrounding_passages(passage_id, before=before, after=after)
+    return await action.get_surrounding_passages(passage_id, before=before, after=after)
