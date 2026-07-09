@@ -28,7 +28,7 @@ PDF / Text / HTML / Markdown Sources
 
 ### Prerequisites
 
-- Python 3.12+
+- Python 3.14+
 - A running PostgreSQL database with the `pgvector` extension installed.
 - (Optional but highly recommended) A running instance of the `embedding-sidecar` service.
 
@@ -115,14 +115,17 @@ Detailed endpoint documentation, full schemas, and constraints can be read in th
 - `POST /v1/ingest/pdf`: Ingest PDF sources via multipart form uploads.
 - `GET /v1/ingest/runs/{run_id}`: Retrieve processing state and stats for a specific ingestion run.
 
-### Search & Retrieval
+### Search, Retrieval, and Topic Graph
 
 - `POST /v1/retrieve`: Execute hybrid, BM25-only, or vector-only queries with filtering.
+- `GET /v1/projects/{project_id}/topics`: List project topics.
+- `GET /v1/projects/{project_id}/concept-graph`: Return topic graph nodes and weighted edges.
 
 ### Source & Passage Inspections
 
 - `GET /v1/projects/{project_id}/sources`: List all sources ingested for a given project.
 - `GET /v1/projects/{project_id}/sources/stale`: Retrieve sources flagged as needing review (e.g. non-certified, warnings present).
+- `GET /v1/ingest/projects/{project_id}/runs/events`: Stream ingestion run status updates for the project.
 - `GET /v1/sources/{source_id}/passages`: Retrieve all chunks/passages associated with a specific source.
 - `GET /v1/passages/{passage_id}`: Inspect a single passage record.
 - `GET /v1/passages/{passage_id}/surrounding`: Retrieve the surrounding context (preceding and succeeding passages) around a specific passage chunk.
