@@ -58,9 +58,9 @@ class TestPgVectorRetrieval:
         # Manually set embeddings via direct SQL since we don't have a live embedding sidecar
         passages_resp = client.get(f"/v1/sources/{source_id}/passages")
         assert passages_resp.status_code == 200
-        passage_ids = [p["id"] for p in passages_resp.json()]
+        passage_ids = [p["id"] for p in passages_resp.json()["items"]]
 
-        conn = psycopg2.connect(**PG_DSN)
+        conn = psycopg2.connect(**PG_DSN)  # type: ignore
         conn.autocommit = True
         try:
             with conn.cursor() as cur:
@@ -181,7 +181,7 @@ class TestPgVectorRetrieval:
             ]
         )
 
-        conn = psycopg2.connect(**PG_DSN)
+        conn = psycopg2.connect(**PG_DSN)  # type: ignore
         conn.autocommit = True
         try:
             with conn.cursor() as cur:

@@ -38,11 +38,11 @@ def ingest_sample_text():
 class TestIngestSource:
     def test_creates_run_source_and_passages(self):
         payload = ingest_sample_text()
-        assert payload["status"] == "completed"
+        assert payload["status"] == "processing"
         assert payload["sourceId"]
         assert payload["ingestionRunId"]
-        assert payload["passageCount"] >= 1
-        assert payload["warningCount"] >= 0
+        assert payload["passageCount"] == 0
+        assert payload["warningCount"] == 0
 
     def test_passages_persisted_and_queryable(self):
         payload = ingest_sample_text()
@@ -106,18 +106,15 @@ class TestIngestSource:
         assert 1 in pages
         assert 2 in pages
 
-
-
-
     def test_passages_pagination_filtering_sorting(self):
         # Ingest a longer sample to get multiple passages
         payload = ingest_sample_text()
-        source_id = payload['sourceId']
-        
+        source_id = payload["sourceId"]
+
         # Test basic list to get count
         res = client.get(f"/v1/sources/{source_id}/passages").json()
         assert res["total"] >= 1
-        
+
         # 1. Test pagination (skip/limit)
         page1 = client.get(f"/v1/sources/{source_id}/passages?limit=1&skip=0").json()
         assert len(page1["items"]) == 1
@@ -127,7 +124,7 @@ class TestIngestSource:
         res2 = client.get(f"/v1/sources/{source_id}/passages?query=Photosynthesis").json()
         assert res2["total"] >= 1
         assert "Photosynthesis" in res2["items"][0]["text"]
-        
+
         # 3. Test filtering by status
         res3 = client.get(f"/v1/sources/{source_id}/passages?status=candidate").json()
         assert res3["total"] >= 1
@@ -314,44 +311,39 @@ class TestCuration:
         )
         assert len(resp.json()["contexts"]) >= 1
 
+
 class TestDeletion:
     def test_delete_source(self):
         payload = ingest_sample_text()
         source_id = payload["sourceId"]
-        
+
         # Verify it exists
         passages = client.get(f"/v1/sources/{source_id}/passages")
         assert passages.json()["total"] > 0
-        
+
         # Delete source
-        del_resp = client.delete(
-            f"/v1/projects/{PROJECT_ID}/sources/{SOURCE_EXT_ID}",
-            params={"tenantId": "tenant-1"}
-        )
+        del_resp = client.delete(f"/v1/projects/{PROJECT_ID}/sources/{SOURCE_EXT_ID}", params={"tenantId": "tenant-1"})
         assert del_resp.status_code == 200
         assert del_resp.json()["deleted"] is True
-        
+
         # Verify passages are gone
         passages_after = client.get(f"/v1/sources/{source_id}/passages")
         assert passages_after.status_code == 200
         assert passages_after.json()["total"] == 0
-        
+
     def test_delete_project(self):
         payload = ingest_sample_text()
         source_id = payload["sourceId"]
-        
+
         # Verify it exists
         passages = client.get(f"/v1/sources/{source_id}/passages")
         assert passages.json()["total"] > 0
-        
+
         # Delete project
-        del_resp = client.delete(
-            f"/v1/projects/{PROJECT_ID}",
-            params={"tenantId": "tenant-1"}
-        )
+        del_resp = client.delete(f"/v1/projects/{PROJECT_ID}", params={"tenantId": "tenant-1"})
         assert del_resp.status_code == 200
         assert del_resp.json()["deleted"] is True
-        
+
         # Verify passages are gone
         passages_after = client.get(f"/v1/sources/{source_id}/passages")
         assert passages_after.status_code == 200

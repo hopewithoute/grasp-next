@@ -63,6 +63,7 @@ def _get_sessionmaker_with_null_pool():
     from app.settings import get_settings
 
     settings = get_settings()
+    assert settings.DATABASE_URL is not None, "DATABASE_URL must be set"
     engine = create_async_engine(settings.DATABASE_URL, poolclass=NullPool)
     return async_sessionmaker(engine, expire_on_commit=False)
 

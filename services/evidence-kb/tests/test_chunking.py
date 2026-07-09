@@ -10,6 +10,6 @@ def test_chunk_text_splits_with_overlap():
     assert len(chunks) >= 2
     assert chunks[0].index == 0
     assert chunks[0].start_offset == 0
-    # Overlap implies second chunk's text might share something, 
+    # Overlap implies second chunk's text might share something,
     # but Chonkie's start_offset logic usually progresses sequentially.
     assert chunks[1].start_offset > 0
