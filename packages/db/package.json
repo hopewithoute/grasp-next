@@ -12,16 +12,16 @@
     "typecheck": "tsgo --noEmit"
   },
   "devDependencies": {
-    "@types/node": "^25.8.0",
+    "@types/node": "^25.9.5",
     "drizzle-kit": "^0.31.10",
-    "eslint": "^9.39.1",
-    "tsx": "^4.21.0",
-    "vitest": "^3.2.4"
+    "eslint": "^9.39.4",
+    "tsx": "^4.23.0",
+    "vitest": "^3.2.7"
   },
   "dependencies": {
     "@grasp/domain": "workspace:*",
     "drizzle-orm": "^0.45.2",
     "postgres": "^3.4.9",
-    "valibot": "^1.4.1"
+    "valibot": "^1.4.2"
   }
 }

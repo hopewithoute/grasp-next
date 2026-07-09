@@ -21,24 +21,24 @@
     "@node-wreq/linux-x64-gnu": "^2.4.1",
     "@types/html-to-text": "^9.0.4",
     "@types/json-schema": "^7.0.15",
-    "@types/node": "^25.7.0",
-    "eslint": "^9.39.1",
-    "mastra": "^1.9.1",
-    "tsx": "^4.21.0",
-    "vitest": "^3.2.4"
+    "@types/node": "^25.9.5",
+    "eslint": "^9.39.4",
+    "mastra": "^1.18.2",
+    "tsx": "^4.23.0",
+    "vitest": "^3.2.7"
   },
   "dependencies": {
     "@grasp/domain": "workspace:*",
-    "@mastra/core": "^1.33.0",
-    "@mastra/evals": "^1.2.3",
+    "@mastra/core": "^1.50.1",
+    "@mastra/evals": "^1.5.1",
     "@mastra/memory": "1.19.0",
-    "@mastra/observability": "^1.14.0",
-    "@mastra/pg": "^1.10.1",
-    "ai": "^6.0.190",
+    "@mastra/observability": "^1.16.0",
+    "@mastra/pg": "^1.15.1",
+    "ai": "^6.0.221",
     "duck-duck-scrape": "^2.2.7",
     "html-to-text": "^10.0.0",
     "node-wreq": "^2.4.1",
-    "p-queue": "^9.3.0",
-    "valibot": "^1.4.1"
+    "p-queue": "^9.3.1",
+    "valibot": "^1.4.2"
   }
 }

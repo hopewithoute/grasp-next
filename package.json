@@ -17,13 +17,13 @@
     "@ianvs/prettier-plugin-sort-imports": "^4.7.1",
     "@typescript/native-preview": "7.0.0-dev.20260527.2",
     "eslint-plugin-unused-imports": "^4.4.1",
-    "prettier": "^3.8.3",
+    "prettier": "^3.9.4",
     "prettier-plugin-tailwindcss": "^0.8.0",
-    "react-doctor": "^0.2.14",
-    "turbo": "^2.9.18",
+    "react-doctor": "^0.2.16",
+    "turbo": "^2.10.4",
     "typescript": "^5.9.3",
-    "typescript-eslint": "^8.60.0",
-    "vitest": "^3.2.4"
+    "typescript-eslint": "^8.63.0",
+    "vitest": "^3.2.7"
   },
   "pnpm": {
     "onlyBuiltDependencies": [
