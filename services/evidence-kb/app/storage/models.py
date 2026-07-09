@@ -165,3 +165,43 @@ class KbRetrievedPassage(EvidenceKbBase):
     final_rank = Column(Integer, nullable=False)
     score = Column(Float, nullable=False)
     used_in_answer = Column(Boolean, nullable=True)
+
+
+class Topic(Base):
+    __tablename__ = "kb_topics"
+
+    id = Column(UUID(as_uuid=True), primary_key=True)
+    tenant_id = Column(Text, nullable=False)
+    project_id = Column(UUID(as_uuid=True), nullable=False)
+    name = Column(Text, nullable=False)
+    description = Column(Text, nullable=True)
+    is_user_defined = Column(Boolean, nullable=False, server_default="false")
+    embedding = deferred(Column(Vector(settings.EMBEDDING_DIMENSIONS), nullable=True))
+    created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now())
+
+    __table_args__ = (
+        Index("kb_topics_project_idx", "tenant_id", "project_id", "is_user_defined"),
+        {"schema": settings.DB_SCHEMA},
+    )
+
+
+class TopicPassage(Base):
+    __tablename__ = "kb_topic_passages"
+
+    topic_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey(f"{settings.DB_SCHEMA}.kb_topics.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    passage_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey(f"{settings.DB_SCHEMA}.kb_passages.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    relevance_score = Column(Float, nullable=False, server_default="1.0")
+
+    __table_args__ = (
+        Index("kb_topic_passages_reverse_idx", "passage_id"),
+        {"schema": settings.DB_SCHEMA},
+    )

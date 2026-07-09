@@ -14,7 +14,15 @@ from app.models import (
 )
 from app.retrieval.hybrid import rrf_fuse
 from app.settings import get_settings
-from app.storage.models import KbIngestionRun, KbPassage, KbRetrievedPassage, KbRetrievalRun, KbSource
+from app.storage.models import (
+    KbIngestionRun,
+    KbPassage,
+    KbRetrievedPassage,
+    KbRetrievalRun,
+    KbSource,
+    Topic,
+    TopicPassage,
+)
 
 
 class SqlEvidenceRepository:
@@ -66,11 +74,11 @@ class SqlEvidenceRepository:
         ]
         if project_id:
             conditions.append(KbSource.project_id == UUID(str(project_id)))
-            
+
         stmt = delete(KbSource).where(*conditions)
         result = await self.session.execute(stmt)
         await self.session.commit()
-        return result.rowcount > 0
+        return result.rowcount > 0  # type: ignore
 
     async def get_source_by_external_id(
         self, tenant_id: str, external_source_id: str, project_id: str | None = None
@@ -81,8 +89,15 @@ class SqlEvidenceRepository:
         ]
         if project_id:
             conditions.append(KbSource.project_id == UUID(str(project_id)))
-            
+
         stmt = select(KbSource).where(*conditions)
+        existing = (await self.session.execute(stmt)).scalar_one_or_none()
+        if existing:
+            return SourceRecord.model_validate(existing)
+        return None
+
+    async def get_source(self, source_id: str) -> SourceRecord | None:
+        stmt = select(KbSource).where(KbSource.id == UUID(str(source_id)))
         existing = (await self.session.execute(stmt)).scalar_one_or_none()
         if existing:
             return SourceRecord.model_validate(existing)
@@ -95,7 +110,7 @@ class SqlEvidenceRepository:
         )
         result = await self.session.execute(stmt)
         await self.session.commit()
-        return result.rowcount > 0
+        return result.rowcount > 0  # type: ignore
 
     async def create_run(self, tenant_id: str, project_id: str, source_id: str) -> IngestionRunRecord:
         run = KbIngestionRun(
@@ -110,17 +125,47 @@ class SqlEvidenceRepository:
         await self.session.refresh(run)
         return IngestionRunRecord.model_validate(run)
 
+    async def list_runs_for_project(self, project_id: str, limit: int = 100) -> list[IngestionRunRecord]:
+        from sqlalchemy import desc
+        stmt = (
+            select(KbIngestionRun, KbSource.external_source_id)
+            .join(KbSource, KbIngestionRun.source_id == KbSource.id)
+            .where(KbIngestionRun.project_id == UUID(str(project_id)))
+            .order_by(desc(KbIngestionRun.created_at))
+            .limit(limit)
+        )
+        result = await self.session.execute(stmt)
+        
+        records = []
+        for run, external_source_id in result.all():
+            rec_dict = {
+                "id": run.id,
+                "tenant_id": run.tenant_id,
+                "project_id": run.project_id,
+                "source_id": run.source_id,
+                "external_source_id": external_source_id,
+                "status": run.status,
+                "failure_reason": run.failure_reason,
+                "stats": run.stats,
+                "started_at": run.started_at,
+                "completed_at": run.completed_at,
+                "created_at": run.created_at,
+                "updated_at": run.updated_at,
+            }
+            records.append(IngestionRunRecord(**rec_dict))
+        return records
+
     async def replace_source_passages(
         self,
         source: SourceRecord,
         chunks: list[tuple[str, str, Location, int, int, float, list[str]]],
         embeddings: list[list[float]] | None = None,
-    ) -> None:
+    ) -> list[dict]:
         await self.session.execute(delete(KbPassage).where(KbPassage.source_id == UUID(str(source.id))))
 
         if not chunks:
             await self.session.commit()
-            return
+            return []
 
         records = []
         for i, (block_id, text, location, order, tokens, quality_score, warnings) in enumerate(chunks):
@@ -148,6 +193,68 @@ class SqlEvidenceRepository:
                 await self.session.execute(insert(KbPassage), records[i : i + batch_size])
             await self.session.commit()
 
+        return records
+
+    async def replace_source_topics(
+        self,
+        source: SourceRecord,
+        passage_topics: list[tuple[UUID, str]],  # (passage_id, topic_name)
+    ) -> None:
+        """
+        Naive topic extraction mapping.
+        Deletes existing auto-defined topics that are no longer used.
+        """
+        # First, ensure the topics exist.
+        topic_names = set(topic_name for _, topic_name in passage_topics)
+
+        # Get existing topics for this project
+        stmt = select(Topic).where(Topic.project_id == UUID(str(source.project_id)), Topic.name.in_(list(topic_names)))
+        existing_topics_res = await self.session.execute(stmt)
+        existing_topics = {str(t.name): t for t in existing_topics_res.scalars()}
+
+        topic_id_map = {}
+        for name in topic_names:
+            if name in existing_topics:
+                topic_id_map[name] = existing_topics[name].id
+            else:
+                new_id = uuid4()
+                new_topic = Topic(
+                    id=new_id,
+                    tenant_id=source.tenant_id,
+                    project_id=UUID(str(source.project_id)),
+                    name=name,
+                    description=f"Auto-extracted concept: {name}",
+                    is_user_defined=False,
+                )
+                self.session.add(new_topic)
+                topic_id_map[name] = new_id
+
+        await self.session.flush()
+
+        # Find all passage IDs for this source
+        stmt_passages = select(KbPassage.id).where(KbPassage.source_id == UUID(str(source.id)))
+        source_passage_ids = (await self.session.execute(stmt_passages)).scalars().all()
+
+        if source_passage_ids:
+            # Delete existing topic_passages for passages belonging to this source
+            await self.session.execute(delete(TopicPassage).where(TopicPassage.passage_id.in_(source_passage_ids)))
+
+        # Insert new topic_passages
+        if passage_topics:
+            tp_records = []
+            for passage_id, name in passage_topics:
+                tp_records.append(
+                    {
+                        "topic_id": topic_id_map[name],
+                        "passage_id": passage_id,
+                        "relevance_score": 1.0,
+                    }
+                )
+            if tp_records:
+                await self.session.execute(insert(TopicPassage), tp_records)
+
+        await self.session.commit()
+
     async def complete_run(self, run_id: str, stats: dict) -> IngestionRunRecord:
         run = await self.session.get(KbIngestionRun, UUID(str(run_id)))
         if run is None:
@@ -163,7 +270,7 @@ class SqlEvidenceRepository:
             await self.session.rollback()
         except Exception:
             pass
-            
+
         run = await self.session.get(KbIngestionRun, UUID(str(run_id)))
         if run is None:
             raise KeyError(run_id)
@@ -225,19 +332,23 @@ class SqlEvidenceRepository:
         sort_field: str = "order",
         sort_direction: str = "asc",
         skip: int = 0,
-        limit: int = 1000
+        limit: int = 1000,
     ) -> tuple[list[PassageRecord], int]:
         from sqlalchemy import func
-        
-        stmt = select(KbPassage).where(KbPassage.source_id == UUID(str(source_id)))
-        
+
+        stmt = (
+            select(KbPassage)
+            .join(KbSource, KbPassage.source_id == KbSource.id)
+            .where(KbSource.external_source_id == str(source_id))
+        )
+
         if query:
             stmt = stmt.where(KbPassage.text.ilike(f"%{query}%"))
         if status:
             stmt = stmt.where(KbPassage.status == status)
         if retrieval_enabled is not None:
             stmt = stmt.where(KbPassage.retrieval_enabled == retrieval_enabled)
-            
+
         count_stmt = select(func.count()).select_from(stmt.subquery())
         total = (await self.session.execute(count_stmt)).scalar_one()
 
@@ -245,14 +356,14 @@ class SqlEvidenceRepository:
             "quality_score": KbPassage.quality_score,
             "token_count": KbPassage.token_count,
             "status": KbPassage.status,
-            "order": KbPassage.order
+            "order": KbPassage.order,
         }
         order_col = sort_map.get(sort_field, KbPassage.order)
         sort_func = order_col.desc if sort_direction.lower() == "desc" else order_col.asc
         stmt = stmt.order_by(sort_func().nullslast())
-            
+
         stmt = stmt.offset(skip).limit(limit)
-        
+
         result = await self.session.execute(stmt)
         items = [PassageRecord.model_validate(passage) for passage in result.scalars().all()]
         return items, total
@@ -261,9 +372,7 @@ class SqlEvidenceRepository:
         passage = await self.session.get(KbPassage, UUID(str(passage_id)))
         return PassageRecord.model_validate(passage) if passage else None
 
-    async def get_surrounding_passages(
-        self, passage_id: str, before: int = 1, after: int = 1
-    ) -> list[PassageRecord]:
+    async def get_surrounding_passages(self, passage_id: str, before: int = 1, after: int = 1) -> list[PassageRecord]:
         passage = await self.session.get(KbPassage, UUID(str(passage_id)))
         if not passage:
             return []
@@ -361,7 +470,7 @@ class SqlEvidenceRepository:
                 passage_id=passage.id,
                 source_id=passage.source_id,
                 text=passage.text,
-                status=passage.status.value if hasattr(passage.status, 'value') else passage.status,
+                status=passage.status.value if hasattr(passage.status, "value") else passage.status,
                 quality_score=passage.quality_score,
                 token_count=passage.token_count,
                 retrieval_enabled=passage.retrieval_enabled,
@@ -400,9 +509,9 @@ class SqlEvidenceRepository:
             )
         await self.session.commit()
         return RetrievalRunRecord(
-            id=str(run.id),
+            id=UUID(str(run.id)),
             tenant_id=tenant_id,
-            project_id=project_id,
+            project_id=UUID(str(project_id)),
             query=query,
             mode=mode,
             filters=filters,
@@ -588,3 +697,55 @@ class SqlEvidenceRepository:
         for passage, score_val in result.all():
             hits.append((PassageRecord.model_validate(passage), float(score_val)))
         return hits
+
+    async def list_topics(self, tenant_id: str, project_id: str):
+        from app.storage.models import Topic
+        from app.models import TopicRecord
+        from sqlalchemy import select
+        from uuid import UUID
+
+        stmt = (
+            select(Topic)
+            .where(Topic.tenant_id == tenant_id, Topic.project_id == UUID(str(project_id)))
+            .order_by(Topic.name)
+        )
+
+        result = await self.session.execute(stmt)
+        return [TopicRecord.model_validate(t) for t in result.scalars()]
+
+    async def get_concept_graph(self, tenant_id: str, project_id: str, min_weight: int = 2):
+        from app.models import TopicEdge, ConceptGraphResponse
+        from sqlalchemy import text
+
+        # 1. Fetch nodes
+        nodes = await self.list_topics(tenant_id, project_id)
+
+        from app.settings import get_settings
+        schema = get_settings().DB_SCHEMA
+        # 2. Fetch edges based on cosine similarity of topic centroids using raw SQL
+        # We only generate edges if cosine similarity > 0.6. The weight is scaled 1-10.
+        stmt = text(f"""
+            SELECT t1.id AS source, t2.id AS target, 
+                   1 - (t1.embedding <=> t2.embedding) AS similarity
+            FROM {schema}.kb_topics t1
+            JOIN {schema}.kb_topics t2 ON t1.id < t2.id
+            WHERE t1.tenant_id = :tenant_id
+              AND t1.project_id = :project_id
+              AND t2.tenant_id = :tenant_id
+              AND t2.project_id = :project_id
+              AND t1.embedding IS NOT NULL
+              AND t2.embedding IS NOT NULL
+              AND 1 - (t1.embedding <=> t2.embedding) > 0.6
+        """)
+
+        result = await self.session.execute(
+            stmt, {"tenant_id": tenant_id, "project_id": str(project_id)}
+        )
+
+        edges = []
+        for row in result:
+            # Scale weight up for visualization. e.g., 0.6 -> ~2, 1.0 -> ~10
+            weight = max(1, int((row.similarity - 0.6) * 25))
+            edges.append(TopicEdge(source=row.source, target=row.target, weight=weight))
+
+        return ConceptGraphResponse(nodes=nodes, edges=edges)
