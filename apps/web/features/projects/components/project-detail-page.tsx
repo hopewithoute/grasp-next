@@ -6,8 +6,10 @@ import {
   ProjectNotFoundError,
   type LoadProjectDetailResult,
 } from '@grasp/domain';
+import type { ConceptGraphResponse } from '@/api-client';
 import { getActor } from '@/server/actor';
 import { createProjectDeps } from '@/server/project-deps';
+import { getConceptGraphAction } from '../actions';
 import { ConceptGraphWorkspace } from '../concept-graph/components/concept-graph-workspace';
 import type { ConceptRow, RelationshipRow } from '../concept-graph/types';
 import { buildStageHref, resolveStage } from '../stages';
@@ -38,7 +40,22 @@ export async function ProjectDetailPage({ currentStage, projectId }: ProjectDeta
     detail = await loadProjectDetail(
       { projectId, ownerId: actor.id },
       {
-        ingestionRunRepository: deps.ingestionRunRepository,
+        fetchIngestionRuns: async (pId, oId) => {
+          const runs = await deps.evidenceKbService.listRunsForProjectOwner({ projectId: pId, ownerId: oId });
+          return runs.map((run: any) => ({
+            id: run.id,
+            projectId: run.project_id,
+            sourceId: run.external_source_id ?? run.source_id,
+            tenantId: run.tenant_id,
+            status: run.status === 'queued' || run.status === 'processing' ? 'ingesting' : run.status,
+            failureReason: run.failure_reason ?? null,
+            metadata: run.stats ?? {},
+            startedAt: run.started_at ? new Date(run.started_at) : new Date(),
+            completedAt: run.completed_at ? new Date(run.completed_at) : null,
+            createdAt: run.created_at ? new Date(run.created_at) : new Date(),
+            updatedAt: run.updated_at ? new Date(run.updated_at) : new Date(),
+          }));
+        },
         projectRepository: deps.projectRepository,
         projectSourceRepository: deps.projectSourceRepository,
       }
@@ -58,7 +75,34 @@ export async function ProjectDetailPage({ currentStage, projectId }: ProjectDeta
 
   const stage = resolveStage(currentStage);
   const sourceReady = detail.sources.some((source) => source.content?.trim());
-  const knowledgebaseGraph = detail.knowledgebaseGraph;
+
+  // Override knowledgebaseGraph with our new Topic Graph API
+  let backendGraph: ConceptGraphResponse = { nodes: [], edges: [] };
+  try {
+    const cg = await getConceptGraphAction({ projectId: detail.project.id, minWeight: 2 });
+    if (cg) backendGraph = cg;
+  } catch (err) {
+    console.error('Failed to load concept graph:', err);
+  }
+
+  const knowledgebaseGraph = {
+    concepts: backendGraph.nodes.map((n) => ({
+      id: n.id,
+      name: n.name,
+      definition: n.description || '',
+      difficulty: 'intermediate',
+      confidence: 'high',
+      isUserDefined: n.is_user_defined,
+    })),
+    relationships: backendGraph.edges.map((e) => ({
+      id: `${e.source}-${e.target}`,
+      sourceConceptId: e.source,
+      targetConceptId: e.target,
+      relationshipType: 'co_occurrence',
+      metadata: { weight: e.weight },
+    })),
+  };
+
   const graphReady = sourceReady && knowledgebaseGraph.concepts.length > 0;
   const sourceCounts = getSourceCounts(detail.sources);
   const ingestionStatus = getIngestionStatus(detail.latestIngestionRun);
@@ -155,6 +199,7 @@ export async function ProjectDetailPage({ currentStage, projectId }: ProjectDeta
             projectId={detail.project.id}
             relationships={knowledgebaseGraph.relationships as unknown as RelationshipRow[]}
             sources={detail.sources}
+            ingestionRuns={detail.ingestionRuns}
           />
         </div>
       ) : null}

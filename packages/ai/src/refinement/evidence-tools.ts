@@ -40,9 +40,9 @@ export type EvidenceKbToolApi = {
       id: string;
       title: string;
       source_type: string;
-      status: string;
-      retrieval_enabled: boolean;
-      quality_warnings: string[];
+      status?: string;
+      retrieval_enabled?: boolean;
+      quality_warnings?: string[];
     }>
   >;
 
@@ -53,10 +53,10 @@ export type EvidenceKbToolApi = {
   }): Promise<{
     id: string;
     text: string;
-    status: string;
-    retrieval_enabled: boolean;
+    status?: string;
+    retrieval_enabled?: boolean;
     quality_score: number;
-    quality_warnings: string[];
+    quality_warnings?: string[];
     source_id: string;
     location: { page?: number | null; heading?: string | null };
   }>;
@@ -71,10 +71,10 @@ export type EvidenceKbToolApi = {
     Array<{
       id: string;
       text: string;
-      status: string;
-      retrieval_enabled: boolean;
+      status?: string;
+      retrieval_enabled?: boolean;
       quality_score: number;
-      quality_warnings: string[];
+      quality_warnings?: string[];
       source_id: string;
       location: { page?: number | null; heading?: string | null };
     }>
@@ -97,10 +97,10 @@ export type EvidenceKbToolApi = {
     Array<{
       id: string;
       text: string;
-      status: string;
-      retrieval_enabled: boolean;
+      status?: string;
+      retrieval_enabled?: boolean;
       quality_score: number;
-      quality_warnings: string[];
+      quality_warnings?: string[];
       source_id: string;
       location: { page?: number | null; heading?: string | null };
     }>
@@ -115,9 +115,9 @@ export type EvidenceKbToolApi = {
       id: string;
       title: string;
       source_type: string;
-      status: string;
-      retrieval_enabled: boolean;
-      quality_warnings: string[];
+      status?: string;
+      retrieval_enabled?: boolean;
+      quality_warnings?: string[];
     }>
   >;
 
@@ -143,10 +143,10 @@ export type EvidenceKbToolApi = {
       id: string;
       source_id: string;
       text: string;
-      status: string;
+      status?: string;
       quality_score: number;
-      quality_warnings: string[];
-      retrieval_enabled: boolean;
+      quality_warnings?: string[];
+      retrieval_enabled?: boolean;
       token_count: number;
       location: Record<string, unknown>;
     }>;
@@ -302,9 +302,9 @@ export function createListEvidenceSourcesTool(deps: {
           id: v.string(),
           title: v.string(),
           sourceType: v.string(),
-          status: v.string(),
-          retrievalEnabled: v.boolean(),
-          qualityWarnings: v.array(v.string()),
+          status: v.optional(v.string()),
+          retrievalEnabled: v.optional(v.boolean()),
+          qualityWarnings: v.optional(v.array(v.string())),
         })
       ),
     }),
@@ -423,10 +423,10 @@ export function createFindWeakPassagesTool(deps: {
         v.object({
           id: v.string(),
           text: v.string(),
-          status: v.string(),
-          retrievalEnabled: v.boolean(),
+          status: v.optional(v.string()),
+          retrievalEnabled: v.optional(v.boolean()),
           qualityScore: v.number(),
-          qualityWarnings: v.array(v.string()),
+          qualityWarnings: v.optional(v.array(v.string())),
           sourceId: v.string(),
         })
       ),
@@ -500,9 +500,9 @@ export function createFindStaleSourcesTool(deps: {
           id: v.string(),
           title: v.string(),
           sourceType: v.string(),
-          status: v.string(),
-          retrievalEnabled: v.boolean(),
-          qualityWarnings: v.array(v.string()),
+          status: v.optional(v.string()),
+          retrievalEnabled: v.optional(v.boolean()),
+          qualityWarnings: v.optional(v.array(v.string())),
         })
       ),
     }),
@@ -639,10 +639,10 @@ export function createExportPassagesTool(deps: {
           id: v.string(),
           sourceId: v.string(),
           text: v.string(),
-          status: v.string(),
+          status: v.optional(v.string()),
           qualityScore: v.number(),
-          qualityWarnings: v.array(v.string()),
-          retrievalEnabled: v.boolean(),
+          qualityWarnings: v.optional(v.array(v.string())),
+          retrievalEnabled: v.optional(v.boolean()),
           tokenCount: v.number(),
         })
       ),
@@ -717,10 +717,10 @@ export function createGetSurroundingPassagesTool(deps: {
         id: v.string(),
         sourceId: v.string(),
         text: v.string(),
-        status: v.string(),
+        status: v.optional(v.string()),
         qualityScore: v.number(),
-        qualityWarnings: v.array(v.string()),
-        retrievalEnabled: v.boolean(),
+        qualityWarnings: v.optional(v.array(v.string())),
+        retrievalEnabled: v.optional(v.boolean()),
       })
     ),
     execute: async ({ passageId, before, after }, context) => {

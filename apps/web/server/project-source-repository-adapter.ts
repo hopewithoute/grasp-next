@@ -1,6 +1,6 @@
 import { randomUUID } from 'crypto';
 import type { ProjectSourceRepository, ProjectSourceType, ProjectSourceRecord } from '@grasp/domain';
-import type { EvidenceKbService } from './evidence-kb-service';
+import type { EvidenceKbService } from './evidence-kb';
 
 export function createEvidenceKbProjectSourceRepository(
   evidenceKbService: EvidenceKbService

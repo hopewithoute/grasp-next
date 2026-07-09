@@ -1,6 +1,6 @@
 import 'server-only';
 import type { IngestionRunRepository, IngestionStreamEvent } from '@grasp/domain';
-import type { EvidenceKbService } from './evidence-kb-service';
+import type { EvidenceKbService } from './evidence-kb';
 
 export type SourceIngestionDeps = {
   evidenceKbService?: EvidenceKbService | null;
@@ -21,11 +21,6 @@ export async function runSourceIngestion(
   },
   deps: SourceIngestionDeps
 ) {
-  const ingestionRun = await deps.ingestionRunRepository.create({
-    projectId: input.projectId,
-    sourceId: input.sourceId,
-  });
-
   try {
     if (!input.ownerId) {
       throw new Error('ownerId is required for ingestion');
@@ -43,10 +38,6 @@ export async function runSourceIngestion(
       sourceType: input.sourceType,
     });
 
-    await deps.ingestionRunRepository.markCompleted(ingestionRun.id, {
-      evidenceKb: result,
-    });
-
     input.onEvent?.({
       type: 'evidence_ingestion_complete',
       passageCount: result.passageCount,
@@ -56,10 +47,6 @@ export async function runSourceIngestion(
 
     return result;
   } catch (error) {
-    await deps.ingestionRunRepository.markFailed(
-      ingestionRun.id,
-      error instanceof Error ? error.message : 'Unknown source ingestion error'
-    );
     throw error;
   }
 }

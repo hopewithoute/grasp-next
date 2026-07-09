@@ -270,8 +270,8 @@ function createProjectSourceRepository(
         },
       ];
     },
-    async listByProjectForOwner() {
-      throw new Error('Not needed for this test.');
+    async listByProjectForOwner(projectId: string) {
+      return this.listByProject(projectId);
     },
     async updateForProjectOwner() {
       throw new Error('Not needed for this test.');

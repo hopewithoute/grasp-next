@@ -28,7 +28,7 @@ import type {
   EvidenceKbRetrieveResponse,
   EvidenceKbSource,
   PaginatedPassagesResponse,
-} from '@/server/evidence-kb-service';
+} from '@/server/evidence-kb';
 import { createProjectDeps } from '@/server/project-deps';
 
 // --- Form state types ---
@@ -276,7 +276,8 @@ export async function addProjectSourceFromPdfFormAction(
   }
 
   const projectId = formData.get('projectId')?.toString() ?? '';
-  const title = formData.get('title')?.toString() ?? file.name;
+  const titleRaw = formData.get('title')?.toString()?.trim();
+  const title = titleRaw || file.name;
 
   try {
     const deps = createProjectDeps();
@@ -473,10 +474,8 @@ export async function listEvidenceKbPassagesAction(input: {
     sourceId: input.sourceId,
     query: input.query,
     status: input.status,
-    retrieval_enabled: input.retrieval_enabled,
-    sort_field: input.sort_field,
-    sort_direction: input.sort_direction,
-    skip: input.skip,
+    retrievalEnabled: input.retrieval_enabled,
+    offset: input.skip,
     limit: input.limit,
   });
 
@@ -575,10 +574,10 @@ export type EvidenceKbExportResult =
         id: string;
         source_id: string;
         text: string;
-        status: string;
+        status?: string;
         quality_score: number;
-        quality_warnings: string[];
-        retrieval_enabled: boolean;
+        quality_warnings?: string[];
+        retrieval_enabled?: boolean;
         token_count: number;
       }>;
       total: number;
@@ -682,3 +681,82 @@ export async function getEvidenceKbSourceViewerUrlAction(input: {
   }
 }
 
+export async function getConceptGraphAction(input: {
+  projectId: string;
+  minWeight?: number;
+}) {
+  const actor = await auth();
+
+  if (!actor) {
+    throw new Error('Unauthorized');
+  }
+
+  const deps = createProjectDeps();
+
+  if (!deps.evidenceKbService) {
+    throw new Error('Evidence KB service is not configured');
+  }
+
+  try {
+    return await deps.evidenceKbService.getConceptGraphForOwner({
+      ownerId: actor.id,
+      projectId: input.projectId,
+      minWeight: input.minWeight,
+    });
+  } catch (error) {
+    console.error('Failed to fetch concept graph:', error);
+    throw new Error('Failed to fetch concept graph');
+  }
+}
+
+
+export async function getProjectIngestionRunsAction(projectId: string) {
+  const actor = await auth();
+  if (!actor) {
+    throw new Error('Unauthorized');
+  }
+
+  const deps = createProjectDeps();
+
+  if (!deps.evidenceKbService) {
+    throw new Error('Evidence KB service is not configured');
+  }
+
+  try {
+    const runs = await deps.evidenceKbService.listRunsForProjectOwner({
+      projectId,
+      ownerId: actor.id,
+    });
+    
+    // Map to domain format matching loadProjectDetail fetcher
+    return runs.map((run: {
+      id: string;
+      project_id: string;
+      external_source_id?: string;
+      source_id: string;
+      tenant_id: string;
+      status: string;
+      failure_reason?: string | null;
+      stats?: Record<string, unknown>;
+      started_at?: string | Date | null | any;
+      completed_at?: string | Date | null | any;
+      created_at?: string | Date | null | any;
+      updated_at?: string | Date | null | any;
+    }) => ({
+      id: run.id,
+      projectId: run.project_id,
+      sourceId: run.external_source_id ?? run.source_id,
+      tenantId: run.tenant_id,
+      status: (run.status === 'queued' || run.status === 'processing' ? 'ingesting' : run.status) as 'failed' | 'completed' | 'ingesting',
+      failureReason: run.failure_reason ?? null,
+      metadata: run.stats ?? {},
+      startedAt: run.started_at ? new Date(run.started_at) : new Date(),
+      completedAt: run.completed_at ? new Date(run.completed_at) : null,
+      createdAt: run.created_at ? new Date(run.created_at) : new Date(),
+      updatedAt: run.updated_at ? new Date(run.updated_at) : new Date(),
+    }));
+  } catch (error) {
+    console.error('Failed to fetch ingestion runs:', error);
+    return [];
+  }
+}

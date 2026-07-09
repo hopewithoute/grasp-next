@@ -10,7 +10,7 @@ export type LoadProjectDetailInput = {
 };
 
 export type LoadProjectDetailDeps = {
-  ingestionRunRepository?: IngestionRunRepository;
+  fetchIngestionRuns?: (projectId: string, ownerId: string) => Promise<IngestionRunRecord[]>;
   projectRepository: ProjectRepository;
   projectSourceRepository: ProjectSourceRepository;
 };
@@ -43,6 +43,7 @@ export type LoadProjectDetailResult = {
   project: ProjectRecord;
   knowledgebaseGraph: KnowledgebaseGraphReadModel;
   latestIngestionRun: IngestionRunRecord | null;
+  ingestionRuns: IngestionRunRecord[];
   concepts: KnowledgebaseGraphConceptReadModel[];
   relationships: KnowledgebaseGraphRelationshipReadModel[];
   sources: ProjectSourceRecord[];
@@ -58,10 +59,12 @@ export async function loadProjectDetail(
     throw new ProjectNotFoundError();
   }
 
-  const [latestIngestionRun, sources] = await Promise.all([
-    deps.ingestionRunRepository?.findLatestByProject(project.id) ?? Promise.resolve(null),
+  const [ingestionRuns, sources] = await Promise.all([
+    deps.fetchIngestionRuns?.(project.id, input.ownerId) ?? Promise.resolve([]),
     deps.projectSourceRepository.listByProjectForOwner(project.id, input.ownerId),
   ]);
+
+  const latestIngestionRun = ingestionRuns.length > 0 ? ingestionRuns[0] : null;
 
   const conceptReadModel = emptyKnowledgebaseReadModel();
 
@@ -69,6 +72,7 @@ export async function loadProjectDetail(
     project,
     knowledgebaseGraph: conceptReadModel,
     latestIngestionRun,
+    ingestionRuns,
     concepts: conceptReadModel.concepts,
     relationships: conceptReadModel.relationships,
     sources,
