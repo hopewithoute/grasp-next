@@ -42,6 +42,8 @@ export async function ProjectDetailPage({ currentStage, projectId }: ProjectDeta
       {
         fetchIngestionRuns: async (pId, oId) => {
           const runs = await deps.evidenceKbService.listRunsForProjectOwner({ projectId: pId, ownerId: oId });
+           
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           return runs.map((run: any) => ({
             id: run.id,
             projectId: run.project_id,

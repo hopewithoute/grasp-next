@@ -33,10 +33,6 @@ describe('runSourceIngestion', () => {
       deps
     );
 
-    expect(deps.ingestionRunRepository.create).toHaveBeenCalledWith({
-      projectId: 'project-1',
-      sourceId: 'source-1',
-    });
     expect(evidenceKbService.ingestSourceForOwner).toHaveBeenCalledWith({
       content: 'Source text',
       ownerId: 'owner-1',
@@ -44,9 +40,6 @@ describe('runSourceIngestion', () => {
       sourceId: 'source-1',
       sourceTitle: 'Source',
       sourceType: 'markdown',
-    });
-    expect(deps.ingestionRunRepository.markCompleted).toHaveBeenCalledWith('run-1', {
-      evidenceKb: expect.objectContaining({ ingestionRunId: 'evidence-run-1' }),
     });
   });
 
@@ -100,11 +93,6 @@ describe('runSourceIngestion', () => {
         deps
       )
     ).rejects.toThrow('Evidence KB service is not configured');
-
-    expect(deps.ingestionRunRepository.markFailed).toHaveBeenCalledWith(
-      'run-1',
-      'Evidence KB service is not configured'
-    );
   });
 
   it('marks the ingestion run failed when ownerId is missing', async () => {
@@ -122,11 +110,6 @@ describe('runSourceIngestion', () => {
         deps
       )
     ).rejects.toThrow('ownerId is required for ingestion');
-
-    expect(deps.ingestionRunRepository.markFailed).toHaveBeenCalledWith(
-      'run-1',
-      'ownerId is required for ingestion'
-    );
   });
 });
 

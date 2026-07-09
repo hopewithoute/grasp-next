@@ -15,6 +15,8 @@ import {
 } from './utils.gen';
 
 type ReqInit = Omit<RequestInit, 'body' | 'headers'> & {
+   
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   body?: any;
   headers: ReturnType<typeof mergeHeaders>;
 };
@@ -117,7 +119,9 @@ export const createClient = (config: Config = {}): Client => {
             ? getParseAs(response.headers.get('Content-Type'))
             : opts.parseAs) ?? 'json';
 
+         
         if (response.status === 204 || response.headers.get('Content-Length') === '0') {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           let emptyData: any;
           switch (parseAs) {
             case 'arrayBuffer':
@@ -142,8 +146,10 @@ export const createClient = (config: Config = {}): Client => {
                 data: emptyData,
                 ...result,
               };
+         
         }
 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         let data: any;
         switch (parseAs) {
           case 'arrayBuffer':

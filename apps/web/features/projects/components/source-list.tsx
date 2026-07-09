@@ -30,6 +30,8 @@ export function SourceList({
   const [liveRuns, setLiveRuns] = useState<IngestionRunRecord[]>(ingestionRuns);
 
   useEffect(() => {
+     
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLiveRuns(ingestionRuns);
   }, [ingestionRuns]);
 
@@ -90,7 +92,6 @@ export function SourceList({
         {sources.length ? (
           <ul className="space-y-2">
             {sources.map((source, index) => {
-              const counts = getTextCounts(source.content ?? '');
 
               return (
                 <li key={source.id}>

@@ -1,5 +1,9 @@
 'use client';
 
+ 
+ 
+ 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { Activity, Bot, CheckCircle2, FileText, Loader2, Sparkles, XCircle } from 'lucide-react';
 import type { IngestionRunRecord, ProjectSourceRecord } from '@grasp/domain';
 import { cn } from '@/lib/utils';
@@ -77,6 +81,10 @@ function TaskRunCard({ run, sourceName }: { run: IngestionRunRecord, sourceName:
     : 'Unknown time';
     
   // Support both snake_case and camelCase and different property names due to Python vs NextJS domain models
+   
+   
+   
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const rawStats = (run as any).stats || (run as any).metadata || {};
   const passageCount = rawStats.passageCount || rawStats.passage_count;
 

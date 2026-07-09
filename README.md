@@ -1,91 +1,97 @@
 # Grasp
 
-Grasp is a monorepo for an adaptive learning studio built around project-based authoring, evidence-backed source ingestion, and concept graph workflows.
+> **Note:** This project is currently a Work in Progress (WIP).
 
-## Repo Shape
+[![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=flat-square&logo=typescript&logoColor=white)]()
+[![Next.js](https://img.shields.io/badge/Next.js-000000?style=flat-square&logo=nextdotjs&logoColor=white)]()
+[![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=flat-square&logo=fastapi&logoColor=white)]()
+[![Turborepo](https://img.shields.io/badge/Turborepo-EF4444?style=flat-square&logo=turborepo&logoColor=white)]()
 
-- `apps/web`
-  Next.js application for project authoring, concept graph workspace, evidence explorer, and review flows.
-- `packages/domain`
-  Domain actions and cross-app business logic.
-- `packages/ai`
-  AI-facing tools and refinement integrations used by the web app.
-- `packages/db`
-  Database repositories and persistence layer for app/domain concerns.
-- `services/evidence-kb`
-  Python FastAPI service for ingestion, passage storage, retrieval, curation, and topic graph generation.
-- `services/embedding-sidecar`
-  Local embedding runtime used by `evidence-kb` when OpenAI-compatible embeddings are needed.
-- `docs`
-  Product, feature, and architecture documentation.
+> An adaptive learning studio built around project-based authoring, evidence-backed source ingestion, and concept graph workflows.
 
-## Primary Docs
+Grasp is an open-source platform designed to intelligently map and process knowledge. By leveraging Hybrid RAG (Retrieval-Augmented Generation) with BM25 + vector search and intelligent concept extraction, Grasp allows users to ingest source materials, construct visual knowledge graphs, and build highly adaptive learning pathways.
 
-- [docs/prd.md](/var/www/grasp-next/docs/prd.md:1)
-  Product requirements and the current MVP direction.
-- [docs/feature_tracker.md](/var/www/grasp-next/docs/feature_tracker.md:1)
-  Feature-by-feature implementation status.
-- [services/evidence-kb/README.md](/var/www/grasp-next/services/evidence-kb/README.md:1)
-  Setup and API overview for the ingestion/retrieval backend.
-- [services/evidence-kb/docs/README.md](/var/www/grasp-next/services/evidence-kb/docs/README.md:1)
-  Entry point for deeper `evidence-kb` reference docs.
+---
+
+## Key Features
+
+- **Evidence-Backed Ingestion**: Automatically process and chunk markdown, text, and web sources into high-quality passage embeddings.
+- **Concept Graph Workflows**: Generate topic and concept graphs from raw knowledge, allowing learners and authors to visualize and explore complex relationships.
+- **High-Performance Architecture**: Powered by a robust Next.js frontend, highly modular Turborepo architecture, and a Python FastAPI backend for heavy AI/ML ingestion workloads.
+- **Advanced Retrieval & Curation**: Native support for evidence retrieval, transparent curation controls, and local embedding sidecars.
+- **Project-Based Authoring**: Organize learning materials and context into distinct projects with isolated knowledge bases.
+
+## Architecture & Repo Shape
+
+Grasp is structured as a modern monorepo using `pnpm` workspaces and Turborepo:
+
+- `apps/web`: Next.js application for project authoring, concept graph workspace, evidence explorer, and review flows.
+- `packages/domain`: Domain actions and cross-app business logic.
+- `packages/ai`: AI-facing tools and refinement integrations used by the web app.
+- `packages/db`: Database repositories and persistence layer for app/domain concerns.
+- `services/evidence-kb`: Python FastAPI service for ingestion, passage storage, retrieval, curation, and topic graph generation.
+- `services/embedding-sidecar`: Local embedding runtime used by `evidence-kb` when OpenAI-compatible embeddings are needed.
 
 ## Quick Start
 
 ### Prerequisites
 
-- Node.js compatible with `pnpm@10.33.0`
-- `pnpm`
-- Python `3.14+` for `services/evidence-kb`
-- PostgreSQL for app and service data
+- [Node.js](https://nodejs.org/) (compatible with `pnpm@10.33.0`)
+- [pnpm](https://pnpm.io/)
+- Python `3.14+` (for `services/evidence-kb`)
+- PostgreSQL database
 
-### Install workspace dependencies
+### 1. Installation
+
+Install the workspace dependencies:
 
 ```bash
 pnpm install
 ```
 
-### Start the monorepo dev loop
+### 2. Environment Setup
+
+Copy the example environment variables and configure them:
+
+```bash
+cp .env.example .env
+```
+*(Make sure to update `DATABASE_URL` and your AI Provider API keys in `.env`)*
+
+### 3. Start the Development Server
+
+Start the entire monorepo development loop:
 
 ```bash
 pnpm dev
 ```
 
-### Common root commands
+## Common Commands
+
+From the root of the monorepo, you can orchestrate tasks across all apps and packages:
 
 ```bash
-pnpm build
-pnpm lint
-pnpm test
-pnpm typecheck
+pnpm build      # Build all apps and packages
+pnpm lint       # Run ESLint checks
+pnpm test       # Run Vitest test suites
+pnpm typecheck  # Run static TypeScript analysis
 ```
 
-## Working On `evidence-kb`
+## Working with `evidence-kb` (RAG Service)
 
-Use the local helper inside the service directory:
+The Python RAG service has its own dedicated local runner for convenience.
 
 ```bash
 cd services/evidence-kb
+
+# Run the FastAPI dev server
 ./run dev
+
+# Run Python tests
 ./run test
 ./run test-integration
+
+# Manage DB migrations
 ./run db-migrate
 ```
-
-For more detail, start with [services/evidence-kb/README.md](/var/www/grasp-next/services/evidence-kb/README.md:1).
-
-## Workspace Notes
-
-- The repo uses `pnpm` workspaces and Turborepo.
-- Root scripts orchestrate work across `apps/*`, `packages/*`, and `services/*`.
-- The web app consumes the ingestion/retrieval backend through `apps/web/server/evidence-kb.ts`.
-- The committed OpenAPI schema at `openapi.json` is used to generate the TypeScript client under `apps/web/api-client/`.
-
-## Current Focus
-
-The current backend-heavy workflow centers on:
-
-- ingesting project sources into `services/evidence-kb`
-- surfacing passages and curation controls in the web app
-- generating a topic graph from ingested evidence
-- refreshing project activity and graph state through project-scoped ingestion run updates
+*For deeper documentation on the RAG service, see [services/evidence-kb/README.md](./services/evidence-kb/README.md).*

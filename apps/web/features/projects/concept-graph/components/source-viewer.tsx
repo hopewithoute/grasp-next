@@ -41,6 +41,7 @@ export function SourceViewer({
         } else {
           setError('Viewer URL not available for this source.');
         }
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       } catch (err) {
         if (!isMounted) return;
         setError('Failed to load viewer.');
