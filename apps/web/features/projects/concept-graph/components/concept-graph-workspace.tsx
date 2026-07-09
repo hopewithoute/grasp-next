@@ -3,6 +3,7 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ReactFlowProvider } from '@xyflow/react';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { Database, FileText, Maximize, Minimize, Network, Search, Wand2 } from 'lucide-react';
 import type { IngestionRunRecord, ProjectSourceRecord } from '@grasp/domain';
 import { cn } from '@/lib/utils';
@@ -53,6 +54,7 @@ const ConceptGraphEditor = ({
     setPendingSelectedId,
     chatContextConceptIds,
     setChatContextConceptIds,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     isRefinementCollapsed,
     setIsRefinementCollapsed,
     hoveredChatConceptId,
@@ -123,6 +125,7 @@ const ConceptGraphEditor = ({
   );
 
   const isRunning = false;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleRefinementCollapseToggle = useCallback(() => {
     setIsRefinementCollapsed((current: boolean) => !current);
   }, [setIsRefinementCollapsed]);

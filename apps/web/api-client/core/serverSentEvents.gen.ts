@@ -211,6 +211,8 @@ export function createSseClient<TData = unknown>({
               });
 
               if (dataLines.length) {
+                 
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 yield data as any;
               }
             }

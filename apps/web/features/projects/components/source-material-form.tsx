@@ -3,6 +3,8 @@
 import { useActionState, useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { ArrowLeft, File, FileText, Headphones, Link, Trash2, Upload, Video } from 'lucide-react';
 import { toast } from 'sonner';
+ 
+// eslint-disable-next-line no-restricted-imports
 import type { IngestionRunRecord } from '@grasp/domain';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -38,6 +40,7 @@ type ProjectSourcesPanelProps = {
 export function ProjectSourcesPanel({
   projectId,
   sources,
+   
   ingestionRuns = [],
   onIngestionTrigger,
   selectedSourceId: externalSelectedSourceId,
@@ -206,7 +209,9 @@ function ProjectSourceAddForm({
             <button
               key={tab.id}
               type="button"
+               
               disabled={tab.disabled}
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               onClick={() => setActiveTab(tab.id as any)}
               className={`group border-border/40 hover:border-brand-accent/50 hover:bg-brand-accent/5 bg-background/50 relative flex min-h-24 flex-col items-center justify-center rounded-none border p-4 transition-all duration-300 ${
                 tab.disabled

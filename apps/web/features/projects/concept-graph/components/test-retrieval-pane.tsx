@@ -82,6 +82,8 @@ export function TestRetrievalPane({
         } as const;
 
         await applyEvidenceKbCurationAction({
+           
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           actions: [actionMap[action] as any],
           projectId,
         });

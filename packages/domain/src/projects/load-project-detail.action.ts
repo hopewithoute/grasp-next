@@ -1,5 +1,5 @@
 import type { ConceptDifficultyDto } from '../concepts/concept.dto';
-import type { IngestionRunRecord, IngestionRunRepository } from '../knowledgebase';
+import type { IngestionRunRecord } from '../knowledgebase';
 import type { ProjectSourceRecord, ProjectSourceRepository } from '../project-sources';
 import { ProjectNotFoundError } from './project.errors';
 import type { ProjectRecord, ProjectRepository } from './project.types';

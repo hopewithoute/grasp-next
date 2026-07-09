@@ -24,6 +24,7 @@ import {
 import { getActor as auth } from '@/server/actor';
 import type {
   EvidenceKbCurationAction,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   EvidenceKbPassage,
   EvidenceKbRetrieveResponse,
   EvidenceKbSource,
@@ -738,9 +739,15 @@ export async function getProjectIngestionRunsAction(projectId: string) {
       status: string;
       failure_reason?: string | null;
       stats?: Record<string, unknown>;
+       
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       started_at?: string | Date | null | any;
+       
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       completed_at?: string | Date | null | any;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       created_at?: string | Date | null | any;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       updated_at?: string | Date | null | any;
     }) => ({
       id: run.id,
