@@ -9,6 +9,7 @@ coverage
 .pytest_cache
 __pycache__
 *.pyc
+.ruff_cache
 
 *.tsbuildinfo
 
